@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Agents — Inclawbate</title>
-    <meta name="description" content="Create AI agents that auto-post to your X account. Browse active agents in the ecosystem.">
+    <meta name="description" content="Create AI agents that auto-post to your X account on autopilot.">
     <meta property="og:title" content="AI Agents — Inclawbate">
     <meta property="og:description" content="Create AI agents that auto-post to your X account on autopilot.">
     <meta property="og:type" content="website">
@@ -21,12 +21,12 @@
     <style>
         body { opacity: 1; background: var(--bg-deepest); }
 
-        .agents-page { max-width: 900px; margin: 0 auto; padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl); }
+        .agents-page { max-width: 860px; margin: 0 auto; padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl); }
 
         /* ── Hero ── */
         .agents-hero { text-align: center; margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease both; }
         .agents-hero h1 { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; background: var(--title-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.15; margin-bottom: var(--space-xs); }
-        .agents-hero p { font-size: 0.92rem; color: var(--text-dim); max-width: 520px; margin: 0 auto; line-height: 1.5; }
+        .agents-hero p { font-size: 0.92rem; color: var(--text-dim); max-width: 480px; margin: 0 auto; line-height: 1.5; }
 
         /* ── Tabs ── */
         .ag-tabs { display: flex; gap: 4px; margin-bottom: var(--space-xl); padding: 4px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
@@ -40,45 +40,47 @@
         .agent-card { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: var(--space-lg); margin-bottom: var(--space-md); transition: border-color 0.2s; }
         .agent-card:hover { border-color: hsla(240,4%,36%,0.5); }
         .agent-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); }
+        .agent-card-left { display: flex; align-items: center; gap: 10px; }
+        .agent-card-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; color: var(--text-dim); overflow: hidden; flex-shrink: 0; }
+        .agent-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .agent-card-name { font-weight: 800; font-size: 1.05rem; color: var(--text-primary); }
-        .agent-status-pill { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; padding: 3px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .agent-status-pill.active { background: hsla(142,52%,48%,0.15); color: #4ade80; }
-        .agent-status-pill.paused { background: hsla(40,80%,50%,0.15); color: #fbbf24; }
-        .agent-status-pill.dormant { background: hsla(0,60%,50%,0.15); color: #f87171; }
-        .agent-stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+        .agent-card-handle { font-family: var(--font-mono); font-size: 0.72rem; color: var(--lobster-400); }
+        .status-pill { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; padding: 3px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .status-pill.active { background: hsla(142,52%,48%,0.15); color: #4ade80; }
+        .status-pill.paused { background: hsla(40,80%,50%,0.15); color: #fbbf24; }
+        .status-pill.dormant { background: hsla(0,60%,50%,0.15); color: #f87171; }
+
+        .agent-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
         .agent-stat { text-align: center; padding: var(--space-sm); background: var(--bg-card); border-radius: var(--radius-md); }
-        .agent-stat-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
-        .agent-stat-value { font-family: var(--font-mono); font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
-        .agent-stat-value.accent { color: var(--lobster-400); font-size: 0.78rem; }
-        .agent-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-sm); }
-        .agent-action-btn { padding: 7px 14px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-secondary); font-family: var(--font-body); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-        .agent-action-btn:hover { border-color: var(--lobster-300); color: var(--text-primary); }
-        .agent-action-btn.danger { color: hsla(0,70%,60%,0.8); }
-        .agent-action-btn.danger:hover { border-color: hsla(0,60%,50%,0.5); color: #f87171; }
-        .agent-action-btn.primary { background: var(--accent-gradient); border-color: transparent; color: #fff; }
-        .agent-action-btn.primary:hover { opacity: 0.9; }
-        .agent-x-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; padding: 4px 10px; border-radius: var(--radius-md); }
-        .agent-x-badge.connected { background: hsla(200,70%,50%,0.12); color: #38bdf8; }
-        .agent-x-badge.fallback { background: hsla(0,60%,50%,0.12); color: #f87171; cursor: pointer; }
-        .agent-x-badge.fallback:hover { background: hsla(0,60%,50%,0.18); }
-        .agent-panel-inner { display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
-        .agent-panel-inner.open { display: block; }
-        .agent-panel-title { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-sm); }
-        .agent-persona-textarea { width: 100%; min-height: 80px; padding: var(--space-sm) var(--space-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body); font-size: 0.82rem; resize: vertical; outline: none; box-sizing: border-box; }
-        .agent-persona-textarea:focus { border-color: var(--lobster-300); }
-        .agent-persona-actions { display: flex; gap: 6px; margin-top: var(--space-sm); }
-        .agent-posts-per-day { display: flex; align-items: center; gap: 8px; margin-top: var(--space-sm); }
-        .agent-posts-per-day label { font-size: 0.78rem; color: var(--text-secondary); }
-        .agent-posts-per-day select { padding: 6px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.82rem; }
-        .agent-post-item { display: flex; gap: var(--space-sm); padding: 8px 0; border-bottom: 1px solid hsla(240,4%,16%,0.5); font-size: 0.8rem; }
-        .agent-post-item:last-child { border-bottom: none; }
-        .agent-post-time { flex: 0 0 50px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding-top: 2px; }
-        .agent-post-text { flex: 1; color: var(--text-secondary); line-height: 1.4; word-break: break-word; }
-        .agent-post-link a { color: var(--lobster-400); font-size: 0.7rem; text-decoration: none; }
-        .agent-post-link a:hover { text-decoration: underline; }
-        .agent-post-status { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
-        .agent-post-status.posted { background: hsla(142,52%,48%,0.12); color: #4ade80; }
-        .agent-post-status.failed { background: hsla(0,60%,50%,0.12); color: #f87171; }
+        .agent-stat-label { font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+        .agent-stat-val { font-family: var(--font-mono); font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+
+        .agent-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ag-btn { padding: 7px 14px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-secondary); font-family: var(--font-body); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .ag-btn:hover { border-color: var(--lobster-300); color: var(--text-primary); }
+        .ag-btn.primary { background: var(--accent-gradient); border-color: transparent; color: #fff; }
+        .ag-btn.primary:hover { opacity: 0.9; }
+        .ag-btn.danger { color: hsla(0,70%,60%,0.8); }
+        .ag-btn.danger:hover { border-color: hsla(0,60%,50%,0.5); color: #f87171; }
+
+        /* Expandable panels */
+        .agent-expand { display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+        .agent-expand.open { display: block; }
+        .agent-expand-title { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-sm); }
+        .agent-textarea { width: 100%; min-height: 80px; padding: var(--space-sm) var(--space-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body); font-size: 0.82rem; resize: vertical; outline: none; box-sizing: border-box; }
+        .agent-textarea:focus { border-color: var(--lobster-300); }
+        .agent-expand-actions { display: flex; gap: 6px; margin-top: var(--space-sm); }
+        .ppd-row { display: flex; align-items: center; gap: 8px; margin-top: var(--space-sm); }
+        .ppd-row label { font-size: 0.78rem; color: var(--text-secondary); }
+        .ppd-row select { padding: 6px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.82rem; }
+
+        .post-item { display: flex; gap: var(--space-sm); padding: 8px 0; border-bottom: 1px solid hsla(240,4%,16%,0.5); font-size: 0.8rem; }
+        .post-item:last-child { border-bottom: none; }
+        .post-time { flex: 0 0 50px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding-top: 2px; }
+        .post-text { flex: 1; color: var(--text-secondary); line-height: 1.4; word-break: break-word; }
+        .post-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+        .post-badge.posted { background: hsla(142,52%,48%,0.12); color: #4ade80; }
+        .post-badge.failed { background: hsla(0,60%,50%,0.12); color: #f87171; }
 
         /* ── Wizard ── */
         .wizard { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: var(--space-xl); margin-bottom: var(--space-xl); display: none; }
@@ -90,7 +92,7 @@
         .wiz-step { display: none; }
         .wiz-step.active { display: block; }
         .wiz-step h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0 0 4px; }
-        .wiz-step p { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 var(--space-lg); line-height: 1.4; }
+        .wiz-step .desc { font-size: 0.82rem; color: var(--text-dim); margin: 0 0 var(--space-lg); line-height: 1.4; }
         .wiz-step label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
         .wiz-step input, .wiz-step select, .wiz-step textarea { font-size: 0.85rem; width: 100%; padding: 10px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body); box-sizing: border-box; margin-bottom: var(--space-sm); }
         .wiz-step textarea { min-height: 60px; resize: vertical; }
@@ -102,30 +104,35 @@
         .wiz-btn-next { background: var(--accent-gradient); color: #fff; }
         .wiz-btn-next:hover { opacity: 0.9; }
         .wiz-btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
-        .vibe-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-sm); }
+
+        .vibe-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-sm); }
         .vibe-btn { padding: 8px 16px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
         .vibe-btn:hover { border-color: var(--lobster-300); color: var(--text-primary); }
         .vibe-btn.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
 
-        /* Step 4 — Connect X */
-        .x-connect-box { text-align: center; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
-        .x-connect-box .x-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
-        .x-connect-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: #000; color: #fff; border: 1px solid #333; border-radius: var(--radius-lg); font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
-        .x-connect-btn:hover { background: #1a1a1a; border-color: #555; }
-        .x-skip-note { font-size: 0.75rem; color: var(--text-dim); margin-top: var(--space-md); }
+        /* X connect step */
+        .x-box { text-align: center; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+        .x-box .x-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
+        .x-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: #000; color: #fff; border: 1px solid #333; border-radius: var(--radius-lg); font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+        .x-btn:hover { background: #1a1a1a; border-color: #555; }
+        .x-note { font-size: 0.75rem; color: var(--text-dim); margin-top: var(--space-md); }
+
+        .form-msg { margin-top: var(--space-sm); font-size: 0.85rem; text-align: center; }
+        .form-msg.ok { color: var(--seafoam-300); }
+        .form-msg.err { color: #ef4444; }
 
         /* ── Create CTA ── */
-        .create-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; background: var(--accent-gradient); border: none; border-radius: var(--radius-md); color: #fff; font-family: var(--font-body); font-size: 0.88rem; font-weight: 700; cursor: pointer; margin-bottom: var(--space-lg); }
-        .create-cta:hover { opacity: 0.9; }
+        .create-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; background: var(--accent-gradient); border: none; border-radius: var(--radius-md); color: #fff; font-family: var(--font-body); font-size: 0.88rem; font-weight: 700; cursor: pointer; margin-bottom: var(--space-lg); }
+        .create-btn:hover { opacity: 0.9; }
 
         /* ── Onboarding ── */
-        .onboarding { text-align: center; padding: var(--space-3xl) var(--space-lg); }
-        .onboarding h2 { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin-bottom: var(--space-sm); }
-        .onboarding p { font-size: 0.88rem; color: var(--text-dim); margin-bottom: var(--space-lg); max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.5; }
-        .onboarding-steps { display: flex; gap: var(--space-md); justify-content: center; margin-bottom: var(--space-xl); flex-wrap: wrap; }
-        .onboarding-step { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-md); width: 140px; text-align: center; }
-        .onboarding-step-num { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--lobster-400); margin-bottom: 4px; }
-        .onboarding-step-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+        .onboard { text-align: center; padding: var(--space-3xl) var(--space-lg); }
+        .onboard h2 { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin-bottom: var(--space-sm); }
+        .onboard p { font-size: 0.88rem; color: var(--text-dim); margin-bottom: var(--space-lg); max-width: 440px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+        .how-steps { display: flex; gap: var(--space-md); justify-content: center; margin-bottom: var(--space-xl); flex-wrap: wrap; }
+        .how-step { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-md); width: 130px; text-align: center; }
+        .how-step-num { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--lobster-400); margin-bottom: 4px; }
+        .how-step-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
 
         /* ── Explore Grid ── */
         .explore-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-md); }
@@ -136,22 +143,18 @@
         .explore-card-logo img { width: 100%; height: 100%; object-fit: cover; }
         .explore-card-name { font-weight: 800; font-size: 0.95rem; color: var(--text-primary); }
         .explore-card-handle { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); }
-        .explore-card-vibe { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; display: inline-block; margin-bottom: var(--space-sm); background: rgba(99,102,241,0.12); color: #818cf8; }
+        .explore-card-vibe { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; display: inline-block; margin-bottom: var(--space-sm); }
         .explore-card-tweet { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: var(--space-sm); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 3.3em; }
         .explore-card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-dim); }
         .explore-card-footer a { color: var(--lobster-400); text-decoration: none; font-weight: 600; }
         .explore-card-footer a:hover { text-decoration: underline; }
         .empty-state { text-align: center; padding: var(--space-3xl) var(--space-lg); color: var(--text-dim); font-size: 0.9rem; }
 
-        .form-result { margin-top: var(--space-sm); font-size: 0.85rem; text-align: center; }
-        .form-result.success { color: var(--seafoam-300); }
-        .form-result.error { color: #ef4444; }
-
         @media (max-width: 600px) {
-            .agent-stats-grid { grid-template-columns: repeat(2,1fr); }
+            .agent-stats { grid-template-columns: repeat(2,1fr); }
             .agent-actions { flex-direction: column; }
-            .agent-action-btn { text-align: center; }
-            .onboarding-steps { flex-direction: column; align-items: center; }
+            .ag-btn { text-align: center; }
+            .how-steps { flex-direction: column; align-items: center; }
             .explore-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -183,7 +186,7 @@
 
     <section class="agents-hero">
         <h1>AI Agents</h1>
-        <p>Create an AI agent that auto-posts to your X account on autopilot. Set a vibe, connect X, and let it run.</p>
+        <p>Create an AI agent that auto-posts to your X account on autopilot. Pick a vibe, connect X, and let it run.</p>
     </section>
 
     <!-- Tabs -->
@@ -197,14 +200,14 @@
 
         <!-- Not signed in -->
         <div id="stateSignIn" style="display:none">
-            <div class="onboarding">
+            <div class="onboard">
                 <h2>Auto-post to X with AI</h2>
-                <p>Create an agent that tweets about your project automatically. Pick a vibe, connect your X account, and it posts 1-3 times per day on autopilot.</p>
-                <div class="onboarding-steps">
-                    <div class="onboarding-step"><div class="onboarding-step-num">1</div><div class="onboarding-step-label">Name it</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">2</div><div class="onboarding-step-label">Pick a vibe</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">3</div><div class="onboarding-step-label">Connect X</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">4</div><div class="onboarding-step-label">It posts for you</div></div>
+                <p>Create an agent that tweets from your X account automatically. Pick a vibe, connect your X, and it posts 1-3 times per day.</p>
+                <div class="how-steps">
+                    <div class="how-step"><div class="how-step-num">1</div><div class="how-step-label">Name it</div></div>
+                    <div class="how-step"><div class="how-step-num">2</div><div class="how-step-label">Pick a vibe</div></div>
+                    <div class="how-step"><div class="how-step-num">3</div><div class="how-step-label">Connect X</div></div>
+                    <div class="how-step"><div class="how-step-num">4</div><div class="how-step-label">It posts for you</div></div>
                 </div>
                 <p style="font-size:0.82rem">Sign in to get started.</p>
             </div>
@@ -212,39 +215,38 @@
 
         <!-- Signed in, no agents -->
         <div id="stateEmpty" style="display:none">
-            <div class="onboarding">
+            <div class="onboard">
                 <h2>Create your first agent</h2>
-                <p>An AI agent tweets about your project automatically. Pick a vibe, connect your X account, and it posts 1-3 times per day.</p>
-                <div class="onboarding-steps">
-                    <div class="onboarding-step"><div class="onboarding-step-num">1</div><div class="onboarding-step-label">Name it</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">2</div><div class="onboarding-step-label">Pick a vibe</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">3</div><div class="onboarding-step-label">Connect X</div></div>
-                    <div class="onboarding-step"><div class="onboarding-step-num">4</div><div class="onboarding-step-label">It posts for you</div></div>
+                <p>An AI agent tweets from your X account automatically. Pick a vibe, connect your X, and it posts 1-3 times per day.</p>
+                <div class="how-steps">
+                    <div class="how-step"><div class="how-step-num">1</div><div class="how-step-label">Name it</div></div>
+                    <div class="how-step"><div class="how-step-num">2</div><div class="how-step-label">Pick a vibe</div></div>
+                    <div class="how-step"><div class="how-step-num">3</div><div class="how-step-label">Connect X</div></div>
+                    <div class="how-step"><div class="how-step-num">4</div><div class="how-step-label">It posts for you</div></div>
                 </div>
-                <button class="create-cta" onclick="openWizard()">+ Create Agent</button>
+                <button class="create-btn" onclick="openWizard()">+ Create Agent</button>
             </div>
         </div>
 
         <!-- Signed in, has agents -->
         <div id="stateAgents" style="display:none">
-            <button class="create-cta" onclick="openWizard()">+ New Agent</button>
+            <button class="create-btn" onclick="openWizard()">+ New Agent</button>
             <div id="agentsList"></div>
         </div>
 
-        <!-- Create Wizard -->
+        <!-- ── Create Wizard ── -->
         <div class="wizard" id="wizard">
             <div class="wiz-progress">
                 <div class="wiz-dot current" id="wizDot0"></div>
                 <div class="wiz-dot" id="wizDot1"></div>
                 <div class="wiz-dot" id="wizDot2"></div>
                 <div class="wiz-dot" id="wizDot3"></div>
-                <div class="wiz-dot" id="wizDot4"></div>
             </div>
 
             <!-- Step 1: Name -->
             <div class="wiz-step active" id="wizStep0">
                 <h3>Name your agent</h3>
-                <p>Give it a name. This is what shows up publicly.</p>
+                <p class="desc">Give it a name. This shows up publicly.</p>
                 <label>Agent Name</label>
                 <input type="text" id="wizName" placeholder="e.g. CLAWS Hype Bot" maxlength="60">
                 <div class="wiz-btns">
@@ -253,23 +255,11 @@
                 </div>
             </div>
 
-            <!-- Step 2: Link Project -->
+            <!-- Step 2: Vibe -->
             <div class="wiz-step" id="wizStep1">
-                <h3>Link to a project (optional)</h3>
-                <p>If your agent is for an existing project, link it. Otherwise leave it standalone.</p>
-                <label>Project</label>
-                <select id="wizProject"><option value="">Standalone agent</option></select>
-                <div class="wiz-btns">
-                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(0)">Back</button>
-                    <button class="wiz-btn wiz-btn-next" onclick="wizNext(2)">Next</button>
-                </div>
-            </div>
-
-            <!-- Step 3: Vibe -->
-            <div class="wiz-step" id="wizStep2">
                 <h3>Pick a vibe</h3>
-                <p>How should your agent talk? This sets the tone for every tweet.</p>
-                <div class="vibe-btns">
+                <p class="desc">How should your agent talk? This sets the tone for every tweet.</p>
+                <div class="vibe-grid">
                     <button class="vibe-btn active" data-vibe="degen" onclick="pickVibe(this)">Degen</button>
                     <button class="vibe-btn" data-vibe="hype" onclick="pickVibe(this)">Hype</button>
                     <button class="vibe-btn" data-vibe="chill" onclick="pickVibe(this)">Chill</button>
@@ -277,56 +267,49 @@
                     <button class="vibe-btn" data-vibe="meme" onclick="pickVibe(this)">Meme</button>
                     <button class="vibe-btn" data-vibe="custom" onclick="pickVibe(this)">Custom</button>
                 </div>
-                <div id="wizCustomPersona" style="display:none">
+                <div id="wizCustom" style="display:none">
                     <label>Custom Persona</label>
                     <textarea id="wizPersonaText" placeholder="Describe how your agent should tweet..."></textarea>
                 </div>
                 <div class="wiz-btns">
-                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(1)">Back</button>
-                    <button class="wiz-btn wiz-btn-next" onclick="wizNext(3)">Next</button>
+                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(0)">Back</button>
+                    <button class="wiz-btn wiz-btn-next" onclick="wizNext(2)">Next</button>
                 </div>
             </div>
 
-            <!-- Step 4: Connect X -->
-            <div class="wiz-step" id="wizStep3">
+            <!-- Step 3: Connect X -->
+            <div class="wiz-step" id="wizStep2">
                 <h3>Connect your X account</h3>
-                <p>Your agent posts to YOUR X account. Connect it now so the agent can tweet for you.</p>
-                <div class="x-connect-box">
+                <p class="desc">Your agent posts directly to YOUR X account. This is required for the agent to work.</p>
+                <div class="x-box">
                     <div class="x-icon">&#120143;</div>
-                    <button class="x-connect-btn" id="wizConnectBtn" onclick="wizConnectX()">
+                    <button class="x-btn" id="wizConnectBtn" onclick="wizConnectX()">
                         <span>&#120143;</span> Connect X Account
                     </button>
-                    <div class="x-skip-note">You'll be redirected to X to authorize, then brought back here.</div>
+                    <div class="x-note">You'll be redirected to X to authorize, then brought back here.</div>
                 </div>
-                <div class="form-result" id="wizConnectResult"></div>
+                <div class="form-msg" id="wizConnectMsg"></div>
                 <div class="wiz-btns">
-                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(2)">Back</button>
-                    <button class="wiz-btn wiz-btn-next" onclick="wizNext(4)" id="wizSkipX">Skip for now</button>
+                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(1)">Back</button>
                 </div>
             </div>
 
-            <!-- Step 5: Posts/Day + Launch -->
-            <div class="wiz-step" id="wizStep4">
+            <!-- Step 4: Frequency + Launch -->
+            <div class="wiz-step" id="wizStep3">
                 <h3>Set posting frequency</h3>
-                <p>How many times per day should your agent post?</p>
+                <p class="desc">How many times per day should your agent post?</p>
                 <label>Posts per Day</label>
                 <select id="wizPPD">
                     <option value="1">1 per day</option>
                     <option value="2" selected>2 per day</option>
                     <option value="3">3 per day</option>
                 </select>
-                <div class="form-result" id="wizLaunchResult"></div>
+                <div class="form-msg" id="wizLaunchMsg"></div>
                 <div class="wiz-btns">
-                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(3)">Back</button>
+                    <button class="wiz-btn wiz-btn-back" onclick="wizBack(2)">Back</button>
                     <button class="wiz-btn wiz-btn-next" id="wizLaunchBtn" onclick="wizLaunch()">Launch Agent</button>
                 </div>
             </div>
-        </div>
-
-        <!-- Promo: @inclawbator calendar -->
-        <div id="promoCalendar" style="display:none;text-align:center;padding:var(--space-lg);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);margin-top:var(--space-xl)">
-            <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:var(--space-sm)">Want to promote your project on <strong style="color:var(--text-primary)">@inclawbator</strong>'s shared X account instead?</p>
-            <a href="/projects#schedule" style="color:var(--lobster-400);font-weight:700;font-size:0.85rem;text-decoration:none">Book a slot on the calendar &rarr;</a>
         </div>
     </div>
 
@@ -359,76 +342,69 @@
 <script>
 'use strict';
 
-var API_BASE = '/api/inclawbate';
+var API = '/api/inclawbate';
 
-var VIBE_PERSONAS = {
+var VIBES = {
     degen: 'You are a degen crypto enthusiast. Use slang like "lfg", "gm", "wagmi", "ser". Be bullish, energetic, and hype. Use fire/rocket emojis. Keep tweets short and punchy.',
     hype: 'You are an ultra-hype marketing agent. Every post should build excitement and FOMO. Use caps for emphasis, countdown energy.',
     chill: 'You are laid-back and conversational. Share updates casually like you are talking to friends. No hype, no caps lock. Just genuine, relaxed vibes.',
     professional: 'You are a professional project communicator. Write clear, informative tweets about developments, metrics, and milestones. No slang, no emojis. Credible and data-driven.',
     meme: 'You are a meme lord. Every tweet should be funny, irreverent, or reference popular memes. Roast competitors gently. Use absurd humor.'
 };
-
 var VIBE_LABELS = { degen: 'Degen', hype: 'Hype', chill: 'Chill', professional: 'Pro', meme: 'Meme', custom: 'Custom' };
 var VIBE_COLORS = { degen: '#fbbf24', hype: '#f472b6', chill: '#38bdf8', professional: '#a78bfa', meme: '#4ade80', custom: '#818cf8' };
 
-var _myProjects = [];
-var _myAgentProjects = [];
-var _selectedVibe = 'degen';
-var _wizardProjectId = null; // set after step 3 creates the project
+var _agents = [];
+var _vibe = 'degen';
+var _wizProjectId = null;
 
 
-// ══════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════
+// ── Helpers ──
 
 function getAuth() {
     try {
-        var token = localStorage.getItem('inclawbate_token');
-        var profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
-        if (token && profile) return { token: token, profile: profile, wallet: (profile.wallet_address || '').toLowerCase() };
+        var t = localStorage.getItem('inclawbate_token');
+        var p = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+        if (t && p) return { token: t, profile: p, wallet: (p.wallet_address || '').toLowerCase() };
     } catch(e) {}
     return null;
 }
-function authHeaders() {
-    var auth = getAuth();
-    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (auth ? auth.token : '') };
+function hdrs() {
+    var a = getAuth();
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (a ? a.token : '') };
 }
 function esc(s) { var el = document.createElement('span'); el.textContent = s || ''; return el.innerHTML; }
 function timeAgo(ts) {
-    var diff = Date.now() - new Date(ts).getTime();
-    var m = Math.floor(diff / 60000);
+    var d = Date.now() - new Date(ts).getTime();
+    var m = Math.floor(d / 60000);
     if (m < 60) return m + 'm';
     var h = Math.floor(m / 60);
     if (h < 24) return h + 'h';
     return Math.floor(h / 24) + 'd';
 }
-
-function showToast(msg, isError) {
-    var existing = document.getElementById('agentToast');
-    if (existing) existing.remove();
-    var toast = document.createElement('div');
-    toast.id = 'agentToast';
-    toast.textContent = msg;
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:9999;font-family:var(--font-body);' +
-        (isError ? 'background:#1a0a0a;border:1px solid hsla(0,60%,50%,0.4);color:#f87171;' : 'background:#0a1a12;border:1px solid hsla(142,52%,48%,0.3);color:#4ade80;');
-    document.body.appendChild(toast);
-    setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 2500);
-    setTimeout(function() { toast.remove(); }, 2900);
+function toast(msg, err) {
+    var old = document.getElementById('_toast');
+    if (old) old.remove();
+    var el = document.createElement('div');
+    el.id = '_toast';
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:9999;font-family:var(--font-body);' +
+        (err ? 'background:#1a0a0a;border:1px solid hsla(0,60%,50%,0.4);color:#f87171;' : 'background:#0a1a12;border:1px solid hsla(142,52%,48%,0.3);color:#4ade80;');
+    document.body.appendChild(el);
+    setTimeout(function() { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 2500);
+    setTimeout(function() { el.remove(); }, 2900);
 }
 
 
-// ══════════════════════════════════════
-// TAB SWITCHING
-// ══════════════════════════════════════
+// ── Tab switching ──
 
 var _exploreLoaded = false;
 document.querySelectorAll('.ag-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
-        var target = this.dataset.tab;
-        document.querySelectorAll('.ag-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === target); });
-        document.querySelectorAll('.ag-panel').forEach(function(p) { p.classList.toggle('active', p.id === 'panel-' + target); });
-        if (target === 'explore' && !_exploreLoaded) loadExplore();
+        var t = this.dataset.tab;
+        document.querySelectorAll('.ag-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === t); });
+        document.querySelectorAll('.ag-panel').forEach(function(p) { p.classList.toggle('active', p.id === 'panel-' + t); });
+        if (t === 'explore' && !_exploreLoaded) loadExplore();
     });
 });
 
@@ -444,40 +420,26 @@ async function loadAgents() {
         document.getElementById('stateSignIn').style.display = 'block';
         document.getElementById('stateEmpty').style.display = 'none';
         document.getElementById('stateAgents').style.display = 'none';
-        document.getElementById('promoCalendar').style.display = 'none';
         return;
     }
 
     document.getElementById('stateSignIn').style.display = 'none';
 
     try {
-        var res = await fetch(API_BASE + '/projects?wallet=' + encodeURIComponent(auth.wallet));
+        var res = await fetch(API + '/projects?wallet=' + encodeURIComponent(auth.wallet));
         var data = await res.json();
-        _myProjects = data.projects || [];
-        _myAgentProjects = _myProjects.filter(function(p) { return p.agent_enabled; });
+        var allProjects = data.projects || [];
+        _agents = allProjects.filter(function(p) { return p.agent_enabled; });
 
-        // Populate wizard project dropdown
-        var sel = document.getElementById('wizProject');
-        sel.innerHTML = '<option value="">Standalone agent</option>';
-        _myProjects.forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = (p.name || 'Unnamed') + (p.token_symbol ? ' ($' + p.token_symbol + ')' : '');
-            if (p.agent_enabled) { opt.textContent += ' (agent exists)'; opt.disabled = true; }
-            sel.appendChild(opt);
-        });
-
-        if (!_myAgentProjects.length) {
+        if (!_agents.length) {
             document.getElementById('stateEmpty').style.display = 'block';
             document.getElementById('stateAgents').style.display = 'none';
-            document.getElementById('promoCalendar').style.display = 'block';
             return;
         }
 
         document.getElementById('stateEmpty').style.display = 'none';
         document.getElementById('stateAgents').style.display = 'block';
-        document.getElementById('promoCalendar').style.display = 'block';
-        renderAgentCards();
+        renderCards();
 
     } catch (err) {
         console.error('[agents]', err);
@@ -485,67 +447,64 @@ async function loadAgents() {
     }
 }
 
-function renderAgentCards() {
+function renderCards() {
     var html = '';
-    for (var i = 0; i < _myAgentProjects.length; i++) {
-        var p = _myAgentProjects[i];
+    for (var i = 0; i < _agents.length; i++) {
+        var p = _agents[i];
         var st = p.agent_status || 'dormant';
-        var xHandle = p.x_connected && p.x_handle ? '@' + esc(p.x_handle) : null;
-        var totalPosts = p.agent_total_posts || 0;
-        var postsPerDay = p.agent_posts_per_day || 2;
-        var toggleLabel = st === 'active' ? 'Pause' : 'Resume';
-        var toggleIcon = st === 'active' ? '&#9208;' : '&#9654;';
+        var xOk = p.x_connected && p.x_handle;
+        var total = p.agent_total_posts || 0;
+        var ppd = p.agent_posts_per_day || 2;
 
-        html += '<div class="agent-card" id="agentCard_' + p.id + '">';
+        html += '<div class="agent-card" id="card_' + p.id + '">';
 
         // Header
-        html += '<div class="agent-card-header"><div style="display:flex;align-items:center;gap:10px">';
+        html += '<div class="agent-card-header"><div class="agent-card-left">';
         if (p.logo_url) {
-            html += '<img src="' + esc(p.logo_url) + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border-subtle)" onerror="this.style.display=\'none\'">';
+            html += '<div class="agent-card-avatar"><img src="' + esc(p.logo_url) + '" onerror="this.parentNode.textContent=\'' + (p.name || '?').charAt(0) + '\'"></div>';
         } else {
-            html += '<div style="width:36px;height:36px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text-dim);font-size:0.9rem">' + (p.name || '?').charAt(0) + '</div>';
+            html += '<div class="agent-card-avatar">' + (p.name || '?').charAt(0) + '</div>';
         }
-        html += '<div class="agent-card-name">' + esc(p.name || '???') + '</div>';
-        html += '</div><span class="agent-status-pill ' + st + '">' + st + '</span></div>';
+        html += '<div><div class="agent-card-name">' + esc(p.name) + '</div>';
+        if (xOk) html += '<div class="agent-card-handle">@' + esc(p.x_handle) + '</div>';
+        html += '</div></div>';
+        html += '<span class="status-pill ' + st + '">' + st + '</span></div>';
 
         // Stats
-        html += '<div class="agent-stats-grid">';
-        html += '<div class="agent-stat"><div class="agent-stat-label">Total Posts</div><div class="agent-stat-value">' + totalPosts + '</div></div>';
-        html += '<div class="agent-stat"><div class="agent-stat-label">Posts/Day</div><div class="agent-stat-value">' + postsPerDay + '</div></div>';
-        html += '<div class="agent-stat"><div class="agent-stat-label">Posts via</div><div class="agent-stat-value accent">' + (xHandle || '@inclawbator') + '</div></div>';
+        html += '<div class="agent-stats">';
+        html += '<div class="agent-stat"><div class="agent-stat-label">Total Posts</div><div class="agent-stat-val">' + total + '</div></div>';
+        html += '<div class="agent-stat"><div class="agent-stat-label">Posts/Day</div><div class="agent-stat-val">' + ppd + '</div></div>';
+        html += '<div class="agent-stat"><div class="agent-stat-label">X Account</div><div class="agent-stat-val" style="font-size:0.78rem;' + (xOk ? 'color:#38bdf8' : 'color:#f87171') + '">' + (xOk ? '@' + esc(p.x_handle) : 'Not connected') + '</div></div>';
         html += '</div>';
-
-        // X badge — urgent if not connected
-        if (p.x_connected && p.x_handle) {
-            html += '<div style="margin-bottom:var(--space-sm)"><span class="agent-x-badge connected">&#120143; Connected: @' + esc(p.x_handle) + '</span></div>';
-        } else {
-            html += '<div style="margin-bottom:var(--space-sm)"><span class="agent-x-badge fallback" onclick="connectX(\'' + p.id + '\')">&#9888; Connect X to start posting &rarr;</span></div>';
-        }
 
         // Actions
         html += '<div class="agent-actions">';
-        html += '<button class="agent-action-btn' + (st === 'active' ? '' : ' primary') + '" onclick="toggleAgentStatus(\'' + p.id + '\',\'' + st + '\')">' + toggleIcon + ' ' + toggleLabel + '</button>';
-        html += '<button class="agent-action-btn" onclick="togglePanel(\'' + p.id + '\',\'persona\')">Edit Persona</button>';
-        html += '<button class="agent-action-btn" onclick="togglePanel(\'' + p.id + '\',\'posts\')">Posts</button>';
-        if (p.x_connected) {
-            html += '<button class="agent-action-btn danger" onclick="disconnectX(\'' + p.id + '\')">Disconnect X</button>';
+        if (xOk) {
+            // Only show pause/resume if X is connected
+            var toggleLabel = st === 'active' ? '&#9208; Pause' : '&#9654; Resume';
+            html += '<button class="ag-btn' + (st === 'active' ? '' : ' primary') + '" onclick="toggleStatus(\'' + p.id + '\',\'' + st + '\')">' + toggleLabel + '</button>';
+        }
+        html += '<button class="ag-btn" onclick="togglePanel(\'' + p.id + '\',\'persona\')">Edit Persona</button>';
+        html += '<button class="ag-btn" onclick="togglePanel(\'' + p.id + '\',\'posts\')">Posts</button>';
+        if (xOk) {
+            html += '<button class="ag-btn danger" onclick="disconnectX(\'' + p.id + '\')">Disconnect X</button>';
         } else {
-            html += '<button class="agent-action-btn primary" onclick="connectX(\'' + p.id + '\')">Connect X</button>';
+            html += '<button class="ag-btn primary" onclick="doConnectX(\'' + p.id + '\')">Connect X to start posting</button>';
         }
         html += '</div>';
 
         // Persona editor
-        html += '<div class="agent-panel-inner" id="agentPersona_' + p.id + '">';
-        html += '<div class="agent-panel-title">Agent Persona</div>';
-        html += '<textarea class="agent-persona-textarea" id="personaText_' + p.id + '">' + esc(p.agent_persona || '') + '</textarea>';
-        html += '<div class="agent-posts-per-day"><label>Posts per day:</label><select id="postsPerDay_' + p.id + '">';
-        for (var d = 1; d <= 3; d++) html += '<option value="' + d + '"' + (d === postsPerDay ? ' selected' : '') + '>' + d + '</option>';
+        html += '<div class="agent-expand" id="persona_' + p.id + '">';
+        html += '<div class="agent-expand-title">Agent Persona</div>';
+        html += '<textarea class="agent-textarea" id="pText_' + p.id + '">' + esc(p.agent_persona || '') + '</textarea>';
+        html += '<div class="ppd-row"><label>Posts per day:</label><select id="ppd_' + p.id + '">';
+        for (var d = 1; d <= 3; d++) html += '<option value="' + d + '"' + (d === ppd ? ' selected' : '') + '>' + d + '</option>';
         html += '</select></div>';
-        html += '<div class="agent-persona-actions"><button class="agent-action-btn primary" onclick="savePersona(\'' + p.id + '\')">Save</button><button class="agent-action-btn" onclick="togglePanel(\'' + p.id + '\',\'persona\')">Cancel</button></div>';
+        html += '<div class="agent-expand-actions"><button class="ag-btn primary" onclick="savePersona(\'' + p.id + '\')">Save</button><button class="ag-btn" onclick="togglePanel(\'' + p.id + '\',\'persona\')">Cancel</button></div>';
         html += '</div>';
 
         // Posts panel
-        html += '<div class="agent-panel-inner" id="agentPosts_' + p.id + '"><div class="agent-panel-title">Recent Posts</div><div id="postsList_' + p.id + '" style="font-size:0.8rem;color:var(--text-dim)">Loading...</div></div>';
+        html += '<div class="agent-expand" id="posts_' + p.id + '"><div class="agent-expand-title">Recent Posts</div><div id="pList_' + p.id + '" style="font-size:0.8rem;color:var(--text-dim)">Loading...</div></div>';
 
         html += '</div>';
     }
@@ -553,54 +512,54 @@ function renderAgentCards() {
 }
 
 
-// ── Agent Controls ──
+// ── Agent controls ──
 
-function togglePanel(pid, panel) {
-    var el = document.getElementById(panel === 'persona' ? 'agentPersona_' + pid : 'agentPosts_' + pid);
+function togglePanel(pid, which) {
+    var el = document.getElementById((which === 'persona' ? 'persona_' : 'posts_') + pid);
     if (!el) return;
-    var isOpen = el.classList.contains('open');
-    var card = document.getElementById('agentCard_' + pid);
-    if (card) card.querySelectorAll('.agent-panel-inner').forEach(function(p) { p.classList.remove('open'); });
-    if (!isOpen) { el.classList.add('open'); if (panel === 'posts') loadAgentPosts(pid); }
+    var wasOpen = el.classList.contains('open');
+    var card = document.getElementById('card_' + pid);
+    if (card) card.querySelectorAll('.agent-expand').forEach(function(e) { e.classList.remove('open'); });
+    if (!wasOpen) { el.classList.add('open'); if (which === 'posts') loadPosts(pid); }
 }
 
-async function toggleAgentStatus(pid, current) {
-    var newStatus = current === 'active' ? 'paused' : 'active';
+async function toggleStatus(pid, current) {
+    var next = current === 'active' ? 'paused' : 'active';
     try {
-        var res = await fetch(API_BASE + '/projects', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ id: pid, agent_status: newStatus }) });
-        if (res.ok) { showToast(newStatus === 'active' ? 'Agent resumed' : 'Agent paused'); loadAgents(); }
-        else { var d = await res.json(); showToast(d.error || 'Failed', true); }
-    } catch (e) { showToast('Network error', true); }
+        var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_status: next }) });
+        if (r.ok) { toast(next === 'active' ? 'Agent resumed' : 'Agent paused'); loadAgents(); }
+        else { var d = await r.json(); toast(d.error || 'Failed', true); }
+    } catch (e) { toast('Network error', true); }
 }
 
 async function savePersona(pid) {
-    var el = document.getElementById('personaText_' + pid);
-    var ppdEl = document.getElementById('postsPerDay_' + pid);
+    var text = document.getElementById('pText_' + pid).value.trim();
+    var ppd = parseInt(document.getElementById('ppd_' + pid).value) || 2;
     try {
-        var res = await fetch(API_BASE + '/projects', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ id: pid, agent_persona: el.value.trim(), agent_posts_per_day: parseInt(ppdEl.value) || 2 }) });
-        if (res.ok) { showToast('Saved'); togglePanel(pid, 'persona'); loadAgents(); }
-        else { var d = await res.json(); showToast(d.error || 'Failed', true); }
-    } catch (e) { showToast('Network error', true); }
+        var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_persona: text, agent_posts_per_day: ppd }) });
+        if (r.ok) { toast('Saved'); togglePanel(pid, 'persona'); loadAgents(); }
+        else { var d = await r.json(); toast(d.error || 'Failed', true); }
+    } catch (e) { toast('Network error', true); }
 }
 
-async function loadAgentPosts(pid) {
-    var el = document.getElementById('postsList_' + pid);
+async function loadPosts(pid) {
+    var el = document.getElementById('pList_' + pid);
     el.innerHTML = '<span style="color:var(--text-dim)">Loading...</span>';
     try {
-        var res = await fetch(API_BASE + '/agent-posts?project_id=' + pid);
-        var data = await res.json();
+        var r = await fetch(API + '/agent-posts?project_id=' + pid);
+        var data = await r.json();
         var posts = data.posts || [];
-        var proj = _myAgentProjects.find(function(p) { return p.id === pid; });
-        var handle = proj && proj.x_connected && proj.x_handle ? proj.x_handle : 'inclawbator';
+        var agent = _agents.find(function(a) { return a.id === pid; });
+        var handle = agent && agent.x_connected && agent.x_handle ? agent.x_handle : null;
 
         if (!posts.length) { el.innerHTML = '<span style="color:var(--text-dim)">No posts yet.</span>'; return; }
 
         var html = '';
         for (var i = 0; i < Math.min(posts.length, 20); i++) {
             var post = posts[i];
-            html += '<div class="agent-post-item"><div class="agent-post-time">' + timeAgo(post.created_at) + '</div>';
-            html += '<div class="agent-post-text">' + esc(post.tweet_text || '') + ' <span class="agent-post-status ' + (post.status === 'posted' ? 'posted' : 'failed') + '">' + post.status + '</span></div>';
-            if (post.tweet_id) html += '<div class="agent-post-link"><a href="https://x.com/' + esc(handle) + '/status/' + esc(post.tweet_id) + '" target="_blank">View</a></div>';
+            html += '<div class="post-item"><div class="post-time">' + timeAgo(post.created_at) + '</div>';
+            html += '<div class="post-text">' + esc(post.tweet_text || '') + ' <span class="post-badge ' + (post.status === 'posted' ? 'posted' : 'failed') + '">' + post.status + '</span></div>';
+            if (post.tweet_id && handle) html += '<div style="flex:0 0 auto"><a href="https://x.com/' + esc(handle) + '/status/' + esc(post.tweet_id) + '" target="_blank" style="color:var(--lobster-400);font-size:0.7rem;text-decoration:none">View</a></div>';
             html += '</div>';
         }
         el.innerHTML = html;
@@ -612,37 +571,37 @@ async function loadAgentPosts(pid) {
 // X CONNECT (OAuth 2.0 PKCE)
 // ══════════════════════════════════════
 
-async function connectX(projectId) {
+async function doConnectX(projectId) {
     var auth = getAuth();
-    if (!auth || !auth.token) { showToast('Sign in first', true); return; }
+    if (!auth || !auth.token) { toast('Sign in first', true); return; }
     try {
         var verifier = genVerifier();
-        var challenge = await sha256Challenge(verifier);
-        sessionStorage.setItem('x_connect_verifier', verifier);
-        sessionStorage.setItem('x_connect_project_id', projectId);
-        var res = await fetch(API_BASE + '/x-connect-project', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ action: 'start', project_id: projectId, code_challenge: challenge }) });
-        var data = await res.json();
+        var challenge = await sha256(verifier);
+        sessionStorage.setItem('x_verifier', verifier);
+        sessionStorage.setItem('x_project', projectId);
+        var r = await fetch(API + '/x-connect-project', { method: 'POST', headers: hdrs(), body: JSON.stringify({ action: 'start', project_id: projectId, code_challenge: challenge }) });
+        var data = await r.json();
         if (data.authorize_url) window.location.href = data.authorize_url;
-        else showToast(data.error || 'Failed', true);
-    } catch (e) { showToast('Failed: ' + e.message, true); }
+        else toast(data.error || 'Failed', true);
+    } catch (e) { toast('Failed: ' + e.message, true); }
 }
 
 function genVerifier() {
     var arr = new Uint8Array(32); crypto.getRandomValues(arr);
     return btoa(String.fromCharCode.apply(null, arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-async function sha256Challenge(v) {
-    var hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(hash))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function sha256(v) {
+    var h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(h))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 async function disconnectX(pid) {
-    if (!confirm('Disconnect X account?')) return;
+    if (!confirm('Disconnect X account? Your agent will stop posting.')) return;
     try {
-        var res = await fetch(API_BASE + '/x-connect-project', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ action: 'disconnect', project_id: pid }) });
-        if (res.ok) { showToast('Disconnected'); loadAgents(); }
-        else { var d = await res.json(); showToast(d.error || 'Failed', true); }
-    } catch (e) { showToast('Network error', true); }
+        var r = await fetch(API + '/x-connect-project', { method: 'POST', headers: hdrs(), body: JSON.stringify({ action: 'disconnect', project_id: pid }) });
+        if (r.ok) { toast('Disconnected'); loadAgents(); }
+        else { var d = await r.json(); toast(d.error || 'Failed', true); }
+    } catch (e) { toast('Network error', true); }
 }
 
 // OAuth callback handler
@@ -650,19 +609,18 @@ async function disconnectX(pid) {
     var params = new URLSearchParams(window.location.search);
     var code = params.get('code');
     if (!code) return;
-    var verifier = sessionStorage.getItem('x_connect_verifier');
-    var projectId = sessionStorage.getItem('x_connect_project_id');
+    var verifier = sessionStorage.getItem('x_verifier');
+    var projectId = sessionStorage.getItem('x_project');
     if (!verifier || !projectId) return;
     history.replaceState(null, '', window.location.pathname);
     var auth = getAuth();
     if (!auth || !auth.token) return;
-    sessionStorage.removeItem('x_connect_verifier');
-    sessionStorage.removeItem('x_connect_project_id');
+    sessionStorage.removeItem('x_verifier');
+    sessionStorage.removeItem('x_project');
 
-    // Check if wizard was in progress
-    var wizardInProgress = sessionStorage.getItem('wizard_in_progress');
+    var wizardPending = sessionStorage.getItem('wizard_pending');
 
-    fetch(API_BASE + '/x-connect-project', {
+    fetch(API + '/x-connect-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
         body: JSON.stringify({ action: 'callback', code: code, code_verifier: verifier, project_id: projectId })
@@ -670,45 +628,45 @@ async function disconnectX(pid) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.success) {
-            showToast('X account connected!');
-            if (wizardInProgress) {
-                // Resume wizard at step 5
-                sessionStorage.removeItem('wizard_in_progress');
-                _wizardProjectId = projectId;
+            toast('X account connected!');
+            if (wizardPending) {
+                sessionStorage.removeItem('wizard_pending');
+                _wizProjectId = projectId;
                 setTimeout(function() {
                     document.getElementById('wizard').classList.add('open');
                     document.getElementById('stateEmpty').style.display = 'none';
                     document.getElementById('stateAgents').style.display = 'none';
-                    goToStep(4);
+                    goToStep(3); // go to final step (frequency + launch)
                 }, 300);
             } else {
                 loadAgents();
             }
         } else {
-            showToast('X connection failed: ' + (data.error || ''), true);
+            toast('X connection failed: ' + (data.error || ''), true);
             loadAgents();
         }
     })
-    .catch(function() { showToast('X connection failed', true); loadAgents(); });
+    .catch(function() { toast('X connection failed', true); loadAgents(); });
 })();
 
 
 // ══════════════════════════════════════
-// CREATE WIZARD
+// WIZARD
 // ══════════════════════════════════════
 
 var _wizStep = 0;
+var TOTAL_STEPS = 4;
 
 function openWizard() {
     _wizStep = 0;
-    _wizardProjectId = null;
-    _selectedVibe = 'degen';
+    _wizProjectId = null;
+    _vibe = 'degen';
     document.getElementById('wizName').value = '';
     document.getElementById('wizPersonaText').value = '';
-    document.getElementById('wizCustomPersona').style.display = 'none';
+    document.getElementById('wizCustom').style.display = 'none';
     document.querySelectorAll('.vibe-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.vibe === 'degen'); });
-    document.getElementById('wizLaunchResult').textContent = '';
-    document.getElementById('wizConnectResult').textContent = '';
+    document.getElementById('wizLaunchMsg').textContent = '';
+    document.getElementById('wizConnectMsg').textContent = '';
     document.getElementById('wizard').classList.add('open');
     goToStep(0);
 }
@@ -719,7 +677,7 @@ function closeWizard() {
 
 function goToStep(n) {
     _wizStep = n;
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < TOTAL_STEPS; i++) {
         document.getElementById('wizStep' + i).classList.toggle('active', i === n);
         var dot = document.getElementById('wizDot' + i);
         dot.className = 'wiz-dot';
@@ -730,8 +688,7 @@ function goToStep(n) {
 
 function wizNext(step) {
     if (step === 1) {
-        var name = document.getElementById('wizName').value.trim();
-        if (!name) { showToast('Enter a name', true); return; }
+        if (!document.getElementById('wizName').value.trim()) { toast('Enter a name', true); return; }
     }
     goToStep(step);
 }
@@ -741,104 +698,90 @@ function wizBack(step) { goToStep(step); }
 function pickVibe(btn) {
     document.querySelectorAll('.vibe-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    _selectedVibe = btn.dataset.vibe;
-    document.getElementById('wizCustomPersona').style.display = _selectedVibe === 'custom' ? 'block' : 'none';
+    _vibe = btn.dataset.vibe;
+    document.getElementById('wizCustom').style.display = _vibe === 'custom' ? 'block' : 'none';
+}
+
+function buildPersona(name) {
+    var p = _vibe === 'custom' ? (document.getElementById('wizPersonaText').value || '').trim() : (VIBES[_vibe] || '');
+    return 'Agent name: ' + name + '. ' + p;
 }
 
 async function wizConnectX() {
     var auth = getAuth();
-    if (!auth || !auth.token) { showToast('Sign in first', true); return; }
+    if (!auth || !auth.token) { toast('Sign in first', true); return; }
 
     var btn = document.getElementById('wizConnectBtn');
     btn.disabled = true;
     btn.textContent = 'Creating agent...';
 
     try {
-        // Create the project/agent first (paused) if not yet created
-        if (!_wizardProjectId) {
+        // Create the project (paused) before redirecting to X OAuth
+        if (!_wizProjectId) {
             var name = document.getElementById('wizName').value.trim();
             var persona = buildPersona(name);
-            var linkedId = document.getElementById('wizProject').value;
 
-            if (linkedId) {
-                var res = await fetch(API_BASE + '/projects', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ id: linkedId, agent_enabled: true, agent_persona: persona, agent_status: 'paused' }) });
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed');
-                _wizardProjectId = linkedId;
-            } else {
-                var res = await fetch(API_BASE + '/projects', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ name: name, token_symbol: name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(), description: 'AI agent: ' + name, agent_enabled: true, agent_persona: persona, agent_status: 'paused' }) });
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed');
-                _wizardProjectId = data.project.id;
-            }
+            var r = await fetch(API + '/projects', {
+                method: 'POST', headers: hdrs(),
+                body: JSON.stringify({
+                    name: name,
+                    token_symbol: name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(),
+                    description: 'AI agent: ' + name,
+                    agent_enabled: true,
+                    agent_persona: persona,
+                    agent_status: 'paused'
+                })
+            });
+            var data = await r.json();
+            if (!r.ok) throw new Error(data.error || 'Failed to create agent');
+            _wizProjectId = data.project.id;
         }
 
-        // Store wizard state so we can resume after OAuth redirect
-        sessionStorage.setItem('wizard_in_progress', '1');
+        // Store wizard state so we resume after OAuth redirect
+        sessionStorage.setItem('wizard_pending', '1');
 
-        // Initiate X OAuth
+        // Kick off X OAuth
         btn.textContent = 'Redirecting to X...';
-        await connectX(_wizardProjectId);
+        await doConnectX(_wizProjectId);
 
     } catch (e) {
-        document.getElementById('wizConnectResult').textContent = e.message;
-        document.getElementById('wizConnectResult').className = 'form-result error';
+        document.getElementById('wizConnectMsg').textContent = e.message;
+        document.getElementById('wizConnectMsg').className = 'form-msg err';
         btn.disabled = false;
-        btn.textContent = 'Connect X Account';
+        btn.innerHTML = '<span>&#120143;</span> Connect X Account';
     }
-}
-
-function buildPersona(name) {
-    var persona;
-    if (_selectedVibe === 'custom') {
-        persona = (document.getElementById('wizPersonaText').value || '').trim();
-    } else {
-        persona = VIBE_PERSONAS[_selectedVibe] || '';
-    }
-    return 'Agent name: ' + name + '. ' + persona;
 }
 
 async function wizLaunch() {
     var btn = document.getElementById('wizLaunchBtn');
-    var result = document.getElementById('wizLaunchResult');
+    var msg = document.getElementById('wizLaunchMsg');
     btn.disabled = true;
     btn.textContent = 'Launching...';
-    result.textContent = '';
+    msg.textContent = '';
 
     try {
-        // If project wasn't created yet (user skipped X connect)
-        if (!_wizardProjectId) {
-            var auth = getAuth();
-            if (!auth) throw new Error('Sign in first');
-            var name = document.getElementById('wizName').value.trim();
-            var persona = buildPersona(name);
-            var linkedId = document.getElementById('wizProject').value;
+        if (!_wizProjectId) throw new Error('Something went wrong. Please start over.');
 
-            if (linkedId) {
-                var res = await fetch(API_BASE + '/projects', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ id: linkedId, agent_enabled: true, agent_persona: persona, agent_status: 'active', agent_posts_per_day: parseInt(document.getElementById('wizPPD').value) || 2 }) });
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed');
-            } else {
-                var res = await fetch(API_BASE + '/projects', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ name: name, token_symbol: name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(), description: 'AI agent: ' + name, agent_enabled: true, agent_persona: persona, agent_status: 'active', agent_posts_per_day: parseInt(document.getElementById('wizPPD').value) || 2 }) });
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed');
-            }
-        } else {
-            // Activate the previously created (paused) agent
-            var res = await fetch(API_BASE + '/projects', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ id: _wizardProjectId, agent_status: 'active', agent_posts_per_day: parseInt(document.getElementById('wizPPD').value) || 2 }) });
-            var data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-        }
+        var r = await fetch(API + '/projects', {
+            method: 'PATCH', headers: hdrs(),
+            body: JSON.stringify({
+                id: _wizProjectId,
+                agent_status: 'active',
+                agent_posts_per_day: parseInt(document.getElementById('wizPPD').value) || 2
+            })
+        });
+        var data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed');
 
-        result.textContent = 'Agent launched!';
-        result.className = 'form-result success';
+        msg.textContent = 'Agent launched! It will start posting soon.';
+        msg.className = 'form-msg ok';
         btn.textContent = 'Done';
 
-        setTimeout(function() { closeWizard(); loadAgents(); }, 1000);
+        setTimeout(function() { closeWizard(); loadAgents(); }, 1200);
 
     } catch (e) {
-        result.textContent = e.message;
-        result.className = 'form-result error';
+        msg.textContent = e.message;
+        msg.className = 'form-msg err';
         btn.disabled = false;
         btn.textContent = 'Launch Agent';
     }
@@ -855,12 +798,12 @@ async function loadExplore() {
     container.innerHTML = '<div class="empty-state">Loading active agents...</div>';
 
     try {
-        var res = await fetch(API_BASE + '/agent-posts?public=1');
-        var data = await res.json();
+        var r = await fetch(API + '/agent-posts?public=1');
+        var data = await r.json();
         var agents = data.agents || [];
 
         if (!agents.length) {
-            container.innerHTML = '<div class="empty-state">No active agents yet. Be the first to create one!</div>';
+            container.innerHTML = '<div class="empty-state">No active agents yet. Create one to be the first!</div>';
             return;
         }
 
@@ -868,33 +811,29 @@ async function loadExplore() {
         for (var i = 0; i < agents.length; i++) {
             var a = agents[i];
             var vibe = detectVibe(a.agent_persona);
-            var logoChar = (a.name || '?').charAt(0).toUpperCase();
+            var ch = (a.name || '?').charAt(0).toUpperCase();
 
             html += '<div class="explore-card">';
 
-            // Header
             html += '<div class="explore-card-header">';
             if (a.logo_url) {
-                html += '<div class="explore-card-logo"><img src="' + esc(a.logo_url) + '" onerror="this.parentNode.textContent=\'' + logoChar + '\'"></div>';
+                html += '<div class="explore-card-logo"><img src="' + esc(a.logo_url) + '" onerror="this.parentNode.textContent=\'' + ch + '\'"></div>';
             } else {
-                html += '<div class="explore-card-logo">' + logoChar + '</div>';
+                html += '<div class="explore-card-logo">' + ch + '</div>';
             }
             html += '<div>';
             html += '<div class="explore-card-name">' + esc(a.name || '???') + '</div>';
             if (a.x_handle) html += '<div class="explore-card-handle">@' + esc(a.x_handle) + '</div>';
             html += '</div></div>';
 
-            // Vibe badge
             html += '<span class="explore-card-vibe" style="background:' + (VIBE_COLORS[vibe] || '#818cf8') + '22;color:' + (VIBE_COLORS[vibe] || '#818cf8') + '">' + (VIBE_LABELS[vibe] || vibe) + '</span>';
 
-            // Latest tweet
             if (a.latest_tweet) {
                 html += '<div class="explore-card-tweet">' + esc(a.latest_tweet) + '</div>';
             } else {
                 html += '<div class="explore-card-tweet" style="color:var(--text-dim);font-style:italic">No tweets yet</div>';
             }
 
-            // Footer
             html += '<div class="explore-card-footer">';
             html += '<span>' + (a.agent_total_posts || 0) + ' posts</span>';
             if (a.latest_tweet_id && a.x_handle) {
@@ -916,20 +855,17 @@ async function loadExplore() {
 
 function detectVibe(persona) {
     if (!persona) return 'custom';
-    persona = persona.toLowerCase();
-    if (persona.includes('degen')) return 'degen';
-    if (persona.includes('hype') || persona.includes('fomo')) return 'hype';
-    if (persona.includes('chill') || persona.includes('laid-back')) return 'chill';
-    if (persona.includes('professional') || persona.includes('data-driven')) return 'professional';
-    if (persona.includes('meme') || persona.includes('funny')) return 'meme';
+    var p = persona.toLowerCase();
+    if (p.includes('degen')) return 'degen';
+    if (p.includes('hype') || p.includes('fomo')) return 'hype';
+    if (p.includes('chill') || p.includes('laid-back')) return 'chill';
+    if (p.includes('professional') || p.includes('data-driven')) return 'professional';
+    if (p.includes('meme') || p.includes('funny')) return 'meme';
     return 'custom';
 }
 
 
-// ══════════════════════════════════════
-// HASH ROUTING
-// ══════════════════════════════════════
-
+// ── Hash routing ──
 (function() {
     var hash = window.location.hash.replace('#', '');
     if (hash === 'explore') {
@@ -939,10 +875,7 @@ function detectVibe(persona) {
 })();
 
 
-// ══════════════════════════════════════
-// BOOT
-// ══════════════════════════════════════
-
+// ── Boot ──
 loadAgents();
 </script>
 </body>
