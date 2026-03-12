@@ -66,15 +66,18 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'project_id and code_challenge required' });
         }
 
-        // Verify project ownership
+        // Verify project ownership (check profile ID or wallet)
         const { data: project } = await supabase
             .from('projects')
-            .select('creator_profile_id')
+            .select('creator_profile_id, creator_wallet')
             .eq('id', project_id)
             .single();
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
-        if (project.creator_profile_id !== user.sub) {
+        const userWallet = (user.wallet_address || '').toLowerCase();
+        const isOwner = project.creator_profile_id === user.sub ||
+            (userWallet && project.creator_wallet === userWallet);
+        if (!isOwner) {
             return res.status(403).json({ error: 'Not the project owner' });
         }
 
@@ -102,15 +105,18 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'code, code_verifier, and project_id required' });
         }
 
-        // Verify ownership
+        // Verify ownership (check profile ID or wallet)
         const { data: project } = await supabase
             .from('projects')
-            .select('creator_profile_id')
+            .select('creator_profile_id, creator_wallet')
             .eq('id', project_id)
             .single();
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
-        if (project.creator_profile_id !== user.sub) {
+        const cbWallet = (user.wallet_address || '').toLowerCase();
+        const cbOwner = project.creator_profile_id === user.sub ||
+            (cbWallet && project.creator_wallet === cbWallet);
+        if (!cbOwner) {
             return res.status(403).json({ error: 'Not the project owner' });
         }
 
@@ -171,12 +177,15 @@ export default async function handler(req, res) {
 
         const { data: project } = await supabase
             .from('projects')
-            .select('creator_profile_id')
+            .select('creator_profile_id, creator_wallet')
             .eq('id', project_id)
             .single();
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
-        if (project.creator_profile_id !== user.sub) {
+        const dcWallet = (user.wallet_address || '').toLowerCase();
+        const dcOwner = project.creator_profile_id === user.sub ||
+            (dcWallet && project.creator_wallet === dcWallet);
+        if (!dcOwner) {
             return res.status(403).json({ error: 'Not the project owner' });
         }
 

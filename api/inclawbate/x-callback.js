@@ -156,6 +156,7 @@ export default async function handler(req, res) {
             sub: profile.id,
             x_handle: profile.x_handle,
             x_id: profile.x_id,
+            wallet_address: profile.wallet_address || null,
             iat: now,
             exp: now + Math.floor(JWT_EXPIRY_MS / 1000)
         });
