@@ -5611,19 +5611,18 @@ function handleWalletClick() {
 function updateWalletUI() {
   const wallet = getWallet();
   const btn = document.getElementById('walletBtn');
+  const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const totalChips = walletBalance + agentChips;
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
-    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(walletBalance)}</span>`;
+    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(totalChips)}</span>`;
   } else {
     btn.className = 'wallet-btn disconnected';
     btn.innerHTML = 'Connect Wallet';
   }
   const fb = document.getElementById('formBalance');
   if (fb) fb.textContent = walletBalance.toLocaleString();
-  // Show TOTAL value (wallet + agents) as the main number
-  const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
-  const totalChips = walletBalance + agentChips;
   const hb = document.getElementById('balUsdc');
   if (hb) hb.textContent = formatChips(totalChips);
   // Subtitle: breakdown of wallet vs agents
