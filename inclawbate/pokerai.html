@@ -5477,15 +5477,18 @@ function _renderRosterFromCache() {
     const roomClass = agent.room || 'sandbox';
     const roomLabel = agent.roomName || capitalize(agent.room || 'sandbox');
     return `
-    <div class="agent-card style-${agent.style}">
+    <div class="agent-card style-${agent.style}" style="border-left:3px solid ${agent.isCustom ? 'var(--accent-cyan)' : 'var(--text-muted)'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-family:'Rajdhani';font-weight:800;font-size:14px;color:var(--text-muted)">#${i + 1}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:'Rajdhani';font-weight:800;font-size:14px;color:var(--text-muted)">#${i + 1}</span>
+          <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:0.5px;${agent.isCustom ? 'background:rgba(6,182,212,0.12);color:var(--accent-cyan);border:1px solid rgba(6,182,212,0.3)' : 'background:rgba(136,136,136,0.1);color:var(--text-muted);border:1px solid rgba(136,136,136,0.2)'}">${agent.isCustom ? 'PLAYER' : 'HOUSE'}</span>
+        </div>
         <span class="roster-room-badge ${roomClass}">${roomLabel}</span>
       </div>
       <div class="agent-card-header">
-        <div class="agent-avatar-lg">${agent.emoji}</div>
+        <div class="agent-avatar-lg" style="${agent.isCustom ? 'border-color:var(--accent-cyan)' : ''}">${agent.emoji}</div>
         <div>
-          <div class="agent-name-lg">${agent.name}</div>
+          <div class="agent-name-lg" style="${agent.isCustom ? 'color:var(--accent-cyan)' : ''}">${agent.name}</div>
           <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
         </div>
       </div>
@@ -5514,9 +5517,9 @@ function _renderRosterFromCache() {
         ${renderStrategyBar('Patience', agent.traits.patience, '#3b82f6')}
         ${renderStrategyBar(agent.traits.tiltResist !== undefined ? 'Tilt Resist' : 'Adaptability', agent.traits.tiltResist || agent.traits.adaptability || 50, '#06b6d4')}
       </div>
-      ${agent.isCustom
-        ? `<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--accent-cyan)">Player Agent${agent.walletAddress ? ' — ' + agent.walletAddress.slice(0,6) + '...' : ''}</div>`
-        : `<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--text-muted)">House Bot</div>`
+      ${agent.isCustom && agent.walletAddress
+        ? `<div style="margin-top:10px;text-align:center;font-size:10px;color:var(--accent-cyan);opacity:0.7">${agent.walletAddress.slice(0,6)}...${agent.walletAddress.slice(-4)}</div>`
+        : ''
       }
     </div>`;
   }).join('');
