@@ -487,6 +487,9 @@ function renderCards() {
             var toggleLabel = st === 'active' ? '&#9208; Pause' : '&#9654; Resume';
             html += '<button class="ag-btn' + (st === 'active' ? '' : ' primary') + '" onclick="toggleStatus(\'' + p.id + '\',\'' + st + '\')">' + toggleLabel + '</button>';
         }
+        if (xOk) {
+            html += '<button class="ag-btn primary" id="postNowBtn_' + p.id + '" onclick="postNow(\'' + p.id + '\')">Post Now</button>';
+        }
         html += '<button class="ag-btn" onclick="togglePanel(\'' + p.id + '\',\'persona\')">Edit Persona</button>';
         html += '<button class="ag-btn" onclick="togglePanel(\'' + p.id + '\',\'posts\')">Posts</button>';
         if (xOk) {
@@ -553,6 +556,25 @@ async function savePersona(pid) {
         if (r.ok) { toast('Saved'); togglePanel(pid, 'persona'); loadAgents(); }
         else { var d = await r.json(); toast(d.error || 'Failed', true); }
     } catch (e) { toast('Network error', true); }
+}
+
+async function postNow(pid) {
+    var btn = document.getElementById('postNowBtn_' + pid);
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+        var r = await fetch(API + '/agent-post-now', { method: 'POST', headers: hdrs(), body: JSON.stringify({ project_id: pid }) });
+        var data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed');
+        toast('Posted! ' + (data.posted_via || ''));
+        if (data.tweet_url) window.open(data.tweet_url, '_blank');
+        loadAgents();
+    } catch (e) {
+        toast(e.message, true);
+        btn.disabled = false;
+        btn.textContent = 'Post Now';
+    }
 }
 
 async function loadPosts(pid) {
