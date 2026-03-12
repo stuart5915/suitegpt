@@ -1478,8 +1478,12 @@
         .mgr-log-empty { color: var(--text-dim); font-family: var(--mono); font-size: 0.75rem; text-align: center; padding: 20px; }
 
         /* ═══ STANDALONE MANAGER DASHBOARD ═══ */
-        .dash-section { display: none; padding-top: 80px; min-height: 100vh; }
+        .dash-section { display: none; padding-top: 100px; min-height: 100vh; }
         .dash-section.show { display: block; }
+        body.dash-mode section:not(.dash-section) { display: none !important; }
+        body.dash-mode footer { display: none !important; }
+        body.dash-mode .ambient-bg { display: none !important; }
+        body.dash-mode #mp-create-modal { display: none !important; }
         .dash-back { font-family: var(--mono); font-size: 0.78rem; color: var(--accent-bright); cursor: pointer; margin-bottom: 20px; display: inline-block; }
         .dash-back:hover { text-decoration: underline; }
         .dash-connect-msg { text-align: center; padding: 80px 20px; font-family: var(--mono); font-size: 0.85rem; color: var(--text-dim); }
@@ -1524,7 +1528,7 @@
                 <li><a href="#deepdive">The Story</a></li>
                 <li><a href="#toolkit">Toolkit</a></li>
                 <li><a href="#marketplace">Vaults</a></li>
-                <li><a href="#" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
+                <li><a href="/dashboard" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
             </ul>
         </div>
     </nav>
@@ -2678,7 +2682,7 @@
     <!-- ═══ MANAGER DASHBOARD (standalone page) ═══ -->
     <section class="dash-section" id="dashboard-section">
         <div class="container">
-            <div class="dash-back" onclick="closeManagerDashboard()">&larr; Back to Basis</div>
+            <a class="dash-back" href="/" onclick="event.preventDefault(); closeManagerDashboard();">&larr; Back to Basis</a>
             <div class="fade-in" style="margin-bottom:30px;">
                 <div class="section-label">Manager Dashboard</div>
                 <h2 class="section-title">Your Vaults</h2>
@@ -6316,20 +6320,12 @@
         var dashSelectedVault = null;
         var dashSigner = null;
 
-        // Sections to hide/show when dashboard is open
-        var mainSections = null;
-        function getMainSections() {
-            if (!mainSections) mainSections = document.querySelectorAll('body > nav, body > .ambient-bg, body > section:not(.dash-section), body > footer, #mp-create-modal');
-            return mainSections;
-        }
-
-        window.openManagerDashboard = async function() {
-            // Hide all other sections, show dashboard
-            getMainSections().forEach(function(el) { el.style.display = 'none'; });
+        window.openManagerDashboard = async function(skipPush) {
+            document.body.classList.add('dash-mode');
             document.getElementById('dashboard-section').classList.add('show');
+            if (!skipPush) history.pushState({ dash: true }, '', '/dashboard');
             window.scrollTo(0, 0);
 
-            // Check wallet
             if (!window.ethereum) {
                 document.getElementById('dash-connect-msg').style.display = 'block';
                 document.getElementById('dash-content').style.display = 'none';
@@ -6347,9 +6343,25 @@
         };
 
         window.closeManagerDashboard = function() {
+            document.body.classList.remove('dash-mode');
             document.getElementById('dashboard-section').classList.remove('show');
-            getMainSections().forEach(function(el) { el.style.display = ''; });
+            history.pushState({}, '', '/');
         };
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', function() {
+            if (location.pathname === '/dashboard') {
+                openManagerDashboard(true);
+            } else {
+                document.body.classList.remove('dash-mode');
+                document.getElementById('dashboard-section').classList.remove('show');
+            }
+        });
+
+        // Auto-open if URL is /dashboard on page load
+        if (location.pathname === '/dashboard') {
+            openManagerDashboard(true);
+        }
 
         window.dashConnectWallet = async function() {
             if (!window.ethereum) { alert('No wallet detected. Install MetaMask.'); return; }
