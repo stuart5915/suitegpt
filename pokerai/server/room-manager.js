@@ -786,19 +786,26 @@ class RoomManager {
     for (const agent of table.agents) {
       if (agent._startChips === undefined) continue;
 
+      // Calculate delta BEFORE activating pending backings
+      // so the deposit itself isn't counted as profit
+      const delta = agent.chips - agent._startChips;
+
       // Activate pending backings (queued mid-hand, now safe to include)
       if (agent._pendingBackings && agent._pendingBackings.length > 0) {
+        let pendingTotal = 0;
         for (const pb of agent._pendingBackings) {
           agent.chips += pb.amount;
+          pendingTotal += pb.amount;
           // Mark backing as activated with timestamp for cooldown
           const backing = this.store.getBackingById(pb.backingId);
           if (backing) backing._activatedAt = Date.now();
         }
-        console.log(`[RoomManager] Activated ${agent._pendingBackings.length} pending backing(s) for ${agent.name}: +${agent._pendingBackings.reduce((s, p) => s + p.amount, 0)} chips`);
+        // Update _startChips to include newly activated backings
+        // so they don't inflate delta on subsequent hands
+        agent._startChips += pendingTotal;
+        console.log(`[RoomManager] Activated ${agent._pendingBackings.length} pending backing(s) for ${agent.name}: +${pendingTotal} chips`);
         agent._pendingBackings = [];
       }
-
-      const delta = agent.chips - agent._startChips;
       if (delta === 0) continue;
 
       // Only include active (non-pending) backings in P&L distribution
@@ -812,7 +819,7 @@ class RoomManager {
 
       const updates = [];
       for (const b of backings) {
-        const share = b.currentValue / totalPool;
+        const share = Math.min(1, b.currentValue / totalPool); // clamp to prevent runaway
         const backerDelta = Math.floor(delta * share);
         const newValue = Math.max(0, b.currentValue + backerDelta);
         updates.push({ id: b.id, currentValue: newValue });
