@@ -90,7 +90,8 @@ export default async function handler(req, res) {
             scope: 'tweet.read tweet.write users.read offline.access',
             state,
             code_challenge,
-            code_challenge_method: 'S256'
+            code_challenge_method: 'S256',
+            force_login: 'true'
         });
 
         return res.status(200).json({
