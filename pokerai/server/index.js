@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
@@ -85,7 +87,7 @@ function broadcastStateToAll() {
 }
 
 function sendBalance(ws, walletAddress) {
-  if (!walletAddress) return;
+  if (!walletAddress || ws.readyState !== 1) return;
   const wallet = rooms.getWalletBalance(walletAddress);
   ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
 }
@@ -255,6 +257,10 @@ wss.on('connection', (ws) => {
 
         case 'defundAgent': {
           if (!requireAuth(client, ws)) break;
+          if (msg.amount !== undefined && !isValidPositiveNumber(msg.amount)) {
+            ws.send(JSON.stringify({ type: 'defundAgentResult', data: { error: 'Invalid amount' } }));
+            break;
+          }
           const addr = client.walletAddress;
           const result = rooms.defundLobbyAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'defundAgentResult', data: result }));
@@ -412,6 +418,10 @@ wss.on('connection', (ws) => {
         // === Backing (stake on other agents) ===
         case 'backAgent': {
           if (!requireAuth(client, ws)) break;
+          if (!isValidPositiveNumber(msg.amount)) {
+            ws.send(JSON.stringify({ type: 'backAgentResult', data: { error: 'Invalid amount' } }));
+            break;
+          }
           const addr = client.walletAddress;
           const result = rooms.backAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'backAgentResult', data: result }));
@@ -622,20 +632,11 @@ app.post('/check-deposit', async (req, res) => {
       }
 
       res.json({ success: true, credited: credit, newBalance: serverBalance + credit });
-    } else if (totalServerChips > expectedMinBalance && serverBalance > 0) {
-      // Server drifted above on-chain — cap it
-      const excess = totalServerChips - expectedMinBalance;
-      const capTo = Math.max(0, serverBalance - excess);
-      rooms.store.updateBalance(addr, capTo);
-      console.log(`[CheckDeposit] Capped ${addr}: server was ${serverBalance}, now ${capTo} (on-chain max: ${expectedMinBalance})`);
-
-      for (const [ws, client] of clients) {
-        if (client.walletAddress === addr && ws.readyState === 1) {
-          sendBalance(ws, addr);
-        }
-      }
-
-      res.json({ success: true, capped: true, oldBalance: serverBalance, newBalance: capTo });
+    } else if (totalServerChips > expectedMinBalance) {
+      // Server total > on-chain deposits — NORMAL in poker (players win chips from each other)
+      // Do NOT cap down — that destroys legitimate poker winnings
+      console.log(`[CheckDeposit] ${addr}: server total ${totalServerChips} > on-chain ${expectedMinBalance} (poker winnings, not capping)`);
+      res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance above deposits (poker winnings)' });
     } else {
       res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance already correct' });
     }
@@ -660,20 +661,26 @@ app.post('/sync-balance', async (req, res) => {
     const depositedChips = Math.floor((onChainDeposited * 10000) / 1e6);
     const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
     const agentChips = rooms.getChipsInPlay(addr);
-    const correctBalance = Math.max(0, depositedChips - withdrawnChips - agentChips);
-
     const wallet = await rooms.store.getOrCreateWallet(addr);
-    const oldBalance = wallet.balance;
-    await rooms.store.updateBalance(addr, correctBalance);
+    const currentBalance = wallet.balance;
+    const agentChips = rooms.getChipsInPlay(addr);
+    const totalServer = currentBalance + agentChips;
+    const onChainNet = depositedChips - withdrawnChips;
 
-    // Notify connected client
-    for (const [ws, client] of clients) {
-      if (client.walletAddress === addr && ws.readyState === 1) {
-        sendBalance(ws, addr);
+    // Only credit UP if on-chain deposits exceed server total (missed deposit)
+    // NEVER cap down — players win chips from each other in poker
+    if (onChainNet > totalServer) {
+      const credit = onChainNet - totalServer;
+      await rooms.store.addBalance(addr, credit);
+      for (const [ws, client] of clients) {
+        if (client.walletAddress === addr && ws.readyState === 1) {
+          sendBalance(ws, addr);
+        }
       }
+      res.json({ success: true, credited: credit, old: currentBalance, new: currentBalance + credit, depositedChips, withdrawnChips, agentChips });
+    } else {
+      res.json({ success: true, credited: 0, balance: currentBalance, message: 'Balance OK (includes poker winnings)', depositedChips, withdrawnChips, agentChips });
     }
-
-    res.json({ success: true, old: oldBalance, new: correctBalance, depositedChips, withdrawnChips, agentChips });
   } catch (e) {
     res.json({ error: e.message });
   }
@@ -848,6 +855,23 @@ async function startServer() {
     durationDays: 90
   });
   rooms.rewardEngine = rewardEngine;
+
+  // Restore reward engine state from disk (survives restarts)
+  const REWARD_SNAPSHOT_PATH = path.join(__dirname, 'reward-snapshot.json');
+  try {
+    if (fs.existsSync(REWARD_SNAPSHOT_PATH)) {
+      const snapshot = JSON.parse(fs.readFileSync(REWARD_SNAPSHOT_PATH, 'utf8'));
+      rewardEngine.loadSnapshot(snapshot);
+      console.log('[Server] Reward engine restored from snapshot');
+    }
+  } catch (e) { console.error('[Server] Failed to load reward snapshot:', e.message); }
+
+  // Save snapshot every 5 minutes
+  rewardEngine.startSnapshots((snapshot) => {
+    try { fs.writeFileSync(REWARD_SNAPSHOT_PATH, JSON.stringify(snapshot)); }
+    catch (e) { console.error('[Server] Reward snapshot write failed:', e.message); }
+  }, 300000);
+
   console.log('[Server] Reward engine initialized — Round 1: 2.5B POKERAI over 90 days (2.5% of supply)');
 
   // Helper: update reward engine — ONLY count chips actively in play at tables

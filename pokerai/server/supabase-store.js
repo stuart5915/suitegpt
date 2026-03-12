@@ -91,15 +91,19 @@ class SupabaseStore {
     else console.log(`[SupabaseStore] addBalance ${addr.slice(0,8)}... → ${cached.balance} chips`);
   }
 
-  async deductBalance(address, amount) {
+  deductBalance(address, amount) {
     const addr = address.toLowerCase();
     const cached = this.walletCache.get(addr);
     if (!cached || cached.balance < amount) return false;
     cached.balance -= amount;
 
-    await this.supabase.from('poker_wallets')
+    // Fire-and-forget DB write (cache is source of truth)
+    this.supabase.from('poker_wallets')
       .update({ chip_balance: cached.balance })
-      .eq('address', addr);
+      .eq('address', addr)
+      .then(({ error }) => {
+        if (error) console.error(`[SupabaseStore] deductBalance write failed:`, error.message);
+      });
     return true;
   }
 
