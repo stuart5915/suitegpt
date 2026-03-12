@@ -752,16 +752,37 @@ async function startServer() {
         operatorKey: process.env.OPERATOR_PRIVATE_KEY
       });
 
-      // Listen for on-chain deposits → notify client to call /check-deposit
-      // NOTE: Do NOT credit chips here — /check-deposit handles crediting
-      // to avoid double-counting
+      // Listen for on-chain deposits → credit chips directly server-side
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
-        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (notifying client to verify)`);
-
-        // Notify connected client to trigger /check-deposit
-        for (const [ws, client] of clients) {
-          if (client.walletAddress === walletAddress && ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'depositDetected', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
+        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips — checking and crediting`);
+        try {
+          const stats = await chain.vault.playerStats(walletAddress);
+          const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+          const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
+          const expected = onChainChips - withdrawnChips;
+          const wallet = await rooms.store.getOrCreateWallet(walletAddress);
+          const inPlay = rooms.getChipsInPlay(walletAddress);
+          const total = wallet.balance + inPlay;
+          if (expected > total) {
+            const credit = expected - total;
+            await rooms.store.addBalance(walletAddress, credit);
+            await rooms.store.recordTransaction(walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
+            console.log(`[Chain] Credited ${credit} chips to ${walletAddress}`);
+            // Notify connected client
+            for (const [ws, client] of clients) {
+              if (client.walletAddress === walletAddress && ws.readyState === 1) {
+                sendBalance(ws, walletAddress);
+                ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit, usdcAmount: credit / 10000 } }));
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[Chain] Deposit credit failed:', e.message);
+          // Fallback: notify client to trigger re-check via setWallet
+          for (const [ws, client] of clients) {
+            if (client.walletAddress === walletAddress && ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'depositDetected', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
+            }
           }
         }
       };

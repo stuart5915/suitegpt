@@ -4192,15 +4192,7 @@ function handleMessage(msg) {
         ws.send(JSON.stringify({ type: 'setWallet', walletAddress: w.address }));
         ws.send(JSON.stringify({ type: 'getMyAgents' }));
         walletAuthenticated = true;
-        // Check for any uncredited on-chain deposits
-        const _api = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-        fetch(_api + '/check-deposit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress: w.address })
-        }).then(r => r.json()).then(r => {
-          if (r.credited > 0) showToast(`${r.credited.toLocaleString()} chips credited!`, 'success');
-        }).catch(() => {});
+        // Deposit check happens automatically via setWallet handler on server
       } else {
         syncWalletToServer();
         // Still request sandbox agents even without wallet
@@ -4392,7 +4384,7 @@ function handleMessage(msg) {
       break;
 
     case 'depositDetected':
-      // Server detected on-chain deposit, trigger /check-deposit to credit chips
+      // Server detected on-chain deposit, re-sync wallet to credit chips
       checkDepositBalance();
       break;
 
@@ -5498,18 +5490,7 @@ async function toggleWallet() {
     walletAuthenticated = true;
     showToast('Wallet connected!', 'gold');
     refreshMyAgentsView();
-
-    // Check for any on-chain deposits not yet credited
-    const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-    fetch(API_BASE + '/check-deposit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: address })
-    }).then(r => r.json()).then(result => {
-      if (result.credited > 0) {
-        showToast(`${result.credited.toLocaleString()} chips credited from on-chain deposit!`, 'success');
-      }
-    }).catch(() => {});
+    // Deposit check happens automatically via setWallet handler on server
 
     window.ethereum.on('accountsChanged', (accs) => {
       if (accs.length === 0) {
@@ -5765,35 +5746,9 @@ async function doDeposit() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
 
-    // Fallback: tell server to check on-chain and credit if event was missed
-    const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-    try {
-      const resp = await fetch(API_BASE + '/check-deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: signerAddr })
-      });
-      const result = await resp.json();
-      console.log('[Deposit] check-deposit result:', result);
-      if (result.credited > 0) {
-        walletBalance += result.credited;
-        updateWalletUI();
-        showToast(`+${result.credited.toLocaleString()} chips credited!`, 'success');
-      } else if (result.balance !== undefined) {
-        walletBalance = result.balance;
-        updateWalletUI();
-        showToast('Chips already credited!', 'success');
-      }
-      // Also tell WS to refresh balance
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
-      }
-    } catch (e) {
-      console.error('[Deposit] check-deposit failed:', e);
-      // Fallback: re-send wallet to trigger server-side on-chain check
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
-      }
+    // Tell server to re-check on-chain deposits via WebSocket (setWallet handler does the check)
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
     }
     document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
     closeVault();
@@ -5808,26 +5763,9 @@ async function doDeposit() {
   btn.innerHTML = 'Deposit USDC';
 }
 
-async function checkDepositBalance() {
-  const wallet = getWallet();
-  if (!wallet) return;
-  const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-  try {
-    const resp = await fetch(API_BASE + '/check-deposit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletAddress: wallet })
-    });
-    const result = await resp.json();
-    if (result.credited > 0) {
-      walletBalance += result.credited;
-      updateWalletUI();
-      showToast(`+${result.credited.toLocaleString()} chips credited!`, 'success');
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: wallet }));
-      }
-    }
-  } catch (e) { console.error('[checkDepositBalance]', e); }
+function checkDepositBalance() {
+  // Trigger deposit check via WebSocket — setWallet handler on server checks on-chain deposits
+  syncWalletToServer();
 }
 
 function doWithdraw() {
