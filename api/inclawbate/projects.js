@@ -77,13 +77,20 @@ export default async function handler(req, res) {
         return res.status(200).json({ project: sanitizeProject(data) });
     }
 
-    // GET — public: list all projects
+    // GET — public: list all projects (exclude agent-only entries)
     if (req.method === 'GET' && req.query.public === '1') {
-        const { data, error } = await supabase
+        let query = supabase
             .from('projects')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(100);
+
+        // By default hide agent-only projects (no app, no token, no real content)
+        if (req.query.include_agents !== '1') {
+            query = query.or('agent_enabled.is.null,agent_enabled.eq.false');
+        }
+
+        const { data, error } = await query;
 
         if (error) return res.status(500).json({ error: error.message });
         return res.status(200).json({ projects: sanitizeProjects(data) });
