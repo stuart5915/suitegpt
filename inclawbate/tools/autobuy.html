@@ -91,7 +91,7 @@ input::placeholder{color:rgba(136,117,170,0.5)}
 
         <div class="form">
             <div>
-                <label>Total ETH to spend</label>
+                <label>Total ETH to spend <span id="usdHint" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--cyan);opacity:0.7"></span></label>
                 <input type="number" id="totalEth" placeholder="0.05" step="0.001" min="0.001">
             </div>
             <div>
@@ -472,7 +472,27 @@ function updateSummary() {
     document.getElementById('endDate').value = d.toISOString().slice(0, 16);
 })();
 
-document.getElementById('totalEth').addEventListener('input', updateSummary);
+// ETH price for USD hint
+let ethPrice = 0;
+(async function fetchEthPrice() {
+    try {
+        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const d = await r.json();
+        ethPrice = d.ethereum.usd;
+    } catch (e) {}
+})();
+
+function updateUsdHint() {
+    const el = document.getElementById('usdHint');
+    const val = parseFloat(document.getElementById('totalEth').value) || 0;
+    if (val > 0 && ethPrice > 0) {
+        el.textContent = '(\u2248 $' + (val * ethPrice).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ')';
+    } else {
+        el.textContent = '';
+    }
+}
+
+document.getElementById('totalEth').addEventListener('input', () => { updateSummary(); updateUsdHint(); });
 document.getElementById('endDate').addEventListener('input', updateSummary);
 document.getElementById('interval').addEventListener('change', updateSummary);
 
