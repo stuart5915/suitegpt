@@ -371,7 +371,7 @@
                             <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">CLAWS</div>
                         </div>
                         <div style="text-align:center">
-                            <div id="abNext" style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">--</div>
+                            <div id="abNext" style="font-size:0.82rem;font-weight:800;color:var(--text-primary)">--</div>
                             <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Next Buy</div>
                         </div>
                     </div>
@@ -698,8 +698,14 @@
                 const now = Math.floor(Date.now() / 1000);
                 const diff = nextBuyTime - now;
                 const el = document.getElementById('abNext');
-                if (diff <= 0) { el.textContent = 'Ready'; el.style.color = '#00ffb3'; }
-                else { el.textContent = fmtTime(diff); }
+                if (diff <= 0) {
+                    el.textContent = 'Any moment';
+                    el.style.color = '#00ffb3';
+                } else {
+                    const d = new Date(nextBuyTime * 1000);
+                    el.textContent = d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+                    el.style.color = '';
+                }
             }
         } catch (e) {}
     }

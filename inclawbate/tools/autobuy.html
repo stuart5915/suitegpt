@@ -374,10 +374,12 @@ function updateCountdown(nextBuyTime) {
     const diff = nextBuyTime - now;
 
     if (diff <= 0) {
-        el.textContent = 'Ready';
+        el.textContent = 'Any moment';
+        el.title = 'Buy is ready - cron executes every 10 min';
         el.style.color = 'var(--green)';
     } else {
-        el.textContent = formatTime(diff);
+        const d = new Date(nextBuyTime * 1000);
+        el.textContent = d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
         el.style.color = '';
     }
 }
