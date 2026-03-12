@@ -29,6 +29,45 @@ export default async function handler(req, res) {
 
     const { project_id, wallet } = req.query;
 
+    // Public mode — latest post per active agent (for Explore directory)
+    if (req.query.public === '1') {
+        const { data: agents } = await supabase
+            .from('projects')
+            .select('id, name, slug, logo_url, x_handle, agent_persona, agent_total_posts, agent_status, agent_posts_per_day, token_symbol, description')
+            .eq('agent_enabled', true)
+            .eq('agent_status', 'active');
+
+        if (!agents || !agents.length) {
+            return res.status(200).json({ agents: [] });
+        }
+
+        const agentIds = agents.map(a => a.id);
+
+        // Get latest post per agent
+        const { data: posts } = await supabase
+            .from('project_agent_posts')
+            .select('project_id, tweet_text, tweet_id, created_at, posted_via')
+            .in('project_id', agentIds)
+            .eq('status', 'posted')
+            .order('created_at', { ascending: false })
+            .limit(200);
+
+        const latestPost = {};
+        (posts || []).forEach(p => {
+            if (!latestPost[p.project_id]) latestPost[p.project_id] = p;
+        });
+
+        const enriched = agents.map(a => ({
+            ...a,
+            latest_tweet: latestPost[a.id]?.tweet_text || null,
+            latest_tweet_id: latestPost[a.id]?.tweet_id || null,
+            latest_tweet_at: latestPost[a.id]?.created_at || null,
+            posted_via: latestPost[a.id]?.posted_via || null
+        }));
+
+        return res.status(200).json({ agents: enriched });
+    }
+
     // By project ID
     if (project_id) {
         const { data, error } = await supabase
