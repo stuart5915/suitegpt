@@ -109,15 +109,40 @@ export default async function handler(req, res) {
     if (!project.x_access_token) return res.status(400).json({ error: 'No X account connected. Connect X first.' });
 
     try {
-        // Generate tweet
-        const genResult = await generateTweet(project);
-        const tweetText = genResult.text;
+        // Check for approved/edited draft first — post that instead of generating new
+        let tweetText;
+        let usedDraftId = null;
+
+        const { data: drafts } = await supabase
+            .from('agent_draft_posts')
+            .select('*')
+            .eq('project_id', project_id)
+            .in('status', ['approved', 'edited', 'draft'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (drafts && drafts.length > 0) {
+            tweetText = drafts[0].tweet_text;
+            usedDraftId = drafts[0].id;
+        } else {
+            // No draft — generate fresh
+            const genResult = await generateTweet(project);
+            tweetText = genResult.text;
+        }
+
         if (!tweetText || tweetText.length > 280) {
             throw new Error('Generated tweet too long or empty');
         }
 
         // Post it
         const { tweetId, posted_via } = await postTweet(tweetText, project);
+
+        // Mark draft as posted
+        if (usedDraftId) {
+            await supabase.from('agent_draft_posts')
+                .update({ status: 'posted', updated_at: new Date().toISOString() })
+                .eq('id', usedDraftId);
+        }
 
         // Log it
         await supabase.from('project_agent_posts').insert({
