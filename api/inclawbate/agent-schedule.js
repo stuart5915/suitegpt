@@ -23,7 +23,7 @@ const supabase = createClient(
 const MAX_DAYS_AHEAD = 7;
 const MAX_ACTIVE_BOOKINGS = 3;
 const SLOT_COST_USD = 0.01;  // actual cost: ~$0.01 X API + ~$0.001 Haiku
-const VALID_HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+const VALID_HOURS = [1, 13, 16, 19, 22]; // Peak X engagement: 9AM, 12PM, 3PM, 6PM, 9PM ET
 
 const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
             const slotDate = new Date(scheduled_at);
             if (isNaN(slotDate.getTime())) return res.status(400).json({ error: 'Invalid date' });
             if (!VALID_HOURS.includes(slotDate.getUTCHours()) || slotDate.getUTCMinutes() !== 0) {
-                return res.status(400).json({ error: 'Slots are every 2 hours on the hour (UTC)' });
+                return res.status(400).json({ error: 'Invalid slot time. Slots are at peak hours only.' });
             }
             if (slotDate.getTime() <= Date.now()) {
                 return res.status(400).json({ error: 'Cannot book slots in the past' });
@@ -396,15 +396,21 @@ export default async function handler(req, res) {
 
             const bookedTimes = new Set((bookedSlots || []).map(s => new Date(s.scheduled_at).getTime()));
 
-            // Walk through every 2-hour slot starting from the current slot time
-            for (let t = slotTime + 2 * 3600000; t < maxTime; t += 2 * 3600000) {
-                const d = new Date(t);
-                if (!VALID_HOURS.includes(d.getUTCHours())) continue;
-                if (d.getTime() <= now) continue;
-                if (!bookedTimes.has(d.getTime())) {
-                    movedTo = d.toISOString();
-                    break;
+            // Walk through valid slot times starting after the current slot
+            for (let dayOff = 0; dayOff < MAX_DAYS_AHEAD; dayOff++) {
+                for (const h of VALID_HOURS) {
+                    const d = new Date(slotTime);
+                    d.setUTCDate(d.getUTCDate() + dayOff);
+                    d.setUTCHours(h, 0, 0, 0);
+                    if (d.getTime() <= slotTime) continue;
+                    if (d.getTime() <= now) continue;
+                    if (d.getTime() >= maxTime) continue;
+                    if (!bookedTimes.has(d.getTime())) {
+                        movedTo = d.toISOString();
+                        break;
+                    }
                 }
+                if (movedTo) break;
             }
 
             // Update existing slot → takeover (replace with new booker)

@@ -1449,7 +1449,7 @@ function renderDayStrip() {
         btn.setAttribute('data-date', dayStr);
         btn.innerHTML = '<div class="sched-day-name">' + (i === 0 ? 'Today' : dayNames[d.getDay()]) + '</div>'
             + '<div class="sched-day-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
-            + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/12</div>' : '');
+            + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/5</div>' : '');
 
         (function(date) {
             btn.addEventListener('click', function() { selectDay(date); });
@@ -1471,18 +1471,24 @@ function selectDay(date) {
     renderSlots(date);
 }
 
+var PEAK_SLOTS = [
+    { utc: 13, label: 'Morning' },
+    { utc: 16, label: 'Lunch' },
+    { utc: 19, label: 'Afternoon' },
+    { utc: 22, label: 'Evening' },
+    { utc: 1,  label: 'Night' }
+];
+
 function renderSlots(date) {
     var container = document.getElementById('schedSlots');
     container.innerHTML = '';
     var now = Date.now();
-    var HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
 
-    HOURS.forEach(function(hour) {
+    PEAK_SLOTS.forEach(function(peak) {
         var slotTime = new Date(date);
-        slotTime.setUTCHours(hour, 0, 0, 0);
-        var slotISO = slotTime.toISOString();
+        if (peak.utc < 6) slotTime.setDate(slotTime.getDate() + 1);
+        slotTime.setUTCHours(peak.utc, 0, 0, 0);
 
-        // Find matching booked slot (compare as timestamps — Supabase returns +00:00, JS uses .000Z)
         var slotMs = slotTime.getTime();
         var booked = _schedSlots.find(function(s) {
             return new Date(s.scheduled_at).getTime() === slotMs && s.status !== 'cancelled';
@@ -1503,7 +1509,7 @@ function renderSlots(date) {
         el.className = cls;
 
         var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        var html = '<span class="sched-time">' + timeStr + '</span>';
+        var html = '<span class="sched-time">' + timeStr + '<div style="font-size:0.6rem;opacity:0.7;text-transform:uppercase">' + peak.label + '</div></span>';
 
         if (booked) {
             var logoChar = (booked.project_name || '?').charAt(0).toUpperCase();

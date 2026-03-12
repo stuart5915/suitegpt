@@ -102,7 +102,8 @@
         .sched-slot--posted { border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);opacity:0.7; }
         .sched-slot--past { opacity:0.4;pointer-events:none; }
         .sched-slot--mine { border-color:var(--lobster-400);background:rgba(232,121,85,0.06); }
-        .sched-time { font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--text-dim);width:52px;flex-shrink:0; }
+        .sched-time { font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--text-dim);width:72px;flex-shrink:0; }
+        .sched-time-label { font-family:var(--font-body);font-size:0.6rem;color:var(--text-dim);opacity:0.7;text-transform:uppercase;letter-spacing:0.03em; }
         .sched-content { flex:1;min-width:0; }
         .sched-content-name { font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
         .sched-content-angle { font-size:0.72rem;color:var(--text-dim); }
@@ -176,7 +177,7 @@
 
     <section class="schedule-hero">
         <h1>@inclawbator X Schedule</h1>
-        <p>Book a time slot and @inclawbator will tweet about your project using AI.</p>
+        <p>Book a peak-hour slot and @inclawbator will tweet about your project using AI. 5 slots per day at the best times to post.</p>
     </section>
 
     <section class="sched-section" id="schedSection">
@@ -366,7 +367,7 @@
             btn.setAttribute('data-date', dayStr);
             btn.innerHTML = '<div class="sched-day-name">' + (i === 0 ? 'Today' : dayNames[d.getDay()]) + '</div>'
                 + '<div class="sched-day-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
-                + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/12</div>' : '');
+                + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/5</div>' : '');
 
             (function(date) {
                 btn.addEventListener('click', function() { selectDay(date); });
@@ -388,15 +389,27 @@
         renderSlots(date);
     }
 
+    // Peak engagement UTC hours: 9AM ET, 12PM ET, 3PM ET, 6PM ET, 9PM ET
+    var PEAK_SLOTS = [
+        { utc: 13, label: 'Morning' },
+        { utc: 16, label: 'Lunch' },
+        { utc: 19, label: 'Afternoon' },
+        { utc: 22, label: 'Evening' },
+        { utc: 1,  label: 'Night' }
+    ];
+
     function renderSlots(date) {
         var container = document.getElementById('schedSlots');
         container.innerHTML = '';
         var now = Date.now();
-        var HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
 
-        HOURS.forEach(function(hour) {
+        PEAK_SLOTS.forEach(function(peak) {
             var slotTime = new Date(date);
-            slotTime.setUTCHours(hour, 0, 0, 0);
+            // For UTC hour 1, it's actually the next calendar day
+            if (peak.utc < 6) {
+                slotTime.setDate(slotTime.getDate() + 1);
+            }
+            slotTime.setUTCHours(peak.utc, 0, 0, 0);
 
             var slotMs = slotTime.getTime();
             var booked = _schedSlots.find(function(s) {
@@ -418,7 +431,7 @@
             el.className = cls;
 
             var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            var html = '<span class="sched-time">' + timeStr + '</span>';
+            var html = '<span class="sched-time">' + timeStr + '<div class="sched-time-label">' + peak.label + '</div></span>';
 
             if (booked) {
                 var logoChar = (booked.project_name || '?').charAt(0).toUpperCase();
