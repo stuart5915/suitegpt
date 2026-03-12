@@ -405,6 +405,78 @@ function buildMerkleRoot(address, amount) {
 
 window.selectAllocationTier = selectAllocationTier;
 
+// Advanced config state
+state.feeType = 'dynamic';
+state.feeTier = 3;
+state.sniperTaxDuration = 15;
+state.rewardToken = 'weth';
+state.rewardPct = 80;
+state.airdropLockupDays = 7;
+state.airdropVestingDays = 0;
+
+function toggleAdvanced(bodyId) {
+    var body = document.getElementById(bodyId);
+    if (!body) return;
+    var section = body.closest('.advanced-section');
+    var isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (section) section.classList.toggle('open', !isOpen);
+}
+window.toggleAdvanced = toggleAdvanced;
+
+function selectFeeType(type) {
+    state.feeType = type;
+    document.querySelectorAll('[data-fee]').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.fee === type);
+    });
+    var tierGroup = document.getElementById('feeTierGroup');
+    if (tierGroup) tierGroup.style.display = type === 'static' ? 'block' : 'none';
+}
+window.selectFeeType = selectFeeType;
+
+function selectFeeTier(tier) {
+    state.feeTier = tier;
+    document.querySelectorAll('[data-feepct]').forEach(function(el) {
+        el.classList.toggle('selected', parseInt(el.dataset.feepct) === tier);
+    });
+}
+window.selectFeeTier = selectFeeTier;
+
+function selectRewardToken(token) {
+    state.rewardToken = token;
+    document.querySelectorAll('[data-rwdtoken]').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.rwdtoken === token);
+    });
+}
+window.selectRewardToken = selectRewardToken;
+
+function addAirdropEntry() {
+    var container = document.getElementById('airdropEntries');
+    if (!container) return;
+    var entry = document.createElement('div');
+    entry.className = 'airdrop-entry';
+    entry.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px';
+    entry.innerHTML = '<input class="form-input airdrop-addr" type="text" placeholder="0x... wallet address" style="font-family:var(--font-mono);font-size:0.82rem;flex:3">' +
+        '<input class="form-input airdrop-pct" type="number" min="0" max="100" placeholder="%" style="font-family:var(--font-mono);width:70px;flex:0 0 70px">' +
+        '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:4px">&times;</button>';
+    container.appendChild(entry);
+}
+window.addAirdropEntry = addAirdropEntry;
+
+function getAirdropEntries() {
+    var entries = [];
+    var container = document.getElementById('airdropEntries');
+    if (!container) return entries;
+    container.querySelectorAll('.airdrop-entry').forEach(function(row) {
+        var addr = row.querySelector('.airdrop-addr');
+        var pct = row.querySelector('.airdrop-pct');
+        if (addr && addr.value && pct && pct.value) {
+            entries.push({ address: addr.value.trim(), pct: parseFloat(pct.value) });
+        }
+    });
+    return entries;
+}
+
 // ══════════════════════════════════════
 // CLANKER V4 DEPLOY
 // ══════════════════════════════════════
@@ -480,9 +552,24 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
     // Anti-sniper protection matching current Clanker deploys
     var SNIPER_MEV_DATA = '0x00000000000000000000000000000000000000000000000000000000000a2c99000000000000000000000000000000000000000000000000000000000000a2c9000000000000000000000000000000000000000000000000000000000000000f';
 
+    // Read configurable values from form
+    var rewardAdminAddr = (document.getElementById('rewardAdminAddr') && document.getElementById('rewardAdminAddr').value.trim()) || state.wallet;
+    var rewardRecipientAddr = (document.getElementById('rewardRecipientAddr') && document.getElementById('rewardRecipientAddr').value.trim()) || state.wallet;
+    var rewardPctVal = state.rewardPct || 80;
+    var creatorBps = rewardPctVal * 100; // e.g. 80% = 8000 bps
+    var inclawbateBps = 10000 - creatorBps;
+
+    // Build sniper MEV data with configurable duration
+    var sniperDuration = parseInt((document.getElementById('sniperTaxDuration') || {}).value) || 15;
+    var coder = ethers.AbiCoder.defaultAbiCoder();
+    var sniperMevData = coder.encode(
+        ['uint256', 'uint256', 'uint256'],
+        [666777, 41673, sniperDuration]
+    );
+
     var deploymentConfig = {
         tokenConfig: {
-            tokenAdmin: state.wallet,
+            tokenAdmin: rewardAdminAddr,
             name: name,
             symbol: symbol,
             salt: salt,
@@ -500,9 +587,9 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
         },
         lockerConfig: {
             locker: CLANKER_LP_LOCKER,
-            rewardAdmins: [state.wallet, INCLAWBATE_TREASURY],
-            rewardRecipients: [state.wallet, INCLAWBATE_TREASURY],
-            rewardBps: [8000, 2000],
+            rewardAdmins: [rewardAdminAddr, INCLAWBATE_TREASURY],
+            rewardRecipients: [rewardRecipientAddr, INCLAWBATE_TREASURY],
+            rewardBps: [creatorBps, inclawbateBps],
             tickLower: [-230400],
             tickUpper: [-120000],
             positionBps: [10000],
@@ -510,7 +597,7 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
         },
         mevModuleConfig: {
             mevModule: CLANKER_SNIPER_AUCTION,
-            mevModuleData: SNIPER_MEV_DATA
+            mevModuleData: sniperMevData
         },
         extensionConfigs: []
     };
@@ -518,14 +605,29 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
     // Add airdrop extension if allocation selected
     if (state.allocationPct > 0) {
         var extensionBps = state.allocationPct * 100; // e.g. 5% = 500 bps
-        var tokenAmount = BigInt(DEFAULT_SUPPLY) * BigInt(state.allocationPct) / 100n * BigInt('1000000000000000000'); // tokens in wei
-        var merkleRoot = buildMerkleRoot(state.wallet, tokenAmount);
+        var lockupDays = parseInt((document.getElementById('airdropLockup') || {}).value) || 7;
+        var vestingDays = parseInt((document.getElementById('airdropVesting') || {}).value) || 0;
+        var lockupSeconds = lockupDays * 86400;
+        var vestingSeconds = vestingDays * 86400;
 
-        // extensionData = abi.encode(address admin, bytes32 merkleRoot, uint256 lockupDuration, uint256 vestingDuration)
-        var coder = ethers.AbiCoder.defaultAbiCoder();
+        // Check for custom airdrop entries
+        var airdropEntries = getAirdropEntries();
+        var tokenAmount, merkleRoot;
+
+        if (airdropEntries.length > 0) {
+            // Multi-recipient airdrop — build merkle tree from entries
+            // For now, use single-leaf with creator wallet for the full allocation
+            // (multi-leaf merkle would require StandardMerkleTree library)
+            tokenAmount = BigInt(DEFAULT_SUPPLY) * BigInt(state.allocationPct) / 100n * BigInt('1000000000000000000');
+            merkleRoot = buildMerkleRoot(state.wallet, tokenAmount);
+        } else {
+            tokenAmount = BigInt(DEFAULT_SUPPLY) * BigInt(state.allocationPct) / 100n * BigInt('1000000000000000000');
+            merkleRoot = buildMerkleRoot(state.wallet, tokenAmount);
+        }
+
         var extensionData = coder.encode(
             ['address', 'bytes32', 'uint256', 'uint256'],
-            [state.wallet, merkleRoot, 604800, 0] // 7 days lockup, instant vesting
+            [rewardAdminAddr, merkleRoot, lockupSeconds, vestingSeconds]
         );
 
         deploymentConfig.extensionConfigs = [{
@@ -1324,6 +1426,11 @@ function selectChain(chain) {
         if (feeSolana) feeSolana.style.display = 'none';
         if (feeCardano) feeCardano.style.display = 'none';
     }
+
+    // Show/hide Base-only advanced sections
+    document.querySelectorAll('.advanced-section[data-chain="base"]').forEach(function(el) {
+        el.style.display = chain === 'base' ? 'block' : 'none';
+    });
 }
 window.selectChain = selectChain;
 
@@ -2478,6 +2585,12 @@ async function init() {
     });
     var closeBtn = document.getElementById('drawerCloseBtn');
     if (closeBtn) closeBtn.addEventListener('click', closeToolDrawer);
+
+    // Bind advanced config inputs
+    var rewardPctInput = document.getElementById('rewardPct');
+    if (rewardPctInput) rewardPctInput.addEventListener('change', function() {
+        state.rewardPct = Math.min(100, Math.max(0, parseInt(rewardPctInput.value) || 80));
+    });
 
     // Bind deploy buttons
     var deployLaunchBtn = document.getElementById('deployLaunchBtn');

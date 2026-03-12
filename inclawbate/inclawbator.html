@@ -568,6 +568,48 @@
         }
 
         /* ── Allocation Tiers ── */
+        .advanced-section {
+            margin-top: var(--space-md);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .advanced-toggle {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: none;
+            padding: 12px 16px;
+            text-align: left;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: var(--font-body);
+        }
+        .advanced-toggle:hover {
+            background: var(--bg-surface);
+        }
+        .advanced-arrow {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+        .advanced-body {
+            padding: 12px 16px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .advanced-section.open .advanced-arrow {
+            transform: rotate(180deg);
+        }
+        .airdrop-entry {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
         .allocation-section {
             margin-top: var(--space-md);
             margin-bottom: var(--space-md);
@@ -2041,19 +2083,153 @@
                     <input id="launchTelegram" class="form-input" type="url" placeholder="https://t.me/yourgroup">
                 </div>
             </div>
-            <div class="allocation-section" id="allocationSection">
-                <label class="form-label">Creator Allocation <span style="font-weight:400;font-size:0.75rem;color:var(--text-dim)">(free)</span></label>
-                <div class="allocation-tiers" style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-                    <button type="button" class="allocation-tier selected" data-pct="0" onclick="window.selectAllocationTier(0)"><span class="allocation-tier-pct">0%</span></button>
-                    <button type="button" class="allocation-tier" data-pct="1" onclick="window.selectAllocationTier(1)"><span class="allocation-tier-pct">1%</span></button>
-                    <button type="button" class="allocation-tier" data-pct="2" onclick="window.selectAllocationTier(2)"><span class="allocation-tier-pct">2%</span></button>
-                    <button type="button" class="allocation-tier" data-pct="5" onclick="window.selectAllocationTier(5)"><span class="allocation-tier-pct">5%</span></button>
-                    <button type="button" class="allocation-tier" data-pct="10" onclick="window.selectAllocationTier(10)"><span class="allocation-tier-pct">10%</span></button>
-                </div>
-                <div id="allocationLockupNote" style="display:none;margin-top:10px;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-size:0.82rem;color:var(--text-secondary);line-height:1.5">
-                    &#128274; <strong>7-day lockup</strong> &mdash; Creator tokens are locked on-chain for 7 days after launch. After the lockup, claim them from your <a href="/dashboard" target="_top" style="color:var(--lobster-400)">Dashboard</a>.
+            <div class="form-group">
+                <label class="form-label" for="launchFarcaster">Farcaster (optional)</label>
+                <input id="launchFarcaster" class="form-input" type="url" placeholder="https://warpcast.com/yourproject">
+            </div>
+
+            <!-- Fee Configuration (optional) — Base only -->
+            <div class="advanced-section" id="feeConfigSection" data-chain="base">
+                <button type="button" class="advanced-toggle" onclick="toggleAdvanced('feeConfigBody')">
+                    Fee Configuration <span style="font-weight:400;color:var(--text-dim)">(optional)</span>
+                    <span class="advanced-arrow">&#9660;</span>
+                </button>
+                <div id="feeConfigBody" class="advanced-body" style="display:none">
+                    <div class="form-group">
+                        <label class="form-label">Fee Type</label>
+                        <div style="display:flex;gap:8px;margin-top:4px">
+                            <button type="button" class="allocation-tier" data-fee="static" onclick="window.selectFeeType('static')"><span class="allocation-tier-pct">Static</span></button>
+                            <button type="button" class="allocation-tier selected" data-fee="dynamic" onclick="window.selectFeeType('dynamic')"><span class="allocation-tier-pct">Dynamic 3%</span></button>
+                        </div>
+                    </div>
+                    <div class="form-group" id="feeTierGroup" style="display:none">
+                        <label class="form-label">Fee Tier</label>
+                        <div style="display:flex;gap:8px;margin-top:4px">
+                            <button type="button" class="allocation-tier" data-feepct="1" onclick="window.selectFeeTier(1)"><span class="allocation-tier-pct">1%</span></button>
+                            <button type="button" class="allocation-tier" data-feepct="2" onclick="window.selectFeeTier(2)"><span class="allocation-tier-pct">2%</span></button>
+                            <button type="button" class="allocation-tier selected" data-feepct="3" onclick="window.selectFeeTier(3)"><span class="allocation-tier-pct">3%</span></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="sniperTaxDuration">Sniper Tax Duration (seconds)</label>
+                        <input id="sniperTaxDuration" class="form-input" type="number" min="0" max="300" value="15" style="font-family:var(--font-mono)">
+                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px">Time for sniper tax to decay from 80% to 5%. Default: 15 seconds.</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Reward Recipients (optional) — Base only -->
+            <div class="advanced-section" id="rewardRecipientsSection" data-chain="base">
+                <button type="button" class="advanced-toggle" onclick="toggleAdvanced('rewardRecipientsBody')">
+                    Reward Recipients <span style="font-weight:400;color:var(--text-dim)">(optional)</span>
+                    <span class="advanced-arrow">&#9660;</span>
+                </button>
+                <div id="rewardRecipientsBody" class="advanced-body" style="display:none">
+                    <div class="form-group">
+                        <label class="form-label" for="rewardAdminAddr">Admin Address</label>
+                        <input id="rewardAdminAddr" class="form-input" type="text" placeholder="0x..." style="font-family:var(--font-mono);font-size:0.85rem">
+                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px">Defaults to your connected wallet.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="rewardRecipientAddr">Reward Recipient Address</label>
+                        <input id="rewardRecipientAddr" class="form-input" type="text" placeholder="0x..." style="font-family:var(--font-mono);font-size:0.85rem">
+                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px">Who receives trading fee rewards. Defaults to your wallet.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reward Token</label>
+                        <div style="display:flex;gap:8px;margin-top:4px">
+                            <button type="button" class="allocation-tier selected" data-rwdtoken="weth" onclick="window.selectRewardToken('weth')"><span class="allocation-tier-pct">WETH</span></button>
+                            <button type="button" class="allocation-tier" data-rwdtoken="token" onclick="window.selectRewardToken('token')"><span class="allocation-tier-pct">$Your Token</span></button>
+                            <button type="button" class="allocation-tier" data-rwdtoken="both" onclick="window.selectRewardToken('both')"><span class="allocation-tier-pct">Both</span></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="rewardPct">Reward Percentage</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input id="rewardPct" class="form-input" type="number" min="0" max="100" value="80" style="font-family:var(--font-mono);width:80px">
+                            <span style="color:var(--text-secondary);font-size:0.9rem">%</span>
+                        </div>
+                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px">Your share. Remainder goes to inclawbate.base.eth.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creator Vault (optional) — Base only -->
+            <div class="advanced-section" id="creatorVaultSection" data-chain="base">
+                <button type="button" class="advanced-toggle" onclick="toggleAdvanced('creatorVaultBody')">
+                    Creator Vault <span style="font-weight:400;color:var(--text-dim)">(optional)</span>
+                    <span class="advanced-arrow">&#9660;</span>
+                </button>
+                <div id="creatorVaultBody" class="advanced-body" style="display:none">
+                    <div class="form-group">
+                        <label class="form-label" for="vaultPct">Vault Percentage</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input id="vaultPct" class="form-input" type="number" min="0" max="100" value="0" style="font-family:var(--font-mono);width:80px">
+                            <span style="color:var(--text-secondary);font-size:0.9rem">%</span>
+                        </div>
+                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px">% of supply locked in creator vault.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="vaultRecipient">Vault Recipient Address</label>
+                        <input id="vaultRecipient" class="form-input" type="text" placeholder="0x..." style="font-family:var(--font-mono);font-size:0.85rem">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="vaultLockup">Lockup (days)</label>
+                            <input id="vaultLockup" class="form-input" type="number" min="0" value="0" style="font-family:var(--font-mono)">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="vaultVesting">Vesting (days)</label>
+                            <input id="vaultVesting" class="form-input" type="number" min="0" value="0" style="font-family:var(--font-mono)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Airdrop (optional) — replaces old allocation buttons -->
+            <div class="advanced-section" id="airdropSection" data-chain="base">
+                <button type="button" class="advanced-toggle" onclick="toggleAdvanced('airdropBody')">
+                    Airdrop <span style="font-weight:400;color:var(--text-dim)">(optional)</span>
+                    <span class="advanced-arrow">&#9660;</span>
+                </button>
+                <div id="airdropBody" class="advanced-body" style="display:none">
+                    <div class="allocation-section" id="allocationSection">
+                        <label class="form-label">Allocation %</label>
+                        <div class="allocation-tiers" style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+                            <button type="button" class="allocation-tier selected" data-pct="0" onclick="window.selectAllocationTier(0)"><span class="allocation-tier-pct">0%</span></button>
+                            <button type="button" class="allocation-tier" data-pct="1" onclick="window.selectAllocationTier(1)"><span class="allocation-tier-pct">1%</span></button>
+                            <button type="button" class="allocation-tier" data-pct="2" onclick="window.selectAllocationTier(2)"><span class="allocation-tier-pct">2%</span></button>
+                            <button type="button" class="allocation-tier" data-pct="5" onclick="window.selectAllocationTier(5)"><span class="allocation-tier-pct">5%</span></button>
+                            <button type="button" class="allocation-tier" data-pct="10" onclick="window.selectAllocationTier(10)"><span class="allocation-tier-pct">10%</span></button>
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top:12px">
+                        <div class="form-group">
+                            <label class="form-label" for="airdropLockup">Lockup (days)</label>
+                            <input id="airdropLockup" class="form-input" type="number" min="0" value="7" style="font-family:var(--font-mono)">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="airdropVesting">Vesting (days)</label>
+                            <input id="airdropVesting" class="form-input" type="number" min="0" value="0" style="font-family:var(--font-mono)">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:8px">
+                        <label class="form-label">Airdrop Entries <span style="font-weight:400;color:var(--text-dim)">(optional — defaults to your wallet)</span></label>
+                        <div id="airdropEntries">
+                            <div class="airdrop-entry" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                                <input class="form-input airdrop-addr" type="text" placeholder="0x... wallet address" style="font-family:var(--font-mono);font-size:0.82rem;flex:3">
+                                <input class="form-input airdrop-pct" type="number" min="0" max="100" placeholder="%" style="font-family:var(--font-mono);width:70px;flex:0 0 70px">
+                            </div>
+                        </div>
+                        <button type="button" onclick="addAirdropEntry()" style="background:none;border:1px dashed var(--border-subtle);color:var(--text-secondary);padding:6px 12px;border-radius:var(--radius-md);font-size:0.82rem;cursor:pointer;width:100%;margin-top:4px">+ Add Recipient</button>
+                    </div>
+                    <div id="allocationLockupNote" style="display:none;margin-top:10px;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-size:0.82rem;color:var(--text-secondary);line-height:1.5">
+                        &#128274; Tokens are locked on-chain for the specified lockup period. After lockup, claim from your <a href="/dashboard" target="_top" style="color:var(--lobster-400)">Dashboard</a>.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dev Buy -->
             <div class="form-group" id="devBuyGroup">
                 <label class="form-label" for="devBuyAmount">Dev Buy <span id="devBuyUnit">(ETH)</span></label>
                 <input id="devBuyAmount" class="form-input" type="number" step="0.01" min="0" placeholder="0.00" style="font-family:var(--font-mono)">
