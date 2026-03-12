@@ -800,6 +800,23 @@ app.post('/platform/rebalance', (req, res) => {
   res.json({ success: true, message: `Rebalanced room: ${roomId}` });
 });
 
+// Admin: credit chips to a wallet (for fixing lost-chip issues)
+app.post('/admin/credit-wallet', async (req, res) => {
+  if (!requireApiKey(req, res)) return;
+  const { walletAddress, amount, reason } = req.body;
+  if (!walletAddress || !amount || amount <= 0) return res.json({ error: 'Missing walletAddress or valid amount' });
+  await rooms.store.addBalance(walletAddress, amount);
+  const wallet = rooms.store.getWallet(walletAddress);
+  console.log(`[Admin] Credited ${amount} chips to ${walletAddress} — reason: ${reason || 'manual fix'} — new balance: ${wallet ? wallet.balance : '?'}`);
+  // Notify connected client
+  for (const [ws, client] of clients) {
+    if (client.walletAddress && client.walletAddress.toLowerCase() === walletAddress.toLowerCase() && ws.readyState === 1) {
+      sendBalance(ws, walletAddress);
+    }
+  }
+  res.json({ success: true, newBalance: wallet ? wallet.balance : 0 });
+});
+
 // =========== Server startup ===========
 
 async function startServer() {

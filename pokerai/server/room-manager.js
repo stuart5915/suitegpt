@@ -692,8 +692,10 @@ class RoomManager {
     agent.chipStack -= withdrawAmt;
     this.store.addBalance(walletAddress, withdrawAmt);
     this.store.saveAgent(agent);
-    console.log(`[RoomManager] Defunded ${agent.name}: -${withdrawAmt} chips (remaining: ${agent.chipStack})`);
-    return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt };
+    const wallet = this.store.getWallet(walletAddress);
+    const newBalance = wallet ? wallet.balance : 0;
+    console.log(`[RoomManager] Defunded ${agent.name}: -${withdrawAmt} chips (remaining: ${agent.chipStack}, wallet: ${newBalance})`);
+    return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt, newBalance };
   }
 
   // === Backing operations ===
@@ -1129,6 +1131,12 @@ class RoomManager {
       for (const table of room.tables) {
         for (const a of table.agents) {
           if (a.isCustom && a.walletAddress === walletAddress) {
+            // Calculate backing total so client can show owner's actual share
+            let backingTotal = 0;
+            if (this.store.getBackingsForAgent) {
+              const backings = this.store.getBackingsForAgent(a.id);
+              backingTotal = backings.reduce((sum, b) => sum + Math.max(0, b.currentValue || 0), 0);
+            }
             results.push({
               id: a.id,
               name: a.name,
@@ -1144,6 +1152,7 @@ class RoomManager {
               rules: a.rules || {},
               prompt: a.prompt || '',
               pnl: a.chips - a.baseChips,
+              backingTotal,
               status: 'playing',
               roomId: table.roomId,
               tableId: table.tableId

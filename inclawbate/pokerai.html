@@ -4453,8 +4453,12 @@ function handleMessage(msg) {
         if (defundedAgent) {
           defundedAgent.chipStack = msg.data.chipStack;
           defundedAgent.chips = msg.data.chipStack;
-          renderMyAgents();
         }
+        if (msg.data.newBalance !== undefined) {
+          walletBalance = msg.data.newBalance;
+        }
+        updateWalletUI();
+        renderMyAgents();
         showToast(`Withdrew ${msg.data.amount.toLocaleString()} chips back to wallet`, 'success');
       }
       break;
@@ -4561,6 +4565,7 @@ function handleMessage(msg) {
     case 'myAgents':
       myAgents = msg.data || [];
       if (msg.autoTopUp) applyAutoTopUpState(msg.autoTopUp);
+      updateWalletUI();
       renderPortfolioBar();
       renderMyAgents();
       _applyOpenPanels();
@@ -5882,7 +5887,9 @@ function updateWalletUI() {
   const wallet = getWallet();
   const btn = document.getElementById('walletBtn');
   const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
-  const totalChips = walletBalance + agentChips;
+  // Subtract backing from other users — those chips aren't yours
+  const backingTotal = (myAgents || []).reduce((sum, a) => sum + (a.backingTotal || 0), 0);
+  const totalChips = walletBalance + agentChips - backingTotal;
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
