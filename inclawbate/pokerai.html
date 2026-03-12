@@ -1009,7 +1009,13 @@
 
   .agent-stats { text-align: right; }
   .agent-chips-sm { font-size: 13px; font-weight: 700; color: var(--accent-gold); }
-  .agent-winrate { font-size: 11px; color: var(--text-muted); }
+  .agent-winrate {
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 800;
+    padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 2px;
+  }
+  .agent-winrate.wr-hot { color: #34d058; background: rgba(52,208,88,0.12); }
+  .agent-winrate.wr-warm { color: #f5c542; background: rgba(245,197,66,0.12); }
+  .agent-winrate.wr-cold { color: var(--text-muted); background: rgba(255,255,255,0.04); }
 
   /* Betting panel */
   .bet-agent-select {
@@ -5294,7 +5300,12 @@ function renderAgentsSidebar() {
       </div>
       <div class="agent-stats">
         <div class="agent-chips-sm">${formatChips(agent.chips)}</div>
-        <div class="agent-winrate">${agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0}% WR</div>
+        ${(() => {
+          const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+          const wrClass = wr >= 20 ? 'wr-hot' : wr >= 10 ? 'wr-warm' : 'wr-cold';
+          const icon = wr >= 20 ? '🔥 ' : '';
+          return `<div class="agent-winrate ${wrClass}">${icon}${wr}% WR</div>`;
+        })()}
       </div>
       ${agent.backerCount > 0 ? `<div style="width:100%;font-size:9px;color:var(--accent-cyan);margin-top:4px">👥 ${agent.backerCount} backer${agent.backerCount > 1 ? 's' : ''} · ${formatChips(agent.totalBacked || 0)} staked</div>` : ''}
       ${agent.myBacking ? `<div style="width:100%;font-size:9px;color:var(--accent-gold);margin-top:2px">💰 Your stake: ${formatChips(agent.myBacking.currentValue)} (${agent.myBacking.pnl >= 0 ? '+' : ''}${agent.myBacking.pnl.toLocaleString()})</div>` : ''}
