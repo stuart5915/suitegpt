@@ -20,7 +20,7 @@
 |---|------|--------|----------------|
 | 6 | "Create Account" flow — wallet created on signup | done | Removes wallet barrier for normies. Like signing in. |
 | 7 | 50 apps goal + LLM chat that suggests/ideates apps | todo | Platform value scales with app count. AI fills gaps. |
-| 8 | AgentScape as a game in the app store | todo | Cross-pollination between products. |
+| 8 | AgentScape as a game in the app store | done | Cross-pollination between products. |
 | 9 | Insights tab in app | todo | Users see their activity, engagement, earnings. |
 | 10 | Profile section — all your stuff in one place | todo | Platform stickiness. Identity layer. |
 | 11 | Track running apps — who's using what, logging activity | todo | Data for reward distribution + insights. |
@@ -110,6 +110,7 @@
 | Update docs for Inclawbate | 2026-03 | Done |
 | "How to Build a Business" article | 2026-03-12 | Published. Covers full flywheel + "message us" CTA. |
 | "Create Account" flow (Privy social login) | 2026-03-12 | Google + Email login with embedded wallets. Nav shows email, dashboard has wallet card. |
+| AgentScape in app store + daily evolution system | 2026-03-12 | Listed in /apps. World evolves daily via cron. Chronicle page at agentscape.app/chronicle. |
 | AutoBuy CLAWS tool | 2026-03-12 | Smart contract + UI + cron keeper. Live on Base. |
 | CLAWS tokenomics article | 2026-03-06 | Published. |
 | Wallet selector modal (multi-wallet + mobile deep links) | 2026-03-06 | Shipped. All pages. |
