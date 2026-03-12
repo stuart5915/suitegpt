@@ -7,6 +7,7 @@ const RPC = 'https://mainnet.base.org';
 const ABI = [
     'function getReadyUsers() view returns (address[])',
     'function executeAll()',
+    'function executeBuy(address user)',
     'function activeUserCount() view returns (uint256)'
 ];
 
@@ -29,15 +30,23 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true, executed: 0, message: 'No users ready' });
         }
 
-        // Execute all ready buys
-        const tx = await contract.executeAll();
-        const receipt = await tx.wait();
+        // Execute buys one at a time (executeAll silently swallows errors)
+        const results = [];
+        for (const user of ready) {
+            try {
+                const tx = await contract.executeBuy(user);
+                const receipt = await tx.wait();
+                results.push({ user, tx: receipt.hash, gasUsed: receipt.gasUsed.toString() });
+            } catch (err) {
+                results.push({ user, error: err.reason || err.message });
+            }
+        }
 
         return res.status(200).json({
             ok: true,
-            executed: ready.length,
-            tx: receipt.hash,
-            gasUsed: receipt.gasUsed.toString()
+            executed: results.filter(r => r.tx).length,
+            failed: results.filter(r => r.error).length,
+            results
         });
     } catch (err) {
         console.error('AutoBuy keeper error:', err.message);
