@@ -55,7 +55,7 @@ async function getMessages(req, res) {
 
 async function sendMessage(req, res) {
   try {
-    const token = process.env.TELEGRAM_BOT_TOKEN || process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
+    const token = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     if (!token || !chatId) {
       return res.status(500).json({ ok: false, error: 'Bot not configured' });
