@@ -2,10 +2,10 @@ const { PokerEngine } = require('./poker-engine');
 const { AgentStore } = require('./agent-store');
 
 const ROOM_CONFIGS = {
-  sandbox: { name: 'Sandbox',      buyIn: 'FREE', bb: 50,   baseChips: 10000,  rakePct: 0,     isSandbox: true, currency: 'free' },
-  micro:   { name: 'Micro',        buyIn: '$1',   bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc' },  // 2.5% rake
-  mid:     { name: 'Mid Stakes',   buyIn: '$5',   bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc' },  // 2.5% rake
-  high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc' }   // 2.5% rake
+  sandbox: { name: 'Sandbox',      buyIn: 'FREE', bb: 50,   baseChips: 10000,  rakePct: 0,     isSandbox: true, currency: 'free', maxStack: Infinity },
+  micro:   { name: 'Micro',        buyIn: '$1',   bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc', maxStack: 50000 },   // 2.5% rake, max 50k ($5)
+  mid:     { name: 'Mid Stakes',   buyIn: '$5',   bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc', maxStack: 250000 },  // 2.5% rake, max 250k ($25)
+  high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc', maxStack: 1000000 }  // 2.5% rake, max 1M ($100)
 };
 
 const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
@@ -723,14 +723,15 @@ class RoomManager {
       return { error: 'Failed to deduct chips from wallet' };
     }
 
-    // Add backed chips to the agent's stack (so the chips are actually in play)
-    agent.chips += amount;
-
-    // Create backing record
+    // Create backing record (marked as pending — activates next hand)
     const backing = this.store.createBacking(walletAddress, agentId, amount, roomId);
 
-    console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips (stack now ${agent.chips})`);
-    return { success: true, agentId, agentName: agent.name, amount };
+    // Queue chips for next hand — don't add mid-hand (prevents exploit + fixes P&L math)
+    if (!agent._pendingBackings) agent._pendingBackings = [];
+    agent._pendingBackings.push({ backingId: backing?.id, amount });
+
+    console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips (pending — activates next hand)`);
+    return { success: true, agentId, agentName: agent.name, amount, pending: true };
   }
 
   unbackAgent(walletAddress, backingId) {
@@ -738,18 +739,36 @@ class RoomManager {
     if (!backing) return { error: 'Backing not found' };
     if (backing.backerWallet !== walletAddress.toLowerCase()) return { error: 'Not your backing' };
 
+    // Find the agent
+    const table = this._findAgentTable(backing.agentId);
+    const agent = table ? table.agents.find(a => a.id === backing.agentId) : null;
+
+    // Check if backing is still pending (not yet activated)
+    if (agent && agent._pendingBackings) {
+      const pendingIdx = agent._pendingBackings.findIndex(pb => pb.backingId === backingId);
+      if (pendingIdx !== -1) {
+        // Cancel pending backing — full refund, no P&L
+        agent._pendingBackings.splice(pendingIdx, 1);
+        this.store.addBalance(walletAddress, backing.chipsStaked);
+        this.store.deleteBacking(backingId);
+        console.log(`[RoomManager] ${walletAddress.slice(0,8)} cancelled pending backing: refund=${backing.chipsStaked}`);
+        return { success: true, originalStake: backing.chipsStaked, withdrawn: backing.chipsStaked, pnl: 0 };
+      }
+    }
+
+    // 1-hand cooldown: backing must have been active for at least 1 hand
+    if (backing._activatedAt && Date.now() - backing._activatedAt < 20000) {
+      return { error: 'Please wait for at least 1 hand before withdrawing' };
+    }
+
     const currentValue = Math.max(0, backing.currentValue);
     const pnl = currentValue - backing.chipsStaked;
 
     // Deduct the backing's current value from the agent's chip stack
-    const table = this._findAgentTable(backing.agentId);
-    if (table) {
-      const agent = table.agents.find(a => a.id === backing.agentId);
-      if (agent) {
-        // Don't take more than the agent has
-        const deductFromAgent = Math.min(currentValue, agent.chips);
-        agent.chips -= deductFromAgent;
-      }
+    if (agent) {
+      // Don't take more than the agent has
+      const deductFromAgent = Math.min(currentValue, agent.chips);
+      agent.chips -= deductFromAgent;
     }
 
     // Return current value to wallet
@@ -766,10 +785,24 @@ class RoomManager {
   _updateBackingValues(table) {
     for (const agent of table.agents) {
       if (agent._startChips === undefined) continue;
+
+      // Activate pending backings (queued mid-hand, now safe to include)
+      if (agent._pendingBackings && agent._pendingBackings.length > 0) {
+        for (const pb of agent._pendingBackings) {
+          agent.chips += pb.amount;
+          // Mark backing as activated with timestamp for cooldown
+          const backing = this.store.getBackingById(pb.backingId);
+          if (backing) backing._activatedAt = Date.now();
+        }
+        console.log(`[RoomManager] Activated ${agent._pendingBackings.length} pending backing(s) for ${agent.name}: +${agent._pendingBackings.reduce((s, p) => s + p.amount, 0)} chips`);
+        agent._pendingBackings = [];
+      }
+
       const delta = agent.chips - agent._startChips;
       if (delta === 0) continue;
 
-      const backings = this.store.getBackingsForAgent(agent.id);
+      // Only include active (non-pending) backings in P&L distribution
+      const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._activatedAt || Date.now() - b._activatedAt > 1000);
       if (backings.length === 0) continue;
 
       // Use _startChips as the total pool (owner + all backers)
@@ -844,6 +877,12 @@ class RoomManager {
 
     if (!lobbyAgent.chipStack || lobbyAgent.chipStack < 500) {
       return { error: 'Agent needs at least 500 chips. Fund your agent first!' };
+    }
+
+    // Enforce max stack per room tier
+    const maxStack = room.maxStack || Infinity;
+    if (lobbyAgent.chipStack > maxStack) {
+      return { error: `Max buy-in for ${room.name} is ${maxStack.toLocaleString()} chips ($${(maxStack / 10000).toFixed(0)} USDC). Withdraw some chips first.` };
     }
 
     const table = this._findAvailableTable(roomId);
@@ -961,6 +1000,17 @@ class RoomManager {
   topUpAgent(walletAddress, agentId, amount) {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
+
+    // Enforce max stack per room tier
+    const roomConfig = ROOM_CONFIGS[table.roomId];
+    if (roomConfig && roomConfig.maxStack) {
+      const agent = table.agents.find(a => a.id === agentId);
+      if (agent && agent.chips + amount > roomConfig.maxStack) {
+        const canAdd = roomConfig.maxStack - agent.chips;
+        if (canAdd <= 0) return { error: `Agent is already at the ${roomConfig.name} max (${roomConfig.maxStack.toLocaleString()} chips)` };
+        return { error: `Max for ${roomConfig.name} is ${roomConfig.maxStack.toLocaleString()} chips. You can add up to ${canAdd.toLocaleString()}.` };
+      }
+    }
 
     // Deduct from wallet
     const wallet = this.store.getWallet(walletAddress);
@@ -1245,6 +1295,7 @@ class RoomManager {
         buyIn: room.buyIn,
         bb: room.bb,
         baseChips: room.baseChips,
+        maxStack: room.maxStack || Infinity,
         tableCount: room.tables.length,
         playerCount,
         totalHands

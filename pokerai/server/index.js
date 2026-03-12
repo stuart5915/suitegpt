@@ -468,7 +468,7 @@ wss.on('connection', (ws) => {
         case 'claimPokerai': {
           if (!requireAuth(client, ws)) break;
           if (!rewardEngine) {
-            ws.send(JSON.stringify({ type: 'claimPokraiResult', data: { error: 'Rewards not active yet' } }));
+            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: 'Rewards not active yet' } }));
             break;
           }
           const addr = client.walletAddress;
@@ -479,8 +479,9 @@ wss.on('connection', (ws) => {
           }
 
           try {
-            // Distribute on-chain via rewards contract
-            if (chain && chain.distributeReward) {
+            const onChain = chain && chain.distributeReward;
+            // Distribute on-chain via rewards contract (if deployed)
+            if (onChain) {
               const txResult = await chain.distributeReward(addr, claimable);
               if (txResult.error) {
                 ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: txResult.error } }));
@@ -488,8 +489,8 @@ wss.on('connection', (ws) => {
               }
             }
             rewardEngine.recordClaim(addr, claimable);
-            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable } }));
-            console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI`);
+            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, testMode: !onChain } }));
+            console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI${onChain ? '' : ' (TEST MODE — no on-chain tx)'}`);
           } catch (e) {
             console.error('[Rewards] Claim failed:', e.message);
             ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: 'Claim failed — try again' } }));

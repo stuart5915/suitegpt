@@ -404,6 +404,7 @@ class PokerEngine {
 
     // Reset agents — bust HOUSE bots rebuy from pool, custom agents sit out
     // Auto-kick busted custom agents after 60s timeout
+    const lowChipThreshold = Math.floor(this.baseChips * 0.05); // 5% of base = critically low
     for (const a of this.agents) {
       if (a.chips <= 0 && a.isCustom) {
         if (!a._bustSince) {
@@ -420,20 +421,28 @@ class PokerEngine {
     }
 
     for (const a of this.agents) {
-      if (a.chips <= 0) {
-        if (!a.isCustom) {
-          // House bot: rebuy from contract pool
-          const rebuyAmount = Math.min(Math.floor(this.baseChips / 2), this.contractPool);
-          if (rebuyAmount > 0) {
-            this.contractPool -= rebuyAmount;
-            this.totalBuyins += rebuyAmount;
-            a.chips = rebuyAmount;
-            this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
-            this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">buys in ${rebuyAmount.toLocaleString()} from pool</span>` });
-          }
+      if (!a.isCustom && (a.chips <= 0 || a.chips < lowChipThreshold)) {
+        // House bot: rebuy when bust OR critically low (< 5% of base stack)
+        if (!a._bustCount) a._bustCount = 0;
+        if (a.chips <= 0) a._bustCount++;
+
+        // After 3 full busts, permanently sit this bot out
+        if (a._bustCount >= 3) {
+          a.chips = 0;
+          this.broadcast('log', { html: `<span class="pool-event">🚫 ${a.name}</span> <span class="fold">retired (bust 3x)</span>` });
+          continue;
         }
-        // Custom agents with 0 chips just sit out (folded = true below if chips <= 0)
+
+        const rebuyAmount = Math.min(this.baseChips, this.contractPool); // full rebuy
+        if (rebuyAmount >= Math.floor(this.baseChips * 0.25)) {
+          this.contractPool -= rebuyAmount;
+          this.totalBuyins += rebuyAmount;
+          a.chips = rebuyAmount;
+          this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
+          this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">rebuys ${rebuyAmount.toLocaleString()} from pool</span>` });
+        }
       }
+      // Custom agents with 0 chips just sit out (folded = true below if chips <= 0)
       a.folded = a.chips <= 0; // can't play with no chips
       a.currentBet = 0;
       a.roundBet = 0;
@@ -556,7 +565,7 @@ class PokerEngine {
 
   async runBettingRound(bbIdx) {
     // Betting continues until everyone has acted and all bets are matched
-    const n = this.agents.length;
+    let n = this.agents.length;
     let startIdx = this.currentTurnIndex;
     let lastRaiserIdx = -1;
     let actedCount = 0;
@@ -637,17 +646,47 @@ class PokerEngine {
       return true;
     }
 
-    // If all remaining players are all-in (or only one has chips), skip to showdown
+    // If all remaining players are all-in (or only one has chips), run out the board in stages
     const canAct = nonFolded.filter(a => !a.allIn && a.chips > 0);
     if (canAct.length <= 1) {
-      // Deal remaining community cards
-      while (this.communityCards.length < 5) {
-        this.communityCards.push(this.deck.pop());
+      this.broadcast('log', { html: '<span class="system">--- All-In! Running the board ---</span>' });
+
+      // Deal flop if not yet dealt
+      if (this.communityCards.length < 3) {
+        while (this.communityCards.length < 3) {
+          this.communityCards.push(this.deck.pop());
+        }
+        this.phase = 'flop';
+        const cardStr = this.communityCards.map(c => c.rank + c.suit).join(' ');
+        this.broadcast('log', { html: `<span class="system">--- Flop: ${cardStr} ---</span>` });
+        this.broadcastGameState();
+        await sleep(ACTION_DELAY * 2);
       }
+
+      // Deal turn
+      if (this.communityCards.length < 4) {
+        this.communityCards.push(this.deck.pop());
+        this.phase = 'turn';
+        const turnCard = this.communityCards[3];
+        this.broadcast('log', { html: `<span class="system">--- Turn: ${turnCard.rank}${turnCard.suit} ---</span>` });
+        this.broadcastGameState();
+        await sleep(ACTION_DELAY * 2);
+      }
+
+      // Deal river
+      if (this.communityCards.length < 5) {
+        this.communityCards.push(this.deck.pop());
+        this.phase = 'river';
+        const riverCard = this.communityCards[4];
+        this.broadcast('log', { html: `<span class="system">--- River: ${riverCard.rank}${riverCard.suit} ---</span>` });
+        this.broadcastGameState();
+        await sleep(ACTION_DELAY * 2);
+      }
+
       this.phase = 'showdown';
-      this.broadcast('log', { html: '<span class="system">--- All-In Showdown! ---</span>' });
+      this.broadcast('log', { html: '<span class="system">--- Showdown! ---</span>' });
       this.broadcastGameState();
-      await sleep(ACTION_DELAY * 2);
+      await sleep(ACTION_DELAY);
       this.resolveHand(nonFolded);
       return true;
     }
@@ -1234,6 +1273,8 @@ class PokerEngine {
     const oldChips = agent.chips;
     agent.chips += amount;
     agent.baseChips += amount;
+    // Adjust _startChips so the top-up isn't counted as a "win" in hand delta
+    if (agent._startChips !== undefined) agent._startChips += amount;
     // Update chip tracking for conservation check (external chip flow)
     this._lastChipTotal = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
     console.log(`[topUp] ${agent.name}: ${oldChips} + ${amount} = ${agent.chips} (baseChips: ${agent.baseChips})`);

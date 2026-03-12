@@ -256,7 +256,7 @@
   .poker-table {
     position: relative;
     width: 100%;
-    padding-bottom: 62%;
+    padding-bottom: 68%;
     margin-bottom: 20px;
     margin-top: 20px;
   }
@@ -284,7 +284,7 @@
 
   .community-area {
     position: absolute;
-    top: 38%;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
@@ -2829,7 +2829,7 @@
     .wallet-btn { font-size: 10px; padding: 5px 10px; }
 
     /* Poker table — full width, tighter */
-    .poker-table { padding-bottom: 72%; margin-bottom: 16px; margin-top: 12px; }
+    .poker-table { padding-bottom: 78%; margin-bottom: 16px; margin-top: 12px; }
     .table-felt { border-width: 4px; }
     .table-felt::before { inset: 6px; }
 
@@ -3367,6 +3367,9 @@
             </div>
           </div>
 
+          <!-- Table tabs (shown when multiple tables exist) — above the playing area -->
+          <div id="tableTabsBar" style="display:none;margin-bottom:0;gap:0;justify-content:flex-start"></div>
+
           <!-- Hand Timeline -->
           <div class="hand-timeline" id="handTimeline">
             <div class="timeline-label">HANDS</div>
@@ -3374,9 +3377,6 @@
               <div class="hand-dot live-dot active" onclick="jumpToLive()" id="liveBtn">● LIVE</div>
             </div>
           </div>
-
-          <!-- Table tabs (shown when multiple tables exist) -->
-          <div id="tableTabsBar" style="display:none;margin-bottom:12px;gap:8px;justify-content:center;flex-wrap:wrap"></div>
 
           <div class="poker-table" id="pokerTable" style="position:relative">
             <div class="hand-recap" id="handRecap">
@@ -4303,6 +4303,7 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
+        _openWithdrawPanel = null;
         const defundedAgent = myAgents.find(a => a.id === msg.data.agentId);
         if (defundedAgent) {
           defundedAgent.chipStack = msg.data.chipStack;
@@ -4435,7 +4436,7 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        showToast(`Backed ${msg.data.agentName} with ${msg.data.amount.toLocaleString()} chips!`, 'success');
+        showToast(`Backed ${msg.data.agentName} with ${msg.data.amount.toLocaleString()} chips! Activates next hand.`, 'success');
       }
       break;
 
@@ -4792,13 +4793,11 @@ function renderTableTabs() {
   bar.innerHTML = tables.map((t, i) => {
     const isActive = t.tableId === gameState.activeTableId;
     const hasMine = t.hasMyAgent;
-    const bg = isActive ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.06)';
-    const border = isActive ? 'var(--accent-primary)' : hasMine ? 'rgba(34,197,94,0.5)' : 'var(--border-light)';
-    const color = isActive ? '#fff' : hasMine ? 'var(--accent-green)' : 'var(--text-secondary)';
-    const shadow = isActive ? 'box-shadow:0 0 12px rgba(99,102,241,0.4);' : '';
-    const dot = hasMine ? '<span style="color:var(--accent-green);font-size:10px;margin-right:4px">●</span>' : '';
-    const icon = isActive ? '▶ ' : '';
-    return `<button onclick="switchTable('${t.tableId}')" style="padding:10px 22px;background:${bg};border:2px solid ${border};border-radius:10px;color:${color};font-size:15px;font-weight:800;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;${shadow}">${dot}${icon}Table ${i + 1} <span style="font-size:13px;opacity:0.8;margin-left:4px">(${t.playerCount} players)</span></button>`;
+    const bg = isActive ? 'var(--bg-surface)' : 'transparent';
+    const borderBottom = isActive ? '2px solid var(--accent-primary)' : '2px solid transparent';
+    const color = isActive ? '#fff' : hasMine ? 'var(--accent-green)' : 'var(--text-muted)';
+    const dot = hasMine && !isActive ? '<span style="color:var(--accent-green);font-size:8px;margin-right:4px">●</span>' : '';
+    return `<button onclick="switchTable('${t.tableId}')" style="padding:8px 16px;background:${bg};border:none;border-bottom:${borderBottom};border-radius:0;color:${color};font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;white-space:nowrap" onmouseover="if(!${isActive})this.style.background='rgba(255,255,255,0.05)'" onmouseout="if(!${isActive})this.style.background='transparent'">${dot}Table ${i + 1} <span style="font-size:11px;opacity:0.7">(${t.playerCount})</span></button>`;
   }).join('');
 }
 
@@ -4851,14 +4850,14 @@ function renderFullState() {
 // ============================================================
 // Clockwise from bottom-center: ↓ ↙ ← ↖ ↑ ↗ → ↘
 const SEAT_POSITIONS = [
-  { top: '88%', left: '50%' },   // 0: bottom-center
-  { top: '78%', left: '18%' },   // 1: bottom-left
-  { top: '48%', left: '2%' },    // 2: left
-  { top: '14%', left: '14%' },   // 3: top-left
-  { top: '4%',  left: '50%' },   // 4: top-center
-  { top: '14%', left: '86%' },   // 5: top-right
-  { top: '48%', left: '98%' },   // 6: right
-  { top: '78%', left: '82%' },   // 7: bottom-right
+  { top: '90%', left: '50%' },   // 0: bottom-center
+  { top: '80%', left: '16%' },   // 1: bottom-left
+  { top: '48%', left: '1%' },    // 2: left
+  { top: '10%', left: '12%' },   // 3: top-left
+  { top: '-1%', left: '50%' },   // 4: top-center (above table edge)
+  { top: '10%', left: '88%' },   // 5: top-right
+  { top: '48%', left: '99%' },   // 6: right
+  { top: '80%', left: '84%' },   // 7: bottom-right
 ];
 
 function renderTableSeats() {
@@ -5279,7 +5278,7 @@ function renderAgentsSidebar() {
           ${[1000, 2500, 5000, 10000].map(amt => `<button onclick="event.stopPropagation();topUpAgent('${agent.id}',${amt})" style="flex:1;min-width:50px;padding:5px 4px;font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">${amt >= 1000 ? (amt/1000)+'K' : amt}</button>`).join('')}
         </div>
       </div>` : ''}
-      ${wallet && activeRoom !== 'sandbox' ? `
+      ${wallet && activeRoom !== 'sandbox' && !agent.isCustom ? `
       <div style="width:100%;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
         ${agent.myBacking ? `
           <button onclick="event.stopPropagation();unbackAgent('${agent.myBacking.id}')" style="width:100%;padding:6px;font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);border-radius:6px;cursor:pointer;transition:all 0.2s">Withdraw Stake</button>
@@ -6029,7 +6028,9 @@ function applyAutoTopUpState(config) {
 let _roomPickerOpen = false;
 let _openFundPanel = null;  // track which agent's fund panel is open
 let _openRoomPicker = null; // track which agent's room picker is open
+let _openWithdrawPanel = null; // track which agent's withdraw panel is open
 let _selectedFundAmount = {};  // track selected preset per agent { agentId: amount }
+let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
 
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
@@ -6100,7 +6101,7 @@ function renderMyAgents() {
               ? `<button onclick="toggleRoomPicker('${agent.id}')" style="padding:10px 20px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 12px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(34,197,94,0.25)'">💵 JOIN TABLE</button>
                 <div style="display:flex;gap:4px">
                   <button onclick="toggleFundPanel('${agent.id}')" style="flex:1;font-size:11px;padding:6px 8px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700">+ Add</button>
-                  <button onclick="defundAgent('${agent.id}')" style="flex:1;font-size:11px;padding:6px 8px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700">Withdraw</button>
+                  <button onclick="toggleWithdrawPanel('${agent.id}')" style="flex:1;font-size:11px;padding:6px 8px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700">Withdraw</button>
                 </div>`
               : `<button onclick="toggleFundPanel('${agent.id}')" style="padding:10px 20px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:12px;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 12px rgba(245,197,66,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,197,66,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(245,197,66,0.25)'">💰 FUND</button>`
             }
@@ -6119,6 +6120,16 @@ function renderMyAgents() {
             <button onclick="confirmFund('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
           </div>
           <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> chips</div>
+        </div>
+        <!-- Withdraw panel (partial withdraw) -->
+        <div id="withdrawPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Withdraw chips to wallet:</div>
+          <div id="withdrawPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="withdrawAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
+            <button onclick="confirmWithdraw('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">WITHDRAW</button>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Agent stack: <span style="color:var(--accent-gold)">${agent.chipStack.toLocaleString()}</span> chips</div>
         </div>
         <!-- Room picker (shown when agent is funded — money tables only) -->
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
@@ -6410,6 +6421,18 @@ function toggleFundPanel(agentId) {
   } else {
     _openFundPanel = agentId;
     _openRoomPicker = null;
+    _openWithdrawPanel = null;
+  }
+  _applyOpenPanels();
+}
+
+function toggleWithdrawPanel(agentId) {
+  if (_openWithdrawPanel === agentId) {
+    _openWithdrawPanel = null;
+  } else {
+    _openWithdrawPanel = agentId;
+    _openFundPanel = null;
+    _openRoomPicker = null;
   }
   _applyOpenPanels();
 }
@@ -6421,6 +6444,7 @@ function toggleRoomPicker(agentId) {
   } else {
     _openRoomPicker = agentId;
     _openFundPanel = null;
+    _openWithdrawPanel = null;
     _roomPickerOpen = true;
   }
   _applyOpenPanels();
@@ -6432,6 +6456,12 @@ function _applyOpenPanels() {
     const id = el.id.replace('fundPanel-', '');
     el.style.display = (id === _openFundPanel) ? 'block' : 'none';
     if (id === _openFundPanel) _populateFundPresets(id);
+  });
+  // Show/hide withdraw panels
+  document.querySelectorAll('[id^="withdrawPanel-"]').forEach(el => {
+    const id = el.id.replace('withdrawPanel-', '');
+    el.style.display = (id === _openWithdrawPanel) ? 'block' : 'none';
+    if (id === _openWithdrawPanel) _populateWithdrawPresets(id);
   });
   // Show/hide room pickers
   document.querySelectorAll('[id^="roomPicker-"]').forEach(el => {
@@ -6478,13 +6508,67 @@ function confirmFund(agentId) {
   showToast(`Funding agent with ${amount.toLocaleString()} chips...`, 'info');
 }
 
-function defundAgent(agentId) {
+function defundAgent(agentId, amount) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  // Withdraw all chips back to wallet
-  ws.send(JSON.stringify({ type: 'defundAgent', agentId }));
+  const msg = { type: 'defundAgent', agentId };
+  if (amount) msg.amount = amount;
+  ws.send(JSON.stringify(msg));
+}
+
+function _populateWithdrawPresets(agentId) {
+  const presetsEl = document.getElementById('withdrawPresets-' + agentId);
+  if (!presetsEl) return;
+  // Find agent's current chip stack
+  const agent = myAgents.find(a => a.id === agentId);
+  const stack = agent ? agent.chipStack : 0;
+  if (stack <= 0) { presetsEl.innerHTML = '<div style="font-size:10px;color:var(--text-muted)">No chips to withdraw</div>'; return; }
+
+  const pcts = [
+    { label: '25%', pct: 0.25 },
+    { label: '50%', pct: 0.50 },
+    { label: '75%', pct: 0.75 },
+    { label: 'ALL', pct: 1.0 }
+  ];
+  const savedAmt = _selectedWithdrawAmount[agentId] || Math.floor(stack * 0.5);
+  presetsEl.innerHTML = pcts.map(p => {
+    const amt = p.pct === 1 ? stack : Math.floor(stack * p.pct / 500) * 500; // round down to 500
+    if (amt <= 0) return '';
+    const chipLabel = amt >= 1000 ? (amt / 1000).toFixed(amt % 1000 === 0 ? 0 : 1) + 'K' : amt;
+    const usdcLabel = '$' + (amt / 10000).toFixed(2);
+    const isSelected = amt === savedAmt;
+    const borderStyle = isSelected ? 'border-color:var(--accent-red);color:var(--accent-red)' : '';
+    return `<button onclick="_selectWithdrawPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${p.label}</div><div style="font-size:9px;opacity:0.7">${chipLabel}</div><div style="font-size:8px;opacity:0.5">${usdcLabel}</div></button>`;
+  }).filter(Boolean).join('');
+  const input = document.getElementById('withdrawAmount-' + agentId);
+  if (input && !input.value) input.value = savedAmt;
+}
+
+function _selectWithdrawPreset(agentId, amt, btn) {
+  _selectedWithdrawAmount[agentId] = amt;
+  document.getElementById('withdrawAmount-' + agentId).value = amt;
+  btn.parentNode.querySelectorAll('button').forEach(b => { b.style.borderColor = ''; b.style.color = ''; });
+  btn.style.borderColor = 'var(--accent-red)';
+  btn.style.color = 'var(--accent-red)';
+}
+
+function confirmWithdraw(agentId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  const amount = parseInt(document.getElementById('withdrawAmount-' + agentId).value);
+  const agent = myAgents.find(a => a.id === agentId);
+  if (!agent) { showToast('Agent not found', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('Enter an amount to withdraw', 'error'); return; }
+  if (amount > agent.chipStack) { showToast(`Agent only has ${agent.chipStack.toLocaleString()} chips`, 'error'); return; }
+
+  defundAgent(agentId, amount);
+  showToast(`Withdrawing ${amount.toLocaleString()} chips...`, 'info');
+  _openWithdrawPanel = null;
+  _applyOpenPanels();
 }
 
 function joinFundedAgent(agentId, roomId) {
