@@ -726,6 +726,9 @@ class RoomManager {
     // Create backing record (marked as pending — activates next hand)
     const backing = this.store.createBacking(walletAddress, agentId, amount, roomId);
 
+    // Mark as pending so it's excluded from P&L distribution until activated
+    if (backing) backing._pending = true;
+
     // Queue chips for next hand — don't add mid-hand (prevents exploit + fixes P&L math)
     if (!agent._pendingBackings) agent._pendingBackings = [];
     agent._pendingBackings.push({ backingId: backing?.id, amount });
@@ -796,9 +799,12 @@ class RoomManager {
         for (const pb of agent._pendingBackings) {
           agent.chips += pb.amount;
           pendingTotal += pb.amount;
-          // Mark backing as activated with timestamp for cooldown
+          // Mark backing as activated — clear pending flag
           const backing = this.store.getBackingById(pb.backingId);
-          if (backing) backing._activatedAt = Date.now();
+          if (backing) {
+            delete backing._pending;
+            backing._activatedAt = Date.now();
+          }
         }
         // Update _startChips to include newly activated backings
         // so they don't inflate delta on subsequent hands
@@ -809,17 +815,19 @@ class RoomManager {
       if (delta === 0) continue;
 
       // Only include active (non-pending) backings in P&L distribution
-      const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._activatedAt || Date.now() - b._activatedAt > 1000);
+      // _pending = not yet activated, _activatedAt < 1s = just activated this cycle
+      const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._pending && (!b._activatedAt || Date.now() - b._activatedAt > 1000));
       if (backings.length === 0) continue;
 
-      // Use _startChips as the total pool (owner + all backers)
-      // so delta is distributed proportionally between owner and backers
+      // Backer's share = their original stake / total pool at start of hand
+      // This gives a fixed proportional ownership that doesn't drift
+      // e.g. agent 10K + backer 1K = backer owns 1K/11K = 9.09% of gains/losses
       const totalPool = agent._startChips;
       if (totalPool <= 0) continue;
 
       const updates = [];
       for (const b of backings) {
-        const share = Math.min(1, b.currentValue / totalPool); // clamp to prevent runaway
+        const share = Math.min(1, b.chipsStaked / totalPool);
         const backerDelta = Math.floor(delta * share);
         const newValue = Math.max(0, b.currentValue + backerDelta);
         updates.push({ id: b.id, currentValue: newValue });
