@@ -3597,11 +3597,77 @@
                 window.closeExpand();
             }
         };
-        window.depositAutoVault = function() {
+        // ── Auto Vault Contract Config ──
+        var AUTO_VAULT_ADDRESS = ''; // Set after deployment
+        var AUTO_VAULT_ABI = [
+            'function deposit(uint256 assets, address receiver) returns (uint256)',
+            'function withdraw(uint256 assets, address receiver, address owner) returns (uint256)',
+            'function totalAssets() view returns (uint256)',
+            'function balanceOf(address) view returns (uint256)',
+            'function getVaultInfo() view returns (uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256,uint256)',
+            'function getUserPosition(address) view returns (uint256 shares, uint256 value)'
+        ];
+
+        window.depositAutoVault = async function() {
             var amt = document.getElementById('av-deposit-amt').value;
             if (!amt || parseFloat(amt) <= 0) return;
-            alert('Auto Vault deposit coming soon. Amount: ' + amt + ' USDC');
+
+            if (!AUTO_VAULT_ADDRESS) {
+                alert('Auto Vault contract not deployed yet. Coming soon!');
+                return;
+            }
+
+            if (!window.ethereum) { alert('Connect a wallet first'); return; }
+
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+                var vault = new ethers.Contract(AUTO_VAULT_ADDRESS, AUTO_VAULT_ABI, signer);
+
+                var amount = ethers.parseUnits(amt, 6);
+                document.getElementById('av-deposit-btn').disabled = true;
+                document.getElementById('av-deposit-btn').textContent = 'Approving...';
+
+                // Approve
+                var allowance = await usdc.allowance(await signer.getAddress(), AUTO_VAULT_ADDRESS);
+                if (allowance < amount) {
+                    var approveTx = await usdc.approve(AUTO_VAULT_ADDRESS, amount);
+                    await approveTx.wait();
+                }
+
+                // Deposit
+                document.getElementById('av-deposit-btn').textContent = 'Depositing...';
+                var depositTx = await vault.deposit(amount, await signer.getAddress());
+                await depositTx.wait();
+
+                document.getElementById('av-deposit-btn').textContent = 'Deposit USDC';
+                document.getElementById('av-deposit-btn').disabled = false;
+                document.getElementById('av-deposit-amt').value = '';
+
+                // Refresh position
+                var pos = await vault.getUserPosition(await signer.getAddress());
+                document.getElementById('av-position').textContent = '$' + ethers.formatUnits(pos.value, 6);
+
+                alert('Deposited ' + amt + ' USDC into Auto Vault!');
+            } catch (e) {
+                console.error('Auto Vault deposit error:', e);
+                document.getElementById('av-deposit-btn').textContent = 'Deposit USDC';
+                document.getElementById('av-deposit-btn').disabled = false;
+                alert('Deposit failed: ' + (e.reason || e.message));
+            }
         };
+
+        // Load auto vault info on page load
+        (async function loadAutoVaultInfo() {
+            if (!AUTO_VAULT_ADDRESS || !window.ethereum) return;
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var vault = new ethers.Contract(AUTO_VAULT_ADDRESS, AUTO_VAULT_ABI, provider);
+                var info = await vault.getVaultInfo();
+                document.getElementById('av-tvl').textContent = '$' + parseFloat(ethers.formatUnits(info[0], 6)).toLocaleString(undefined, {maximumFractionDigits: 0});
+            } catch(e) { /* vault not deployed yet */ }
+        })();
 
         // Simulated regime detection based on toolkit insights
         (function updateAutoVaultRegime() {

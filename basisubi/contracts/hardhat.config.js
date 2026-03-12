@@ -6,7 +6,8 @@ module.exports = {
   solidity: {
     version: "0.8.24",
     settings: {
-      optimizer: { enabled: true, runs: 200 }
+      viaIR: true,
+      optimizer: { enabled: true, runs: 10 }
     }
   },
   networks: {
