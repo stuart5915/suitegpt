@@ -4320,11 +4320,8 @@ function handleMessage(msg) {
         showToast(`Agent joined ${rn}!`, 'success');
         if (msg.data.roomId) activeRoom = msg.data.roomId;
         refreshMyAgentsView();
-        // Auto-switch to Arena view and show the table the agent joined
-        showView('arena');
-        if (msg.data.tableId) {
-          switchTable(msg.data.tableId);
-        }
+        // Show popup: watch agent or seat another
+        showJoinedPopup(msg.data.roomId, msg.data.tableId);
       }
       break;
 
@@ -6508,6 +6505,29 @@ function topUpAgent(agentId, amount) {
 function toggleTopUp(agentId) {
   const el = document.getElementById('topup-' + agentId);
   if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+function showJoinedPopup(roomId, tableId) {
+  // Remove existing popup if any
+  const old = document.getElementById('joinedPopup');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'joinedPopup';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-surface);border:1px solid var(--border-light);border-radius:16px;padding:28px 32px;max-width:360px;width:90%;text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#9989;</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;color:var(--text-primary);margin-bottom:6px">Agent Seated!</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">Your agent is now playing. What next?</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="document.getElementById('joinedPopup').remove();showView('arena');${tableId ? "switchTable('" + tableId + "');" : ''}" style="padding:12px 20px;background:var(--accent-green);border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">&#128064; Watch Agent Play</button>
+        <button onclick="document.getElementById('joinedPopup').remove()" style="padding:12px 20px;background:var(--bg-dark);border:1px solid var(--border-light);border-radius:10px;color:var(--text-primary);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-primary)'" onmouseout="this.style.borderColor='var(--border-light)'">&#43; Seat Another Agent</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function leaveTable(agentId) {
