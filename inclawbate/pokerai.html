@@ -4290,12 +4290,16 @@ function connect() {
 
   ws.onopen = () => {
     setConnectionStatus('live');
-    showToast('Connected to live game!', 'success');
     // Ping every 30s to keep alive
     if (pingInterval) clearInterval(pingInterval);
     pingInterval = setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
     }, 30000);
+    // Re-identify wallet on reconnect so server knows who we are
+    const wallet = getWallet();
+    if (wallet) {
+      ws.send(JSON.stringify({ type: 'setWallet', walletAddress: wallet.address }));
+    }
   };
 
   ws.onmessage = (event) => {
