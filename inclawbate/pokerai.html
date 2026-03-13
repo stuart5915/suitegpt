@@ -5679,7 +5679,7 @@ async function renderLeaderboard() {
     const baseUrl = wsUrl ? new URL(wsUrl).origin : '';
     const res = await fetch(baseUrl + '/roster');
     const data = await res.json();
-    _leaderboardCache = data.agents || [];
+    _leaderboardCache = Array.isArray(data) ? data : (data.agents || []);
   } catch (e) {
     // Fallback to current table agents
     _leaderboardCache = gameState.agents.map(a => ({ ...a, room: activeRoom }));

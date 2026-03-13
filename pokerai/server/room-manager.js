@@ -1395,6 +1395,7 @@ class RoomManager {
   getGlobalRoster() {
     const seen = new Set();
     const roster = [];
+    // 1. Active agents at tables (live chip counts)
     for (const [roomId, room] of Object.entries(this.rooms)) {
       for (const table of room.tables) {
         for (const a of table.agents) {
@@ -1420,6 +1421,30 @@ class RoomManager {
           });
         }
       }
+    }
+    // 2. Stored agents not currently at a table (persisted stats from DB)
+    for (const a of this.store.agents) {
+      if (seen.has(a.id)) continue;
+      if (!a.handsPlayed || a.handsPlayed === 0) continue; // skip agents that never played
+      seen.add(a.id);
+      roster.push({
+        id: a.id,
+        name: a.name,
+        emoji: a.emoji,
+        style: a.style,
+        chips: a.chipStack || 0,
+        baseChips: 0,
+        handsWon: a.handsWon || 0,
+        handsPlayed: a.handsPlayed || 0,
+        biggestPot: a.biggestPot || 0,
+        description: a.description,
+        isCustom: true,
+        walletAddress: a.walletAddress || null,
+        traits: a.traits,
+        rules: a.rules || {},
+        room: null,
+        roomName: 'Offline'
+      });
     }
     // Sort by win rate descending, then hands played descending as tiebreaker
     roster.sort((a, b) => {
