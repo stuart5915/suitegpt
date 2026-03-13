@@ -200,11 +200,17 @@ let pollTimer = null;
 
 // === WALLET ===
 
+var _eth = null; // Stored EIP-1193 provider reference
+
+function getEth() {
+    if (_eth) return _eth;
+    return window.ethereum || (window.parent && window.parent.ethereum) || null;
+}
+
 async function connectWallet() {
-    // Detect provider: prefer parent window's ethereum (for iframe), then window.ethereum
-    var eth = window.ethereum;
-    if (!eth && window.parent && window.parent.ethereum) eth = window.parent.ethereum;
+    var eth = getEth();
     if (!eth) { alert('No wallet detected. Open this page in your wallet browser or install MetaMask.'); return; }
+    _eth = eth;
 
     try {
         // Request accounts first (required for Coinbase Wallet browser)
@@ -329,11 +335,12 @@ async function doDeposit() {
 
     try {
         // Ensure we're on Base before sending
+        var eth = getEth();
         const network = await provider.getNetwork();
         if (Number(network.chainId) !== BASE_CHAIN_ID) {
             btn.innerHTML = '<span class="loading"></span>Switching to Base...';
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-            provider = new ethers.BrowserProvider(window.ethereum);
+            await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            provider = new ethers.BrowserProvider(eth);
             signer = await provider.getSigner();
             contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         }
@@ -379,7 +386,7 @@ async function doWithdraw() {
 
     try {
         // Ensure signer is still valid and on Base
-        var eth = window.ethereum || (window.parent && window.parent.ethereum);
+        var eth = getEth();
         if (eth) {
             const network = await provider.getNetwork();
             if (Number(network.chainId) !== BASE_CHAIN_ID) {
@@ -576,15 +583,15 @@ document.getElementById('endDate').addEventListener('input', updateSummary);
 document.getElementById('interval').addEventListener('change', updateSummary);
 
 // Handle wallet account/network changes
-var eth = window.ethereum || (window.parent && window.parent.ethereum);
-if (eth) {
-    try { eth.on('accountsChanged', () => location.reload()); } catch(e) {}
-    try { eth.on('chainChanged', () => location.reload()); } catch(e) {}
+var _initEth = getEth();
+if (_initEth) {
+    try { _initEth.on('accountsChanged', () => location.reload()); } catch(e) {}
+    try { _initEth.on('chainChanged', () => location.reload()); } catch(e) {}
 }
 
 // Auto-connect if wallet is already connected (no extra click needed)
 (async function() {
-    var eth = window.ethereum || (window.parent && window.parent.ethereum);
+    var eth = getEth();
     if (!eth) return;
     try {
         const accounts = await eth.request({ method: 'eth_accounts' });
