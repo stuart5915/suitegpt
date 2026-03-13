@@ -936,6 +936,9 @@ class RoomManager {
 
     const lobbyAgent = walletLobby[lobbyIdx];
 
+    // Reset baseChips for real-money rooms — sandbox P&L shouldn't carry over
+    lobbyAgent.baseChips = lobbyAgent.chipStack;
+
     // If agent is already funded (via fundAgent), use their existing stack
     // Otherwise fund inline (legacy flow)
     let fundedInline = false;
