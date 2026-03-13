@@ -660,41 +660,28 @@ function renderDashboard() {
     html+='<button class="ag-btn danger" onclick="dashDelete()">Delete</button>';
     html+='</div></div>';
 
-    // ── 1. SCHEDULE ──
-    html+='<div class="dash-section"><div class="dash-section-title">Schedule <span style="font-size:0.6rem;font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0">(your local time)</span></div>';
+    // ══════════════════════════════════════
+    // 1. SCHEDULE & CONTENT CALENDAR (combined)
+    // ══════════════════════════════════════
+    html+='<div class="dash-section"><div class="dash-section-title">Schedule & Content</div>';
 
-    // Labels — local time every 6h
+    // Timeline bar
+    html+='<div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:4px">Posting times <span style="opacity:0.6">(click to add/remove, max 3)</span></div>';
     html+='<div class="schedule-labels"><span>'+fmtLocalHour(0)+'</span><span>'+fmtLocalHour(6)+'</span><span>'+fmtLocalHour(12)+'</span><span>'+fmtLocalHour(18)+'</span><span>'+fmtLocalHour(0)+'</span></div>';
-
-    // Bar
     html+='<div class="schedule-bar" id="scheduleBar" onclick="scheduleClick(event)">';
     html+='<div class="schedule-bar-inner">';
-    // Hour tick marks every 3h
     for(var h=0;h<24;h+=3) html+='<div class="schedule-hour-mark" style="left:'+((h/24)*100)+'%"></div>';
-    // Peak engagement zones (local time)
     html+='<div class="schedule-peak morning" style="left:'+((8/24)*100)+'%;width:'+((2/24)*100)+'%"></div>';
     html+='<div class="schedule-peak afternoon" style="left:'+((12/24)*100)+'%;width:'+((2/24)*100)+'%"></div>';
     html+='<div class="schedule-peak evening" style="left:'+((17/24)*100)+'%;width:'+((3/24)*100)+'%"></div>';
     html+='</div>';
-    // "Now" indicator
     var _now=new Date(), _nowPct=((_now.getHours()*60+_now.getMinutes())/(24*60))*100;
     html+='<div class="schedule-now" style="left:'+_nowPct.toFixed(1)+'%"></div>';
-    // Dots (placed in local time positions)
     _dashSchedule.forEach(function(utcH) {
         var localH=utcToLocalHour(utcH);
         html+='<div class="schedule-dot" style="left:'+((localH/24)*100)+'%" title="'+utcToLocal(utcH)+'" onclick="event.stopPropagation();removeTime('+utcH+')"></div>';
     });
     html+='</div>';
-
-    // Legend
-    html+='<div class="schedule-legend">';
-    html+='<span><span class="schedule-legend-swatch" style="background:hsla(142,52%,48%,0.25)"></span>Morning</span>';
-    html+='<span><span class="schedule-legend-swatch" style="background:hsla(40,80%,50%,0.25)"></span>Lunch</span>';
-    html+='<span><span class="schedule-legend-swatch" style="background:hsla(270,60%,60%,0.25)"></span>Evening</span>';
-    html+='<span><span class="schedule-legend-swatch" style="background:#f87171;width:6px;height:6px;border-radius:50%"></span>Now</span>';
-    html+='</div>';
-
-    // Pills
     html+='<div class="schedule-pills" id="schedulePills">';
     _dashSchedule.sort(function(a,b){return a-b;}).forEach(function(utcH) {
         html+='<span class="schedule-pill">'+utcToLocal(utcH)+' <span class="schedule-pill-x" onclick="removeTime('+utcH+')">&times;</span></span>';
@@ -702,22 +689,31 @@ function renderDashboard() {
     html+='</div>';
     var nxt=nextPostIn(_dashSchedule);
     if(nxt&&st==='active') html+='<div class="schedule-next">Next post in ~'+nxt+'</div>';
-    if(_dashSchedule.length>=3) html+='<div class="schedule-note">Max 3 posts per day</div>';
-    else if(!_dashSchedule.length) html+='<div class="schedule-note">Click a highlighted zone to pick an optimal posting time (max 3)</div>';
-    else html+='<div class="schedule-note">Click the timeline to add more times (max 3)</div>';
-    html+='</div>';
 
-    // ── 2. CONTENT CALENDAR ──
-    html+='<div class="dash-section"><div class="dash-section-title">Content Calendar</div>';
-    html+='<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:var(--space-sm)">7-day content plan. Review, edit, and approve before they post.</div>';
+    // Content Calendar (inside same section)
+    html+='<div style="margin-top:var(--space-lg);border-top:1px solid var(--border-subtle);padding-top:var(--space-md)">';
+    html+='<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:var(--space-sm)">7-day content plan \u2014 review, edit, and approve before they post.</div>';
     html+='<div class="cal-strip" id="calStrip"></div>';
     html+='<div class="cal-generate-all"><button class="ag-btn primary" onclick="calGenerateDay()" id="calGenBtn">Generate drafts for this day</button><span style="font-size:0.68rem;color:var(--text-dim)" id="calGenHint"></span></div>';
     html+='<div class="cal-slots" id="calSlots"><div style="color:var(--text-dim);font-size:0.82rem">Select a day above...</div></div>';
     html+='</div>';
+    html+='</div>';
 
-    // ── 3. CONTENT SETTINGS ──
+    // ══════════════════════════════════════
+    // 2. PERSONALITY (combined settings + studio, collapsible)
+    // ══════════════════════════════════════
     var currentTone=p.agent_tone||detectVibe(p.agent_persona);
-    html+='<div class="dash-section"><div class="dash-section-title">Content Settings</div>';
+    var backstory=p.agent_backstory||'';
+    var examples=Array.isArray(p.agent_examples)?p.agent_examples:[];
+    var opinions=p.agent_opinions||'';
+    var vocab=p.agent_vocabulary||{};
+    var rules=p.agent_rules||{};
+    var knowledge=p.agent_knowledge||'';
+    var hasPersonality=!!(backstory||examples.length||opinions||knowledge||vocab.use_words||vocab.avoid_words||rules.dos||rules.donts);
+
+    html+='<div class="dash-section"><div class="dash-section-title">Personality</div>';
+
+    // Vibe + basics (always visible)
     html+='<div style="margin-bottom:var(--space-sm);font-size:0.72rem;color:var(--text-dim)">Vibe</div>';
     html+='<div class="vibe-grid">';
     ['degen','hype','chill','professional','meme','custom'].forEach(function(v) {
@@ -726,25 +722,22 @@ function renderDashboard() {
     html+='</div>';
     html+='<div class="settings-row"><label>Token</label><input type="text" id="dashSymbol" value="'+esc(p.token_symbol||'')+'" placeholder="e.g. CLAWS" maxlength="20"></div>';
     html+='<div class="settings-row"><label>Catchphrase</label><input type="text" id="dashCatch" value="'+esc(p.agent_catchphrase||'')+'" placeholder="Optional signature phrase" maxlength="100"></div>';
-    html+='<div style="margin-top:var(--space-sm)"><button class="ag-btn primary" onclick="dashSaveSettings()">Save Settings</button></div>';
-    html+='</div>';
+    html+='<div style="margin-top:var(--space-sm);margin-bottom:var(--space-md)"><button class="ag-btn primary" onclick="dashSaveSettings()">Save Settings</button></div>';
 
-    // ── 3b. PERSONALITY STUDIO ──
-    var backstory=p.agent_backstory||'';
-    var examples=Array.isArray(p.agent_examples)?p.agent_examples:[];
-    var opinions=p.agent_opinions||'';
-    var vocab=p.agent_vocabulary||{};
-    var rules=p.agent_rules||{};
-    var knowledge=p.agent_knowledge||'';
-
-    html+='<div class="dash-section"><div class="dash-section-title">\u{1F3AD} Personality Studio</div>';
-    html+='<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:var(--space-md)">Go deeper than vibes. Give your agent a real character.</div>';
+    // Collapsible Personality Studio
+    html+='<div style="border-top:1px solid var(--border-subtle);padding-top:var(--space-md)">';
+    html+='<button type="button" onclick="togglePersonalityStudio()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:0;width:100%;text-align:left">';
+    html+='<span style="font-family:var(--font-display);font-size:0.82rem;font-weight:800;color:var(--text-primary)">Advanced Personality</span>';
+    html+='<span style="font-size:0.68rem;color:var(--text-dim)">'+(hasPersonality?'(configured)':'(optional)')+'</span>';
+    html+='<span id="personalityArrow" style="margin-left:auto;color:var(--text-dim);transition:transform 0.2s;font-size:0.8rem">\u25B6</span>';
+    html+='</button>';
+    html+='<div id="personalityStudio" style="display:none;margin-top:var(--space-md)">';
 
     // Backstory
     html+='<div class="persona-field">';
     html+='<label class="persona-label">Identity & Backstory</label>';
     html+='<div class="persona-hint">Who is this agent? What\'s their background, personality, what do they care about?</div>';
-    html+='<textarea id="pBackstory" class="persona-textarea" maxlength="2000" placeholder="e.g. A retired degen trader who found enlightenment through lobster memes. Speaks in lowercase, drops alpha casually, always bullish on community projects...">'+esc(backstory)+'</textarea>';
+    html+='<textarea id="pBackstory" class="persona-textarea" maxlength="2000" placeholder="e.g. A retired degen trader who found enlightenment through lobster memes...">'+esc(backstory)+'</textarea>';
     html+='</div>';
 
     // Example tweets
@@ -759,35 +752,34 @@ function renderDashboard() {
     html+='<button type="button" class="persona-add-btn" onclick="addExampleField()">+ Add example</button>';
     html+='</div>';
 
-    // Opinions & takes
+    // Opinions
     html+='<div class="persona-field">';
     html+='<label class="persona-label">Opinions & Takes</label>';
-    html+='<div class="persona-hint">What is this agent bullish on? Skeptical of? What hot takes does it have?</div>';
-    html+='<textarea id="pOpinions" class="persona-textarea" maxlength="1000" placeholder="e.g. Bullish on UBI and community tokens. Thinks most NFT projects are scams. Loves on-chain games. Skeptical of VC-backed tokens...">'+esc(opinions)+'</textarea>';
+    html+='<textarea id="pOpinions" class="persona-textarea" maxlength="1000" placeholder="e.g. Bullish on UBI and community tokens. Thinks most NFT projects are scams...">'+esc(opinions)+'</textarea>';
     html+='</div>';
 
-    // Knowledge base
+    // Knowledge
     html+='<div class="persona-field">';
     html+='<label class="persona-label">Knowledge Base</label>';
-    html+='<div class="persona-hint">Paste info the agent should reference \u2014 stats, docs, facts, URLs. The more specific, the better the output.</div>';
-    html+='<textarea id="pKnowledge" class="persona-textarea tall" maxlength="5000" placeholder="e.g. CLAWS token: 0x7ca4... on Base. Total supply 1B. 40% LP locked 1 year. Staking APY ~35%. 98 apps on inclawbate.com. Founded by Stuart in 2025...">'+esc(knowledge)+'</textarea>';
+    html+='<div class="persona-hint">Paste facts, stats, docs, URLs the agent should reference.</div>';
+    html+='<textarea id="pKnowledge" class="persona-textarea tall" maxlength="5000" placeholder="e.g. CLAWS token: 0x7ca4... on Base. Total supply 1B. 40% LP locked...">'+esc(knowledge)+'</textarea>';
     html+='</div>';
 
     // Vocabulary
     html+='<div class="persona-field">';
     html+='<label class="persona-label">Vocabulary</label>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm)">';
-    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">Words to USE</div><input id="pVocabUse" class="persona-input" placeholder="e.g. ser, gm, lfg, based, wagmi" value="'+esc(vocab.use_words||'')+'"></div>';
-    html+='<div><div class="persona-hint" style="color:#f87171">Words to AVOID</div><input id="pVocabAvoid" class="persona-input" placeholder="e.g. excited, announce, leverage" value="'+esc(vocab.avoid_words||'')+'"></div>';
+    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">Words to USE</div><input id="pVocabUse" class="persona-input" placeholder="e.g. ser, gm, lfg, based" value="'+esc(vocab.use_words||'')+'"></div>';
+    html+='<div><div class="persona-hint" style="color:#f87171">Words to AVOID</div><input id="pVocabAvoid" class="persona-input" placeholder="e.g. excited, announce" value="'+esc(vocab.avoid_words||'')+'"></div>';
     html+='</div>';
     html+='</div>';
 
-    // Do's and Don'ts
+    // Rules
     html+='<div class="persona-field">';
     html+='<label class="persona-label">Rules</label>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm)">';
-    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">DO</div><textarea id="pDos" class="persona-textarea short" placeholder="e.g. Reference real stats, use lowercase, end with a question sometimes...">'+esc(rules.dos||'')+'</textarea></div>';
-    html+='<div><div class="persona-hint" style="color:#f87171">DON\'T</div><textarea id="pDonts" class="persona-textarea short" placeholder="e.g. Don\'t shill price, don\'t use emojis excessively, never tag Elon...">'+esc(rules.donts||'')+'</textarea></div>';
+    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">DO</div><textarea id="pDos" class="persona-textarea short" placeholder="e.g. Reference real stats, use lowercase...">'+esc(rules.dos||'')+'</textarea></div>';
+    html+='<div><div class="persona-hint" style="color:#f87171">DON\'T</div><textarea id="pDonts" class="persona-textarea short" placeholder="e.g. Don\'t shill price, no emojis...">'+esc(rules.donts||'')+'</textarea></div>';
     html+='</div>';
     html+='</div>';
 
@@ -800,21 +792,21 @@ function renderDashboard() {
     html+='<div style="font-size:0.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Preview Tweet</div>';
     html+='<div id="previewText" style="font-size:0.88rem;color:var(--text-secondary);line-height:1.45;white-space:pre-wrap"></div>';
     html+='</div>';
-    html+='</div>';
+    html+='</div>'; // close personalityStudio
+    html+='</div>'; // close collapsible wrapper
+    html+='</div>'; // close personality dash-section
 
-    // ── 4. AUTO-POST ──
-    html+='<div class="dash-section">';
-    html+='<div class="toggle-row" style="border-bottom:none"><div><div class="toggle-label">Auto-post</div><div class="toggle-desc">Agent posts automatically at your scheduled times above</div></div>';
-    html+='<label class="toggle-switch"><input type="checkbox" id="toggleAutoPost" '+(p.agent_auto_post!==false?'checked':'')+' onchange="dashToggle(\'agent_auto_post\',this.checked)"><span class="toggle-track"></span></label></div>';
-    html+='</div>';
-
-    // ── 5. AUTO-REPLY ──
+    // ══════════════════════════════════════
+    // 3. POSTING (combined auto-post + auto-reply)
+    // ══════════════════════════════════════
     var replyLimit=p.agent_reply_limit||10;
-    html+='<div class="dash-section"><div class="dash-section-title">Auto-Reply</div>';
-    html+='<div class="toggle-row"><div><div class="toggle-label">Reply to mentions</div><div class="toggle-desc">AI reads mentions of your X account and replies in your agent\'s tone</div></div>';
+    html+='<div class="dash-section"><div class="dash-section-title">Posting</div>';
+    html+='<div class="toggle-row"><div><div class="toggle-label">Auto-post</div><div class="toggle-desc">Agent posts automatically at your scheduled times</div></div>';
+    html+='<label class="toggle-switch"><input type="checkbox" id="toggleAutoPost" '+(p.agent_auto_post!==false?'checked':'')+' onchange="dashToggle(\'agent_auto_post\',this.checked)"><span class="toggle-track"></span></label></div>';
+    html+='<div class="toggle-row"><div><div class="toggle-label">Auto-reply</div><div class="toggle-desc">AI reads mentions and replies in your agent\'s tone</div></div>';
     html+='<label class="toggle-switch"><input type="checkbox" id="toggleAutoReply" '+(p.agent_auto_reply?'checked':'')+' onchange="dashToggle(\'agent_auto_reply\',this.checked)"><span class="toggle-track"></span></label></div>';
-    html+='<div style="margin-top:var(--space-md)">';
-    html+='<div class="settings-row"><label>Daily limit</label><select id="dashReplyLimit" onchange="dashSaveReplyLimit()">';
+    html+='<div style="margin-top:var(--space-sm)">';
+    html+='<div class="settings-row"><label>Reply limit</label><select id="dashReplyLimit" onchange="dashSaveReplyLimit()">';
     [5,10,20,50,0].forEach(function(n){
         var label=n===0?'Unlimited':n+' replies/day';
         html+='<option value="'+n+'"'+(replyLimit===n?' selected':'')+'>'+label+'</option>';
@@ -827,7 +819,7 @@ function renderDashboard() {
     html+='</div>';
     html+='</div>';
 
-    // ── 5. POST HISTORY ──
+    // ── 4. POST HISTORY ──
     html+='<div class="dash-section"><div class="dash-section-title">Post History</div>';
     html+='<div id="dashPosts" style="font-size:0.8rem;color:var(--text-dim)">Loading...</div>';
     html+='</div>';
@@ -1169,6 +1161,15 @@ async function dashDelete() {
         if(r.ok) { toast('Agent deleted'); closeDashboard(); }
         else { var d=await r.json(); toast(d.error||'Failed',true); }
     } catch(e) { toast('Network error',true); }
+}
+
+function togglePersonalityStudio() {
+    var el=document.getElementById('personalityStudio');
+    var arrow=document.getElementById('personalityArrow');
+    if(!el) return;
+    var open=el.style.display!=='none';
+    el.style.display=open?'none':'block';
+    if(arrow) arrow.style.transform=open?'rotate(0deg)':'rotate(90deg)';
 }
 
 function dashPickVibe(btn) {
