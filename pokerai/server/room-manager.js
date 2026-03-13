@@ -1280,6 +1280,11 @@ class RoomManager {
     return total;
   }
 
+  getChipsInLobby(walletAddress) {
+    const walletLobby = this.lobbyAgents.get(walletAddress) || [];
+    return walletLobby.reduce((sum, a) => sum + (a.chipStack || 0), 0);
+  }
+
   // === Wallet ===
 
   getWalletBalance(walletAddress) {

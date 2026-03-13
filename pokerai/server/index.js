@@ -167,7 +167,8 @@ wss.on('connection', (ws) => {
                 const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
                 const expected = onChainChips - withdrawnChips;
                 const inPlay = rooms.getChipsInPlay(client.walletAddress);
-                const total = wallet.balance + inPlay;
+                const inLobby = rooms.getChipsInLobby(client.walletAddress);
+                const total = wallet.balance + inPlay + inLobby;
                 if (expected > total) {
                   // Server missed a deposit — credit the difference
                   const credit = expected - total;
@@ -632,9 +633,10 @@ app.post('/check-deposit', async (req, res) => {
     // If on-chain says they deposited more than server knows about, credit the difference
     const expectedMinBalance = onChainChips - withdrawnChips;
     const agentChipsInPlay = rooms.getChipsInPlay(addr);
-    const totalServerChips = serverBalance + agentChipsInPlay;
+    const agentChipsInLobby = rooms.getChipsInLobby(addr);
+    const totalServerChips = serverBalance + agentChipsInPlay + agentChipsInLobby;
 
-    console.log(`[CheckDeposit] ${addr}: onChain=${onChainChips} chips deposited, ${withdrawnChips} withdrawn, server balance=${serverBalance}, in play=${agentChipsInPlay}, total=${totalServerChips}`);
+    console.log(`[CheckDeposit] ${addr}: onChain=${onChainChips} chips deposited, ${withdrawnChips} withdrawn, server balance=${serverBalance}, in play=${agentChipsInPlay}, lobby=${agentChipsInLobby}, total=${totalServerChips}`);
 
     if (expectedMinBalance > totalServerChips) {
       // Server missed a deposit — credit the difference
