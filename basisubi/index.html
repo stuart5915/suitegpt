@@ -1528,12 +1528,11 @@
         <div class="nav-inner">
             <a href="#" class="nav-brand">Basis <span style="font-size:0.65em; font-weight:400; color:var(--text-dim); margin-left:6px;">by <span style="color:var(--accent-bright)">Inclawbate</span></span></a>
             <ul class="nav-links">
-                <li><a href="#how">How It Works</a></li>
-                <li><a href="#cl101">Liquidity 101</a></li>
-                <li><a href="#simulate">Simulate</a></li>
-                <li><a href="#deepdive">The Story</a></li>
-                <li><a href="#toolkit">Toolkit</a></li>
                 <li><a href="#marketplace">Vaults</a></li>
+                <li><a href="#how">How It Works</a></li>
+                <li><a href="#toolkit">Toolkit</a></li>
+                <li><a href="#simulate">Simulate</a></li>
+                <li><a href="#learn">Learn</a></li>
                 <li><a href="/dashboard" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
             </ul>
             <button class="nav-wallet-btn" id="nav-wallet-btn" onclick="navConnectWallet()">Connect Wallet</button>
@@ -1549,19 +1548,19 @@
         <div class="hero-content">
             <div class="hero-badge">
                 <span class="pulse"></span>
-                0% Fees &mdash; Pure Public Good
+                Live on Base &mdash; Withdraw Anytime
             </div>
             <h1>Basis</h1>
-            <div class="hero-subtitle">Your DeFi Toolkit on Base</div>
+            <div class="hero-subtitle">Earn Yield on Your USDC</div>
             <div class="hero-apy">
                 <span class="apy-dot"></span>
-                <span>3 Positions &middot; You Choose</span>
-                <span class="apy-label">LP &middot; Long &middot; Short</span>
+                <span>Automated DeFi Vaults</span>
+                <span class="apy-label">Deposit &middot; Earn &middot; Withdraw</span>
             </div>
-            <p>Concentrated LP, 2x Long, or 2x Short ETH. Use Aave &amp; Aerodrome directly. No middleman contracts. You manage exactly how you choose.</p>
+            <p>Pick a vault. Deposit USDC. Professional managers handle concentrated liquidity, leveraged positions, and rebalancing &mdash; so you don&rsquo;t have to.</p>
             <div class="hero-actions">
-                <a href="#toolkit" class="btn btn-green">Open Toolkit</a>
-                <a href="#simulate" class="btn btn-outline">See It In Action</a>
+                <a href="#marketplace" class="btn btn-green">Browse Vaults</a>
+                <a href="#how" class="btn btn-outline">How It Works</a>
             </div>
         </div>
     </section>
@@ -1590,7 +1589,278 @@
         </div>
     </div>
 
-    <!-- ═══ VAULT DEPOSIT UI ═══ -->
+    <!-- ═══ HOW IT WORKS ═══ -->
+    <section class="how-it-works" id="how">
+        <div class="container">
+            <div class="fade-in">
+                <div class="section-label">How It Works</div>
+                <h2 class="section-title">Yield, automated</h2>
+                <p class="section-desc">Deposit USDC. Vault managers handle concentrated liquidity, leverage, and rebalancing on Aerodrome &amp; Aave. You just earn.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card fade-in delay-1">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-bright)"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+                    </div>
+                    <h3>Pick a Vault</h3>
+                    <p>Browse vaults by TVL, returns, or strategy. Each vault shows its exact allocation, LP range, and full config change history.</p>
+                </div>
+                <div class="feature-card fade-in delay-2">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan)"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>Deposit USDC</h3>
+                    <p>Drop USDC into any vault and receive shares. Your share of the vault grows as yield accrues. Withdraw anytime &mdash; no lock-ups.</p>
+                </div>
+                <div class="feature-card fade-in delay-3">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="22 4 12 12 9 9"/></svg>
+                    </div>
+                    <h3>Earn Yield</h3>
+                    <p>Managers handle LP positions, rebalancing, and risk. You earn returns proportional to your share. Performance fees only on profits.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ VAULT MARKETPLACE ═══ -->
+    <section class="marketplace-section" id="marketplace">
+        <div class="container">
+            <div class="fade-in" style="text-align:center; margin-bottom:40px;">
+                <div class="section-label">Vault Marketplace</div>
+                <h2 class="section-title">Pick a vault. Deposit. Earn.</h2>
+                <p class="section-desc" style="margin:0 auto;">Each vault is managed by a different strategist. Browse their track records, see exactly how they allocate, and deposit into the ones you trust.</p>
+            </div>
+
+            <!-- Sort & Create Bar -->
+            <div class="mp-sort-bar fade-in">
+                <button class="mp-sort-btn active" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
+                <button class="mp-sort-btn" onclick="mpSort('return')" id="mp-sort-return">Return</button>
+                <button class="mp-sort-btn" onclick="mpSort('newest')" id="mp-sort-newest">Newest</button>
+                <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mp-count">0 vaults</span>
+                <button class="mp-create-btn" onclick="openCreateVaultModal()">+ Create Vault</button>
+            </div>
+
+            <!-- Vault Grid -->
+            <div class="mp-grid fade-in" id="mp-vault-grid">
+                <div class="mp-empty" id="mp-empty">
+                    No vaults yet. Be the first vault manager.<br>
+                    <button class="mp-create-btn" style="margin-top:16px;" onclick="openCreateVaultModal()">Create Your Vault</button>
+                </div>
+            </div>
+
+            <!-- Vault Detail Panel (shows when a card is clicked) -->
+            <div class="mp-detail" id="mp-detail">
+                <div class="mp-detail-header">
+                    <div>
+                        <div class="mp-detail-title" id="mp-d-name">Vault Name</div>
+                        <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-secondary);" id="mp-d-manager">Manager: 0x...</div>
+                    </div>
+                    <button class="mp-detail-close" onclick="closeVaultDetail()">&times;</button>
+                </div>
+                <div class="mp-detail-stats">
+                    <div class="mp-detail-stat">
+                        <div class="mp-card-stat-label">TVL</div>
+                        <div class="mp-card-stat-value" id="mp-d-tvl">$0</div>
+                    </div>
+                    <div class="mp-detail-stat">
+                        <div class="mp-card-stat-label">Return</div>
+                        <div class="mp-card-stat-value" id="mp-d-return">0%</div>
+                    </div>
+                    <div class="mp-detail-stat">
+                        <div class="mp-card-stat-label">Max DD</div>
+                        <div class="mp-card-stat-value" id="mp-d-dd">0%</div>
+                    </div>
+                    <div class="mp-detail-stat">
+                        <div class="mp-card-stat-label">Fee</div>
+                        <div class="mp-card-stat-value" id="mp-d-fee">0%</div>
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <div class="mp-card-stat-label" style="margin-bottom:6px;">Current Allocation</div>
+                    <div class="mp-card-alloc" id="mp-d-alloc" style="height:10px;"></div>
+                    <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.65rem; color:var(--text-dim); margin-top:4px;">
+                        <span id="mp-d-alloc-lp">LP 0%</span>
+                        <span id="mp-d-alloc-long">Long 0%</span>
+                        <span id="mp-d-alloc-short">Short 0%</span>
+                        <span id="mp-d-alloc-hold">Hold 0%</span>
+                    </div>
+                </div>
+                <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-bottom:10px;" id="mp-d-lp-range">LP Range: Standard &#177;2%</div>
+                <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:16px;" id="mp-d-desc"></div>
+                <div class="mp-deposit-row">
+                    <div class="mp-deposit-input">
+                        <label style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:4px;">Deposit USDC</label>
+                        <input type="number" id="mp-d-amount" placeholder="100" style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:var(--mono); font-size:0.85rem; width:100%;">
+                    </div>
+                    <button class="mp-deposit-btn" onclick="mpDeposit()">Deposit</button>
+                    <button class="mp-withdraw-btn" onclick="mpWithdraw()">Withdraw</button>
+                </div>
+                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); margin-top:8px;" id="mp-d-position">Your position: 0 shares ($0.00)</div>
+
+                <!-- Manager Dashboard (only visible to vault manager) -->
+                <div class="mgr-dash" id="mgr-dash">
+                    <div class="mgr-dash-title">Manager Dashboard</div>
+
+                    <!-- Adjust Allocation -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Adjust Allocation</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field">
+                                <label>LP %</label>
+                                <input type="number" id="mgr-lp" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Long %</label>
+                                <input type="number" id="mgr-long" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Short %</label>
+                                <input type="number" id="mgr-short" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Hold %</label>
+                                <input type="number" id="mgr-hold" value="0" min="0" max="100">
+                            </div>
+                        </div>
+                        <div style="font-family:var(--mono); font-size:0.62rem; margin-top:6px;" id="mgr-alloc-total">Total: 0%</div>
+                        <div class="mgr-row" style="margin-top:10px;">
+                            <button class="mgr-btn" onclick="mgrRebalance()">Rebalance On-Chain</button>
+                            <button class="mgr-btn mgr-btn-secondary" onclick="mgrSaveConfig()">Save Config (Off-Chain)</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-alloc-status"></div>
+                    </div>
+
+                    <!-- LP Range Configuration -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">LP Range Configuration</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Controls how concentrated the LP position is. Tighter range = more fees but more impermanent loss risk.</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field" style="flex:2;">
+                                <label>Range Width (ticks)</label>
+                                <input type="number" id="mgr-lp-range" value="400" min="100" max="4000" step="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Slippage (bps)</label>
+                                <input type="number" id="mgr-slippage" value="50" min="10" max="500" step="10">
+                            </div>
+                            <button class="mgr-btn" onclick="mgrSetLPParams()" style="align-self:end;">Update LP Params</button>
+                        </div>
+                        <div class="lp-range-presets" style="margin-top:8px;">
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(200, this)">Tight &#177;1%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(400, this)">Standard &#177;2%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(800, this)">Wide &#177;4%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(1600, this)">Ultra Wide &#177;8%</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-lp-status"></div>
+                    </div>
+
+                    <!-- Vault Settings -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Vault Settings</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field" style="flex:2;">
+                                <label>Deposit Cap (USDC)</label>
+                                <input type="number" id="mgr-cap" value="50000" min="100">
+                            </div>
+                            <button class="mgr-btn" onclick="mgrSetCap()">Update Cap</button>
+                        </div>
+                        <div class="mgr-row" style="margin-top:12px;">
+                            <button class="mgr-btn" onclick="mgrCollectFees()">Collect Performance Fees</button>
+                            <button class="mgr-btn mgr-btn-danger" onclick="mgrEmergencyExit()">Emergency Exit All</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-settings-status"></div>
+                    </div>
+
+                    <!-- Config Change Log -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Config Change Log</div>
+                        <div class="mgr-log" id="mgr-log">
+                            <div class="mgr-log-empty">No changes recorded yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ CREATE VAULT MODAL ═══ -->
+    <div class="mp-modal-overlay" id="mp-create-modal">
+        <div class="mp-modal">
+            <button class="mp-modal-close" onclick="closeCreateVaultModal()">&times;</button>
+            <div class="mp-modal-title">Create Your Vault</div>
+            <div class="mp-modal-subtitle">Deploy a new vault with your own brain strategy. Depositors earn returns, you earn performance fees.</div>
+
+            <div class="mp-field">
+                <label>Vault Name</label>
+                <input type="text" id="mp-c-name" placeholder="Alpha Brain Vault" maxlength="40">
+            </div>
+            <div class="mp-field">
+                <label>Description</label>
+                <textarea id="mp-c-desc" placeholder="Describe your strategy in a few sentences..."></textarea>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="mp-field">
+                    <label>Performance Fee (%)</label>
+                    <input type="number" id="mp-c-fee" value="10" min="0" max="30" step="1">
+                    <div class="mp-hint">Max 30%. Charged on profits above high-water mark.</div>
+                </div>
+                <div class="mp-field">
+                    <label>Deposit Cap (USDC)</label>
+                    <input type="number" id="mp-c-cap" value="50000" min="100" step="100">
+                    <div class="mp-hint">Min $100. You can increase later.</div>
+                </div>
+            </div>
+            <div class="mp-field">
+                <label>Manager Name (optional)</label>
+                <input type="text" id="mp-c-manager-name" placeholder="Anonymous" maxlength="30">
+            </div>
+
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:8px;">
+                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--accent-bright); margin-bottom:8px;">BRAIN CONFIGURATION</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Set your initial allocation targets. You can change these anytime via the keeper/API.</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
+                    <div class="mp-field" style="margin-bottom:0;">
+                        <label style="font-size:0.62rem;">LP %</label>
+                        <input type="number" id="mp-c-lp" value="30" min="0" max="100">
+                    </div>
+                    <div class="mp-field" style="margin-bottom:0;">
+                        <label style="font-size:0.62rem;">Long %</label>
+                        <input type="number" id="mp-c-long" value="20" min="0" max="100">
+                    </div>
+                    <div class="mp-field" style="margin-bottom:0;">
+                        <label style="font-size:0.62rem;">Short %</label>
+                        <input type="number" id="mp-c-short" value="10" min="0" max="100">
+                    </div>
+                    <div class="mp-field" style="margin-bottom:0;">
+                        <label style="font-size:0.62rem;">Hold %</label>
+                        <input type="number" id="mp-c-hold" value="40" min="0" max="100">
+                    </div>
+                </div>
+                <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-top:6px;" id="mp-c-alloc-total">Total: 100%</div>
+
+                <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); margin-bottom:6px;">LP RANGE WIDTH</div>
+                    <div style="font-size:0.68rem; color:var(--text-dim); margin-bottom:8px;">How concentrated the LP position is. Tighter = more fees but more rebalancing. Wider = fewer fees but stays in range.</div>
+                    <div class="lp-range-presets">
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(200, this)">Tight (&#177;1%)</button>
+                        <button type="button" class="lp-range-preset active" onclick="setLPRange(400, this)">Standard (&#177;2%)</button>
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(800, this)">Wide (&#177;4%)</button>
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(1600, this)">Ultra Wide (&#177;8%)</button>
+                    </div>
+                    <input type="hidden" id="mp-c-lp-range" value="400">
+                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:4px;">Tick width: <span id="mp-c-lp-range-display">400</span> (&#177;<span id="mp-c-lp-range-pct">2</span>%)</div>
+                </div>
+            </div>
+
+            <div class="mp-modal-actions">
+                <button class="mp-modal-cancel" onclick="closeCreateVaultModal()">Cancel</button>
+                <button class="mp-modal-submit" id="mp-c-submit" onclick="createVault()">Deploy Vault (0.001 ETH)</button>
+            </div>
+            <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:10px; text-align:center;" id="mp-c-status"></div>
+        </div>
+    </div>
+
 <!-- ═══ TOOLKIT ═══ -->
     <section class="toolkit-section" id="toolkit">
         <div class="container">
@@ -1823,39 +2093,8 @@
         </div>
     </section>
 
-    <!-- ═══ HOW IT WORKS ═══ -->
-    <section class="how-it-works" id="how">
-        <div class="container">
-            <div class="fade-in">
-                <div class="section-label">How It Works</div>
-                <h2 class="section-title">Yield, automated</h2>
-                <p class="section-desc">Deposit USDC. The vault manages concentrated liquidity on Aerodrome. No manual LP management. No impermanent loss stress. Just yield.</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card fade-in delay-1">
-                    <div class="feature-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-bright)"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
-                    </div>
-                    <h3>Deposit USDC</h3>
-                    <p>Drop USDC into the vault and receive bUSDC shares. Your share of the vault grows as yield accrues. Withdraw anytime &mdash; no lock-ups.</p>
-                </div>
-                <div class="feature-card fade-in delay-2">
-                    <div class="feature-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan)"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                    </div>
-                    <h3>Vault Earns Yield</h3>
-                    <p>The vault deploys capital as concentrated liquidity on Aerodrome&rsquo;s ETH/USDC pool. Tight range = higher fee capture from every trade.</p>
-                </div>
-                <div class="feature-card fade-in delay-3">
-                    <div class="feature-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="22 4 12 12 9 9"/></svg>
-                    </div>
-                    <h3>Auto-Rebalance</h3>
-                    <p>When ETH&rsquo;s price drifts out of range, anyone can trigger a rebalance. The vault pulls liquidity, re-centers, and keeps earning &mdash; fully automated.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- ═══ LEARN SECTION ANCHOR ═══ -->
+    <div id="learn"></div>
 
     <!-- ═══ CONCENTRATED LIQUIDITY 101 ═══ -->
     <section class="cl101-section" id="cl101">
@@ -2447,244 +2686,6 @@
             </div>
         </div>
     </section>
-
-    <!-- ═══ VAULT MARKETPLACE ═══ -->
-    <section class="marketplace-section" id="marketplace">
-        <div class="container">
-            <div class="fade-in" style="text-align:center; margin-bottom:40px;">
-                <div class="section-label">Vault Marketplace</div>
-                <h2 class="section-title">Compete. Manage. Earn.</h2>
-                <p class="section-desc" style="margin:0 auto;">Create a vault with your own brain strategy. Depositors follow the best managers. Top performers attract the most capital.</p>
-            </div>
-
-            <!-- Sort & Create Bar -->
-            <div class="mp-sort-bar fade-in">
-                <button class="mp-sort-btn active" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
-                <button class="mp-sort-btn" onclick="mpSort('return')" id="mp-sort-return">Return</button>
-                <button class="mp-sort-btn" onclick="mpSort('newest')" id="mp-sort-newest">Newest</button>
-                <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mp-count">0 vaults</span>
-                <button class="mp-create-btn" onclick="openCreateVaultModal()">+ Create Vault</button>
-            </div>
-
-            <!-- Vault Grid -->
-            <div class="mp-grid fade-in" id="mp-vault-grid">
-                <div class="mp-empty" id="mp-empty">
-                    No vaults yet. Be the first vault manager.<br>
-                    <button class="mp-create-btn" style="margin-top:16px;" onclick="openCreateVaultModal()">Create Your Vault</button>
-                </div>
-            </div>
-
-            <!-- Vault Detail Panel (shows when a card is clicked) -->
-            <div class="mp-detail" id="mp-detail">
-                <div class="mp-detail-header">
-                    <div>
-                        <div class="mp-detail-title" id="mp-d-name">Vault Name</div>
-                        <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-secondary);" id="mp-d-manager">Manager: 0x...</div>
-                    </div>
-                    <button class="mp-detail-close" onclick="closeVaultDetail()">&times;</button>
-                </div>
-                <div class="mp-detail-stats">
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">TVL</div>
-                        <div class="mp-card-stat-value" id="mp-d-tvl">$0</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Return</div>
-                        <div class="mp-card-stat-value" id="mp-d-return">0%</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Max DD</div>
-                        <div class="mp-card-stat-value" id="mp-d-dd">0%</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Fee</div>
-                        <div class="mp-card-stat-value" id="mp-d-fee">0%</div>
-                    </div>
-                </div>
-                <div style="margin-bottom:16px;">
-                    <div class="mp-card-stat-label" style="margin-bottom:6px;">Current Allocation</div>
-                    <div class="mp-card-alloc" id="mp-d-alloc" style="height:10px;"></div>
-                    <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.65rem; color:var(--text-dim); margin-top:4px;">
-                        <span id="mp-d-alloc-lp">LP 0%</span>
-                        <span id="mp-d-alloc-long">Long 0%</span>
-                        <span id="mp-d-alloc-short">Short 0%</span>
-                        <span id="mp-d-alloc-hold">Hold 0%</span>
-                    </div>
-                </div>
-                <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-bottom:10px;" id="mp-d-lp-range">LP Range: Standard &#177;2%</div>
-                <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:16px;" id="mp-d-desc"></div>
-                <div class="mp-deposit-row">
-                    <div class="mp-deposit-input">
-                        <label style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:4px;">Deposit USDC</label>
-                        <input type="number" id="mp-d-amount" placeholder="100" style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:var(--mono); font-size:0.85rem; width:100%;">
-                    </div>
-                    <button class="mp-deposit-btn" onclick="mpDeposit()">Deposit</button>
-                    <button class="mp-withdraw-btn" onclick="mpWithdraw()">Withdraw</button>
-                </div>
-                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); margin-top:8px;" id="mp-d-position">Your position: 0 shares ($0.00)</div>
-
-                <!-- Manager Dashboard (only visible to vault manager) -->
-                <div class="mgr-dash" id="mgr-dash">
-                    <div class="mgr-dash-title">Manager Dashboard</div>
-
-                    <!-- Adjust Allocation -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Adjust Allocation</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field">
-                                <label>LP %</label>
-                                <input type="number" id="mgr-lp" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Long %</label>
-                                <input type="number" id="mgr-long" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Short %</label>
-                                <input type="number" id="mgr-short" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Hold %</label>
-                                <input type="number" id="mgr-hold" value="0" min="0" max="100">
-                            </div>
-                        </div>
-                        <div style="font-family:var(--mono); font-size:0.62rem; margin-top:6px;" id="mgr-alloc-total">Total: 0%</div>
-                        <div class="mgr-row" style="margin-top:10px;">
-                            <button class="mgr-btn" onclick="mgrRebalance()">Rebalance On-Chain</button>
-                            <button class="mgr-btn mgr-btn-secondary" onclick="mgrSaveConfig()">Save Config (Off-Chain)</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-alloc-status"></div>
-                    </div>
-
-                    <!-- LP Range Configuration -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">LP Range Configuration</div>
-                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Controls how concentrated the LP position is. Tighter range = more fees but more impermanent loss risk.</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field" style="flex:2;">
-                                <label>Range Width (ticks)</label>
-                                <input type="number" id="mgr-lp-range" value="400" min="100" max="4000" step="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Slippage (bps)</label>
-                                <input type="number" id="mgr-slippage" value="50" min="10" max="500" step="10">
-                            </div>
-                            <button class="mgr-btn" onclick="mgrSetLPParams()" style="align-self:end;">Update LP Params</button>
-                        </div>
-                        <div class="lp-range-presets" style="margin-top:8px;">
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(200, this)">Tight &#177;1%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(400, this)">Standard &#177;2%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(800, this)">Wide &#177;4%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(1600, this)">Ultra Wide &#177;8%</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-lp-status"></div>
-                    </div>
-
-                    <!-- Vault Settings -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Vault Settings</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field" style="flex:2;">
-                                <label>Deposit Cap (USDC)</label>
-                                <input type="number" id="mgr-cap" value="50000" min="100">
-                            </div>
-                            <button class="mgr-btn" onclick="mgrSetCap()">Update Cap</button>
-                        </div>
-                        <div class="mgr-row" style="margin-top:12px;">
-                            <button class="mgr-btn" onclick="mgrCollectFees()">Collect Performance Fees</button>
-                            <button class="mgr-btn mgr-btn-danger" onclick="mgrEmergencyExit()">Emergency Exit All</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-settings-status"></div>
-                    </div>
-
-                    <!-- Config Change Log -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Config Change Log</div>
-                        <div class="mgr-log" id="mgr-log">
-                            <div class="mgr-log-empty">No changes recorded yet</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ CREATE VAULT MODAL ═══ -->
-    <div class="mp-modal-overlay" id="mp-create-modal">
-        <div class="mp-modal">
-            <button class="mp-modal-close" onclick="closeCreateVaultModal()">&times;</button>
-            <div class="mp-modal-title">Create Your Vault</div>
-            <div class="mp-modal-subtitle">Deploy a new vault with your own brain strategy. Depositors earn returns, you earn performance fees.</div>
-
-            <div class="mp-field">
-                <label>Vault Name</label>
-                <input type="text" id="mp-c-name" placeholder="Alpha Brain Vault" maxlength="40">
-            </div>
-            <div class="mp-field">
-                <label>Description</label>
-                <textarea id="mp-c-desc" placeholder="Describe your strategy in a few sentences..."></textarea>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                <div class="mp-field">
-                    <label>Performance Fee (%)</label>
-                    <input type="number" id="mp-c-fee" value="10" min="0" max="30" step="1">
-                    <div class="mp-hint">Max 30%. Charged on profits above high-water mark.</div>
-                </div>
-                <div class="mp-field">
-                    <label>Deposit Cap (USDC)</label>
-                    <input type="number" id="mp-c-cap" value="50000" min="100" step="100">
-                    <div class="mp-hint">Min $100. You can increase later.</div>
-                </div>
-            </div>
-            <div class="mp-field">
-                <label>Manager Name (optional)</label>
-                <input type="text" id="mp-c-manager-name" placeholder="Anonymous" maxlength="30">
-            </div>
-
-            <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:8px;">
-                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--accent-bright); margin-bottom:8px;">BRAIN CONFIGURATION</div>
-                <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Set your initial allocation targets. You can change these anytime via the keeper/API.</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">LP %</label>
-                        <input type="number" id="mp-c-lp" value="30" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Long %</label>
-                        <input type="number" id="mp-c-long" value="20" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Short %</label>
-                        <input type="number" id="mp-c-short" value="10" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Hold %</label>
-                        <input type="number" id="mp-c-hold" value="40" min="0" max="100">
-                    </div>
-                </div>
-                <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-top:6px;" id="mp-c-alloc-total">Total: 100%</div>
-
-                <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
-                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); margin-bottom:6px;">LP RANGE WIDTH</div>
-                    <div style="font-size:0.68rem; color:var(--text-dim); margin-bottom:8px;">How concentrated the LP position is. Tighter = more fees but more rebalancing. Wider = fewer fees but stays in range.</div>
-                    <div class="lp-range-presets">
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(200, this)">Tight (&#177;1%)</button>
-                        <button type="button" class="lp-range-preset active" onclick="setLPRange(400, this)">Standard (&#177;2%)</button>
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(800, this)">Wide (&#177;4%)</button>
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(1600, this)">Ultra Wide (&#177;8%)</button>
-                    </div>
-                    <input type="hidden" id="mp-c-lp-range" value="400">
-                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:4px;">Tick width: <span id="mp-c-lp-range-display">400</span> (&#177;<span id="mp-c-lp-range-pct">2</span>%)</div>
-                </div>
-            </div>
-
-            <div class="mp-modal-actions">
-                <button class="mp-modal-cancel" onclick="closeCreateVaultModal()">Cancel</button>
-                <button class="mp-modal-submit" id="mp-c-submit" onclick="createVault()">Deploy Vault (0.001 ETH)</button>
-            </div>
-            <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:10px; text-align:center;" id="mp-c-status"></div>
-        </div>
-    </div>
 
     <!-- ═══ MANAGER DASHBOARD (standalone page) ═══ -->
     <section class="dash-section" id="dashboard-section">
