@@ -216,6 +216,24 @@
         .promo-chip:hover { border-color: var(--lobster-300); color: var(--text-secondary); }
         .promo-chip.selected { background: rgba(232,121,85,0.1); border-color: var(--lobster-400); color: var(--lobster-300); }
 
+        /* ── Promo context fields ── */
+        .promo-context { display: none; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px; margin-bottom: 10px; animation: fadeSlide 0.2s ease; }
+        .promo-context.show { display: block; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .promo-context label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 3px; margin-top: 8px; }
+        .promo-context label:first-child { margin-top: 0; }
+        .promo-context input, .promo-context select { width: 100%; padding: 7px 10px; background: var(--bg-dark); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body); font-size: 0.8rem; box-sizing: border-box; }
+        .promo-context input:focus, .promo-context select:focus { border-color: var(--lobster-400); outline: none; }
+        .promo-context .promo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .promo-context .promo-hint { font-size: 0.65rem; color: var(--text-dim); margin-top: 2px; }
+        .promo-links-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+        .promo-link-row { display: flex; gap: 6px; align-items: center; }
+        .promo-link-row input { flex: 1; }
+        .promo-link-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+        .promo-link-remove:hover { color: var(--lobster-400); }
+        .promo-add-link { background: none; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); color: var(--text-dim); font-size: 0.72rem; font-weight: 600; padding: 5px 10px; cursor: pointer; margin-top: 4px; transition: all 0.15s; }
+        .promo-add-link:hover { border-color: var(--lobster-300); color: var(--text-secondary); }
+
         /* ── Personality Studio ── */
         .persona-field { margin-bottom: var(--space-md); }
         .persona-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
@@ -341,6 +359,60 @@
                     <button type="button" class="promo-chip" onclick="wizDescChip(this)">NFT collection</button>
                     <button type="button" class="promo-chip" onclick="wizDescChip(this)">A game</button>
                     <button type="button" class="promo-chip" onclick="wizDescChip(this)">Something else</button>
+                </div>
+                <div class="promo-context" id="promoContext">
+                    <!-- Token fields -->
+                    <div id="promoToken" style="display:none">
+                        <label>Token Contract Address</label>
+                        <input type="text" id="wizTokenAddr" placeholder="0x..." maxlength="66">
+                        <div class="promo-row">
+                            <div><label>Chain</label><select id="wizTokenChain"><option value="base">Base</option><option value="ethereum">Ethereum</option><option value="solana">Solana</option><option value="other">Other</option></select></div>
+                            <div><label>Website</label><input type="text" id="wizTokenWeb" placeholder="https://..."></div>
+                        </div>
+                    </div>
+                    <!-- App fields -->
+                    <div id="promoApp" style="display:none">
+                        <label>Select an App</label>
+                        <select id="wizAppSelect"><option value="">Loading apps...</option></select>
+                        <p class="promo-hint">Or describe it manually below</p>
+                    </div>
+                    <!-- Brand fields -->
+                    <div id="promoBrand" style="display:none">
+                        <label>Website</label>
+                        <input type="text" id="wizBrandWeb" placeholder="https://...">
+                    </div>
+                    <!-- Community fields -->
+                    <div id="promoCommunity" style="display:none">
+                        <label>Website or Hub</label>
+                        <input type="text" id="wizCommunityWeb" placeholder="https://...">
+                    </div>
+                    <!-- Personal brand fields -->
+                    <div id="promoPersonal" style="display:none">
+                        <label>X Handle</label>
+                        <input type="text" id="wizPersonalX" placeholder="@handle">
+                    </div>
+                    <!-- NFT fields -->
+                    <div id="promoNFT" style="display:none">
+                        <label>Collection URL</label>
+                        <input type="text" id="wizNFTUrl" placeholder="https://opensea.io/collection/...">
+                    </div>
+                    <!-- Game fields -->
+                    <div id="promoGame" style="display:none">
+                        <label>Game URL</label>
+                        <input type="text" id="wizGameUrl" placeholder="https://...">
+                    </div>
+                    <!-- Universal: social links -->
+                    <div id="promoSocials">
+                        <label>Social Links <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
+                        <div class="promo-row">
+                            <input type="text" id="wizSocialX" placeholder="X / Twitter handle">
+                            <input type="text" id="wizSocialTG" placeholder="Telegram link">
+                        </div>
+                    </div>
+                    <!-- Extra links -->
+                    <label>Additional Links <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
+                    <div class="promo-links-list" id="promoLinks"></div>
+                    <button type="button" class="promo-add-link" onclick="addPromoLink()">+ Add link</button>
                 </div>
                 <textarea id="wizDesc" placeholder="e.g. CLAWS is the Inclawbate ecosystem token. Stake it, earn rewards, use it across all Inclawbate apps." maxlength="300" style="min-height:50px"></textarea>
                 <div class="wiz-btns"><button class="wiz-btn wiz-btn-back" onclick="closeWizard()">Cancel</button><button class="wiz-btn wiz-btn-next" onclick="wizNext(1)">Next</button></div>
@@ -1093,32 +1165,129 @@ async function disconnectX(pid) {
 // WIZARD
 // ══════════════════════════════════════
 var _wizStep=0;
-function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';document.getElementById('wizName').value='';document.getElementById('wizToken').value='';document.getElementById('wizDesc').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
+function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';_promoType='';document.getElementById('wizName').value='';document.getElementById('wizToken').value='';document.getElementById('wizDesc').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.querySelectorAll('.promo-chip').forEach(function(c){c.classList.remove('selected');});document.getElementById('promoContext').classList.remove('show');['wizTokenAddr','wizTokenWeb','wizBrandWeb','wizCommunityWeb','wizPersonalX','wizNFTUrl','wizGameUrl','wizSocialX','wizSocialTG'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('promoLinks').innerHTML='';document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
 function closeWizard(){document.getElementById('wizard').classList.remove('open');}
 function goToStep(n){_wizStep=n;for(var i=0;i<4;i++){document.getElementById('wizStep'+i).classList.toggle('active',i===n);var dot=document.getElementById('wizDot'+i);dot.className='wiz-dot';if(i<n)dot.classList.add('done');else if(i===n)dot.classList.add('current');}}
 function wizNext(s){if(s===1&&!document.getElementById('wizName').value.trim()){toast('Enter a name',true);return;}goToStep(s);}
 function wizBack(s){goToStep(s);}
 function pickVibe(btn){document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');_vibe=btn.dataset.vibe;document.getElementById('wizCustom').style.display=_vibe==='custom'?'block':'none';}
 
+var _promoType='';
+var _promoStarters={
+    'A token / crypto project':'It promotes $TOKEN — ',
+    'An app on Inclawbate':'It promotes an app that ',
+    'A brand or business':'It promotes a business that ',
+    'A community / DAO':'It promotes a community focused on ',
+    'Personal brand / influencer':'It posts as a personal brand that ',
+    'NFT collection':'It promotes an NFT collection that ',
+    'A game':'It promotes a game where players ',
+    'Something else':''
+};
+var _promoSections={
+    'A token / crypto project':'promoToken',
+    'An app on Inclawbate':'promoApp',
+    'A brand or business':'promoBrand',
+    'A community / DAO':'promoCommunity',
+    'Personal brand / influencer':'promoPersonal',
+    'NFT collection':'promoNFT',
+    'A game':'promoGame',
+    'Something else':null
+};
+var _appsLoaded=false;
+
 function wizDescChip(btn){
     document.querySelectorAll('.promo-chip').forEach(function(c){c.classList.remove('selected');});
     btn.classList.add('selected');
+    _promoType=btn.textContent.trim();
     var desc=document.getElementById('wizDesc');
-    var type=btn.textContent.trim();
-    var starters={
-        'A token / crypto project':'It promotes $TOKEN — ',
-        'An app on Inclawbate':'It promotes an app that ',
-        'A brand or business':'It promotes a business that ',
-        'A community / DAO':'It promotes a community focused on ',
-        'Personal brand / influencer':'It posts as a personal brand that ',
-        'NFT collection':'It promotes an NFT collection that ',
-        'A game':'It promotes a game where players ',
-        'Something else':''
-    };
+    // Replace starter text
     var cur=desc.value.trim();
     var isStarter=!cur;
-    if(!isStarter){for(var k in starters){if(starters[k]&&cur===starters[k].trim()){isStarter=true;break;}}}
-    if(isStarter){desc.value=starters[type]||'';desc.focus();}
+    if(!isStarter){for(var k in _promoStarters){if(_promoStarters[k]&&cur===_promoStarters[k].trim()){isStarter=true;break;}}}
+    if(isStarter){desc.value=_promoStarters[_promoType]||'';desc.focus();}
+    // Show context panel
+    var ctx=document.getElementById('promoContext');
+    ctx.classList.add('show');
+    // Hide all type sections, show the right one
+    ['promoToken','promoApp','promoBrand','promoCommunity','promoPersonal','promoNFT','promoGame'].forEach(function(id){document.getElementById(id).style.display='none';});
+    var section=_promoSections[_promoType];
+    if(section) document.getElementById(section).style.display='block';
+    // Load apps dropdown if needed
+    if(_promoType==='An app on Inclawbate'&&!_appsLoaded) loadAppsDropdown();
+}
+
+// Auto-fill description when app is selected
+document.addEventListener('change',function(e){
+    if(e.target.id==='wizAppSelect'&&e.target.value){
+        var opt=e.target.options[e.target.selectedIndex];
+        var appDesc=opt.dataset.desc||'';
+        var appName=opt.dataset.name||'';
+        var desc=document.getElementById('wizDesc');
+        if(!desc.value.trim()||desc.value.trim()==='It promotes an app that '){
+            desc.value='It promotes '+appName+(appDesc?' — '+appDesc:'');
+        }
+    }
+});
+
+async function loadAppsDropdown(){
+    _appsLoaded=true;
+    var sel=document.getElementById('wizAppSelect');
+    try {
+        var r=await fetch(API.replace('/inclawbate','')+'/apps?page=1&limit=200');
+        var data=await r.json();var apps=data.apps||[];
+        // Also get page 2 if needed
+        if(data.total>200){var r2=await fetch(API.replace('/inclawbate','')+'/apps?page=2&limit=200');var d2=await r2.json();apps=apps.concat(d2.apps||[]);}
+        apps.sort(function(a,b){return(a.name||'').localeCompare(b.name||'');});
+        sel.innerHTML='<option value="">— Pick an app —</option>';
+        for(var i=0;i<apps.length;i++){
+            sel.innerHTML+='<option value="'+esc(apps[i].slug)+'" data-name="'+esc(apps[i].name)+'" data-desc="'+esc(apps[i].description||'')+'">'+esc(apps[i].name)+'</option>';
+        }
+    } catch(e){sel.innerHTML='<option value="">Failed to load apps</option>';}
+}
+
+function addPromoLink(){
+    var list=document.getElementById('promoLinks');
+    if(list.children.length>=5) return;
+    var row=document.createElement('div');row.className='promo-link-row';
+    row.innerHTML='<input type="text" class="promo-extra-link" placeholder="https://..."><button type="button" class="promo-link-remove" onclick="this.parentNode.remove()">&times;</button>';
+    list.appendChild(row);
+}
+
+function getPromoData(){
+    var d={type:_promoType,website_url:'',x_handle:'',telegram_url:'',extra_links:[]};
+    if(_promoType==='A token / crypto project'){
+        d.token_address=(document.getElementById('wizTokenAddr').value||'').trim();
+        d.token_chain=(document.getElementById('wizTokenChain').value||'');
+        d.website_url=(document.getElementById('wizTokenWeb').value||'').trim();
+    } else if(_promoType==='An app on Inclawbate'){
+        var sel=document.getElementById('wizAppSelect');
+        var opt=sel.options[sel.selectedIndex];
+        if(opt&&opt.value){
+            d.app_slug=opt.value;
+            d.app_name=opt.dataset.name||'';
+            d.website_url='https://inclawbate.com/app/'+opt.value;
+        }
+    } else if(_promoType==='A brand or business'){
+        d.website_url=(document.getElementById('wizBrandWeb').value||'').trim();
+    } else if(_promoType==='A community / DAO'){
+        d.website_url=(document.getElementById('wizCommunityWeb').value||'').trim();
+    } else if(_promoType==='Personal brand / influencer'){
+        d.x_handle=(document.getElementById('wizPersonalX').value||'').trim().replace(/^@/,'');
+    } else if(_promoType==='NFT collection'){
+        d.website_url=(document.getElementById('wizNFTUrl').value||'').trim();
+    } else if(_promoType==='A game'){
+        d.website_url=(document.getElementById('wizGameUrl').value||'').trim();
+    }
+    // Common socials
+    var sx=(document.getElementById('wizSocialX').value||'').trim().replace(/^@/,'');
+    var tg=(document.getElementById('wizSocialTG').value||'').trim();
+    if(sx) d.x_handle=d.x_handle||sx;
+    if(tg) d.telegram_url=tg;
+    // Extra links
+    document.querySelectorAll('.promo-extra-link').forEach(function(inp){
+        var v=(inp.value||'').trim();if(v) d.extra_links.push(v);
+    });
+    return d;
 }
 
 async function wizConnectX(){
@@ -1131,9 +1300,26 @@ async function wizConnectX(){
             var desc=(document.getElementById('wizDesc').value||'').trim()||null;
             var persona=_vibe==='custom'?(document.getElementById('wizPersonaText').value||'').trim():(VIBES[_vibe]||'');
             persona='Agent name: '+name+'. '+persona;
-            var r=await fetch(API+'/projects',{method:'POST',headers:hdrs(),body:JSON.stringify({name:name,description:desc||('AI agent for '+(tokenSym?'$'+tokenSym:name)),token_symbol:tokenSym,agent_enabled:true,agent_persona:persona,agent_tone:_vibe,agent_status:'paused'})});
+            var promo=getPromoData();
+            // Build knowledge from promo context
+            var knowledge='';
+            if(promo.type) knowledge+='Promotion type: '+promo.type+'\n';
+            if(promo.token_address) knowledge+='Token address: '+promo.token_address+(promo.token_chain?' ('+promo.token_chain+')':'')+'\n';
+            if(promo.app_name) knowledge+='App: '+promo.app_name+'\n';
+            if(promo.website_url) knowledge+='Website: '+promo.website_url+'\n';
+            if(promo.x_handle) knowledge+='X: @'+promo.x_handle+'\n';
+            if(promo.telegram_url) knowledge+='Telegram: '+promo.telegram_url+'\n';
+            if(promo.extra_links.length) knowledge+='Links: '+promo.extra_links.join(', ')+'\n';
+            var body={name:name,description:desc||('AI agent for '+(tokenSym?'$'+tokenSym:name)),token_symbol:tokenSym||promo.token_symbol||null,agent_enabled:true,agent_persona:persona,agent_tone:_vibe,agent_status:'paused',website_url:promo.website_url||null,x_handle:promo.x_handle||null,telegram_url:promo.telegram_url||null};
+            if(promo.token_address){body.token_address=promo.token_address;}
+            if(promo.app_slug){body.app_slug=promo.app_slug;}
+            var r=await fetch(API+'/projects',{method:'POST',headers:hdrs(),body:JSON.stringify(body)});
             var data=await r.json();if(!r.ok) throw new Error(data.error||'Failed');
             _wizProjectId=data.project.id;
+            // Save rich knowledge context from promo fields
+            if(knowledge.trim()){
+                await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_wizProjectId,agent_knowledge:knowledge.trim()})});
+            }
         }
         sessionStorage.setItem('wizard_pending','1');
         btn.textContent='Redirecting to X...';
