@@ -108,9 +108,12 @@ class RoomManager {
       });
     };
 
-    // Rebalance platform agents after each hand completes
+    // Per-hand logic — runs once when a hand finishes, NOT on every action
     table._onHandComplete = () => {
       if (!room.isSandbox) {
+        this._updateBackingValues(table);
+        this._runAutoTopUp(table);
+        this._recycleRake(table);
         this._rebalanceRoom(roomId);
         // Notify reward engine of value changes
         if (this.onHandComplete) this.onHandComplete(table);
@@ -145,15 +148,8 @@ class RoomManager {
       table[key] = current;
       this.pendingRakeChips += newRake;
     }
-
-    // Update backing values based on agent performance this hand
-    this._updateBackingValues(table);
-
-    // Auto top-up: check agents at this table and refill from wallet if needed
-    this._runAutoTopUp(table);
-
-    // Rake recycle: credit contractPool chips back to wallets with auto-top-up
-    this._recycleRake(table);
+    // NOTE: _updateBackingValues, _runAutoTopUp, _recycleRake run in _onHandComplete only
+    // _collectRake fires on every game state broadcast (every action) — must NOT run per-hand logic here
   }
 
   _runAutoTopUp(table) {
