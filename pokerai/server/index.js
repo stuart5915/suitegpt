@@ -443,7 +443,7 @@ wss.on('connection', (ws) => {
             break;
           }
           const addr = client.walletAddress;
-          const result = rooms.backAgent(addr, msg.agentId, msg.amount);
+          const result = await rooms.backAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'backAgentResult', data: result }));
           if (result.success) {
             rooms.store.recordTransaction(addr, 'back_agent', 0, msg.amount);

@@ -700,7 +700,7 @@ class RoomManager {
 
   // === Backing operations ===
 
-  backAgent(walletAddress, agentId, amount) {
+  async backAgent(walletAddress, agentId, amount) {
     if (!amount || amount < 500) return { error: 'Minimum backing is 500 chips' };
 
     // Find agent at a table (not lobby — must be playing)
@@ -726,14 +726,14 @@ class RoomManager {
     }
 
     // Create backing record (marked as pending — activates next hand)
-    const backing = this.store.createBacking(walletAddress, agentId, amount, roomId);
+    const backing = await this.store.createBacking(walletAddress, agentId, amount, roomId);
 
     // Mark as pending so it's excluded from P&L distribution until activated
     if (backing) backing._pending = true;
 
     // Queue chips for next hand — don't add mid-hand (prevents exploit + fixes P&L math)
     if (!agent._pendingBackings) agent._pendingBackings = [];
-    agent._pendingBackings.push({ backingId: backing?.id, amount });
+    agent._pendingBackings.push({ backingId: backing ? backing.id : null, amount });
 
     console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips (pending — activates next hand)`);
     return { success: true, agentId, agentName: agent.name, amount, pending: true };
