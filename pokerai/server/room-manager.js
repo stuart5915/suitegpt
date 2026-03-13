@@ -1285,23 +1285,44 @@ class RoomManager {
 
     const state = activeTable.getStateForClient(sessionId, walletAddress);
 
-    // Add backing info per agent
+    // Add backing info per agent (with live mid-hand P&L estimation)
     if (state.agents) {
       const wAddr = walletAddress ? walletAddress.toLowerCase() : null;
       state.agents = state.agents.map(a => {
         const backings = this.store.getBackingsForAgent ? this.store.getBackingsForAgent(a.id) : [];
         const totalBacked = backings.reduce((sum, b) => sum + b.currentValue, 0);
         const myBacking = wAddr ? backings.find(b => b.backerWallet === wAddr) : null;
+
+        let backingData = null;
+        if (myBacking) {
+          let displayValue = myBacking.currentValue;
+
+          // Live estimation: during active hand, estimate P&L based on agent's chip delta
+          if (!myBacking._pending) {
+            const engineAgent = activeTable.agents.find(ea => ea.id === a.id);
+            const startChips = engineAgent ? engineAgent._startChips : undefined;
+            if (startChips !== undefined && startChips > 0) {
+              const handDelta = a.chips - startChips;
+              if (handDelta !== 0) {
+                const share = myBacking.currentValue / startChips;
+                displayValue = Math.max(0, myBacking.currentValue + Math.floor(handDelta * share));
+              }
+            }
+          }
+
+          backingData = {
+            id: myBacking.id,
+            staked: myBacking.chipsStaked,
+            currentValue: displayValue,
+            pnl: displayValue - myBacking.chipsStaked
+          };
+        }
+
         return {
           ...a,
           totalBacked,
           backerCount: backings.length,
-          myBacking: myBacking ? {
-            id: myBacking.id,
-            staked: myBacking.chipsStaked,
-            currentValue: myBacking.currentValue,
-            pnl: myBacking.currentValue - myBacking.chipsStaked
-          } : null
+          myBacking: backingData
         };
       });
     }
