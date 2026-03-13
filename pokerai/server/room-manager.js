@@ -1297,8 +1297,9 @@ class RoomManager {
         if (myBacking) {
           let displayValue = myBacking.currentValue;
 
-          // Live estimation: during active hand, estimate P&L based on agent's chip delta
-          if (!myBacking._pending) {
+          // Live estimation: during active hand only, estimate P&L based on agent's chip delta
+          // (during 'waiting' phase, currentValue is already settled — don't double-count)
+          if (!myBacking._pending && activeTable.phase !== 'waiting') {
             const engineAgent = activeTable.agents.find(ea => ea.id === a.id);
             const startChips = engineAgent ? engineAgent._startChips : undefined;
             if (startChips !== undefined && startChips > 0) {
