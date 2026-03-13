@@ -747,6 +747,8 @@ window.addClawsToWallet = function() {
 };
 
 function getProvider() {
+    // Privy embedded wallet provider (set by connectPoolWallet)
+    if (window._privyProvider) return window._privyProvider;
     // Try WalletKit first — check isConnected(), but also try getProvider() as fallback
     // since Reown's isConnected() can be stale while the provider still works
     if (window.WalletKit) {
@@ -970,6 +972,27 @@ async function connectPoolWallet() {
         }
     }
 
+    // Try Privy embedded wallet first (email/OAuth login users)
+    if (window.PrivyAuth && window.PrivyAuth.getEthereumProvider) {
+        try {
+            var privyProvider = await window.PrivyAuth.getEthereumProvider();
+            if (privyProvider && typeof privyProvider.request === 'function') {
+                window._privyProvider = privyProvider;
+                var privyAccounts = await privyProvider.request({ method: 'eth_accounts' });
+                if (privyAccounts && privyAccounts.length > 0) {
+                    walletAddr = privyAccounts[0];
+                    try { localStorage.setItem('_stake_wallet', walletAddr); } catch (e) {}
+                    if (currentPoolKey && POOLS[currentPoolKey]) {
+                        onPoolWalletConnected(walletAddr, POOLS[currentPoolKey], currentPoolKey);
+                    }
+                    return walletAddr;
+                }
+            }
+        } catch (privyErr) {
+            console.log('[Stake] Privy provider fallthrough:', privyErr.message);
+        }
+    }
+
     // Wait for late-loading wallets (Base Wallet EIP-6963)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
 
@@ -994,7 +1017,7 @@ async function connectPoolWallet() {
         return null;
     }
 
-    if (!eth) return null;
+    if (!eth || typeof eth.request !== 'function') return null;
 
     try {
         var accounts = await eth.request({ method: 'eth_requestAccounts' });

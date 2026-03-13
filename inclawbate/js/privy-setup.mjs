@@ -169,6 +169,23 @@ window.PrivyAuth = {
         try { return JSON.parse(localStorage.getItem('privy_login_info') || 'null'); } catch(e) { return null; }
     },
 
+    // Get EIP-1193 provider for the embedded wallet (for staking, tx signing, etc.)
+    async getEthereumProvider() {
+        try {
+            await ensureInit();
+            var p = getPrivy();
+            var result = await p.user.get();
+            if (!result || !result.user) return null;
+            var address = getWalletAddress(result.user);
+            if (!address) return null;
+            var provider = await p.embeddedWallet.getEthereumProvider({ address: address });
+            return provider || null;
+        } catch(e) {
+            console.log('[Privy] getEthereumProvider error:', e.message);
+            return null;
+        }
+    },
+
     // Logout
     async logout() {
         localStorage.removeItem('privy_login_info');
