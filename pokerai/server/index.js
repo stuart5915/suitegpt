@@ -159,32 +159,8 @@ wss.on('connection', (ws) => {
             const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(client.walletAddress) } }));
 
-            // Sync with on-chain deposits — credit up OR cap down if server drifted
-            if (chain) {
-              try {
-                const stats = await chain.vault.playerStats(client.walletAddress);
-                const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
-                const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
-                const expected = onChainChips - withdrawnChips;
-                const inPlay = rooms.getChipsInPlay(client.walletAddress);
-                const inLobby = rooms.getChipsInLobby(client.walletAddress);
-                const total = wallet.balance + inPlay + inLobby;
-                if (expected > total) {
-                  // Server missed a deposit — credit the difference
-                  const credit = expected - total;
-                  await rooms.store.addBalance(client.walletAddress, credit);
-                  await rooms.store.recordTransaction(client.walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
-                  sendBalance(ws, client.walletAddress);
-                  ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit } }));
-                } else if (total > expected) {
-                  // Server total > on-chain deposits — this is NORMAL in poker
-                  // Players win chips from each other, so their balance grows beyond deposits.
-                  // Do NOT cap down — that destroys legitimate poker winnings.
-                  // Only log for monitoring.
-                  console.log(`[BalanceSync] ${client.walletAddress.slice(0,8)}: server total ${total} > on-chain ${expected} (poker winnings, not capping)`);
-                }
-              } catch (e) { /* silent — check-deposit HTTP fallback still available */ }
-            }
+            // Deposits are credited via real-time chain event listener (chain.onDeposit).
+            // No sync/reconciliation here — that caused phantom credits on reconnect.
           }
           // Update reward engine with this wallet's value
           if (rewardEngine && client.walletAddress) {
@@ -611,6 +587,7 @@ app.get('/rewards/:address', (req, res) => {
 });
 
 // Check on-chain deposit and credit if missing (fallback for missed events)
+// Diagnostic: compare on-chain deposits vs server balance (read-only, no auto-credit)
 app.post('/check-deposit', async (req, res) => {
   if (!requireApiKey(req, res)) return;
   if (!chain) return res.json({ error: 'Chain not configured' });
@@ -619,56 +596,31 @@ app.post('/check-deposit', async (req, res) => {
 
   const addr = walletAddress.toLowerCase();
   try {
-    // Get on-chain deposit total for this player
     const stats = await chain.vault.playerStats(addr);
-    const onChainDeposited = Number(stats[0]); // total USDC deposited (raw)
-    const onChainWithdrawn = Number(stats[1]); // total USDC withdrawn (raw)
+    const onChainDeposited = Number(stats[0]);
+    const onChainWithdrawn = Number(stats[1]);
     const onChainChips = Math.floor((onChainDeposited * 10000) / 1e6);
     const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
 
-    // Get current server balance
     const wallet = await rooms.store.getOrCreateWallet(addr);
     const serverBalance = wallet.balance || 0;
+    const inPlay = rooms.getChipsInPlay(addr);
+    const inLobby = rooms.getChipsInLobby(addr);
+    const totalServer = serverBalance + inPlay + inLobby;
+    const netOnChain = onChainChips - withdrawnChips;
 
-    // If on-chain says they deposited more than server knows about, credit the difference
-    const expectedMinBalance = onChainChips - withdrawnChips;
-    const agentChipsInPlay = rooms.getChipsInPlay(addr);
-    const agentChipsInLobby = rooms.getChipsInLobby(addr);
-    const totalServerChips = serverBalance + agentChipsInPlay + agentChipsInLobby;
-
-    console.log(`[CheckDeposit] ${addr}: onChain=${onChainChips} chips deposited, ${withdrawnChips} withdrawn, server balance=${serverBalance}, in play=${agentChipsInPlay}, lobby=${agentChipsInLobby}, total=${totalServerChips}`);
-
-    if (expectedMinBalance > totalServerChips) {
-      // Server missed a deposit — credit the difference
-      const credit = expectedMinBalance - totalServerChips;
-      await rooms.store.addBalance(addr, credit);
-      await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
-      console.log(`[CheckDeposit] Credited ${credit} chips to ${addr}`);
-
-      // Notify connected client
-      for (const [ws, client] of clients) {
-        if (client.walletAddress === addr && ws.readyState === 1) {
-          sendBalance(ws, addr);
-          ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit, usdcAmount: (credit / 10000) } }));
-        }
-      }
-
-      res.json({ success: true, credited: credit, newBalance: serverBalance + credit });
-    } else if (totalServerChips > expectedMinBalance) {
-      // Server total > on-chain deposits — NORMAL in poker (players win chips from each other)
-      // Do NOT cap down — that destroys legitimate poker winnings
-      console.log(`[CheckDeposit] ${addr}: server total ${totalServerChips} > on-chain ${expectedMinBalance} (poker winnings, not capping)`);
-      res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance above deposits (poker winnings)' });
-    } else {
-      res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance already correct' });
-    }
+    res.json({
+      onChain: { deposited: onChainChips, withdrawn: withdrawnChips, net: netOnChain },
+      server: { wallet: serverBalance, inPlay, inLobby, total: totalServer },
+      delta: totalServer - netOnChain
+    });
   } catch (e) {
-    console.error('[CheckDeposit] Error:', e.message);
     res.json({ error: e.message });
   }
 });
 
 // Sync wallet balance to match on-chain reality
+// Diagnostic: same as check-deposit (kept for backwards compat, read-only)
 app.post('/sync-balance', async (req, res) => {
   if (!requireApiKey(req, res)) return;
   if (!chain) return res.json({ error: 'Chain not configured' });
@@ -678,30 +630,19 @@ app.post('/sync-balance', async (req, res) => {
 
   try {
     const stats = await chain.vault.playerStats(addr);
-    const onChainDeposited = Number(stats[0]);
-    const onChainWithdrawn = Number(stats[1]);
-    const depositedChips = Math.floor((onChainDeposited * 10000) / 1e6);
-    const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
+    const depositedChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+    const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
     const wallet = await rooms.store.getOrCreateWallet(addr);
-    const currentBalance = wallet.balance;
-    const agentChips = rooms.getChipsInPlay(addr);
-    const totalServer = currentBalance + agentChips;
+    const inPlay = rooms.getChipsInPlay(addr);
+    const inLobby = rooms.getChipsInLobby(addr);
+    const totalServer = wallet.balance + inPlay + inLobby;
     const onChainNet = depositedChips - withdrawnChips;
 
-    // Only credit UP if on-chain deposits exceed server total (missed deposit)
-    // NEVER cap down — players win chips from each other in poker
-    if (onChainNet > totalServer) {
-      const credit = onChainNet - totalServer;
-      await rooms.store.addBalance(addr, credit);
-      for (const [ws, client] of clients) {
-        if (client.walletAddress === addr && ws.readyState === 1) {
-          sendBalance(ws, addr);
-        }
-      }
-      res.json({ success: true, credited: credit, old: currentBalance, new: currentBalance + credit, depositedChips, withdrawnChips, agentChips });
-    } else {
-      res.json({ success: true, credited: 0, balance: currentBalance, message: 'Balance OK (includes poker winnings)', depositedChips, withdrawnChips, agentChips });
-    }
+    res.json({
+      onChain: { deposited: depositedChips, withdrawn: withdrawnChips, net: onChainNet },
+      server: { wallet: wallet.balance, inPlay, inLobby, total: totalServer },
+      delta: totalServer - onChainNet
+    });
   } catch (e) {
     res.json({ error: e.message });
   }
@@ -941,28 +882,18 @@ async function startServer() {
         operatorKey: process.env.OPERATOR_PRIVATE_KEY
       });
 
-      // Listen for on-chain deposits → credit chips directly server-side
+      // Listen for on-chain deposits → credit exact chip amount from event
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
-        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips — checking and crediting`);
+        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (${usdcRaw / 1e6} USDC)`);
         try {
-          const stats = await chain.vault.playerStats(walletAddress);
-          const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
-          const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
-          const expected = onChainChips - withdrawnChips;
-          const wallet = await rooms.store.getOrCreateWallet(walletAddress);
-          const inPlay = rooms.getChipsInPlay(walletAddress);
-          const total = wallet.balance + inPlay;
-          if (expected > total) {
-            const credit = expected - total;
-            await rooms.store.addBalance(walletAddress, credit);
-            await rooms.store.recordTransaction(walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
-            console.log(`[Chain] Credited ${credit} chips to ${walletAddress}`);
-            // Notify connected client
-            for (const [ws, client] of clients) {
-              if (client.walletAddress === walletAddress && ws.readyState === 1) {
-                sendBalance(ws, walletAddress);
-                ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit, usdcAmount: credit / 10000 } }));
-              }
+          await rooms.store.addBalance(walletAddress, chips);
+          await rooms.store.recordTransaction(walletAddress, 'deposit', usdcRaw, chips);
+          console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
+          // Notify connected client
+          for (const [ws, client] of clients) {
+            if (client.walletAddress === walletAddress && ws.readyState === 1) {
+              sendBalance(ws, walletAddress);
+              ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, usdcAmount: chips / 10000 } }));
             }
           }
         } catch (e) {
