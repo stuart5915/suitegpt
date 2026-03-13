@@ -52,13 +52,33 @@ export async function generateTweet(project) {
     const projectName = project.name || 'this project';
     const tokenRef = symbol ? `$${symbol}` : projectName;
 
+    // Build rich personality context from new fields
+    const backstory = project.agent_backstory || '';
+    const examples = Array.isArray(project.agent_examples) ? project.agent_examples : [];
+    const opinions = project.agent_opinions || '';
+    const vocab = project.agent_vocabulary || {};
+    const rules = project.agent_rules || {};
+    const knowledge = project.agent_knowledge || '';
+
+    let personalityBlock = '';
+    if (backstory) personalityBlock += `\nIdentity & Backstory:\n${backstory}\n`;
+    if (opinions) personalityBlock += `\nOpinions & Takes:\n${opinions}\n`;
+    if (knowledge) personalityBlock += `\nKnowledge & Context:\n${knowledge}\n`;
+    if (examples.length) personalityBlock += `\nExample tweets to match this style:\n${examples.map((e, i) => `${i + 1}. ${e}`).join('\n')}\n`;
+    if (vocab.use_words) personalityBlock += `\nWords/phrases to use often: ${vocab.use_words}\n`;
+    if (vocab.avoid_words) personalityBlock += `\nWords/phrases to NEVER use: ${vocab.avoid_words}\n`;
+
+    let customRules = '';
+    if (rules.dos) customRules += `\nDO: ${rules.dos}`;
+    if (rules.donts) customRules += `\nDON'T: ${rules.donts}`;
+
     const systemPrompt = `You are an AI agent for ${tokenRef}${symbol ? ' (' + projectName + ')' : ''}. ${accountNote}
 
 Tone: ${toneDesc}
 ${catchphrase ? 'Signature style: ' + catchphrase : ''}
 ${project.description ? 'Project: ' + project.description : ''}
 ${project.website_url ? 'Website: ' + project.website_url : ''}
-
+${personalityBlock}
 Rules:
 - Under 280 characters (STRICT)
 ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name naturally'}
@@ -69,7 +89,7 @@ ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name n
 - NEVER say "buy", "invest", "financial advice", "guaranteed returns", or "not financial advice"
 - No price predictions or promises of gains
 - Output ONLY the tweet text, nothing else
-- Be creative, varied, and authentic`;
+- Be creative, varied, and authentic${customRules}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',

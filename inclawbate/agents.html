@@ -207,6 +207,38 @@
         .explore-card-footer a { color: var(--lobster-400); text-decoration: none; font-weight: 600; }
         .empty-state { text-align: center; padding: var(--space-3xl) var(--space-lg); color: var(--text-dim); font-size: 0.9rem; }
 
+        /* ── Personality Studio ── */
+        .persona-field { margin-bottom: var(--space-md); }
+        .persona-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+        .persona-hint { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 6px; line-height: 1.4; }
+        .persona-textarea {
+            width: 100%; padding: 10px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body);
+            font-size: 0.82rem; min-height: 80px; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; line-height: 1.5;
+        }
+        .persona-textarea.short { min-height: 60px; }
+        .persona-textarea.tall { min-height: 120px; }
+        .persona-textarea:focus { border-color: var(--lobster-300); outline: none; }
+        .persona-textarea::placeholder { color: var(--text-dim); }
+        .persona-input {
+            width: 100%; padding: 8px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-mono);
+            font-size: 0.82rem; box-sizing: border-box; transition: border-color 0.15s;
+        }
+        .persona-input:focus { border-color: var(--lobster-300); outline: none; }
+        .persona-example {
+            width: 100%; padding: 8px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body);
+            font-size: 0.8rem; margin-bottom: 4px; box-sizing: border-box; transition: border-color 0.15s;
+        }
+        .persona-example:focus { border-color: var(--lobster-300); outline: none; }
+        .persona-add-btn {
+            background: none; border: 1px dashed var(--border-subtle); color: var(--text-dim);
+            padding: 6px 12px; border-radius: var(--radius-md); font-size: 0.72rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; margin-top: 4px;
+        }
+        .persona-add-btn:hover { border-color: var(--text-dim); color: var(--text-secondary); }
+
         @media (max-width: 600px) {
             .dash-header { flex-direction: column; align-items: flex-start; gap: 8px; }
             .dash-header-actions { width: 100%; }
@@ -556,6 +588,79 @@ function renderDashboard() {
     html+='<div style="margin-top:var(--space-sm)"><button class="ag-btn primary" onclick="dashSaveSettings()">Save Settings</button></div>';
     html+='</div>';
 
+    // ── 3b. PERSONALITY STUDIO ──
+    var backstory=p.agent_backstory||'';
+    var examples=Array.isArray(p.agent_examples)?p.agent_examples:[];
+    var opinions=p.agent_opinions||'';
+    var vocab=p.agent_vocabulary||{};
+    var rules=p.agent_rules||{};
+    var knowledge=p.agent_knowledge||'';
+
+    html+='<div class="dash-section"><div class="dash-section-title">\u{1F3AD} Personality Studio</div>';
+    html+='<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:var(--space-md)">Go deeper than vibes. Give your agent a real character.</div>';
+
+    // Backstory
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Identity & Backstory</label>';
+    html+='<div class="persona-hint">Who is this agent? What\'s their background, personality, what do they care about?</div>';
+    html+='<textarea id="pBackstory" class="persona-textarea" maxlength="2000" placeholder="e.g. A retired degen trader who found enlightenment through lobster memes. Speaks in lowercase, drops alpha casually, always bullish on community projects...">'+esc(backstory)+'</textarea>';
+    html+='</div>';
+
+    // Example tweets
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Example Tweets <span style="opacity:0.5">('+examples.length+'/10)</span></label>';
+    html+='<div class="persona-hint">Paste real tweets you love. The AI will learn this writing style.</div>';
+    html+='<div id="pExamples">';
+    for(var ei=0;ei<Math.max(examples.length,3);ei++) {
+        html+='<input class="persona-example" type="text" maxlength="280" placeholder="Example tweet '+(ei+1)+'..." value="'+esc(examples[ei]||'')+'">';
+    }
+    html+='</div>';
+    html+='<button type="button" class="persona-add-btn" onclick="addExampleField()">+ Add example</button>';
+    html+='</div>';
+
+    // Opinions & takes
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Opinions & Takes</label>';
+    html+='<div class="persona-hint">What is this agent bullish on? Skeptical of? What hot takes does it have?</div>';
+    html+='<textarea id="pOpinions" class="persona-textarea" maxlength="1000" placeholder="e.g. Bullish on UBI and community tokens. Thinks most NFT projects are scams. Loves on-chain games. Skeptical of VC-backed tokens...">'+esc(opinions)+'</textarea>';
+    html+='</div>';
+
+    // Knowledge base
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Knowledge Base</label>';
+    html+='<div class="persona-hint">Paste info the agent should reference \u2014 stats, docs, facts, URLs. The more specific, the better the output.</div>';
+    html+='<textarea id="pKnowledge" class="persona-textarea tall" maxlength="5000" placeholder="e.g. CLAWS token: 0x7ca4... on Base. Total supply 1B. 40% LP locked 1 year. Staking APY ~35%. 98 apps on inclawbate.com. Founded by Stuart in 2025...">'+esc(knowledge)+'</textarea>';
+    html+='</div>';
+
+    // Vocabulary
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Vocabulary</label>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm)">';
+    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">Words to USE</div><input id="pVocabUse" class="persona-input" placeholder="e.g. ser, gm, lfg, based, wagmi" value="'+esc(vocab.use_words||'')+'"></div>';
+    html+='<div><div class="persona-hint" style="color:#f87171">Words to AVOID</div><input id="pVocabAvoid" class="persona-input" placeholder="e.g. excited, announce, leverage" value="'+esc(vocab.avoid_words||'')+'"></div>';
+    html+='</div>';
+    html+='</div>';
+
+    // Do's and Don'ts
+    html+='<div class="persona-field">';
+    html+='<label class="persona-label">Rules</label>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm)">';
+    html+='<div><div class="persona-hint" style="color:var(--seafoam-400)">DO</div><textarea id="pDos" class="persona-textarea short" placeholder="e.g. Reference real stats, use lowercase, end with a question sometimes...">'+esc(rules.dos||'')+'</textarea></div>';
+    html+='<div><div class="persona-hint" style="color:#f87171">DON\'T</div><textarea id="pDonts" class="persona-textarea short" placeholder="e.g. Don\'t shill price, don\'t use emojis excessively, never tag Elon...">'+esc(rules.donts||'')+'</textarea></div>';
+    html+='</div>';
+    html+='</div>';
+
+    // Preview + Save
+    html+='<div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap">';
+    html+='<button class="ag-btn primary" onclick="savePersonality()">Save Personality</button>';
+    html+='<button class="ag-btn" onclick="previewPersonality()" id="previewBtn">Generate Preview</button>';
+    html+='</div>';
+    html+='<div id="personalityPreview" style="display:none;margin-top:var(--space-md);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:var(--bg-elevated)">';
+    html+='<div style="font-size:0.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Preview Tweet</div>';
+    html+='<div id="previewText" style="font-size:0.88rem;color:var(--text-secondary);line-height:1.45;white-space:pre-wrap"></div>';
+    html+='</div>';
+    html+='</div>';
+
     // ── 4. AUTO-POST ──
     html+='<div class="dash-section">';
     html+='<div class="toggle-row" style="border-bottom:none"><div><div class="toggle-label">Auto-post</div><div class="toggle-desc">Agent posts automatically at your scheduled times above</div></div>';
@@ -744,6 +849,92 @@ async function dashDelete() {
 function dashPickVibe(btn) {
     document.querySelectorAll('.dash-section .vibe-btn').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
+}
+
+function addExampleField() {
+    var container=document.getElementById('pExamples');
+    if(!container) return;
+    var count=container.querySelectorAll('.persona-example').length;
+    if(count>=10) { toast('Max 10 examples',true); return; }
+    var inp=document.createElement('input');
+    inp.className='persona-example';
+    inp.type='text';
+    inp.maxLength=280;
+    inp.placeholder='Example tweet '+(count+1)+'...';
+    container.appendChild(inp);
+}
+
+function getPersonalityPayload() {
+    var examples=[];
+    document.querySelectorAll('#pExamples .persona-example').forEach(function(inp){
+        var v=inp.value.trim();
+        if(v) examples.push(v);
+    });
+    return {
+        agent_backstory: (document.getElementById('pBackstory')?.value||'').trim(),
+        agent_examples: examples,
+        agent_opinions: (document.getElementById('pOpinions')?.value||'').trim(),
+        agent_knowledge: (document.getElementById('pKnowledge')?.value||'').trim(),
+        agent_vocabulary: {
+            use_words: (document.getElementById('pVocabUse')?.value||'').trim(),
+            avoid_words: (document.getElementById('pVocabAvoid')?.value||'').trim()
+        },
+        agent_rules: {
+            dos: (document.getElementById('pDos')?.value||'').trim(),
+            donts: (document.getElementById('pDonts')?.value||'').trim()
+        }
+    };
+}
+
+async function savePersonality() {
+    var payload=getPersonalityPayload();
+    payload.id=_selectedAgent.id;
+    try {
+        var r=await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify(payload)});
+        if(r.ok) {
+            toast('Personality saved');
+            var d=await r.json();
+            Object.assign(_selectedAgent,d.project||{});
+        } else {
+            var d=await r.json();
+            toast(d.error||'Failed',true);
+        }
+    } catch(e) { toast('Network error',true); }
+}
+
+async function previewPersonality() {
+    var btn=document.getElementById('previewBtn');
+    var preview=document.getElementById('personalityPreview');
+    var textEl=document.getElementById('previewText');
+    if(!btn||!preview||!textEl) return;
+
+    btn.disabled=true;
+    btn.textContent='Generating...';
+    preview.style.display='block';
+    textEl.textContent='Thinking...';
+
+    try {
+        // Save first so the preview uses latest personality
+        var payload=getPersonalityPayload();
+        payload.id=_selectedAgent.id;
+        await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify(payload)});
+
+        // Generate a draft
+        var r=await fetch(API+'/agent-draft?project_id='+_selectedAgent.id+'&force_new=1',{headers:hdrs()});
+        var data=await r.json();
+        if(data.draft?.tweet_text) {
+            textEl.textContent=data.draft.tweet_text;
+        } else if(data.tweet_text) {
+            textEl.textContent=data.tweet_text;
+        } else {
+            textEl.textContent='Could not generate preview. Try again.';
+        }
+    } catch(e) {
+        textEl.textContent='Error: '+e.message;
+    } finally {
+        btn.disabled=false;
+        btn.textContent='Generate Preview';
+    }
 }
 
 async function dashSaveSettings() {

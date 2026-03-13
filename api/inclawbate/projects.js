@@ -212,7 +212,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol, agent_schedule_times, agent_auto_post, agent_auto_reply, agent_tone, agent_topics, agent_catchphrase, agent_reply_limit } = req.body || {};
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol, agent_schedule_times, agent_auto_post, agent_auto_reply, agent_tone, agent_topics, agent_catchphrase, agent_reply_limit, agent_backstory, agent_examples, agent_opinions, agent_vocabulary, agent_rules, agent_knowledge } = req.body || {};
         if (!id) return res.status(400).json({ error: 'id is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -271,6 +271,12 @@ export default async function handler(req, res) {
         if (agent_reply_limit !== undefined) {
             patch.agent_reply_limit = Math.max(0, Math.min(50, parseInt(agent_reply_limit) || 10));
         }
+        if (agent_backstory !== undefined) patch.agent_backstory = (agent_backstory || '').slice(0, 2000) || null;
+        if (agent_examples !== undefined) patch.agent_examples = Array.isArray(agent_examples) ? agent_examples.slice(0, 10) : [];
+        if (agent_opinions !== undefined) patch.agent_opinions = (agent_opinions || '').slice(0, 1000) || null;
+        if (agent_vocabulary !== undefined && typeof agent_vocabulary === 'object') patch.agent_vocabulary = agent_vocabulary;
+        if (agent_rules !== undefined && typeof agent_rules === 'object') patch.agent_rules = agent_rules;
+        if (agent_knowledge !== undefined) patch.agent_knowledge = (agent_knowledge || '').slice(0, 5000) || null;
 
         const { data, error } = await supabase
             .from('projects')
