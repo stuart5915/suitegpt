@@ -333,6 +333,25 @@ export default async function handler(req, res) {
             if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
 
             const project = slot.projects;
+
+            // Auto-fill slots (no project) — already have tweet_text, just post it
+            if (!project && slot.tweet_text && slot.booked_by_wallet === 'system-autofill') {
+                try {
+                    const tweetId = await postTweetShared(slot.tweet_text);
+                    await supabase.from('agent_schedule')
+                        .update({ status: 'posted', tweet_id: tweetId })
+                        .eq('id', slot.id);
+                    scheduledPosted++;
+                    posted++;
+                } catch(e) {
+                    await supabase.from('agent_schedule')
+                        .update({ status: 'failed' })
+                        .eq('id', slot.id);
+                    errors.push({ slot: slot.id, error: e.message });
+                }
+                continue;
+            }
+
             if (!project) {
                 await supabase.from('agent_schedule').update({ status: 'failed' }).eq('id', slot.id);
                 continue;

@@ -68,7 +68,7 @@ export default async function handler(req, res) {
             .select('*, projects(name, logo_url, slug, token_symbol)')
             .gte('scheduled_at', start)
             .lte('scheduled_at', end)
-            .in('status', ['scheduled', 'posted'])
+            .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image'])
             .order('scheduled_at', { ascending: true });
 
         if (error) return res.status(500).json({ error: error.message });

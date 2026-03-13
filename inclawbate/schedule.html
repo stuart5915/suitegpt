@@ -281,10 +281,70 @@
         .x-tweet-link:hover { color: var(--lobster-400); }
         .x-tweet-link svg { width: 12px; height: 12px; }
 
+        /* ── Content Pillar Banner ── */
+        .pillar-banner {
+            display:flex;align-items:center;gap:12px;padding:14px 18px;
+            border-radius:var(--radius-lg);margin-bottom:var(--space-md);
+            border:1px solid var(--border-subtle);background:var(--bg-elevated);
+            animation:fadeUp 0.3s ease both;
+        }
+        .pillar-emoji { font-size:1.6rem;flex-shrink:0; }
+        .pillar-info { flex:1;min-width:0; }
+        .pillar-name { font-family:var(--font-display);font-size:0.95rem;font-weight:800;color:var(--text-primary); }
+        .pillar-desc { font-size:0.75rem;color:var(--text-dim);line-height:1.4;margin-top:2px; }
+        .pillar-badge-image {
+            padding:3px 10px;border-radius:var(--radius-full);font-size:0.65rem;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.04em;flex-shrink:0;
+            background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);
+        }
+
+        /* ── Pillar week strip ── */
+        .pillar-week { display:flex;gap:4px;margin-bottom:var(--space-md);overflow-x:auto;padding-bottom:4px; }
+        .pillar-day-chip {
+            flex:0 0 auto;padding:6px 12px;border-radius:var(--radius-md);
+            background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            text-align:center;font-size:0.65rem;color:var(--text-dim);min-width:80px;
+        }
+        .pillar-day-chip.today { border-color:var(--lobster-400);color:var(--lobster-300); }
+        .pillar-day-chip .chip-day { font-weight:700;text-transform:uppercase;letter-spacing:0.03em; }
+        .pillar-day-chip .chip-pillar { margin-top:2px;font-weight:600;color:var(--text-secondary);font-size:0.68rem; }
+
+        /* ── Auto-draft slot styles ── */
+        .sched-slot--draft { border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.04); }
+        .sched-slot--draft:hover { border-color:rgba(251,191,36,0.5); }
+        .sched-tag--draft { background:rgba(251,191,36,0.15);color:#fbbf24; }
+        .sched-tag--needs-image { background:rgba(251,146,36,0.15);color:#fb923c; }
+        .sched-draft-text {
+            font-size:0.75rem;color:var(--text-secondary);line-height:1.4;
+            margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden;font-style:italic;
+        }
+        .sched-draft-actions { display:flex;gap:6px;flex-shrink:0; }
+        .sched-draft-btn {
+            background:none;border:1px solid var(--border-subtle);color:var(--text-dim);
+            cursor:pointer;font-size:0.68rem;font-weight:600;padding:4px 10px;
+            border-radius:var(--radius-sm);transition:all 0.15s;
+        }
+        .sched-draft-btn:hover { border-color:var(--text-dim);color:var(--text-primary); }
+        .sched-draft-btn--approve { border-color:rgba(34,197,94,0.4);color:#4ade80; }
+        .sched-draft-btn--approve:hover { background:rgba(34,197,94,0.1); }
+
+        /* ── Auto-fill button ── */
+        .autofill-btn {
+            display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+            border-radius:var(--radius-md);border:1px solid var(--border-subtle);
+            background:var(--bg-elevated);color:var(--text-dim);font-size:0.75rem;
+            font-weight:600;cursor:pointer;transition:all 0.15s;
+        }
+        .autofill-btn:hover { border-color:var(--lobster-400);color:var(--lobster-300); }
+        .autofill-btn:disabled { opacity:0.5;cursor:not-allowed; }
+
         @media (max-width: 600px) {
             .sched-section { padding: var(--space-md); }
             .sched-day { min-width: 54px; padding: 6px 10px; }
             .x-feed-section { padding: var(--space-md); }
+            .pillar-week { gap:3px; }
+            .pillar-day-chip { min-width:66px;padding:5px 8px; }
         }
     </style>
 </head>
@@ -324,9 +384,21 @@
     <section class="sched-section" id="schedSection">
         <div class="sched-header">
             <h2>Content Schedule</h2>
-            <div class="sched-header-meta">
-                Free &middot; max 3 active
+            <div style="display:flex;align-items:center;gap:8px">
+                <div class="sched-header-meta">Free &middot; max 3 active</div>
+                <button type="button" class="autofill-btn" id="autofillBtn" style="display:none" onclick="window._autofillDay()">
+                    \u{2728} Auto-fill empty slots
+                </button>
             </div>
+        </div>
+        <div class="pillar-week" id="pillarWeek"></div>
+        <div class="pillar-banner" id="pillarBanner" style="display:none">
+            <div class="pillar-emoji" id="pillarEmoji"></div>
+            <div class="pillar-info">
+                <div class="pillar-name" id="pillarName"></div>
+                <div class="pillar-desc" id="pillarDesc"></div>
+            </div>
+            <span class="pillar-badge-image" id="pillarImageBadge" style="display:none">Image Day</span>
         </div>
         <div class="sched-days" id="schedDays"></div>
         <div class="sched-slots" id="schedSlots">
@@ -430,6 +502,16 @@
 
     var FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 
+    var PILLARS = [
+        { name: 'Weekly Recap',        emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next' },
+        { name: 'App Spotlight',       emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one specific app \u2014 what it does, why it\'s cool' },
+        { name: 'Builder Shoutout',    emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member \u2014 what they made, tag them' },
+        { name: 'DeFi / CLAWS Update', emoji: '\u{26D3}',  needsImage: true,  desc: 'CLAWS price, staking stats, LP news, ecosystem numbers' },
+        { name: 'How-To / Tips',       emoji: '\u{1F4A1}', needsImage: false, desc: 'Tutorial or tip \u2014 "Did you know you can..." educational content' },
+        { name: 'Community Vibes',     emoji: '\u{1F525}', needsImage: true,  desc: 'Poll, hot take, meme, engagement bait \u2014 get people talking' },
+        { name: 'Incubation CTA',      emoji: '\u{1F680}', needsImage: true,  desc: 'Sell the incubation service \u2014 "Got a project? We build it for you"' },
+    ];
+
     var _schedSlots = [];
     var _schedProjects = [];
     var _selectedDay = null;
@@ -483,8 +565,44 @@
             }
         }
 
+        renderPillarWeek();
         renderDayStrip();
         selectDay(new Date(start));
+    }
+
+    function renderPillarWeek() {
+        var container = document.getElementById('pillarWeek');
+        container.innerHTML = '';
+        var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        var today = new Date(); today.setHours(0,0,0,0);
+
+        for (var i = 0; i < 7; i++) {
+            var d = new Date(today.getTime() + i * 86400000);
+            var dow = d.getDay();
+            var p = PILLARS[dow];
+            var chip = document.createElement('div');
+            chip.className = 'pillar-day-chip' + (i === 0 ? ' today' : '');
+            chip.innerHTML = '<div class="chip-day">' + (i === 0 ? 'Today' : dayNames[dow]) + '</div>'
+                + '<div class="chip-pillar">' + p.emoji + ' ' + p.name + '</div>';
+            container.appendChild(chip);
+        }
+    }
+
+    function updatePillarBanner(date) {
+        var dow = date.getDay();
+        var p = PILLARS[dow];
+        var banner = document.getElementById('pillarBanner');
+        banner.style.display = 'flex';
+        document.getElementById('pillarEmoji').textContent = p.emoji;
+        document.getElementById('pillarName').textContent = p.name;
+        document.getElementById('pillarDesc').textContent = p.desc;
+        var badge = document.getElementById('pillarImageBadge');
+        badge.style.display = p.needsImage ? 'inline-block' : 'none';
+
+        // Show autofill button for admins
+        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        var btn = document.getElementById('autofillBtn');
+        btn.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
     function renderDayStrip() {
@@ -523,6 +641,7 @@
             el.classList.toggle('active', el.getAttribute('data-date') === dayStr);
         });
 
+        updatePillarBanner(date);
         closeBookForm();
         renderSlots(date);
     }
@@ -557,11 +676,14 @@
             var isPast = slotTime.getTime() <= now;
             var isMine = booked && booked.booked_by_wallet === _userWallet;
             var isPosted = booked && booked.status === 'posted';
+            var isDraft = booked && (booked.status === 'needs_review' || booked.status === 'needs_image');
+            var isAutofill = booked && booked.booked_by_wallet === 'system-autofill';
 
             var el = document.createElement('div');
             var cls = 'sched-slot';
             if (isPast && !booked) cls += ' sched-slot--past';
             else if (isPosted) cls += ' sched-slot--posted';
+            else if (isDraft) cls += ' sched-slot--draft';
             else if (isMine) cls += ' sched-slot--mine';
             else if (booked) cls += ' sched-slot--booked';
             else if (!isPast) cls += ' sched-slot--available';
@@ -571,7 +693,32 @@
             var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             var html = '<span class="sched-time">' + timeStr + '<div class="sched-time-label">' + peak.label + '</div></span>';
 
-            if (booked) {
+            if (booked && isDraft && isAutofill) {
+                // Auto-generated draft slot
+                html += '<div class="sched-content" style="flex:1;min-width:0">';
+                if (booked.content_angle) {
+                    html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
+                }
+                if (booked.tweet_text) {
+                    html += '<div class="sched-draft-text">' + booked.tweet_text + '</div>';
+                }
+                html += '</div>';
+
+                if (booked.status === 'needs_image') {
+                    html += '<span class="sched-tag sched-tag--needs-image">needs image</span>';
+                } else {
+                    html += '<span class="sched-tag sched-tag--draft">review</span>';
+                }
+
+                var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+                if (isAdmin && !isPast) {
+                    html += '<div class="sched-draft-actions">';
+                    html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')">\u2713</button>';
+                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')">\u270E</button>';
+                    html += '</div>';
+                }
+
+            } else if (booked) {
                 var logoChar = (booked.project_name || '?').charAt(0).toUpperCase();
                 var logoHtml = booked.project_logo
                     ? '<img src="' + booked.project_logo + '" alt="" onerror="this.parentNode.textContent=\'' + logoChar + '\'">'
@@ -923,6 +1070,83 @@
     };
 
     window._schedEdit = openEditForm;
+
+    // ── Auto-fill & draft management ──
+
+    window._autofillDay = async function() {
+        var auth = getAuth();
+        if (!auth || !auth.token) { alert('Sign in first'); return; }
+        if (!_selectedDay) return;
+
+        var btn = document.getElementById('autofillBtn');
+        btn.disabled = true;
+        btn.textContent = '\u2728 Generating...';
+
+        var dayStr = _selectedDay.toISOString().split('T')[0];
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'generate', date: dayStr })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+
+            // Merge new drafts into local state and re-render
+            if (data.drafts && data.drafts.length) {
+                data.drafts.forEach(function(d) { _schedSlots.push(d); });
+                renderSlots(_selectedDay);
+            }
+            alert('Generated ' + (data.generated || 0) + ' drafts for ' + (data.pillar || 'today'));
+        } catch(e) {
+            alert('Failed to generate: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '\u2728 Auto-fill empty slots';
+        }
+    };
+
+    window._approveDraft = async function(slotId) {
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'approve', slot_id: slotId })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+
+            // Update local state
+            var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+            if (slot) slot.status = 'scheduled';
+            renderSlots(_selectedDay);
+        } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._editDraft = function(slotId) {
+        var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+        if (!slot) return;
+
+        var newText = prompt('Edit tweet:', slot.tweet_text || '');
+        if (newText === null) return;
+        if (newText.length > 280) { alert('Too long (' + newText.length + '/280)'); return; }
+
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+
+        fetch('/api/inclawbate/schedule-autofill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+            body: JSON.stringify({ action: 'update_draft', slot_id: slotId, tweet_text: newText })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.error) { alert(data.error); return; }
+            slot.tweet_text = newText;
+            renderSlots(_selectedDay);
+        }).catch(function(e) { alert('Failed: ' + e.message); });
+    };
 
     // ── @inclawbator Feed ──
 
