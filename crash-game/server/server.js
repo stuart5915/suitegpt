@@ -11,10 +11,10 @@ const CRASH_PAUSE_MS = 3000;
 const TICK_MS = 50;
 const MAX_MULTIPLIER = 1000;
 const HOUSE_EDGE = 0.99; // 1% house edge
-const TEST_BALANCE = 1000; // starting test balance for new players
+const TEST_BALANCE = 0; // real mode — must deposit CLAWS to play
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
-const VAULT_ADDRESS = process.env.CRASH_VAULT_ADDRESS;
+const VAULT_ADDRESS = process.env.CRASH_VAULT_ADDRESS || '0xBe124C211bE4614C451a5C2E0758B8Bc90517f19';
 const OPERATOR_KEY = process.env.OPERATOR_PRIVATE_KEY;
 const RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
 
