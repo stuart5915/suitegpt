@@ -117,6 +117,36 @@
         .draft-actions { display: flex; gap: 6px; margin-top: var(--space-sm); }
         .draft-badge { font-size: 0.72rem; color: var(--seafoam-300); font-weight: 600; }
 
+        /* ── Content Calendar ── */
+        .cal-strip { display: flex; gap: 4px; margin-bottom: var(--space-md); overflow-x: auto; padding-bottom: 4px; }
+        .cal-day-btn { flex: 0 0 auto; min-width: 72px; padding: 8px 6px; text-align: center; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
+        .cal-day-btn:hover { border-color: var(--border-bright); }
+        .cal-day-btn.active { border-color: var(--lobster-400); background: rgba(232,121,85,0.06); }
+        .cal-day-btn .cal-dow { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+        .cal-day-btn .cal-date { font-size: 0.82rem; font-weight: 800; color: var(--text-secondary); margin-top: 2px; }
+        .cal-day-btn .cal-count { font-size: 0.58rem; color: var(--text-dim); margin-top: 2px; }
+        .cal-day-btn.today .cal-dow { color: var(--lobster-400); }
+        .cal-slots { display: flex; flex-direction: column; gap: 8px; }
+        .cal-slot { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px; transition: border-color 0.15s; }
+        .cal-slot:hover { border-color: var(--border-bright); }
+        .cal-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .cal-slot-time { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--text-dim); }
+        .cal-slot-status { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .cal-slot-status.draft { background: hsla(40,80%,50%,0.12); color: #fbbf24; }
+        .cal-slot-status.approved { background: hsla(142,52%,48%,0.12); color: #4ade80; }
+        .cal-slot-status.edited { background: hsla(200,70%,50%,0.12); color: #38bdf8; }
+        .cal-slot-status.posted { background: hsla(172,32%,48%,0.12); color: var(--seafoam-400); }
+        .cal-slot-status.empty { background: var(--bg-surface); color: var(--text-dim); }
+        .cal-slot-text { font-size: 0.85rem; color: var(--text-primary); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+        .cal-slot-text.empty { color: var(--text-dim); font-style: italic; font-size: 0.8rem; }
+        .cal-slot-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .cal-slot-actions .ag-btn { font-size: 0.7rem; padding: 4px 10px; }
+        .cal-generate-all { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-md); }
+        .cal-empty-hint { text-align: center; padding: var(--space-lg); color: var(--text-dim); font-size: 0.82rem; }
+        .cal-edit-area { margin-top: 6px; }
+        .cal-edit-area textarea { width: 100%; min-height: 70px; padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-body); font-size: 0.82rem; resize: vertical; outline: none; box-sizing: border-box; }
+        .cal-edit-area textarea:focus { border-color: var(--lobster-300); }
+
         /* Content settings */
         .vibe-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-md); }
         .vibe-btn { padding: 6px 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
@@ -579,7 +609,7 @@ function openDashboard(pid) {
     document.getElementById('dashboard').classList.add('open');
 
     renderDashboard();
-    loadDraft();
+    initCalendar();
     loadDashPosts();
     loadDashReplies();
 }
@@ -665,9 +695,12 @@ function renderDashboard() {
     else html+='<div class="schedule-note">Click the timeline to add more times (max 3)</div>';
     html+='</div>';
 
-    // ── 2. NEXT POST PREVIEW ──
-    html+='<div class="dash-section"><div class="dash-section-title">Next Post Preview</div>';
-    html+='<div id="draftArea"><div style="color:var(--text-dim);font-size:0.82rem">Loading draft...</div></div>';
+    // ── 2. CONTENT CALENDAR ──
+    html+='<div class="dash-section"><div class="dash-section-title">Content Calendar</div>';
+    html+='<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:var(--space-sm)">7-day content plan. Review, edit, and approve before they post.</div>';
+    html+='<div class="cal-strip" id="calStrip"></div>';
+    html+='<div class="cal-generate-all"><button class="ag-btn primary" onclick="calGenerateDay()" id="calGenBtn">Generate drafts for this day</button><span style="font-size:0.68rem;color:var(--text-dim)" id="calGenHint"></span></div>';
+    html+='<div class="cal-slots" id="calSlots"><div style="color:var(--text-dim);font-size:0.82rem">Select a day above...</div></div>';
     html+='</div>';
 
     // ── 3. CONTENT SETTINGS ──
@@ -811,70 +844,232 @@ async function saveSchedule() {
         await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_selectedAgent.id,agent_schedule_times:_dashSchedule})});
         _selectedAgent.agent_schedule_times=_dashSchedule.slice();
         renderDashboard();
-        loadDraft();
+        initCalendar();
         loadDashPosts();
     } catch(e) { toast('Failed to save schedule',true); }
 }
 
-// ── Draft ──
-async function loadDraft() {
-    var el=document.getElementById('draftArea');
+// ── Content Calendar ──
+var _calDays=[];  // [{date:'2026-03-13', dow:'Thu', drafts:[...]}]
+var _calSelectedIdx=0;
+var _calDrafts={};  // {date: [draft, draft, ...]}
+
+function getCalWeek(){
+    var days=[];
+    var now=new Date();
+    for(var i=0;i<7;i++){
+        var d=new Date(now);d.setDate(d.getDate()+i);
+        var key=d.toISOString().split('T')[0];
+        var dow=d.toLocaleDateString('en',{weekday:'short'});
+        var dateNum=d.getDate();
+        var isToday=i===0;
+        days.push({date:key, dow:dow, dateNum:dateNum, isToday:isToday});
+    }
+    return days;
+}
+
+function initCalendar(){
+    _calDays=getCalWeek();
+    _calSelectedIdx=0;
+    renderCalStrip();
+    loadCalDay(_calDays[0].date);
+}
+
+function renderCalStrip(){
+    var el=document.getElementById('calStrip');
     if(!el) return;
-    el.innerHTML='<div style="color:var(--text-dim);font-size:0.82rem">Generating preview...</div>';
-    try {
-        var r=await fetch(API+'/agent-draft?project_id='+_selectedAgent.id,{headers:hdrs()});
-        var data=await r.json();
-        if(!r.ok) throw new Error(data.error||'Failed');
-        _currentDraft=data.draft;
-        renderDraft();
-    } catch(e) { el.innerHTML='<div style="color:#f87171;font-size:0.82rem">'+esc(e.message)+'</div>'; }
-}
-
-function renderDraft() {
-    var el=document.getElementById('draftArea');
-    if(!el||!_currentDraft) return;
-    var d=_currentDraft;
-    var len=d.tweet_text.length;
-    var html='<div class="draft-box">';
-    html+='<div class="draft-text" id="draftText">'+esc(d.tweet_text)+'</div>';
-    html+='<div class="draft-meta"><span class="draft-status '+d.status+'">'+d.status+'</span><span class="draft-charcount'+(len>280?' over':'')+'">'+len+'/280</span></div>';
-    html+='</div>';
-    html+='<div class="draft-actions">';
-    html+='<button class="ag-btn" onclick="draftRegenerate()">Regenerate</button>';
-    html+='<button class="ag-btn" onclick="draftEdit()">Edit</button>';
-    if(d.status!=='approved') html+='<button class="ag-btn primary" onclick="draftApprove()">Approve</button>';
-    else html+='<span class="draft-badge">Approved — will post at next scheduled time</span>';
-    html+='</div>';
+    var times=_dashSchedule||[];
+    var html='';
+    for(var i=0;i<_calDays.length;i++){
+        var d=_calDays[i];
+        var drafts=_calDrafts[d.date]||[];
+        var count=drafts.length+'/'+Math.max(times.length,1);
+        html+='<div class="cal-day-btn'+(i===_calSelectedIdx?' active':'')+(d.isToday?' today':'')+'" onclick="calSelectDay('+i+')">';
+        html+='<div class="cal-dow">'+d.dow+'</div>';
+        html+='<div class="cal-date">'+d.dateNum+'</div>';
+        html+='<div class="cal-count">'+count+'</div>';
+        html+='</div>';
+    }
     el.innerHTML=html;
 }
 
-async function draftRegenerate() {
-    var el=document.getElementById('draftArea');
-    el.innerHTML='<div style="color:var(--text-dim);font-size:0.82rem">Regenerating...</div>';
-    try {
-        var r=await fetch(API+'/agent-draft',{method:'POST',headers:hdrs(),body:JSON.stringify({project_id:_selectedAgent.id,action:'regenerate'})});
-        var data=await r.json();
-        if(!r.ok) throw new Error(data.error||'Failed');
-        _currentDraft=data.draft;
-        renderDraft();
-    } catch(e) { el.innerHTML='<div style="color:#f87171;font-size:0.82rem">'+esc(e.message)+'</div>'; }
+function calSelectDay(idx){
+    _calSelectedIdx=idx;
+    renderCalStrip();
+    loadCalDay(_calDays[idx].date);
 }
 
-function draftEdit() {
-    var el=document.getElementById('draftArea');
-    if(!_currentDraft) return;
-    var d=_currentDraft;
-    var html='<textarea class="draft-textarea" id="draftEditText">'+esc(d.tweet_text)+'</textarea>';
-    html+='<div class="draft-meta"><span></span><span class="draft-charcount" id="draftEditCount">'+d.tweet_text.length+'/280</span></div>';
-    html+='<div class="draft-actions"><button class="ag-btn primary" onclick="draftSaveEdit()">Save</button><button class="ag-btn" onclick="renderDraft()">Cancel</button></div>';
+async function loadCalDay(date){
+    var slotsEl=document.getElementById('calSlots');
+    if(!slotsEl) return;
+    slotsEl.innerHTML='<div style="color:var(--text-dim);font-size:0.82rem;padding:var(--space-sm)">Loading...</div>';
+    try {
+        var r=await fetch(API+'/agent-draft?project_id='+_selectedAgent.id+'&date='+date,{headers:hdrs()});
+        var data=await r.json();
+        if(!r.ok) throw new Error(data.error||'Failed');
+        _calDrafts[date]=data.drafts||[];
+        renderCalStrip();
+        renderCalSlots(date);
+    } catch(e) {
+        // If the API doesn't support date param yet, fall back to legacy single draft
+        if(e.message.includes('project_id required')){
+            slotsEl.innerHTML='<div style="color:var(--text-dim);font-size:0.82rem">Calendar loading...</div>';
+        } else {
+            slotsEl.innerHTML='<div style="color:#f87171;font-size:0.82rem">'+esc(e.message)+'</div>';
+        }
+    }
+    // Update generate button hint
+    var hint=document.getElementById('calGenHint');
+    var genBtn=document.getElementById('calGenBtn');
+    if(hint&&genBtn){
+        var times=_dashSchedule||[];
+        var drafts=_calDrafts[date]||[];
+        var empty=times.length-drafts.length;
+        if(empty>0){
+            hint.textContent=empty+' empty slot'+(empty>1?'s':'');
+            genBtn.style.display='';
+        } else if(!times.length){
+            hint.textContent='Set schedule times above first';
+            genBtn.style.display='none';
+        } else {
+            hint.textContent='All slots filled';
+            genBtn.style.display='none';
+        }
+    }
+}
+
+function renderCalSlots(date){
+    var el=document.getElementById('calSlots');
+    if(!el) return;
+    var times=_dashSchedule||[];
+    var drafts=_calDrafts[date]||[];
+
+    if(!times.length){
+        el.innerHTML='<div class="cal-empty-hint">Set posting times in the schedule above, then generate content here.</div>';
+        return;
+    }
+
+    var html='';
+    for(var i=0;i<times.length;i++){
+        var utcH=times[i];
+        var localH=utcToLocalHour(utcH);
+        var timeStr=fmtLocalHour(localH);
+        // Find matching draft for this slot
+        var draft=drafts.find(function(d){return d.slot_index===i;})||drafts[i]||null;
+
+        html+='<div class="cal-slot" data-slot="'+i+'">';
+        html+='<div class="cal-slot-header">';
+        html+='<span class="cal-slot-time">'+timeStr+'</span>';
+        if(draft){
+            html+='<span class="cal-slot-status '+draft.status+'">'+draft.status+'</span>';
+        } else {
+            html+='<span class="cal-slot-status empty">empty</span>';
+        }
+        html+='</div>';
+
+        if(draft&&draft.tweet_text){
+            html+='<div class="cal-slot-text" id="calText'+i+'">'+esc(draft.tweet_text)+'</div>';
+            if(draft.content_angle) html+='<div style="font-size:0.65rem;color:var(--text-dim);margin-top:4px">Angle: '+esc(draft.content_angle)+'</div>';
+            html+='<div class="cal-slot-actions">';
+            html+='<button class="ag-btn" onclick="calRegenSlot('+i+',\''+date+'\')">Regenerate</button>';
+            html+='<button class="ag-btn" onclick="calEditSlot('+i+',\''+date+'\')">Edit</button>';
+            if(draft.status!=='approved'&&draft.status!=='posted'){
+                html+='<button class="ag-btn primary" onclick="calApproveSlot('+i+',\''+date+'\')">Approve</button>';
+            } else if(draft.status==='approved'){
+                html+='<span class="draft-badge">Will post at '+timeStr+'</span>';
+            }
+            html+='</div>';
+            html+='<div class="cal-edit-area" id="calEdit'+i+'" style="display:none"></div>';
+        } else {
+            html+='<div class="cal-slot-text empty">No draft yet — click "Generate" above</div>';
+        }
+        html+='</div>';
+    }
     el.innerHTML=html;
-    var ta=document.getElementById('draftEditText');
+}
+
+async function calGenerateDay(){
+    var date=_calDays[_calSelectedIdx].date;
+    var btn=document.getElementById('calGenBtn');
+    btn.disabled=true;btn.textContent='Generating...';
+    try {
+        var r=await fetch(API+'/agent-draft',{method:'POST',headers:hdrs(),body:JSON.stringify({project_id:_selectedAgent.id,action:'generate_day',date:date})});
+        var data=await r.json();
+        if(!r.ok) throw new Error(data.error||'Failed');
+        _calDrafts[date]=data.drafts||[];
+        renderCalStrip();
+        renderCalSlots(date);
+        toast('Drafts generated!');
+    } catch(e) { toast(e.message,true); }
+    finally { btn.disabled=false;btn.textContent='Generate drafts for this day'; }
+}
+
+async function calRegenSlot(idx,date){
+    var drafts=_calDrafts[date]||[];
+    var draft=drafts[idx];
+    var draftId=draft?draft.id:null;
+    var el=document.getElementById('calText'+idx);
+    if(el) el.innerHTML='<span style="color:var(--text-dim)">Regenerating...</span>';
+    try {
+        var r=await fetch(API+'/agent-draft',{method:'POST',headers:hdrs(),body:JSON.stringify({project_id:_selectedAgent.id,action:'regenerate_slot',draft_id:draftId,slot_index:idx,date:date})});
+        var data=await r.json();
+        if(!r.ok) throw new Error(data.error||'Failed');
+        if(data.draft){
+            drafts[idx]=data.draft;
+            _calDrafts[date]=drafts;
+        }
+        renderCalSlots(date);
+    } catch(e) { toast(e.message,true); renderCalSlots(date); }
+}
+
+function calEditSlot(idx,date){
+    var drafts=_calDrafts[date]||[];
+    var draft=drafts[idx];
+    if(!draft) return;
+    var area=document.getElementById('calEdit'+idx);
+    if(!area) return;
+    area.style.display='block';
+    area.innerHTML='<textarea id="calEditTa'+idx+'">'+esc(draft.tweet_text)+'</textarea><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><button class="ag-btn primary" onclick="calSaveEdit('+idx+',\''+date+'\')">Save</button><button class="ag-btn" onclick="document.getElementById(\'calEdit'+idx+'\').style.display=\'none\'">Cancel</button><span class="draft-charcount" id="calEditCnt'+idx+'">'+draft.tweet_text.length+'/280</span></div>';
+    var ta=document.getElementById('calEditTa'+idx);
     ta.focus();
     ta.addEventListener('input',function(){
-        var cnt=document.getElementById('draftEditCount');
+        var cnt=document.getElementById('calEditCnt'+idx);
         cnt.textContent=ta.value.length+'/280';
         cnt.className='draft-charcount'+(ta.value.length>280?' over':'');
     });
+}
+
+async function calSaveEdit(idx,date){
+    var ta=document.getElementById('calEditTa'+idx);
+    var text=ta.value.trim();
+    if(text.length>280){toast('Too long (max 280)',true);return;}
+    var drafts=_calDrafts[date]||[];
+    var draft=drafts[idx];
+    if(!draft) return;
+    try {
+        var r=await fetch(API+'/agent-draft',{method:'POST',headers:hdrs(),body:JSON.stringify({project_id:_selectedAgent.id,action:'edit',draft_id:draft.id,tweet_text:text})});
+        var data=await r.json();
+        if(!r.ok) throw new Error(data.error||'Failed');
+        drafts[idx]=data.draft;
+        _calDrafts[date]=drafts;
+        renderCalSlots(date);
+        toast('Saved');
+    } catch(e) { toast(e.message,true); }
+}
+
+async function calApproveSlot(idx,date){
+    var drafts=_calDrafts[date]||[];
+    var draft=drafts[idx];
+    if(!draft) return;
+    try {
+        var r=await fetch(API+'/agent-draft',{method:'POST',headers:hdrs(),body:JSON.stringify({project_id:_selectedAgent.id,action:'approve',draft_id:draft.id})});
+        var data=await r.json();
+        if(!r.ok) throw new Error(data.error||'Failed');
+        drafts[idx]=data.draft;
+        _calDrafts[date]=drafts;
+        renderCalSlots(date);
+        toast('Approved!');
+    } catch(e) { toast(e.message,true); }
 }
 
 async function draftSaveEdit() {
@@ -915,7 +1110,7 @@ async function dashToggleStatus() {
     var next=_selectedAgent.agent_status==='active'?'paused':'active';
     try {
         var r=await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_selectedAgent.id,agent_status:next})});
-        if(r.ok) { toast(next==='active'?'Resumed':'Paused'); _selectedAgent.agent_status=next; renderDashboard(); loadDraft(); loadDashPosts(); }
+        if(r.ok) { toast(next==='active'?'Resumed':'Paused'); _selectedAgent.agent_status=next; renderDashboard(); initCalendar(); loadDashPosts(); }
         else { var d=await r.json(); toast(d.error||'Failed',true); }
     } catch(e) { toast('Network error',true); }
 }

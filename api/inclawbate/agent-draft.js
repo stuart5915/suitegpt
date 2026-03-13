@@ -34,9 +34,9 @@ export default async function handler(req, res) {
     const user = authenticateRequest(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    // GET — fetch current draft (or generate one)
+    // GET — fetch drafts for a date (calendar mode) or single draft (legacy)
     if (req.method === 'GET') {
-        const { project_id } = req.query;
+        const { project_id, date } = req.query;
         if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
         const { data: project } = await supabase
@@ -48,11 +48,28 @@ export default async function handler(req, res) {
         if (!project) return res.status(404).json({ error: 'Project not found' });
         if (!verifyOwnership(project, user)) return res.status(403).json({ error: 'Not your project' });
 
-        // Check for existing active draft
+        // Calendar mode — fetch drafts for a specific date
+        if (date) {
+            const dayStart = date + 'T00:00:00.000Z';
+            const dayEnd = date + 'T23:59:59.999Z';
+            const { data: drafts } = await supabase
+                .from('agent_draft_posts')
+                .select('*')
+                .eq('project_id', project_id)
+                .gte('scheduled_for', dayStart)
+                .lte('scheduled_for', dayEnd)
+                .in('status', ['draft', 'approved', 'edited', 'posted'])
+                .order('scheduled_for', { ascending: true });
+
+            return res.status(200).json({ drafts: drafts || [] });
+        }
+
+        // Legacy single-draft mode
         const { data: existing } = await supabase
             .from('agent_draft_posts')
             .select('*')
             .eq('project_id', project_id)
+            .is('scheduled_for', null)
             .in('status', ['draft', 'approved', 'edited'])
             .order('created_at', { ascending: false })
             .limit(1);
@@ -85,7 +102,7 @@ export default async function handler(req, res) {
 
     // POST — actions on drafts
     if (req.method === 'POST') {
-        const { project_id, action, draft_id, tweet_text } = req.body || {};
+        const { project_id, action, draft_id, tweet_text, date, slot_index } = req.body || {};
         if (!project_id || !action) return res.status(400).json({ error: 'project_id and action required' });
 
         const { data: project } = await supabase
@@ -97,7 +114,88 @@ export default async function handler(req, res) {
         if (!project) return res.status(404).json({ error: 'Project not found' });
         if (!verifyOwnership(project, user)) return res.status(403).json({ error: 'Not your project' });
 
-        // Regenerate — expire old draft, generate new
+        // Generate day — create drafts for all empty slots on a given date
+        if (action === 'generate_day') {
+            if (!date) return res.status(400).json({ error: 'date required' });
+            const times = project.agent_schedule_times || [];
+            if (!times.length) return res.status(400).json({ error: 'No schedule times set' });
+
+            // Get existing drafts for this day
+            const dayStart = date + 'T00:00:00.000Z';
+            const dayEnd = date + 'T23:59:59.999Z';
+            const { data: existing } = await supabase
+                .from('agent_draft_posts')
+                .select('*')
+                .eq('project_id', project_id)
+                .gte('scheduled_for', dayStart)
+                .lte('scheduled_for', dayEnd)
+                .in('status', ['draft', 'approved', 'edited', 'posted']);
+
+            const existingSlots = new Set((existing || []).map(d => {
+                const h = new Date(d.scheduled_for).getUTCHours();
+                return times.indexOf(h);
+            }));
+
+            const drafts = [...(existing || [])];
+            for (let i = 0; i < times.length; i++) {
+                if (existingSlots.has(i)) continue;
+                try {
+                    const result = await generateTweet(project);
+                    const scheduledFor = date + 'T' + String(times[i]).padStart(2, '0') + ':00:00.000Z';
+                    const { data: draft, error } = await supabase
+                        .from('agent_draft_posts')
+                        .insert({
+                            project_id,
+                            tweet_text: result.text,
+                            content_angle: result.content_angle,
+                            status: 'draft',
+                            scheduled_for: scheduledFor
+                        })
+                        .select()
+                        .single();
+                    if (!error && draft) drafts.push(draft);
+                } catch (e) { /* skip slot on error */ }
+            }
+
+            // Sort by scheduled_for
+            drafts.sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for));
+            return res.status(200).json({ drafts });
+        }
+
+        // Regenerate slot — regenerate a specific slot on a date
+        if (action === 'regenerate_slot') {
+            if (draft_id) {
+                await supabase
+                    .from('agent_draft_posts')
+                    .update({ status: 'expired', updated_at: new Date().toISOString() })
+                    .eq('id', draft_id)
+                    .eq('project_id', project_id);
+            }
+            try {
+                const result = await generateTweet(project);
+                const times = project.agent_schedule_times || [];
+                const utcHour = times[slot_index] !== undefined ? times[slot_index] : 12;
+                const targetDate = date || new Date().toISOString().split('T')[0];
+                const scheduledFor = targetDate + 'T' + String(utcHour).padStart(2, '0') + ':00:00.000Z';
+                const { data: draft, error } = await supabase
+                    .from('agent_draft_posts')
+                    .insert({
+                        project_id,
+                        tweet_text: result.text,
+                        content_angle: result.content_angle,
+                        status: 'draft',
+                        scheduled_for: scheduledFor
+                    })
+                    .select()
+                    .single();
+                if (error) return res.status(500).json({ error: error.message });
+                return res.status(200).json({ draft });
+            } catch (e) {
+                return res.status(500).json({ error: e.message || 'Failed to generate' });
+            }
+        }
+
+        // Regenerate — expire old draft, generate new (legacy single-draft)
         if (action === 'regenerate') {
             // Expire existing drafts
             await supabase
