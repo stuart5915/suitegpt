@@ -1,21 +1,8 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 
 export default function LearnPage() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
-
-    if (status === 'unauthenticated') {
-        router.push('/login');
-        return null;
-    }
-
-    if (status === 'loading') {
-        return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#a855f7' }}>Loading...</div>;
-    }
 
     return (
         <>

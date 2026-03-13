@@ -1,23 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import ModeCard from '@/components/simulator/ModeCard';
 
 export default function SimulatorHub() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
-
-    if (status === 'unauthenticated') {
-        router.push('/login');
-        return null;
-    }
-
-    if (status === 'loading') {
-        return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#a855f7' }}>Loading...</div>;
-    }
 
     return (
         <>

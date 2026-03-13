@@ -1,8 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import BankView from '@/components/platforms/BankView';
 import CexView from '@/components/platforms/CexView';
 import DeFiView from '@/components/platforms/DeFiView';
@@ -15,39 +13,8 @@ import Link from 'next/link';
 import { useSimStore } from '@/store/useSimStore';
 
 export default function SandboxPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const { resetSimulation } = useSimStore();
   const [hoveredPlatform, setHoveredPlatform] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  if (status === 'loading') {
-    return (
-      <div className="loading-screen">
-        <div className="spinner">Loading...</div>
-        <style jsx>{`
-          .loading-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #0a0a0f;
-            color: #a855f7;
-            font-size: 18px;
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
 
   return (
     <>

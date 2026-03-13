@@ -1,38 +1,11 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import StatsCard from '@/components/dashboard/StatsCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import Navbar from '@/components/Navbar';
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  if (status === 'loading') {
-    return (
-      <div className="loading-screen">
-        <div>Loading...</div>
-        <style jsx>{`
-          .loading-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #0a0a0f;
-            color: #a855f7;
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
 
   return (
     <>
@@ -45,7 +18,7 @@ export default function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             className="welcome-content"
           >
-            <h1>Welcome back, {session.user?.name?.split(' ')[0]}! 👋</h1>
+            <h1>Welcome to DeFiKnowledge 👋</h1>
             <p>Ready to continue your DeFi journey?</p>
           </motion.div>
         </section>

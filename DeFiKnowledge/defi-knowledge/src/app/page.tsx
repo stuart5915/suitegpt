@@ -1,42 +1,9 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function LandingPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (session) {
-      router.push('/dashboard');
-    }
-  }, [session, router]);
-
-  if (status === 'loading') {
-    return (
-      <div className="loading-screen">
-        <div>Loading...</div>
-        <style jsx>{`
-          .loading-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #0a0a0f;
-            color: #a855f7;
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  if (session) {
-    return null; // Redirecting
-  }
 
   return (
     <div className="landing-page">
@@ -54,7 +21,7 @@ export default function LandingPage() {
             Master decentralized finance through realistic simulations—before putting real money at stake
           </p>
           <div className="cta-buttons">
-            <Link href="/login" className="btn-primary">
+            <Link href="/dashboard" className="btn-primary">
               Get Started Free
             </Link>
             <a href="#how-it-works" className="btn-secondary">
@@ -129,7 +96,7 @@ export default function LandingPage() {
       <section className="cta">
         <h2>Ready to Begin?</h2>
         <p>Start learning DeFi today—no wallet required</p>
-        <Link href="/login" className="btn-primary large">
+        <Link href="/dashboard" className="btn-primary large">
           Sign Up with Google
         </Link>
       </section>

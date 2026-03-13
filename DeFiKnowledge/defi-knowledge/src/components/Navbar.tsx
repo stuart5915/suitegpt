@@ -1,17 +1,13 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
-  const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  if (!session) return null;
 
   return (
     <nav className="navbar">
@@ -36,41 +32,9 @@ export default function Navbar() {
       </div>
 
       <div className="nav-right">
-        <div className="user-menu" onClick={() => setMenuOpen(!menuOpen)}>
-          {session.user?.image ? (
-            <img src={session.user.image} alt="" className="user-avatar" />
-          ) : (
-            <div className="user-avatar-placeholder">
-              {session.user?.name?.[0] || '?'}
-            </div>
-          )}
+        <div className="user-avatar-placeholder">
+          🎓
         </div>
-
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="dropdown"
-            >
-              <div className="dropdown-header">
-                <span className="user-name">{session.user?.name}</span>
-                <span className="user-email">{session.user?.email}</span>
-              </div>
-              <div className="dropdown-divider" />
-              <Link href="/profile" className="dropdown-item" onClick={() => setMenuOpen(false)}>
-                👤 Profile
-              </Link>
-              <button
-                className="dropdown-item signout"
-                onClick={() => signOut({ callbackUrl: '/login' })}
-              >
-                🚪 Sign Out
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <style jsx>{`
