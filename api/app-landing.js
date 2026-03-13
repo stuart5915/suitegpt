@@ -40,10 +40,6 @@ export default async function handler(req, res) {
         .maybeSingle();
 
     if (error || !app) {
-        // Debug: return error details
-        if (req.query.debug === '1') {
-            return res.json({ error: error?.message, slug, hasUrl: !!process.env.SUPABASE_URL, app });
-        }
         return res.status(404).send(render404());
     }
 
