@@ -270,7 +270,7 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   if (promptMods.slowPlay) rules = { ...rules, slowPlay: true };
 
   // Make the base decision first, then apply rule overrides
-  let decision = _baseDecision(effectiveAgent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
+  let decision = _baseDecision(effectiveAgent, strength, r, toCall, raiseAmt, bb, pot, communityCards, rawRankStrength);
 
   // Never fold when getting great pot odds (small bet into big pot)
   if (decision.type === 'fold' && toCall > 0 && toCall <= pot * 0.2) {
@@ -310,16 +310,19 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   return decision;
 }
 
-function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards) {
+function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards, rawRank) {
+  // Use raw hand rank (not noisy strength) for strong-hand checks so noise can't downgrade them
+  const handRank = rawRank || 0;
+
   // No bet to match — can check or bet
   if (toCall === 0) {
-    // Monster hands (full house+ = 0.86+) — ALL styles should bet most of the time
-    if (strength >= 0.86) {
+    // Monster hands (full house+ raw 0.91+) — ALL styles should bet most of the time
+    if (handRank >= 0.91) {
       if (r < 80) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
       return { type: 'check', label: 'Check', amount: 0 }; // occasional trap
     }
-    // Very strong hands (trips/straight/flush = 0.62-0.85) — bet majority of the time
-    if (strength >= 0.62) {
+    // Very strong hands (two pair through flush, raw 0.62+) — bet majority of the time
+    if (handRank >= 0.62) {
       if (r < 65) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
       return { type: 'check', label: 'Check', amount: 0 };
     }
@@ -353,13 +356,13 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
 
   // There's a bet to match — call, raise, or fold
 
-  // Monster hands (full house+) — always raise regardless of style
-  if (strength >= 0.86 && agent.chips > raiseAmt) {
+  // Monster hands (full house+ raw 0.91+) — always raise regardless of style
+  if (handRank >= 0.91 && agent.chips > raiseAmt) {
     if (r < 75) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
     return { type: 'call', label: `Call ${toCall}`, amount: toCall }; // occasional flat-call
   }
-  // Very strong hands (trips/straight/flush) — raise most of the time
-  if (strength >= 0.62 && agent.chips > raiseAmt) {
+  // Very strong hands (two pair+ raw 0.62+) — raise most of the time
+  if (handRank >= 0.62 && agent.chips > raiseAmt) {
     if (r < 55) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
     return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   }
