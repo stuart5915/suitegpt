@@ -157,7 +157,7 @@ wss.on('connection', (ws) => {
           if (client.walletAddress) {
             // Use async getOrCreateWallet so balance loads from Supabase on fresh restart
             const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
-            ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
+            ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(client.walletAddress) } }));
 
             // Sync with on-chain deposits — credit up OR cap down if server drifted
             if (chain) {
