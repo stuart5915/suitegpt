@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Claws Crash — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F5F3ED;--surface:#FFFFFF;--surface-hover:#FAFAF8;
+  --border:#E8E4DB;--text:#2C2A28;--text-muted:#8C877D;
+  --accent:#D36F4C;--accent-hover:#C26342;--brown:#8B7563;
+  --success:#599368;--success-bg:#EEF5F0;
+  --danger:#D95F5F;--danger-bg:#FEF2F2;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+.font-display{font-family:'Outfit',sans-serif}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* ── Navbar ── */
+.navbar{height:48px;background:rgba(255,255,255,0.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 10px;flex-shrink:0;z-index:30}
+@media(min-width:768px){.navbar{height:56px;padding:0 16px}}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text)}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:17px;box-shadow:0 2px 8px rgba(211,111,76,0.2);flex-shrink:0}
+@media(min-width:768px){.logo-icon{width:36px;height:36px;border-radius:10px;font-size:20px}}
+.logo-text h1{font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;line-height:1;letter-spacing:-0.5px}
+@media(min-width:768px){.logo-text h1{font-size:16px}}
+.logo-text span{display:none}
+@media(min-width:768px){.logo-text span{display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600}}
+.nav-right{display:flex;align-items:center;gap:6px}
+@media(min-width:768px){.nav-right{gap:8px}}
+.balance-pill{display:flex;align-items:center;gap:4px;background:#F9F8F5;border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-weight:600;font-size:12px}
+@media(min-width:768px){.balance-pill{gap:6px;padding:6px 14px;font-size:14px}}
+.balance-pill .token{color:var(--accent);font-weight:700;font-size:10px}
+@media(min-width:768px){.balance-pill .token{font-size:12px}}
+.balance-pill .lobster-emoji{display:none}
+@media(min-width:768px){.balance-pill .lobster-emoji{display:inline}}
+.network-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulseSoft 2s ease-in-out infinite}
+.btn{padding:5px 12px;border-radius:999px;font-weight:600;font-size:12px;border:none;cursor:pointer;transition:all 0.2s}
+@media(min-width:768px){.btn{padding:7px 16px;font-size:13px}}
+.btn-dark{background:var(--text);color:white}
+.btn-dark:hover{background:#000}
+.btn-ghost{background:transparent;color:var(--text-muted)}
+.btn-ghost:hover{color:var(--text)}
+.btn .logout-text{display:none}
+@media(min-width:768px){.btn .logout-text{display:inline}}
+
+/* ── Main Layout ── */
+.main{flex:1;display:flex;flex-direction:column;padding:8px;gap:8px;overflow-y:auto;overflow-x:hidden}
+@media(min-width:768px){.main{padding:12px;gap:12px}}
+@media(min-width:1024px){
+  .main{flex-direction:row;padding:20px;gap:20px;overflow:hidden;max-height:calc(100vh - 56px);max-height:calc(100dvh - 56px)}
+}
+
+/* ── Game Area ── */
+.game-col{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+@media(min-width:1024px){.game-col{gap:16px}}
+
+.game-container{flex:1;min-height:240px;background:var(--surface);border-radius:20px;border:1px solid var(--border);position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;transition:transform 0.2s}
+@media(min-width:768px){.game-container{min-height:320px;border-radius:24px}}
+
+/* History ribbon */
+.history-ribbon{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;-ms-overflow-style:none}
+.history-ribbon::-webkit-scrollbar{display:none}
+.history-chip{padding:4px 10px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;white-space:nowrap;flex-shrink:0}
+.history-chip.green{background:var(--success-bg);color:var(--success)}
+.history-chip.red{background:var(--danger-bg);color:var(--danger)}
+
+/* Multiplier overlay */
+.multiplier-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:28px;pointer-events:none;z-index:10}
+@media(min-width:768px){.multiplier-overlay{padding-top:50px}}
+.multiplier-value{font-family:'Outfit',sans-serif;font-weight:800;font-size:48px;letter-spacing:-2px;line-height:1;color:var(--text)}
+@media(min-width:768px){.multiplier-value{font-size:80px;letter-spacing:-4px}}
+.multiplier-value .x{font-size:28px;color:var(--text-muted);margin-left:4px}
+@media(min-width:768px){.multiplier-value .x{font-size:44px}}
+.multiplier-value.crashed{color:var(--danger)}
+.multiplier-value.crashed .x{color:var(--danger)}
+.multiplier-value.waiting{opacity:0.3}
+.phase-label{margin-top:14px;padding:5px 16px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.phase-label.neutral{background:rgba(245,243,237,0.8);color:var(--text-muted);border:1px solid rgba(232,228,219,0.5)}
+.phase-label.danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(217,95,95,0.3)}
+.progress-bar{width:180px;height:5px;background:var(--border);border-radius:999px;margin-top:14px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:999px;animation:pulseSoft 2s ease-in-out infinite}
+
+/* Canvas */
+.game-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+
+/* Claw marks */
+.claw-marks{position:absolute;inset:0;z-index:20;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0}
+.claw-marks.visible{animation:slash 1.5s ease-out forwards}
+.claw-marks svg{width:120%;height:120%;transform:rotate(12deg)}
+
+/* ── Bet Panel ── */
+.bet-panel{background:var(--surface);border-radius:20px;border:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);position:relative;z-index:10;flex-shrink:0}
+@media(min-width:768px){.bet-panel{flex-direction:row;align-items:flex-end;gap:14px;border-radius:24px;padding:16px 20px}}
+.bet-section{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.bet-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;padding-left:4px}
+.bet-input-wrap{position:relative}
+.bet-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:16px;border-radius:16px;padding:12px 60px 12px 38px;outline:none;transition:all 0.2s}
+.bet-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(211,111,76,0.15)}
+.bet-input:disabled{opacity:0.5}
+.bet-input-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.bet-max-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:white;border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;cursor:pointer;transition:all 0.15s;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.bet-max-btn:hover{background:var(--surface-hover)}
+.auto-section{display:flex;flex-direction:column;gap:5px}
+@media(min-width:768px){.auto-section{width:160px;flex-shrink:0}}
+.auto-header{display:flex;align-items:center;justify-content:space-between;padding:0 4px}
+.toggle{width:36px;height:18px;border-radius:999px;background:var(--border);position:relative;cursor:pointer;transition:background 0.2s;border:none}
+.toggle.on{background:var(--accent)}
+.toggle-dot{width:14px;height:14px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
+.toggle.on .toggle-dot{left:20px}
+.auto-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:16px;border-radius:16px;padding:12px 28px 12px 14px;outline:none;text-align:center;transition:all 0.2s}
+.auto-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(211,111,76,0.15)}
+.auto-input:disabled{opacity:0.4}
+.auto-x{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-weight:700;font-size:16px;pointer-events:none}
+.action-section{flex-shrink:0}
+@media(min-width:768px){.action-section{width:180px}}
+.action-btn{width:100%;height:48px;border:none;border-radius:16px;font-weight:700;font-size:16px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.action-btn:disabled{cursor:not-allowed;transform:none!important}
+.action-btn.bet{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(211,111,76,0.35)}
+.action-btn.bet:hover:not(:disabled){background:var(--accent-hover);transform:translateY(-1px)}
+.action-btn.cashout{background:var(--success);color:white;box-shadow:0 4px 14px rgba(89,147,104,0.35)}
+.action-btn.cashout:hover:not(:disabled){background:#4d825b;transform:translateY(-1px)}
+.action-btn.playing{background:var(--text);color:white}
+.action-btn.lost{background:var(--surface);border:2px solid var(--danger);color:var(--danger)}
+.action-btn.won{background:var(--surface);border:2px solid var(--success);color:var(--success)}
+.action-btn.waiting{background:var(--bg);color:var(--text-muted)}
+.action-btn.signup{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(211,111,76,0.35)}
+.bet-error{color:var(--danger);font-size:12px;font-weight:600;margin-top:2px;padding-left:4px}
+
+/* ── Sidebar ── */
+.sidebar{display:flex;flex-direction:column;background:var(--surface);border-radius:20px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;z-index:10;max-height:300px;flex-shrink:0}
+@media(min-width:1024px){.sidebar{width:320px;max-height:none;border-radius:24px}}
+.sidebar-tabs{display:flex;padding:6px;background:#FDFCFB;border-bottom:1px solid var(--border)}
+.sidebar-tab{flex:1;padding:8px;font-size:13px;font-weight:600;color:var(--text-muted);border:none;background:none;cursor:pointer;border-radius:10px;transition:all 0.15s}
+.sidebar-tab.active{background:white;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid rgba(232,228,219,0.5)}
+.sidebar-header{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid rgba(232,228,219,0.5);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+.bets-list{flex:1;overflow-y:auto;padding:6px}
+.bet-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:14px;transition:background 0.15s}
+.bet-row:hover{background:var(--surface-hover)}
+.bet-user{display:flex;align-items:center;gap:8px}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:1px solid}
+.bet-name{font-weight:500;font-size:13px}
+.bet-info{display:flex;align-items:center;gap:16px;text-align:right;font-size:13px}
+.bet-amount{width:56px;color:var(--text-muted);font-family:'Outfit',sans-serif;font-weight:500}
+.bet-payout{width:56px;display:flex;flex-direction:column;align-items:flex-end;font-family:'Outfit',sans-serif}
+.bet-payout .value{font-weight:700}
+.bet-payout .badge{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700}
+.sidebar-footer{padding:10px 18px;background:#FDFCFB;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--text-muted)}
+
+/* Chat area in sidebar */
+.chat-area{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+.chat-msg{font-size:12px;padding:4px 8px;border-radius:8px;background:var(--bg);word-break:break-word}
+.chat-msg .name{font-weight:700;color:var(--accent);margin-right:6px}
+.chat-input-wrap{display:flex;gap:6px;padding:8px;border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;color:var(--text);font-family:'Inter',sans-serif}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send{background:var(--accent);color:white;border:none;border-radius:10px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer}
+
+/* ── Auth Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:24px;border:1px solid var(--border);padding:32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.modal h2{font-family:'Outfit',sans-serif;font-weight:800;font-size:24px;text-align:center;margin-bottom:6px}
+.modal p{text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:24px}
+.modal-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:500;outline:none;margin-bottom:12px;color:var(--text);font-family:'Inter',sans-serif}
+.modal-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(211,111,76,0.15)}
+.modal-btn{width:100%;height:48px;border-radius:14px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s;margin-top:4px}
+.modal-btn.primary{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(211,111,76,0.35)}
+.modal-btn.primary:hover{background:var(--accent-hover)}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer}
+.modal-error{color:var(--danger);font-size:13px;font-weight:600;text-align:center;margin-top:8px}
+.modal-icon{font-size:40px;text-align:center;margin-bottom:8px}
+
+/* ── Animations ── */
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}
+  10%,30%,50%,70%,90%{transform:translate(-6px,3px) rotate(-1deg)}
+  20%,40%,60%,80%{transform:translate(6px,-3px) rotate(1deg)}
+}
+@keyframes slash{
+  0%{opacity:0;transform:scale(0.9)}
+  10%{opacity:1;transform:scale(1)}
+  90%{opacity:1}
+  100%{opacity:0;transform:scale(1.05)}
+}
+@keyframes pulseSoft{
+  0%,100%{opacity:1}50%{opacity:0.6}
+}
+.shake{animation:shake 0.4s cubic-bezier(.36,.07,.19,.97) both}
+</style>
+</head>
+<body>
+
+<!-- ── Navbar ── -->
+<nav class="navbar">
+  <a href="#" class="logo">
+    <div class="logo-icon">&#x1F99E;</div>
+    <div class="logo-text">
+      <h1>CLAWS CRASH</h1>
+      <span>Inclawbate</span>
+    </div>
+  </a>
+  <div class="nav-right">
+    <div class="network-dot" title="Live"></div>
+    <div id="navAuth">
+      <button class="btn btn-ghost" onclick="showAuth()">Login</button>
+      <button class="btn btn-dark" onclick="showAuth()">Sign Up</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<div class="main">
+  <!-- Left: Game Column -->
+  <div class="game-col">
+    <!-- Game Container -->
+    <div class="game-container" id="gameContainer">
+      <!-- History Ribbon -->
+      <div class="history-ribbon" id="historyRibbon"></div>
+
+      <!-- Multiplier Overlay -->
+      <div class="multiplier-overlay" id="multiplierOverlay">
+        <div class="multiplier-value waiting font-display" id="multiplierValue">
+          1.00<span class="x">x</span>
+        </div>
+        <div class="phase-label neutral" id="phaseLabel">Waiting for next round</div>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width:100%"></div></div>
+      </div>
+
+      <!-- Canvas -->
+      <canvas class="game-canvas" id="gameCanvas"></canvas>
+
+      <!-- Claw Marks -->
+      <div class="claw-marks" id="clawMarks">
+        <svg width="400" height="400" viewBox="0 0 400 400" fill="none">
+          <defs><filter id="blur"><feGaussianBlur stdDeviation="8"/></filter></defs>
+          <path d="M50 80 Q 150 200 100 350" stroke="#D95F5F" stroke-width="12" stroke-linecap="round" fill="none"/>
+          <path d="M120 50 Q 220 200 180 370" stroke="#D95F5F" stroke-width="16" stroke-linecap="round" fill="none"/>
+          <path d="M200 30 Q 300 180 270 340" stroke="#D95F5F" stroke-width="12" stroke-linecap="round" fill="none"/>
+          <path d="M50 80 L 100 350" stroke="rgba(217,95,95,0.3)" stroke-width="24" stroke-linecap="round" filter="url(#blur)" fill="none"/>
+          <path d="M120 50 L 180 370" stroke="rgba(217,95,95,0.3)" stroke-width="32" stroke-linecap="round" filter="url(#blur)" fill="none"/>
+          <path d="M200 30 L 270 340" stroke="rgba(217,95,95,0.3)" stroke-width="24" stroke-linecap="round" filter="url(#blur)" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Bet Panel -->
+    <div class="bet-panel">
+      <div class="bet-section">
+        <div class="bet-label">Bet Amount</div>
+        <div class="bet-input-wrap">
+          <div class="bet-input-icon">&#x1F99E;</div>
+          <input type="number" class="bet-input" id="betAmount" value="100" min="1" placeholder="0">
+          <button class="bet-max-btn" id="betMaxBtn" onclick="setMaxBet()">MAX</button>
+        </div>
+      </div>
+      <div class="auto-section">
+        <div class="auto-header">
+          <div class="bet-label">Auto Cashout</div>
+          <button class="toggle" id="autoToggle" onclick="toggleAuto()"><div class="toggle-dot"></div></button>
+        </div>
+        <div class="bet-input-wrap">
+          <input type="number" class="auto-input" id="autoCashout" value="2.00" step="0.1" disabled>
+          <div class="auto-x">x</div>
+        </div>
+      </div>
+      <div class="action-section">
+        <button class="action-btn waiting" id="actionBtn" onclick="handleAction()" disabled>Waiting...</button>
+      </div>
+      <div class="bet-error" id="betError"></div>
+    </div>
+  </div>
+
+  <!-- Right: Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="bets" onclick="switchTab('bets',this)">Live Bets</button>
+      <button class="sidebar-tab" data-tab="chat" onclick="switchTab('chat',this)">Chat</button>
+      <button class="sidebar-tab" data-tab="leaders" onclick="switchTab('leaders',this)">Top Wins</button>
+    </div>
+
+    <!-- Live Bets Tab -->
+    <div id="tabBets">
+      <div class="sidebar-header"><span>Player</span><div style="display:flex;gap:24px"><span style="width:56px;text-align:right">Bet</span><span style="width:56px;text-align:right">Payout</span></div></div>
+      <div class="bets-list" id="betsList"></div>
+      <div class="sidebar-footer"><span id="playerCount">0 Players</span><span id="totalBet">Total: 0 CLAWS</span></div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="tabChat" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap">
+        <input class="chat-input" id="chatInput" placeholder="Type a message..." maxlength="200">
+        <button class="chat-send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <!-- Leaders Tab -->
+    <div id="tabLeaders" style="display:none">
+      <div class="sidebar-header"><span>Player</span><span style="text-align:right">Biggest Win</span></div>
+      <div class="bets-list" id="leadersList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Auth Modal ── -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeAuth()">&times;</button>
+    <div class="modal-icon">&#x1F99E;</div>
+    <h2>Join Claws Crash</h2>
+    <p>Connect your wallet to play with real CLAWS tokens</p>
+    <input class="modal-input" id="authUsername" placeholder="Display name (optional)" maxlength="20">
+    <button class="modal-btn primary" onclick="doAuth()">Connect Wallet</button>
+    <div class="modal-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ── Deposit Modal ── -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeDeposit()">&times;</button>
+    <div class="modal-icon">&#x1F99E;</div>
+    <h2>Deposit CLAWS</h2>
+    <p>Deposit CLAWS tokens to get chips. 1 CLAWS = 1 chip.</p>
+    <input class="modal-input" id="depositAmount" type="number" placeholder="Amount (min 10)" min="10">
+    <button class="modal-btn primary" id="depositBtn" onclick="doDeposit()">Deposit</button>
+    <div class="modal-error" id="depositError"></div>
+    <div id="depositStatus" style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ── Withdraw Modal ── -->
+<div class="modal-overlay" id="withdrawModal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeWithdraw()">&times;</button>
+    <div class="modal-icon">&#x1F99E;</div>
+    <h2>Withdraw CLAWS</h2>
+    <p>Convert chips back to CLAWS tokens.</p>
+    <input class="modal-input" id="withdrawAmount" type="number" placeholder="Chips to withdraw" min="1">
+    <button class="modal-btn primary" id="withdrawBtn" onclick="doWithdraw()">Withdraw</button>
+    <div class="modal-error" id="withdrawError"></div>
+    <div id="withdrawStatus" style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:8px"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────
+// TODO: Replace with Railway URL after deployment
+const WS_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'ws://localhost:4000'
+  : 'wss://REPLACE_WITH_RAILWAY_URL.up.railway.app';
+
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+const VAULT_ADDRESS = 'REPLACE_WITH_VAULT_ADDRESS';
+const CLAWS_ABI = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
+const VAULT_ABI = ['function deposit(uint256 amount) external'];
+const BASE_CHAIN_ID = '0x2105'; // 8453
+
+// ── State ───────────────────────────────────────────────────────────
+let ws = null;
+let user = null;      // { username, balance, wallet }
+let walletAddress = null;
+let gameState = { phase: 'waiting', multiplier: 1, crashPoint: null, countdown: 5, bets: [], history: [], playerCount: 0 };
+let prevPhase = 'waiting';
+let flyStartTime = 0;
+let curvePoints = [];
+let autoEnabled = false;
+let myBet = null;
+let animFrame = 0;
+let currentTab = 'bets';
+
+// ── DOM refs ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// ── WebSocket ───────────────────────────────────────────────────────
+function connect() {
+  if (ws && ws.readyState <= 1) return;
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    console.log('Connected to server');
+    if (walletAddress) {
+      ws.send(JSON.stringify({ type: 'auth', wallet: walletAddress, username: user ? user.username : '' }));
+    }
+  };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+  ws.onclose = () => {
+    console.log('Disconnected, reconnecting in 2s...');
+    setTimeout(connect, 2000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+function send(data) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(data));
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'state':
+      updateGameState(msg);
+      break;
+    case 'auth_ok':
+      user = { username: msg.username, balance: msg.balance, wallet: msg.wallet };
+      walletAddress = msg.wallet;
+      localStorage.setItem('crash_wallet', msg.wallet);
+      closeAuth();
+      updateNav();
+      break;
+    case 'balance':
+      if (user) { user.balance = msg.balance; updateNav(); }
+      break;
+    case 'bet_result':
+      if (!msg.ok) showBetError(msg.error);
+      break;
+    case 'cashout_result':
+      break;
+    case 'deposit_result':
+      if (msg.ok) {
+        $('depositStatus').textContent = 'Deposited ' + msg.chips + ' chips!';
+        $('depositStatus').style.color = 'var(--success)';
+        $('depositBtn').textContent = 'Deposit';
+        $('depositBtn').disabled = false;
+        setTimeout(closeDeposit, 1500);
+      } else {
+        $('depositError').textContent = msg.error;
+        $('depositBtn').textContent = 'Deposit';
+        $('depositBtn').disabled = false;
+      }
+      break;
+    case 'withdraw_pending':
+      $('withdrawStatus').textContent = 'Processing withdrawal on-chain...';
+      $('withdrawStatus').style.color = 'var(--text-muted)';
+      break;
+    case 'withdraw_result':
+      if (msg.ok) {
+        $('withdrawStatus').textContent = 'Withdrawn! Tx: ' + msg.txHash.slice(0, 10) + '...';
+        $('withdrawStatus').style.color = 'var(--success)';
+        $('withdrawBtn').textContent = 'Withdraw';
+        $('withdrawBtn').disabled = false;
+        setTimeout(closeWithdraw, 2000);
+      } else {
+        $('withdrawError').textContent = msg.error;
+        $('withdrawBtn').textContent = 'Withdraw';
+        $('withdrawBtn').disabled = false;
+      }
+      break;
+    case 'chat':
+      addChatMessage(msg.username, msg.message);
+      break;
+    case 'chat_history':
+      (msg.messages || []).forEach(m => addChatMessage(m.username, m.message));
+      break;
+    case 'leaderboard':
+      renderLeaderboard(msg);
+      break;
+    case 'error':
+      showBetError(msg.error);
+      break;
+  }
+}
+
+// ── Game State Update ───────────────────────────────────────────────
+function updateGameState(state) {
+  gameState = state;
+
+  // Phase transitions
+  if (state.phase === 'flying' && prevPhase !== 'flying') {
+    flyStartTime = Date.now();
+    curvePoints = [];
+    $('clawMarks').classList.remove('visible');
+    $('gameContainer').classList.remove('shake');
+  }
+  if (state.phase === 'crashed' && prevPhase !== 'crashed') {
+    $('clawMarks').classList.add('visible');
+    $('gameContainer').classList.add('shake');
+    setTimeout(() => $('gameContainer').classList.remove('shake'), 400);
+  }
+  if (state.phase === 'waiting' && prevPhase !== 'waiting') {
+    $('clawMarks').classList.remove('visible');
+    curvePoints = [];
+  }
+  prevPhase = state.phase;
+
+  // Track my bet
+  myBet = user ? state.bets.find(b => b.username === user.username) || null : null;
+
+  // Add curve point during flight
+  if (state.phase === 'flying') {
+    curvePoints.push({ t: Date.now() - flyStartTime, m: state.multiplier });
+  }
+
+  updateMultiplierOverlay();
+  updateHistory();
+  updateBetsList();
+  updateActionButton();
+}
+
+// ── Multiplier Overlay ──────────────────────────────────────────────
+function updateMultiplierOverlay() {
+  const mv = $('multiplierValue');
+  const pl = $('phaseLabel');
+  const pb = $('multiplierOverlay').querySelector('.progress-bar');
+
+  mv.className = 'multiplier-value font-display';
+  pl.style.display = '';
+  if (pb) pb.style.display = '';
+
+  if (gameState.phase === 'waiting') {
+    mv.classList.add('waiting');
+    mv.innerHTML = '1.00<span class="x">x</span>';
+    pl.className = 'phase-label neutral';
+    pl.textContent = 'Waiting for next round';
+    if (pb) pb.style.display = '';
+  } else if (gameState.phase === 'countdown') {
+    mv.innerHTML = gameState.countdown + '';
+    pl.className = 'phase-label neutral';
+    pl.textContent = 'Starting soon...';
+    if (pb) pb.style.display = 'none';
+  } else if (gameState.phase === 'flying') {
+    mv.innerHTML = gameState.multiplier.toFixed(2) + '<span class="x">x</span>';
+    pl.style.display = 'none';
+    if (pb) pb.style.display = 'none';
+  } else if (gameState.phase === 'crashed') {
+    mv.classList.add('crashed');
+    const cp = gameState.crashPoint || gameState.multiplier;
+    mv.innerHTML = cp.toFixed(2) + '<span class="x">x</span>';
+    pl.className = 'phase-label danger';
+    pl.textContent = 'Crashed!';
+    if (pb) pb.style.display = 'none';
+  }
+}
+
+// ── History Ribbon ──────────────────────────────────────────────────
+function updateHistory() {
+  const ribbon = $('historyRibbon');
+  ribbon.innerHTML = gameState.history.map(h => {
+    const cls = h.crashPoint >= 2 ? 'green' : 'red';
+    return `<div class="history-chip ${cls}">${h.crashPoint.toFixed(2)}x</div>`;
+  }).join('');
+  ribbon.scrollLeft = ribbon.scrollWidth;
+}
+
+// ── Live Bets List ──────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  { bg: '#E5F0E8', text: '#599368', border: '#D1E2D6' },
+  { bg: '#F3E8E5', text: '#D36F4C', border: '#EBE0DD' },
+  { bg: '#E8EBF5', text: '#4C6FD3', border: '#DDE1EB' },
+  { bg: '#F5E8F3', text: '#D34CBA', border: '#EBDDE9' },
+  { bg: '#F0EBE5', text: '#8B7563', border: '#E2DCD5' },
+];
+
+function updateBetsList() {
+  if (currentTab !== 'bets') return;
+  const sorted = [...gameState.bets].sort((a, b) => {
+    if (a.cashedOutAt && !b.cashedOutAt) return -1;
+    if (!a.cashedOutAt && b.cashedOutAt) return 1;
+    return b.amount - a.amount;
+  });
+
+  const list = $('betsList');
+  list.innerHTML = sorted.length === 0
+    ? '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No bets yet this round</div>'
+    : sorted.map((bet, i) => {
+        const c = AVATAR_COLORS[i % AVATAR_COLORS.length];
+        const cashedOut = bet.cashedOutAt != null;
+        const lost = !cashedOut && gameState.phase === 'crashed';
+        let payout = '';
+        if (cashedOut) {
+          payout = `<span class="value" style="color:var(--success)">${(bet.amount * bet.cashedOutAt).toFixed(0)}</span>
+            <span class="badge" style="background:var(--success-bg);color:var(--success)">${bet.cashedOutAt.toFixed(2)}x</span>`;
+        } else if (lost) {
+          payout = `<span class="value" style="color:var(--danger)">0</span>
+            <span class="badge" style="background:var(--danger-bg);color:var(--danger)">Busted</span>`;
+        } else {
+          payout = `<span class="value" style="color:var(--text-muted)">-</span>
+            <span class="badge" style="background:var(--bg);color:var(--text-muted)">Pending</span>`;
+        }
+        return `<div class="bet-row">
+          <div class="bet-user">
+            <div class="avatar" style="background:${c.bg};color:${c.text};border-color:${c.border}">${bet.username[0].toUpperCase()}</div>
+            <span class="bet-name">${escHtml(bet.username)}</span>
+          </div>
+          <div class="bet-info">
+            <div class="bet-amount">${bet.amount.toLocaleString()}</div>
+            <div class="bet-payout">${payout}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  $('playerCount').textContent = gameState.bets.length + ' Players';
+  const total = gameState.bets.reduce((s, b) => s + b.amount, 0);
+  $('totalBet').textContent = 'Total: ' + total.toLocaleString() + ' CLAWS';
+}
+
+// ── Action Button ───────────────────────────────────────────────────
+function updateActionButton() {
+  const btn = $('actionBtn');
+  const canBet = user && (gameState.phase === 'waiting' || gameState.phase === 'countdown') && !myBet;
+  const canCashOut = myBet && gameState.phase === 'flying' && myBet.cashedOutAt === null;
+  const didCashOut = myBet && myBet.cashedOutAt != null;
+
+  btn.disabled = true;
+  btn.className = 'action-btn';
+
+  if (!user) {
+    btn.classList.add('signup');
+    btn.textContent = 'Sign Up to Play';
+    btn.disabled = false;
+  } else if (canCashOut) {
+    btn.classList.add('cashout');
+    btn.innerHTML = '&#x1F4B0; Cash Out';
+    btn.disabled = false;
+  } else if (myBet && didCashOut) {
+    btn.classList.add('won');
+    btn.textContent = 'Cashed ' + myBet.cashedOutAt.toFixed(2) + 'x';
+  } else if (myBet && gameState.phase === 'flying') {
+    btn.classList.add('playing');
+    btn.textContent = 'Playing...';
+  } else if (myBet && gameState.phase === 'crashed') {
+    btn.classList.add('lost');
+    btn.textContent = 'Lost ' + myBet.amount + ' Claws';
+  } else if (canBet) {
+    btn.classList.add('bet');
+    btn.textContent = 'Place Bet';
+    btn.disabled = false;
+  } else if (myBet) {
+    btn.classList.add('playing');
+    btn.textContent = 'Bet Placed';
+  } else {
+    btn.classList.add('waiting');
+    btn.textContent = 'Waiting...';
+  }
+}
+
+function handleAction() {
+  if (!user) { showAuth(); return; }
+  const canBet = user && (gameState.phase === 'waiting' || gameState.phase === 'countdown') && !myBet;
+  const canCashOut = myBet && gameState.phase === 'flying' && myBet.cashedOutAt === null;
+
+  if (canBet) {
+    const amount = Math.floor(Number($('betAmount').value) || 0);
+    const autoCashoutVal = autoEnabled ? Number($('autoCashout').value) : null;
+    if (amount < 1) { showBetError('Min bet is 1'); return; }
+    if (amount > user.balance) { showBetError('Insufficient balance'); return; }
+    send({ type: 'bet', amount, autoCashout: autoCashoutVal });
+    $('betError').textContent = '';
+  } else if (canCashOut) {
+    send({ type: 'cashout' });
+  }
+}
+
+function setMaxBet() {
+  if (user) $('betAmount').value = user.balance;
+}
+
+function toggleAuto() {
+  autoEnabled = !autoEnabled;
+  const t = $('autoToggle');
+  t.classList.toggle('on', autoEnabled);
+  $('autoCashout').disabled = !autoEnabled;
+}
+
+function showBetError(msg) {
+  $('betError').textContent = msg;
+  setTimeout(() => { $('betError').textContent = ''; }, 3000);
+}
+
+// ── Nav / Auth ──────────────────────────────────────────────────────
+function updateNav() {
+  const nav = $('navAuth');
+  if (user) {
+    nav.innerHTML = `
+      <div class="balance-pill" onclick="showDeposit()" style="cursor:pointer" title="Click to deposit">
+        <span class="lobster-emoji">&#x1F99E;</span>
+        <span style="font-weight:700">${user.balance.toLocaleString()}</span>
+        <span class="token">CLAWS</span>
+      </div>
+      <button class="btn btn-ghost" onclick="showDeposit()" style="font-size:11px">Deposit</button>
+      <button class="btn btn-ghost" onclick="showWithdraw()" style="font-size:11px">Withdraw</button>
+      <button class="btn btn-dark" onclick="logout()">${escHtml(user.username.length > 10 ? user.username.slice(0,6)+'...' : user.username)}</button>
+    `;
+  } else {
+    nav.innerHTML = `
+      <button class="btn btn-dark" onclick="showAuth()">Connect Wallet</button>
+    `;
+  }
+}
+
+function showAuth() { $('authModal').classList.add('open'); }
+function closeAuth() { $('authModal').classList.remove('open'); $('authError').textContent = ''; }
+
+async function doAuth() {
+  if (!window.ethereum) {
+    $('authError').textContent = 'No wallet found — install MetaMask';
+    return;
+  }
+  try {
+    // Switch to Base
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+    } catch (switchErr) {
+      if (switchErr.code === 4902) {
+        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] });
+      }
+    }
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    walletAddress = accounts[0].toLowerCase();
+    const username = $('authUsername').value.trim() || walletAddress.slice(0, 8);
+    send({ type: 'auth', wallet: walletAddress, username });
+  } catch (err) {
+    $('authError').textContent = err.message || 'Wallet connection failed';
+  }
+}
+
+function logout() {
+  user = null;
+  walletAddress = null;
+  myBet = null;
+  localStorage.removeItem('crash_wallet');
+  updateNav();
+  updateActionButton();
+}
+
+// ── Deposit ─────────────────────────────────────────────────────────
+function showDeposit() { $('depositModal').classList.add('open'); $('depositAmount').focus(); $('depositError').textContent = ''; $('depositStatus').textContent = ''; }
+function closeDeposit() { $('depositModal').classList.remove('open'); }
+
+async function doDeposit() {
+  const amount = Math.floor(Number($('depositAmount').value) || 0);
+  if (amount < 10) { $('depositError').textContent = 'Minimum 10 CLAWS'; return; }
+  if (!window.ethereum || !walletAddress) { $('depositError').textContent = 'Wallet not connected'; return; }
+
+  const btn = $('depositBtn');
+  btn.disabled = true;
+  $('depositError').textContent = '';
+  $('depositStatus').textContent = '';
+
+  try {
+    const { ethers } = await import('https://esm.sh/ethers@6.13.0');
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const clawsWei = ethers.parseEther(amount.toString());
+
+    // Check + do approval
+    btn.textContent = 'Approving...';
+    $('depositStatus').textContent = 'Approve CLAWS spending in your wallet...';
+    const claws = new ethers.Contract(CLAWS_ADDRESS, CLAWS_ABI, signer);
+    const allowance = await claws.allowance(walletAddress, VAULT_ADDRESS);
+    if (allowance < clawsWei) {
+      const approveTx = await claws.approve(VAULT_ADDRESS, clawsWei);
+      $('depositStatus').textContent = 'Waiting for approval...';
+      await approveTx.wait();
+    }
+
+    // Deposit to vault
+    btn.textContent = 'Depositing...';
+    $('depositStatus').textContent = 'Confirm deposit in your wallet...';
+    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+    const tx = await vault.deposit(clawsWei);
+    $('depositStatus').textContent = 'Waiting for confirmation...';
+    const receipt = await tx.wait();
+
+    // Send tx hash to server for verification
+    btn.textContent = 'Verifying...';
+    $('depositStatus').textContent = 'Verifying deposit on server...';
+    send({ type: 'deposit', txHash: receipt.hash });
+  } catch (err) {
+    $('depositError').textContent = err.reason || err.message || 'Deposit failed';
+    btn.textContent = 'Deposit';
+    btn.disabled = false;
+  }
+}
+
+// ── Withdraw ────────────────────────────────────────────────────────
+function showWithdraw() { $('withdrawModal').classList.add('open'); $('withdrawAmount').focus(); $('withdrawError').textContent = ''; $('withdrawStatus').textContent = ''; if (user) $('withdrawAmount').placeholder = 'Max: ' + user.balance; }
+function closeWithdraw() { $('withdrawModal').classList.remove('open'); }
+
+function doWithdraw() {
+  const chips = Math.floor(Number($('withdrawAmount').value) || 0);
+  if (chips <= 0) { $('withdrawError').textContent = 'Enter an amount'; return; }
+  if (user && chips > user.balance) { $('withdrawError').textContent = 'Insufficient balance'; return; }
+  $('withdrawBtn').disabled = true;
+  $('withdrawBtn').textContent = 'Processing...';
+  $('withdrawError').textContent = '';
+  $('withdrawStatus').textContent = 'Requesting withdrawal...';
+  send({ type: 'withdraw', chips });
+}
+
+$('authUsername').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+
+// ── Chat ────────────────────────────────────────────────────────────
+function addChatMessage(name, message) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `<span class="name">${escHtml(name)}</span>${escHtml(message)}`;
+  $('chatMessages').appendChild(div);
+  $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
+  // Keep max 80 messages in DOM
+  while ($('chatMessages').children.length > 80) $('chatMessages').removeChild($('chatMessages').firstChild);
+}
+
+function sendChat() {
+  const input = $('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !user) return;
+  send({ type: 'chat', message: msg });
+  input.value = '';
+}
+$('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+// ── Sidebar Tabs ────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  $('tabBets').style.display = tab === 'bets' ? '' : 'none';
+  $('tabChat').style.display = tab === 'chat' ? 'flex' : 'none';
+  $('tabLeaders').style.display = tab === 'leaders' ? '' : 'none';
+  if (tab === 'bets') updateBetsList();
+  if (tab === 'leaders') send({ type: 'leaderboard' });
+}
+
+function renderLeaderboard(data) {
+  const list = $('leadersList');
+  const wins = data.biggestWins || [];
+  list.innerHTML = wins.length === 0
+    ? '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No wins yet</div>'
+    : wins.map((w, i) => {
+        const c = AVATAR_COLORS[i % AVATAR_COLORS.length];
+        return `<div class="bet-row">
+          <div class="bet-user">
+            <div class="avatar" style="background:${c.bg};color:${c.text};border-color:${c.border}">${w.username[0].toUpperCase()}</div>
+            <span class="bet-name">${escHtml(w.username)}</span>
+          </div>
+          <div class="bet-info">
+            <div class="bet-payout">
+              <span class="value" style="color:var(--success)">+${w.win.toLocaleString()}</span>
+              <span class="badge" style="background:var(--success-bg);color:var(--success)">${w.multiplier.toFixed(2)}x</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+// ── Canvas Rendering ────────────────────────────────────────────────
+const PAD = { top: 70, right: 36, bottom: 36, left: 36 };
+let cW = 0, cH = 0;
+
+function resizeCanvas() {
+  const parent = canvas.parentElement;
+  const rect = parent.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cW = rect.width;
+  cH = rect.height;
+}
+
+function drawFrame() {
+  ctx.clearRect(0, 0, cW, cH);
+  const isFlying = gameState.phase === 'flying';
+  const isCrashed = gameState.phase === 'crashed';
+
+  drawGrid();
+
+  if (curvePoints.length > 1) {
+    const maxT = Math.max(5000, (curvePoints[curvePoints.length - 1]?.t || 0) * 1.15);
+    const maxM = Math.max(2.0, (gameState.multiplier || 1) * 1.2);
+    const mapX = t => PAD.left + (t / maxT) * (cW - PAD.left - PAD.right);
+    const mapY = m => cH - PAD.bottom - ((m - 1) / (maxM - 1)) * (cH - PAD.top - PAD.bottom);
+
+    // Curve line
+    ctx.beginPath();
+    ctx.strokeStyle = isCrashed ? '#D95F5F' : '#D36F4C';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let lastX = mapX(curvePoints[0].t);
+    let lastY = mapY(curvePoints[0].m);
+    ctx.moveTo(lastX, lastY);
+
+    const fill = new Path2D();
+    fill.moveTo(lastX, cH - PAD.bottom);
+    fill.lineTo(lastX, lastY);
+
+    for (let i = 1; i < curvePoints.length; i++) {
+      const x = mapX(curvePoints[i].t);
+      const y = mapY(curvePoints[i].m);
+      ctx.lineTo(x, y);
+      fill.lineTo(x, y);
+      lastX = x; lastY = y;
+    }
+    ctx.stroke();
+
+    // Fill under curve
+    fill.lineTo(lastX, cH - PAD.bottom);
+    fill.closePath();
+    const grad = ctx.createLinearGradient(0, PAD.top, 0, cH - PAD.bottom);
+    if (isCrashed) {
+      grad.addColorStop(0, 'rgba(217,95,95,0.15)');
+      grad.addColorStop(1, 'rgba(217,95,95,0)');
+    } else {
+      grad.addColorStop(0, 'rgba(211,111,76,0.15)');
+      grad.addColorStop(1, 'rgba(211,111,76,0)');
+    }
+    ctx.fillStyle = grad;
+    ctx.fill(fill);
+
+    // Lobster at curve tip
+    if (curvePoints.length > 5) {
+      const p1 = curvePoints[curvePoints.length - 5];
+      const p2 = curvePoints[curvePoints.length - 1];
+      const angle = Math.atan2(mapY(p2.m) - mapY(p1.m), mapX(p2.t) - mapX(p1.t));
+      drawLobster(lastX, lastY, angle);
+    } else {
+      drawLobster(lastX, lastY, -Math.PI / 4);
+    }
+  }
+
+  animFrame = requestAnimationFrame(drawFrame);
+}
+
+function drawGrid() {
+  ctx.save();
+  ctx.strokeStyle = '#E8E4DB';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = PAD.top + (cH - PAD.top - PAD.bottom) * (i / steps);
+    ctx.moveTo(PAD.left, y); ctx.lineTo(cW - PAD.right, y);
+    const x = PAD.left + (cW - PAD.left - PAD.right) * (i / steps);
+    ctx.moveTo(x, PAD.top); ctx.lineTo(x, cH - PAD.bottom);
+  }
+  ctx.stroke();
+  // Axes
+  ctx.strokeStyle = '#D1CCC2';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top);
+  ctx.lineTo(PAD.left, cH - PAD.bottom);
+  ctx.lineTo(cW - PAD.right, cH - PAD.bottom);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawLobster(x, y, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  // Body
+  ctx.fillStyle = '#D36F4C';
+  ctx.beginPath(); ctx.ellipse(0, 0, 18, 11, 0, 0, Math.PI * 2); ctx.fill();
+  // Head
+  ctx.fillStyle = '#C26342';
+  ctx.beginPath(); ctx.ellipse(14, 0, 8, 8, 0, 0, Math.PI * 2); ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#2C2A28';
+  ctx.beginPath(); ctx.arc(18, -5, 2.5, 0, Math.PI * 2); ctx.arc(18, 5, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.arc(19, -6, 1, 0, Math.PI * 2); ctx.arc(19, 4, 1, 0, Math.PI * 2); ctx.fill();
+  // Claws
+  ctx.fillStyle = '#E88B6A';
+  ctx.beginPath(); ctx.ellipse(24, -10, 7, 4, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(29, -13, 5, 2.5, -0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(24, 10, 7, 4, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(29, 13, 5, 2.5, 0.5, 0, Math.PI * 2); ctx.fill();
+  // Tail segments
+  ctx.fillStyle = '#D36F4C';
+  for (let i = 1; i <= 3; i++) {
+    ctx.beginPath(); ctx.ellipse(-14 - i * 6, 0, 5 - i * 0.5, 8 - i * 1.5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // Tail fan
+  ctx.fillStyle = '#E88B6A';
+  ctx.beginPath(); ctx.ellipse(-38, -3, 6, 3, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-40, 0, 7, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-38, 3, 6, 3, 0.4, 0, Math.PI * 2); ctx.fill();
+  // Antennae
+  ctx.strokeStyle = '#C26342';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(20, -6); ctx.quadraticCurveTo(28, -16, 34, -18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(20, 6); ctx.quadraticCurveTo(28, 16, 34, 18); ctx.stroke();
+  ctx.restore();
+}
+
+// ── Utilities ───────────────────────────────────────────────────────
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+function init() {
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  drawFrame();
+  connect();
+
+  // Try to restore wallet from localStorage
+  const saved = localStorage.getItem('crash_wallet');
+  if (saved) {
+    walletAddress = saved;
+    // Will auth when ws connects
+  }
+}
+
+init();
+</script>
+</body>
+</html>
