@@ -248,6 +248,17 @@
             font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
         }
         .promo-chip:hover { border-color: var(--lobster-300); color: var(--text-secondary); }
+
+        /* ── Time picker in wizard ── */
+        .wiz-time-btn {
+            padding: 6px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-dim); font-family: var(--font-mono);
+            font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; min-width: 52px; text-align: center;
+        }
+        .wiz-time-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+        .wiz-time-btn.selected { background: rgba(232,121,85,0.1); border-color: var(--lobster-400); color: var(--lobster-300); }
+        .wiz-time-btn.peak { border-color: rgba(45,212,191,0.3); }
+        .wiz-time-btn.peak::after { content: ' ★'; font-size: 0.55rem; color: var(--seafoam-400); }
         .promo-chip.selected { background: rgba(232,121,85,0.1); border-color: var(--lobster-400); color: var(--lobster-300); }
 
         /* ── Promo context fields ── */
@@ -478,10 +489,11 @@
                 <div class="wiz-btns"><button class="wiz-btn wiz-btn-back" onclick="wizBack(1)">Back</button></div>
             </div>
             <div class="wiz-step" id="wizStep3">
-                <h3>Set posting frequency</h3>
-                <p class="desc">How many times per day? You'll set exact times after creating.</p>
-                <label>Posts per Day</label>
-                <select id="wizPPD"><option value="1">1 per day</option><option value="2" selected>2 per day</option><option value="3">3 per day</option></select>
+                <h3>When should it post?</h3>
+                <p class="desc">Pick up to 3 posting times. Your agent will generate a content calendar you can review.</p>
+                <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">Tap to select (max 3)</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-md)" id="wizTimeGrid"></div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-sm)" id="wizTimeSelected">No times selected</div>
                 <div class="form-msg" id="wizLaunchMsg"></div>
                 <div class="wiz-btns"><button class="wiz-btn wiz-btn-back" onclick="wizBack(2)">Back</button><button class="wiz-btn wiz-btn-next" id="wizLaunchBtn" onclick="wizLaunch()">Launch Agent</button></div>
             </div>
@@ -1387,12 +1399,63 @@ async function disconnectX(pid) {
 // WIZARD
 // ══════════════════════════════════════
 var _wizStep=0;
-function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';_promoType='';document.getElementById('wizName').value='';document.getElementById('wizToken').value='';document.getElementById('wizDesc').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.querySelectorAll('.promo-chip').forEach(function(c){c.classList.remove('selected');});document.getElementById('promoContext').classList.remove('show');['wizTokenAddr','wizTokenWeb','wizBrandWeb','wizCommunityWeb','wizPersonalX','wizNFTUrl','wizGameUrl','wizSocialX','wizSocialTG'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('promoLinks').innerHTML='';document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
+function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';_promoType='';_wizSelectedTimes=[];document.getElementById('wizName').value='';document.getElementById('wizToken').value='';document.getElementById('wizDesc').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.querySelectorAll('.promo-chip').forEach(function(c){c.classList.remove('selected');});document.getElementById('promoContext').classList.remove('show');['wizTokenAddr','wizTokenWeb','wizBrandWeb','wizCommunityWeb','wizPersonalX','wizNFTUrl','wizGameUrl','wizSocialX','wizSocialTG'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('promoLinks').innerHTML='';document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
 function closeWizard(){document.getElementById('wizard').classList.remove('open');}
-function goToStep(n){_wizStep=n;for(var i=0;i<4;i++){document.getElementById('wizStep'+i).classList.toggle('active',i===n);var dot=document.getElementById('wizDot'+i);dot.className='wiz-dot';if(i<n)dot.classList.add('done');else if(i===n)dot.classList.add('current');}}
+function goToStep(n){_wizStep=n;for(var i=0;i<4;i++){document.getElementById('wizStep'+i).classList.toggle('active',i===n);var dot=document.getElementById('wizDot'+i);dot.className='wiz-dot';if(i<n)dot.classList.add('done');else if(i===n)dot.classList.add('current');}if(n===3)renderWizTimeGrid();}
 function wizNext(s){if(s===1&&!document.getElementById('wizName').value.trim()){toast('Enter a name',true);return;}goToStep(s);}
 function wizBack(s){goToStep(s);}
 function pickVibe(btn){document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');_vibe=btn.dataset.vibe;document.getElementById('wizCustom').style.display=_vibe==='custom'?'block':'none';}
+
+// ── Time Picker ──
+var _wizSelectedTimes=[];
+var _peakHoursUTC=[9,10,13,14,17,18,19,20]; // peak engagement UTC
+
+function renderWizTimeGrid(){
+    var grid=document.getElementById('wizTimeGrid');
+    if(!grid) return;
+    // Show hours 6am-11pm local in 1h increments
+    var html='';
+    var offset=new Date().getTimezoneOffset();
+    for(var localH=6;localH<=23;localH++){
+        var utcH=((localH+offset/60)%24+24)%24;
+        var isPeak=_peakHoursUTC.indexOf(Math.round(utcH))!==-1;
+        var isSelected=_wizSelectedTimes.indexOf(Math.round(utcH))!==-1;
+        var ampm=localH>=12?(localH===12?'12pm':(localH-12)+'pm'):(localH===0?'12am':localH+'am');
+        html+='<button type="button" class="wiz-time-btn'+(isSelected?' selected':'')+(isPeak?' peak':'')+'" data-utc="'+Math.round(utcH)+'" onclick="wizToggleTime(this)">'+ampm+'</button>';
+    }
+    grid.innerHTML=html;
+    updateWizTimeLabel();
+}
+
+function wizToggleTime(btn){
+    var utc=parseInt(btn.dataset.utc);
+    var idx=_wizSelectedTimes.indexOf(utc);
+    if(idx!==-1){
+        _wizSelectedTimes.splice(idx,1);
+        btn.classList.remove('selected');
+    } else {
+        if(_wizSelectedTimes.length>=3){toast('Max 3 times',true);return;}
+        _wizSelectedTimes.push(utc);
+        btn.classList.add('selected');
+    }
+    updateWizTimeLabel();
+}
+
+function updateWizTimeLabel(){
+    var el=document.getElementById('wizTimeSelected');
+    if(!el) return;
+    if(!_wizSelectedTimes.length){
+        el.textContent='No times selected';
+        el.style.color='var(--text-dim)';
+    } else {
+        var labels=_wizSelectedTimes.map(function(utcH){
+            var localH=utcToLocalHour(utcH);
+            return fmtLocalHour(localH);
+        });
+        el.textContent=labels.join(', ')+' ('+_wizSelectedTimes.length+'/3)';
+        el.style.color='var(--lobster-300)';
+    }
+}
 
 var _promoType='';
 var _promoStarters={
@@ -1554,15 +1617,15 @@ async function wizLaunch(){
     btn.disabled=true;btn.textContent='Launching...';msg.textContent='';
     try {
         if(!_wizProjectId) throw new Error('Something went wrong. Start over.');
-        var ppd=parseInt(document.getElementById('wizPPD').value)||2;
-        // Auto-generate schedule times spread across the day
-        var times=[];
-        if(ppd===1) times=[14];
-        else if(ppd===2) times=[10,18];
-        else times=[9,14,20];
-        var r=await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_wizProjectId,agent_status:'active',agent_posts_per_day:ppd,agent_schedule_times:times})});
+        var times=_wizSelectedTimes.slice();
+        if(!times.length){
+            // Default to 2 per day if none selected
+            times=[10,18];
+        }
+        times.sort(function(a,b){return a-b;});
+        var r=await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_wizProjectId,agent_status:'active',agent_posts_per_day:times.length,agent_schedule_times:times})});
         var data=await r.json();if(!r.ok) throw new Error(data.error||'Failed');
-        msg.textContent='Agent launched!';msg.className='form-msg ok';btn.textContent='Done';
+        msg.textContent='Agent launched! Redirecting to your content calendar...';msg.className='form-msg ok';btn.textContent='Done';
         setTimeout(function(){closeWizard();loadAgents();},1200);
     } catch(e){msg.textContent=e.message;msg.className='form-msg err';btn.disabled=false;btn.textContent='Launch Agent';}
 }
