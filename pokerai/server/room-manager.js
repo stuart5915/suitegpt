@@ -67,6 +67,17 @@ class RoomManager {
         biggestPot: saved.biggestPot || 0
       };
 
+      // Platform agents: auto-fund from wallet if low on chips so they can auto-seat
+      if (PLATFORM_WALLETS.has(wallet.toLowerCase()) && lobbyAgent.chipStack < 500) {
+        const walletData = this.store.getWallet(wallet);
+        if (walletData && walletData.balance >= 10000) {
+          const topUp = 10000; // micro baseChips
+          lobbyAgent.chipStack = topUp;
+          this.store.deductBalance(wallet, topUp);
+          console.log(`[Restore] Auto-funded platform agent ${lobbyAgent.name} with ${topUp} chips`);
+        }
+      }
+
       if (!this.lobbyAgents.has(wallet)) {
         this.lobbyAgents.set(wallet, []);
       }
@@ -74,6 +85,14 @@ class RoomManager {
       count++;
     }
     if (count > 0) console.log(`[RoomManager] Restored ${count} agents to lobby`);
+
+    // Auto-enable top-up for platform wallets so the self-sustaining loop resumes after redeploy
+    for (const platformAddr of PLATFORM_WALLETS) {
+      if (!this.autoTopUp.has(platformAddr)) {
+        this.autoTopUp.set(platformAddr, { enabled: true, targetChips: 10000, cashOutAt: 50000 });
+        console.log(`[Restore] Auto-enabled top-up for platform wallet ${platformAddr.slice(0,8)}...`);
+      }
+    }
   }
 
   _addTable(roomId) {
