@@ -211,6 +211,11 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </a>
   <div class="nav-right">
+    <div class="balance-pill" style="cursor:default;opacity:0.7" title="Total CLAWS in vault">
+      <span style="font-size:10px;color:var(--text-muted)">Vault</span>
+      <span style="font-weight:700" id="vaultTvl">...</span>
+      <span class="token">CLAWS</span>
+    </div>
     <div class="network-dot" title="Live"></div>
     <div id="navAuth">
       <button class="btn btn-ghost" onclick="showAuth()">Login</button>
@@ -286,6 +291,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" data-tab="bets" onclick="switchTab('bets',this)">Live Bets</button>
       <button class="sidebar-tab" data-tab="chat" onclick="switchTab('chat',this)">Chat</button>
+      <button class="sidebar-tab" data-tab="history" onclick="switchTab('history',this)">All Bets</button>
       <button class="sidebar-tab" data-tab="leaders" onclick="switchTab('leaders',this)">Top Wins</button>
     </div>
 
@@ -303,6 +309,12 @@ input[type=number]{-moz-appearance:textfield}
         <input class="chat-input" id="chatInput" placeholder="Type a message..." maxlength="200">
         <button class="chat-send" onclick="sendChat()">Send</button>
       </div>
+    </div>
+
+    <!-- All Bets History Tab -->
+    <div id="tabHistory" style="display:none">
+      <div class="sidebar-header"><span>Round</span><div style="display:flex;gap:16px"><span style="width:50px;text-align:right">Player</span><span style="width:40px;text-align:right">Bet</span><span style="width:50px;text-align:right">Result</span></div></div>
+      <div class="bets-list" id="historyList"></div>
     </div>
 
     <!-- Leaders Tab -->
@@ -379,6 +391,8 @@ let autoEnabled = false;
 let myBet = null;
 let animFrame = 0;
 let currentTab = 'bets';
+let allBetsHistory = []; // persisted bet history across rounds
+const MAX_BET_HISTORY = 200;
 
 // ── DOM refs ────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -490,6 +504,20 @@ function updateGameState(state) {
     $('clawMarks').classList.add('visible');
     $('gameContainer').classList.add('shake');
     setTimeout(() => $('gameContainer').classList.remove('shake'), 400);
+    // Record all bets from this round into history
+    for (const bet of state.bets) {
+      allBetsHistory.unshift({
+        round: state.gameId,
+        crash: state.crashPoint || state.multiplier,
+        username: bet.username,
+        amount: bet.amount,
+        cashedOutAt: bet.cashedOutAt,
+        profit: bet.profit,
+        time: Date.now(),
+      });
+    }
+    if (allBetsHistory.length > MAX_BET_HISTORY) allBetsHistory.length = MAX_BET_HISTORY;
+    if (currentTab === 'history') renderBetHistory();
   }
   if (state.phase === 'waiting' && prevPhase !== 'waiting') {
     $('clawMarks').classList.remove('visible');
@@ -832,8 +860,10 @@ function switchTab(tab, el) {
   el.classList.add('active');
   $('tabBets').style.display = tab === 'bets' ? '' : 'none';
   $('tabChat').style.display = tab === 'chat' ? 'flex' : 'none';
+  $('tabHistory').style.display = tab === 'history' ? '' : 'none';
   $('tabLeaders').style.display = tab === 'leaders' ? '' : 'none';
   if (tab === 'bets') updateBetsList();
+  if (tab === 'history') renderBetHistory();
   if (tab === 'leaders') send({ type: 'leaderboard' });
 }
 
@@ -1003,6 +1033,59 @@ function drawLobster(x, y, angle) {
 }
 
 // ── Utilities ───────────────────────────────────────────────────────
+// ── Bet History ─────────────────────────────────────────────────────
+function renderBetHistory() {
+  const list = $('historyList');
+  if (allBetsHistory.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No bets recorded yet — play a round!</div>';
+    return;
+  }
+  list.innerHTML = allBetsHistory.slice(0, 100).map(b => {
+    const won = b.cashedOutAt != null;
+    const lost = !won && b.profit != null;
+    const crashCls = b.crash >= 2 ? 'color:var(--success)' : 'color:var(--danger)';
+    let result = '';
+    if (won) {
+      result = `<span style="color:var(--success);font-weight:700">${b.cashedOutAt.toFixed(2)}x</span>`;
+    } else if (lost) {
+      result = `<span style="color:var(--danger);font-weight:600">Bust</span>`;
+    } else {
+      result = `<span style="color:var(--text-muted)">-</span>`;
+    }
+    const ago = timeAgo(b.time);
+    return `<div class="bet-row" style="gap:6px;font-size:12px">
+      <div style="min-width:42px">
+        <div style="font-family:Outfit;font-weight:700;${crashCls}">${b.crash.toFixed(2)}x</div>
+        <div style="font-size:9px;color:var(--text-muted)">#${b.round}</div>
+      </div>
+      <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${escHtml(b.username)}</div>
+      <div style="width:45px;text-align:right;color:var(--text-muted);font-family:Outfit">${b.amount.toLocaleString()}</div>
+      <div style="width:50px;text-align:right">${result}</div>
+    </div>`;
+  }).join('');
+}
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  return Math.floor(s / 3600) + 'h';
+}
+
+// ── Vault TVL ───────────────────────────────────────────────────────
+async function fetchVaultTvl() {
+  try {
+    const { ethers } = await import('https://esm.sh/ethers@6.13.0');
+    const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+    const erc20 = new ethers.Contract(CLAWS_ADDRESS, ['function balanceOf(address) view returns (uint256)'], provider);
+    const bal = await erc20.balanceOf(VAULT_ADDRESS);
+    const formatted = Math.floor(Number(ethers.formatEther(bal)));
+    $('vaultTvl').textContent = formatted.toLocaleString();
+  } catch {
+    $('vaultTvl').textContent = '—';
+  }
+}
+
 function escHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
@@ -1015,6 +1098,8 @@ function init() {
   window.addEventListener('resize', resizeCanvas);
   drawFrame();
   connect();
+  fetchVaultTvl();
+  setInterval(fetchVaultTvl, 30000); // refresh TVL every 30s
 
   // Try to restore wallet from localStorage
   const saved = localStorage.getItem('crash_wallet');
