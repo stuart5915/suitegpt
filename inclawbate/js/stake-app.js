@@ -1008,7 +1008,17 @@ async function connectPoolWallet() {
     } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
         eth = window.ethereum || window.phantom.ethereum;
     } else if (window.showWalletSelector) {
-        eth = await window.showWalletSelector();
+        var selected = await window.showWalletSelector();
+        if (selected && selected.provider) eth = selected.provider;
+        else if (selected && selected.address) {
+            // Privy email/OAuth login — address only, no provider needed for connect
+            walletAddr = selected.address;
+            try { localStorage.setItem('_stake_wallet', selected.address); } catch (e) {}
+            if (currentPoolKey && POOLS[currentPoolKey]) {
+                onPoolWalletConnected(selected.address, POOLS[currentPoolKey], currentPoolKey);
+            }
+            return selected.address;
+        }
     }
 
     // Last resort: open WalletKit modal if no provider found
@@ -1442,10 +1452,11 @@ async function connectAdminWallet() {
     } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
         eth = window.ethereum || window.phantom.ethereum;
     } else if (window.showWalletSelector) {
-        eth = await window.showWalletSelector();
+        var selected = await window.showWalletSelector();
+        if (selected && selected.provider) eth = selected.provider;
     }
 
-    if (!eth) return;
+    if (!eth || typeof eth.request !== 'function') return;
 
     try {
         var accounts = await eth.request({ method: 'eth_requestAccounts' });
