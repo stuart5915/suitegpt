@@ -89,7 +89,7 @@ function broadcastStateToAll() {
 function sendBalance(ws, walletAddress) {
   if (!walletAddress || ws.readyState !== 1) return;
   const wallet = rooms.getWalletBalance(walletAddress);
-  ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
+  ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(walletAddress.toLowerCase()) } }));
 }
 
 // Check if a wallet action requires a connected wallet
