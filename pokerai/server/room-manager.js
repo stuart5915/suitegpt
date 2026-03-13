@@ -158,6 +158,12 @@ class RoomManager {
       const config = this.autoTopUp.get(agent.walletAddress);
       if (!config || !config.enabled) continue;
 
+      // Skip auto top-up/cash-out when agent has human backers
+      // (auto-refill distorts backer P&L shares — let agent go bust if backed,
+      //  then refill normally after human withdraws their stake)
+      const backings = this.store.getBackingsForAgent(agent.id);
+      if (backings.length > 0) continue;
+
       const target = config.targetChips;
 
       // Auto cash-out: if agent is above cash-out threshold, skim excess back to wallet
