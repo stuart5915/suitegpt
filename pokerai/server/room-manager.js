@@ -268,7 +268,9 @@ class RoomManager {
     if (PLATFORM_WALLETS.size > 0) {
       const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
       for (const s of stats) {
-        // Seed platform agents if table is below target (regardless of human presence)
+        // Only seed platform agents into tables that already have players
+        // (don't auto-fill empty rooms — wait for someone to join first)
+        if (s.table.agents.length === 0) continue;
         const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
         if (needed > 0) {
           const seeded = this._seedPlatformAgents(s.table, roomId, needed);
