@@ -268,9 +268,10 @@ class RoomManager {
     if (PLATFORM_WALLETS.size > 0) {
       const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
       for (const s of stats) {
-        // Only seed platform agents into tables that already have players
-        // (don't auto-fill empty rooms — wait for someone to join first)
-        if (s.table.agents.length === 0) continue;
+        // Only auto-seed when a non-platform player is at the table and needs opponents
+        // Platform wallet agents are placed manually — don't pull lobby agents into random rooms
+        const hasExternalPlayer = s.table.agents.some(a => a.isCustom && a.walletAddress && !PLATFORM_WALLETS.has(a.walletAddress.toLowerCase()));
+        if (!hasExternalPlayer) continue;
         const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
         if (needed > 0) {
           const seeded = this._seedPlatformAgents(s.table, roomId, needed);
