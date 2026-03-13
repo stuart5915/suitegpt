@@ -932,19 +932,20 @@ class PokerEngine {
     this._checkHouseBotCashouts();
     this.updateAllFundPositions();
 
-    // Process pending leaves (agents that requested sit-out mid-hand)
+    // Set phase to waiting so rebalancing can move agents between tables
+    this.phase = 'waiting';
+
+    // Notify room manager for platform agent rebalancing
+    // MUST run before pending leaves so backing P&L is up-to-date when agents withdraw
+    if (this._onHandComplete) this._onHandComplete();
+
+    // Process pending leaves AFTER _onHandComplete so backing values are updated
     const pendingResults = this._processPendingLeaves();
     if (pendingResults.length > 0 && this._onPendingLeave) {
       for (const r of pendingResults) {
         this._onPendingLeave(r.walletAddress, r.agentId, r.agent);
       }
     }
-
-    // Set phase to waiting so rebalancing can move agents between tables
-    this.phase = 'waiting';
-
-    // Notify room manager for platform agent rebalancing
-    if (this._onHandComplete) this._onHandComplete();
 
     this.broadcastGameState();
   }

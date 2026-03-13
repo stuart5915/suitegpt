@@ -766,12 +766,24 @@ class RoomManager {
       return { error: 'Please wait for at least 1 hand before withdrawing' };
     }
 
+    // If hand is in progress, queue withdrawal for end of hand
+    // (modifying agent.chips mid-hand corrupts delta for other backers)
+    if (table && table.phase !== 'waiting') {
+      if (!agent._pendingWithdrawals) agent._pendingWithdrawals = [];
+      agent._pendingWithdrawals.push({ backingId, walletAddress });
+      console.log(`[RoomManager] ${walletAddress.slice(0,8)} queued backing withdrawal (hand in progress)`);
+      return { success: true, pending: true, message: 'Withdrawal queued — will process after current hand' };
+    }
+
+    return this._executeWithdrawal(backing, agent, walletAddress);
+  }
+
+  _executeWithdrawal(backing, agent, walletAddress) {
     const currentValue = Math.max(0, backing.currentValue);
     const pnl = currentValue - backing.chipsStaked;
 
     // Deduct the backing's current value from the agent's chip stack
     if (agent) {
-      // Don't take more than the agent has
       const deductFromAgent = Math.min(currentValue, agent.chips);
       agent.chips -= deductFromAgent;
     }
@@ -780,7 +792,7 @@ class RoomManager {
     if (currentValue > 0) {
       this.store.addBalance(walletAddress, currentValue);
     }
-    this.store.deleteBacking(backingId);
+    this.store.deleteBacking(backing.id);
 
     console.log(`[RoomManager] ${walletAddress.slice(0,8)} withdrew backing: staked=${backing.chipsStaked}, returned=${currentValue}, pnl=${pnl}`);
     return { success: true, originalStake: backing.chipsStaked, withdrawn: currentValue, pnl };
@@ -814,27 +826,39 @@ class RoomManager {
         console.log(`[RoomManager] Activated ${agent._pendingBackings.length} pending backing(s) for ${agent.name}: +${pendingTotal} chips`);
         agent._pendingBackings = [];
       }
-      if (delta === 0) continue;
+      if (delta !== 0) {
+        // Only include active (non-pending) backings in P&L distribution
+        // _pending = not yet activated, _activatedAt < 1s = just activated this cycle
+        const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._pending && (!b._activatedAt || Date.now() - b._activatedAt > 1000));
 
-      // Only include active (non-pending) backings in P&L distribution
-      // _pending = not yet activated, _activatedAt < 1s = just activated this cycle
-      const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._pending && (!b._activatedAt || Date.now() - b._activatedAt > 1000));
-      if (backings.length === 0) continue;
+        // Backer's share = their CURRENT value / total pool at start of hand
+        // Uses currentValue (not original chipsStaked) so the share stays proportional
+        // as the backer's value changes over time
+        const totalPool = agent._startChips;
 
-      // Backer's share = their CURRENT value / total pool at start of hand
-      // Uses currentValue (not original chipsStaked) so the share stays proportional
-      // as the backer's value changes over time
-      const totalPool = agent._startChips;
-      if (totalPool <= 0) continue;
-
-      const updates = [];
-      for (const b of backings) {
-        const share = Math.min(1, b.currentValue / totalPool);
-        const backerDelta = Math.floor(delta * share);
-        const newValue = Math.max(0, b.currentValue + backerDelta);
-        updates.push({ id: b.id, currentValue: newValue });
+        if (backings.length > 0 && totalPool > 0) {
+          const updates = [];
+          for (const b of backings) {
+            const share = Math.min(1, b.currentValue / totalPool);
+            const backerDelta = Math.floor(delta * share);
+            const newValue = Math.max(0, b.currentValue + backerDelta);
+            updates.push({ id: b.id, currentValue: newValue });
+          }
+          this.store.updateBackingValues(agent.id, updates);
+        }
       }
-      this.store.updateBackingValues(agent.id, updates);
+
+      // Process pending withdrawals (queued mid-hand, now safe after P&L update)
+      if (agent._pendingWithdrawals && agent._pendingWithdrawals.length > 0) {
+        for (const pw of agent._pendingWithdrawals) {
+          const backing = this.store.getBackingById(pw.backingId);
+          if (backing) {
+            this._executeWithdrawal(backing, agent, pw.walletAddress);
+          }
+        }
+        console.log(`[RoomManager] Processed ${agent._pendingWithdrawals.length} pending withdrawal(s) for ${agent.name}`);
+        agent._pendingWithdrawals = [];
+      }
     }
   }
 
@@ -995,6 +1019,14 @@ class RoomManager {
       const backings = this.store.getBackingsForAgent ? this.store.getBackingsForAgent(lobbyAgent.id) : [];
       const totalBackingValue = backings.reduce((sum, b) => sum + Math.max(0, b.currentValue), 0);
       if (totalBackingValue > 0) {
+        // Cap backer returns to agent's actual chip stack (prevents chip creation)
+        if (totalBackingValue > lobbyAgent.chipStack && lobbyAgent.chipStack > 0) {
+          const ratio = lobbyAgent.chipStack / totalBackingValue;
+          for (const b of backings) {
+            b.currentValue = Math.floor(b.currentValue * ratio);
+          }
+          console.log(`[RoomManager] Capped backing returns for ${lobbyAgent.name}: total ${totalBackingValue} > stack ${lobbyAgent.chipStack}, ratio=${ratio.toFixed(3)}`);
+        }
         const deductFromAgent = Math.min(totalBackingValue, lobbyAgent.chipStack);
         lobbyAgent.chipStack -= deductFromAgent;
         console.log(`[RoomManager] Deducted ${deductFromAgent} backing chips from ${lobbyAgent.name} on leave (remaining: ${lobbyAgent.chipStack})`);
