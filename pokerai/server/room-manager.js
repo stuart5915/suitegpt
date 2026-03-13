@@ -424,6 +424,7 @@ class RoomManager {
         if (!table.hasAvailableSeat()) return seeded;
 
         const lobbyAgent = agents[i];
+        if (lobbyAgent._manualSitOut) continue; // user manually sat out — don't re-seat
         if (lobbyAgent.chipStack < 500) continue; // not funded enough
 
         const result = table.seatAgent(lobbyAgent);
@@ -847,6 +848,9 @@ class RoomManager {
     const lobbyIdx = walletLobby.findIndex(a => a.id === agentId);
     if (lobbyIdx === -1) return { error: 'Agent not found in lobby' };
 
+    // Clear manual sit-out flag — user is explicitly rejoining
+    delete walletLobby[lobbyIdx]._manualSitOut;
+
     const room = this.rooms[roomId];
     if (!room) return { error: 'Room not found' };
 
@@ -951,10 +955,15 @@ class RoomManager {
 
     // If queued for end of hand, return pending status (don't move to lobby yet)
     if (result.pending) {
+      // Mark agent so it won't be auto-reseated after leaving
+      const agent = table.agents.find(a => a.id === agentId);
+      if (agent) agent._manualSitOut = true;
       return { success: true, pending: true, agentId };
     }
 
     // Immediate leave — put agent back in lobby
+    // Mark as manually sat out so auto-seeding won't re-seat it
+    result.agent._manualSitOut = true;
     const leaveResult = this._finalizeLeave(walletAddress, table, result.agent);
 
     // Rebalance tables after leave (may merge tables)
