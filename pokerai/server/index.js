@@ -270,6 +270,36 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'checkDeposit': {
+          // User-triggered deposit check — safe one-time sync for missed chain events
+          if (!requireAuth(client, ws)) break;
+          if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
+          try {
+            const addr = client.walletAddress;
+            const stats = await chain.vault.playerStats(addr);
+            const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+            const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
+            const netDeposited = onChainChips - withdrawnChips;
+            const wallet = await rooms.store.getOrCreateWallet(addr);
+            const inPlay = rooms.getChipsInPlay(addr);
+            const inLobby = rooms.getChipsInLobby(addr);
+            const totalServer = wallet.balance + inPlay + inLobby;
+            if (netDeposited > totalServer) {
+              const credit = netDeposited - totalServer;
+              await rooms.store.addBalance(addr, credit);
+              await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
+              sendBalance(ws, addr);
+              ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: credit } }));
+              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain: ${netDeposited}, server: ${totalServer})`);
+            } else {
+              ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
+            }
+          } catch (e) {
+            ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: e.message } }));
+          }
+          break;
+        }
+
         case 'topUp': {
           if (!requireAuth(client, ws)) break;
           if (!isValidPositiveNumber(msg.amount)) {
