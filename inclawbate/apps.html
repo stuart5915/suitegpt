@@ -364,15 +364,36 @@
             transform: scale(0.5);
             transform-origin: top left;
         }
+        .app-card-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, var(--bg-card));
+            pointer-events: none;
+            z-index: 1;
+        }
         .app-card-placeholder {
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            background: linear-gradient(135deg, hsla(9, 40%, 40%, 0.15), hsla(172, 30%, 40%, 0.15));
+            font-size: 3.2rem;
+            position: relative;
         }
+        .app-card-placeholder::before {
+            content: '';
+            position: absolute; inset: 0;
+            opacity: 0.12;
+            background: radial-gradient(circle at 30% 40%, currentColor 0%, transparent 60%);
+        }
+        .app-card-placeholder[data-cat="tools"]   { background: linear-gradient(135deg, hsl(240, 15%, 14%) 0%, hsl(200, 20%, 18%) 100%); color: hsl(200, 50%, 60%); }
+        .app-card-placeholder[data-cat="games"]   { background: linear-gradient(135deg, hsl(280, 20%, 14%) 0%, hsl(320, 15%, 18%) 100%); color: hsl(280, 50%, 65%); }
+        .app-card-placeholder[data-cat="creative"] { background: linear-gradient(135deg, hsl(330, 18%, 14%) 0%, hsl(10, 20%, 18%) 100%); color: hsl(340, 50%, 65%); }
+        .app-card-placeholder[data-cat="finance"]  { background: linear-gradient(135deg, hsl(140, 18%, 12%) 0%, hsl(160, 20%, 16%) 100%); color: hsl(160, 45%, 55%); }
+        .app-card-placeholder[data-cat="social"]   { background: linear-gradient(135deg, hsl(200, 20%, 13%) 0%, hsl(220, 18%, 17%) 100%); color: hsl(210, 50%, 60%); }
+        .app-card-placeholder[data-cat="other"]    { background: linear-gradient(135deg, hsl(30, 15%, 13%) 0%, hsl(20, 20%, 17%) 100%); color: hsl(30, 40%, 55%); }
 
         /* Info area */
         .app-card-info {
@@ -1167,7 +1188,7 @@
                 var emoji = catEmoji[app.category] || catEmoji.other;
                 var previewHtml = app.has_code
                     ? '<div class="app-card-preview"><iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe></div>'
-                    : '<div class="app-card-preview"><div class="app-card-placeholder">' + emoji + '</div></div>';
+                    : '<div class="app-card-preview"><div class="app-card-placeholder" data-cat="' + (app.category || 'other') + '">' + emoji + '</div></div>';
                 var tokenBadge = '';
                 if (app.staking_address && app.token_symbol) {
                     tokenBadge = '<a class="app-badge stake" href="/stake/' + encodeURIComponent(app.token_symbol) + '" onclick="event.stopPropagation()">' +
@@ -1273,7 +1294,7 @@
             if (app.has_code) {
                 previewHtml = '<div class="app-card-preview"><iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe></div>';
             } else {
-                previewHtml = '<div class="app-card-preview"><div class="app-card-placeholder">' + emoji + '</div></div>';
+                previewHtml = '<div class="app-card-preview"><div class="app-card-placeholder" data-cat="' + (app.category || 'other') + '">' + emoji + '</div></div>';
             }
 
             card.innerHTML =
