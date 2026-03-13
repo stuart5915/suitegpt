@@ -11,6 +11,7 @@ const CRASH_PAUSE_MS = 3000;
 const TICK_MS = 50;
 const MAX_MULTIPLIER = 1000;
 const HOUSE_EDGE = 0.99; // 1% house edge
+const TEST_BALANCE = 1000; // starting test balance for new players
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const VAULT_ADDRESS = process.env.CRASH_VAULT_ADDRESS;
@@ -76,10 +77,11 @@ async function getOrCreateUser(wallet, username) {
     .eq('wallet', key)
     .single();
 
+  const existingChips = data && data.chips;
   const user = {
     wallet: key,
     username: username || (data && data.username) || key.slice(0, 8),
-    balance: (data && data.chips) || 0,
+    balance: existingChips != null ? existingChips : TEST_BALANCE,
   };
   users.set(key, user);
   walletToUsername.set(key, user.username);
