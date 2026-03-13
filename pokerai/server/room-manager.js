@@ -59,6 +59,7 @@ class RoomManager {
         foldPct: saved.foldPct,
         traits: saved.traits,
         rules: saved.rules || {},
+        prompt: saved.prompt || '',
         walletAddress: wallet,
         isCustom: true,
         chipStack: saved.chipStack || 0,
