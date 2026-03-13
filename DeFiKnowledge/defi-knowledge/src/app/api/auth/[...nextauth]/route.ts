@@ -15,7 +15,7 @@ const handler = NextAuth({
         async session({ session, token }) {
             // Add user id to session
             if (session.user) {
-                session.user.id = token.sub;
+                (session.user as Record<string, unknown>).id = token.sub;
             }
             return session;
         },
