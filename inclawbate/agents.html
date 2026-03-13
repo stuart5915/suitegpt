@@ -65,8 +65,12 @@
         .dash-back { display: inline-flex; align-items: center; gap: 4px; font-size: 0.82rem; font-weight: 600; color: var(--text-dim); cursor: pointer; margin-bottom: var(--space-lg); background: none; border: none; font-family: var(--font-body); padding: 0; }
         .dash-back:hover { color: var(--text-primary); }
         .dash-header { display: flex; align-items: center; gap: 14px; margin-bottom: var(--space-xl); }
-        .dash-header-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--text-dim); overflow: hidden; flex-shrink: 0; }
+        .dash-header-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: var(--text-dim); overflow: hidden; flex-shrink: 0; position: relative; cursor: pointer; transition: all 0.2s; }
+        .dash-header-avatar:hover { border: 2px solid var(--lobster-400); }
+        .dash-header-avatar:hover .avatar-overlay { opacity: 1; }
         .dash-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border-radius: 50%; pointer-events: none; }
+        .avatar-overlay svg { width: 18px; height: 18px; color: #fff; }
         .dash-header-info { flex: 1; }
         .dash-header-name { font-weight: 900; font-size: 1.2rem; color: var(--text-primary); }
         .dash-header-handle { font-family: var(--font-mono); font-size: 0.78rem; color: #38bdf8; }
@@ -595,8 +599,9 @@ function renderDashboard() {
 
     // Header
     html+='<div class="dash-header">';
-    if(p.logo_url) html+='<div class="dash-header-avatar"><img src="'+esc(p.logo_url)+'" onerror="this.parentNode.textContent=\''+((p.name||'?').charAt(0))+'\'"></div>';
-    else html+='<div class="dash-header-avatar">'+(p.name||'?').charAt(0)+'</div>';
+    var camSvg='<div class="avatar-overlay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
+    if(p.logo_url) html+='<div class="dash-header-avatar" onclick="dashUploadLogo()"><img src="'+esc(p.logo_url)+'" onerror="this.parentNode.innerHTML=\''+((p.name||'?').charAt(0))+camSvg.replace(/'/g,"\\'")+'\'">'+ camSvg+'</div>';
+    else html+='<div class="dash-header-avatar" onclick="dashUploadLogo()">'+(p.name||'?').charAt(0)+camSvg+'</div>';
     html+='<div class="dash-header-info"><div class="dash-header-name">'+esc(p.name)+'</div>';
     if(xOk) html+='<div class="dash-header-handle">@'+esc(p.x_handle)+'</div>';
     html+='</div>';
@@ -926,6 +931,28 @@ async function dashPostNow() {
         _selectedAgent.agent_total_posts=(_selectedAgent.agent_total_posts||0)+1;
         loadDashPosts();
     } catch(e) { toast(e.message,true); }
+}
+
+function dashUploadLogo(){
+    var inp=document.createElement('input');inp.type='file';inp.accept='image/png,image/jpeg,image/gif,image/webp';
+    inp.onchange=async function(){
+        var file=inp.files[0];if(!file) return;
+        if(file.size>3*1024*1024){toast('Max 3MB',true);return;}
+        toast('Uploading...');
+        try {
+            var reader=new FileReader();
+            var b64=await new Promise(function(res){reader.onload=function(){res(reader.result);};reader.readAsDataURL(file);});
+            var r=await fetch(API.replace('/inclawbate','')+'/inclawbate/upload',{method:'POST',headers:hdrs(),body:JSON.stringify({file_data:b64,file_name:'logo-'+_selectedAgent.id+'.'+file.name.split('.').pop(),file_type:file.type})});
+            var data=await r.json();if(!r.ok) throw new Error(data.error||'Upload failed');
+            // Update project with new logo URL
+            var r2=await fetch(API+'/projects',{method:'PUT',headers:hdrs(),body:JSON.stringify({id:_selectedAgent.id,logo_url:data.url})});
+            if(!r2.ok){var d2=await r2.json();throw new Error(d2.error||'Save failed');}
+            _selectedAgent.logo_url=data.url;
+            toast('Logo updated!');
+            renderDashboard();
+        } catch(e){toast(e.message,true);}
+    };
+    inp.click();
 }
 
 async function dashDelete() {

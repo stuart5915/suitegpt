@@ -182,6 +182,35 @@
         .sched-no-projects { text-align:center;padding:var(--space-md);color:var(--text-dim);font-size:0.85rem; }
         .sched-no-projects a { color:var(--seafoam-400);text-decoration:none;font-weight:600; }
 
+        /* ── Draft Edit Modal ── */
+        .draft-modal-overlay {
+            display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);
+            align-items:center;justify-content:center;padding:20px;
+        }
+        .draft-modal-overlay.open { display:flex; }
+        .draft-modal {
+            background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);
+            padding:var(--space-lg);width:100%;max-width:480px;animation:fadeUp 0.2s ease both;
+        }
+        .draft-modal h3 { font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:var(--space-sm); }
+        .draft-modal textarea {
+            width:100%;min-height:100px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.88rem;
+            line-height:1.5;resize:vertical;box-sizing:border-box;
+        }
+        .draft-modal textarea:focus { border-color:var(--lobster-400);outline:none; }
+        .draft-modal-charcount { text-align:right;font-size:0.7rem;color:var(--text-dim);margin-top:4px; }
+        .draft-modal-charcount.over { color:#f87171; }
+        .draft-modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-md); }
+        .draft-modal-btn {
+            padding:8px 20px;border-radius:var(--radius-md);font-family:var(--font-display);
+            font-size:0.82rem;font-weight:700;border:none;cursor:pointer;transition:opacity 0.15s;
+        }
+        .draft-modal-btn--cancel { background:var(--bg-elevated);color:var(--text-secondary); }
+        .draft-modal-btn--save { background:var(--accent-gradient);color:#fff; }
+        .draft-modal-btn:hover { opacity:0.85; }
+        .draft-modal-btn:disabled { opacity:0.5;cursor:not-allowed; }
+
         /* ── X Feed Section ── */
         .x-feed-section {
             margin-top: var(--space-xl);
@@ -931,6 +960,19 @@
             return;
         }
 
+        // Enforce max 3 active bookings per user (admins exempt)
+        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        if (!isAdmin) {
+            var activeBookings = _schedSlots.filter(function(s) {
+                return s.booked_by_wallet === _userWallet && s.status === 'scheduled' && new Date(s.scheduled_at) > new Date();
+            });
+            if (activeBookings.length >= 3) {
+                document.getElementById('schedBookError').textContent = 'Max 3 active bookings. Cancel one first.';
+                document.getElementById('schedBookError').style.display = 'block';
+                return;
+            }
+        }
+
         var btn = document.getElementById('schedBookBtn');
         btn.disabled = true;
         document.getElementById('schedBookSuccess').style.display = 'none';
@@ -1126,27 +1168,68 @@
         } catch(e) { alert('Failed: ' + e.message); }
     };
 
+    var _editingSlotId = null;
+
     window._editDraft = function(slotId) {
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
+        _editingSlotId = slotId;
+        var ta = document.getElementById('draftModalText');
+        ta.value = slot.tweet_text || '';
+        updateDraftCount();
+        document.getElementById('draftModal').classList.add('open');
+        setTimeout(function() { ta.focus(); }, 100);
+    };
 
-        var newText = prompt('Edit tweet:', slot.tweet_text || '');
-        if (newText === null) return;
-        if (newText.length > 280) { alert('Too long (' + newText.length + '/280)'); return; }
+    window.closeDraftModal = function() {
+        document.getElementById('draftModal').classList.remove('open');
+        _editingSlotId = null;
+    };
+
+    window.updateDraftCount = function() {
+        var len = (document.getElementById('draftModalText').value || '').length;
+        var el = document.getElementById('draftModalCount');
+        el.textContent = len + '/280';
+        el.className = 'draft-modal-charcount' + (len > 280 ? ' over' : '');
+    };
+
+    window.saveDraftModal = async function() {
+        if (!_editingSlotId) return;
+        var newText = document.getElementById('draftModalText').value.trim();
+        if (!newText) return;
+        if (newText.length > 280) { return; }
 
         var auth = getAuth();
         if (!auth || !auth.token) return;
 
-        fetch('/api/inclawbate/schedule-autofill', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-            body: JSON.stringify({ action: 'update_draft', slot_id: slotId, tweet_text: newText })
-        }).then(function(r) { return r.json(); }).then(function(data) {
-            if (data.error) { alert(data.error); return; }
-            slot.tweet_text = newText;
+        var btn = document.getElementById('draftModalSave');
+        btn.disabled = true; btn.textContent = 'Saving...';
+
+        try {
+            var r = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText })
+            });
+            var data = await r.json();
+            if (data.error) throw new Error(data.error);
+            var slot = _schedSlots.find(function(s) { return s.id === _editingSlotId; });
+            if (slot) slot.tweet_text = newText;
+            closeDraftModal();
             renderSlots(_selectedDay);
-        }).catch(function(e) { alert('Failed: ' + e.message); });
+        } catch(e) {
+            alert('Failed: ' + e.message);
+        } finally {
+            btn.disabled = false; btn.textContent = 'Save';
+        }
     };
+
+    // Wire up character counter
+    document.getElementById('draftModalText').addEventListener('input', updateDraftCount);
+    // Close modal on overlay click
+    document.getElementById('draftModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDraftModal();
+    });
 
     // ── @inclawbator Feed ──
 
@@ -1230,6 +1313,19 @@
     loadFeed();
 })();
 </script>
+
+<!-- Draft Edit Modal -->
+<div class="draft-modal-overlay" id="draftModal">
+    <div class="draft-modal">
+        <h3>Edit Draft Tweet</h3>
+        <textarea id="draftModalText" maxlength="280" placeholder="Write tweet..."></textarea>
+        <div class="draft-modal-charcount" id="draftModalCount">0/280</div>
+        <div class="draft-modal-actions">
+            <button class="draft-modal-btn draft-modal-btn--cancel" onclick="closeDraftModal()">Cancel</button>
+            <button class="draft-modal-btn draft-modal-btn--save" id="draftModalSave" onclick="saveDraftModal()">Save</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
