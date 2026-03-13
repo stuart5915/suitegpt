@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Scripture Memory — Walk Through the Word</title>
+<meta name="description" content="Come track the Word with me. A Bible verse memory game by Salvation 4 Humanity.">
+<meta property="og:title" content="Scripture Memory — Walk Through the Word">
+<meta property="og:description" content="Come track the Word with me. Fill in the blanks, memorize Scripture.">
+<meta property="og:image" content="https://salvation4humanity.com/assets/s4hlogo.png">
+<link rel="icon" href="https://salvation4humanity.com/assets/salvation4humanity.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --gold: hsl(35, 38%, 38%);
+    --gold-light: hsl(35, 42%, 48%);
+    --gold-dim: hsl(35, 30%, 24%);
+    --crimson: hsl(0, 30%, 24%);
+    --crimson-light: hsl(0, 28%, 32%);
+    --bg: #131210;
+    --bg-warm: #161513;
+    --text: #c8bfb4;
+    --text-bright: #e0d8ce;
+    --text-dim: rgba(200, 191, 180, 0.5);
+    --surface: rgba(180, 160, 130, 0.04);
+    --surface-hover: rgba(180, 160, 130, 0.08);
+    --gold-glow: hsla(35, 38%, 38%, 0.15);
+    --gold-border: hsla(35, 30%, 30%, 0.12);
+    --gold-border-hover: hsla(35, 35%, 35%, 0.25);
+    --inclawbate-accent: #6ba297;
+}
+
+body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+}
+
+/* Grain overlay */
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Ambient orbs */
+.orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+}
+.orb-1 { width: 300px; height: 300px; top: -60px; right: -60px; background: hsla(35, 38%, 38%, 0.08); }
+.orb-2 { width: 250px; height: 250px; bottom: -40px; left: -40px; background: hsla(0, 30%, 24%, 0.1); }
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 16px 100px;
+    min-height: 100dvh;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    padding: 24px 0 20px;
+}
+.header-logo {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--gold-border);
+    margin-bottom: 12px;
+}
+.header h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+.header .tagline {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-style: italic;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+/* Stats bar */
+.stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 14px 0;
+    margin: 8px 0 20px;
+    border-top: 1px solid var(--gold-border);
+    border-bottom: 1px solid var(--gold-border);
+}
+.stat {
+    text-align: center;
+}
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+/* Achievement toast */
+.achievement-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    background: var(--bg-warm);
+    border: 1px solid var(--gold-light);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px var(--gold-glow);
+}
+.achievement-toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+.achievement-toast .ach-icon {
+    font-size: 24px;
+}
+.achievement-toast .ach-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold-light);
+}
+.achievement-toast .ach-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+/* Verse card */
+.verse-card {
+    background: var(--surface);
+    border: 1px solid var(--gold-border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 16px;
+}
+.verse-ref {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+}
+.verse-text {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 21px;
+    line-height: 1.7;
+    color: var(--text-bright);
+}
+.verse-text .blank {
+    display: inline-block;
+    min-width: 70px;
+    border-bottom: 2px dashed var(--gold);
+    color: transparent;
+    padding: 0 4px;
+    margin: 0 2px;
+    transition: all 0.3s;
+    cursor: default;
+}
+.verse-text .blank.active {
+    border-bottom-color: var(--gold-light);
+    background: var(--gold-glow);
+    border-radius: 4px;
+    animation: pulse-blank 1.5s ease-in-out infinite;
+}
+.verse-text .blank.filled {
+    color: var(--gold-light);
+    border-bottom-style: solid;
+    border-bottom-color: var(--gold-dim);
+    font-weight: 600;
+}
+
+@keyframes pulse-blank {
+    0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); }
+    50% { box-shadow: 0 0 12px 2px var(--gold-glow); }
+}
+
+/* Choices */
+.choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+.choice-btn {
+    background: var(--surface);
+    border: 1px solid var(--gold-border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.choice-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--gold-border-hover);
+}
+.choice-btn:active {
+    transform: scale(0.97);
+}
+.choice-btn.correct {
+    background: hsla(120, 40%, 20%, 0.3);
+    border-color: hsla(120, 50%, 40%, 0.4);
+    color: hsl(120, 40%, 70%);
+}
+.choice-btn.wrong {
+    background: hsla(0, 40%, 20%, 0.3);
+    border-color: hsla(0, 50%, 40%, 0.4);
+    color: hsl(0, 40%, 70%);
+    animation: shake 0.4s ease-out;
+}
+.choice-btn .letter {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-right: 6px;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* Progress */
+.progress-wrap {
+    margin-top: 20px;
+}
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--surface);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.progress-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 6px;
+}
+
+/* Streak */
+.streak-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+.streak-bar .streak-fire {
+    font-size: 16px;
+}
+.streak-bar .streak-count {
+    font-weight: 700;
+    color: var(--gold-light);
+}
+
+/* Complete screen */
+.complete-screen {
+    text-align: center;
+    padding: 40px 0;
+    display: none;
+}
+.complete-screen.show { display: block; }
+.complete-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+.complete-screen h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 28px;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+}
+.complete-screen .complete-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+}
+.complete-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+.complete-stat {
+    text-align: center;
+}
+.complete-stat .cs-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+}
+.complete-stat .cs-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--gold-border);
+    background: var(--surface);
+    color: var(--text);
+}
+.btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--gold-border-hover);
+}
+.btn-primary {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--text-bright);
+}
+.btn-primary:hover {
+    background: var(--gold);
+}
+.btn-share {
+    background: #1d9bf0;
+    border-color: #1d9bf0;
+    color: #fff;
+}
+.btn-share:hover {
+    background: #1a8cd8;
+}
+.btn-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Verse picker (menu) */
+.verse-menu {
+    display: none;
+}
+.verse-menu.show { display: block; }
+.verse-menu h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 22px;
+    color: var(--text-bright);
+    margin-bottom: 16px;
+    text-align: center;
+}
+.verse-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.verse-list-item {
+    background: var(--surface);
+    border: 1px solid var(--gold-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.verse-list-item:hover {
+    background: var(--surface-hover);
+    border-color: var(--gold-border-hover);
+}
+.verse-list-item .vl-ref {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-bright);
+}
+.verse-list-item .vl-preview {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 3px;
+}
+.verse-list-item .vl-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.vl-badge.completed {
+    background: hsla(120, 40%, 20%, 0.3);
+    color: hsl(120, 40%, 70%);
+}
+.vl-badge.new {
+    background: var(--gold-glow);
+    color: var(--gold-light);
+}
+
+/* Achievements panel */
+.achievements-panel {
+    margin-top: 24px;
+}
+.achievements-panel h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 18px;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+    text-align: center;
+}
+.ach-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.ach-item {
+    background: var(--surface);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    opacity: 0.35;
+    transition: all 0.3s;
+}
+.ach-item.unlocked {
+    opacity: 1;
+    border-color: var(--gold-border-hover);
+}
+.ach-item .ach-emoji {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+.ach-item .ach-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+}
+
+/* Footer branding */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: linear-gradient(transparent, var(--bg) 40%);
+    padding-top: 30px;
+    z-index: 10;
+}
+.footer a {
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+    opacity: 0.6;
+}
+.footer a:hover { opacity: 1; }
+.footer .powered-inclawbate { color: var(--inclawbate-accent); }
+.footer .powered-s4h { color: var(--gold-light); }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="achievement-toast" id="achToast">
+    <span class="ach-icon" id="achToastIcon"></span>
+    <div>
+        <div class="ach-text" id="achToastText"></div>
+        <div class="ach-sub" id="achToastSub"></div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <img src="https://salvation4humanity.com/assets/s4hlogo.png" alt="S4H" class="header-logo">
+        <h1>Scripture Memory</h1>
+        <div class="tagline">Come track the Word with me</div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="statVerses">0</div>
+            <div class="stat-label">Verses</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label">Streak</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="statBest">0</div>
+            <div class="stat-label">Best</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="statAch">0</div>
+            <div class="stat-label">Badges</div>
+        </div>
+    </div>
+
+    <!-- Verse Menu -->
+    <div class="verse-menu show" id="verseMenu">
+        <h2>Choose a Verse</h2>
+        <div class="verse-list" id="verseList"></div>
+        <div class="achievements-panel" id="achPanel">
+            <h3>Achievements</h3>
+            <div class="ach-grid" id="achGrid"></div>
+        </div>
+    </div>
+
+    <!-- Game Area -->
+    <div id="gameArea" style="display:none;">
+        <div class="verse-card">
+            <div class="verse-ref" id="verseRef"></div>
+            <div class="verse-text" id="verseText"></div>
+        </div>
+
+        <div class="streak-bar" id="streakBar" style="display:none;">
+            <span class="streak-fire">&#x1F525;</span>
+            <span><span class="streak-count" id="streakCount">0</span> in a row</span>
+        </div>
+
+        <div class="choices" id="choices"></div>
+
+        <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+            <div class="progress-text" id="progressText">0 / 0 blanks</div>
+        </div>
+
+        <div style="text-align:center; margin-top:16px;">
+            <button class="btn" onclick="showMenu()">&#x2190; Back to Verses</button>
+        </div>
+    </div>
+
+    <!-- Complete Screen -->
+    <div class="complete-screen" id="completeScreen">
+        <div class="complete-icon">&#x2728;</div>
+        <h2 id="completeTitle">Verse Complete!</h2>
+        <div class="complete-sub" id="completeSub"></div>
+        <div class="complete-stats">
+            <div class="complete-stat">
+                <div class="cs-val" id="csAccuracy">100%</div>
+                <div class="cs-label">Accuracy</div>
+            </div>
+            <div class="complete-stat">
+                <div class="cs-val" id="csStreak">0</div>
+                <div class="cs-label">Best Streak</div>
+            </div>
+            <div class="complete-stat">
+                <div class="cs-val" id="csTime">0s</div>
+                <div class="cs-label">Time</div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-share" onclick="shareOnX()">&#x1D54F; Share on X</button>
+            <button class="btn btn-primary" onclick="showMenu()">More Verses</button>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <a href="https://inclawbate.com" target="_blank" class="powered-inclawbate">Powered by Inclawbate</a>
+    <a href="https://salvation4humanity.com" target="_blank" class="powered-s4h">Salvation 4 Humanity</a>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// VERSE DATA
+// ══════════════════════════════════════
+
+var VERSES = [
+    {
+        ref: 'John 1:1',
+        text: 'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.',
+        decoys: ['end', 'truck', 'house', 'light', 'man', 'world', 'truth', 'spirit', 'law', 'king', 'prophet', 'angel']
+    },
+    {
+        ref: 'Genesis 1:1',
+        text: 'In the {beginning} {God} created the {heavens} and the {earth}.',
+        decoys: ['end', 'angels', 'waters', 'darkness', 'mountains', 'stars', 'light', 'king']
+    },
+    {
+        ref: 'Psalm 23:1',
+        text: 'The {LORD} is my {shepherd}; I shall not {want}.',
+        decoys: ['king', 'father', 'teacher', 'guard', 'worry', 'sleep', 'fear', 'rest']
+    },
+    {
+        ref: 'John 3:16',
+        text: 'For {God} so {loved} the {world}, that he gave his only {begotten} {Son}, that whosoever {believeth} in him should not {perish}, but have {everlasting} life.',
+        decoys: ['angels', 'hated', 'church', 'forgotten', 'daughter', 'doubteth', 'prosper', 'eternal', 'created', 'knew', 'people', 'firstborn', 'seeketh', 'suffer', 'abundant']
+    },
+    {
+        ref: 'Proverbs 3:5',
+        text: '{Trust} in the {LORD} with all thine {heart}; and lean not unto thine own {understanding}.',
+        decoys: ['believe', 'king', 'soul', 'wisdom', 'hope', 'spirit', 'mind', 'strength']
+    },
+    {
+        ref: 'Philippians 4:13',
+        text: 'I can do all {things} through {Christ} which {strengtheneth} me.',
+        decoys: ['works', 'God', 'blesseth', 'Moses', 'guideth', 'deeds']
+    },
+    {
+        ref: 'Romans 8:28',
+        text: 'And we know that all {things} work {together} for {good} to them that {love} {God}, to them who are the {called} according to his {purpose}.',
+        decoys: ['works', 'alone', 'evil', 'fear', 'angels', 'chosen', 'plan', 'deeds', 'apart', 'glory', 'serve', 'Lord', 'blessed', 'promise']
+    },
+    {
+        ref: 'Isaiah 40:31',
+        text: 'But they that {wait} upon the {LORD} shall {renew} their {strength}; they shall mount up with {wings} as {eagles}.',
+        decoys: ['run', 'God', 'find', 'faith', 'swords', 'lions', 'hope', 'king', 'lose', 'courage', 'arms', 'doves']
+    },
+    {
+        ref: 'Jeremiah 29:11',
+        text: 'For I know the {plans} I have for you, {declares} the {LORD}, plans to {prosper} you and not to {harm} you, plans to give you {hope} and a {future}.',
+        decoys: ['thoughts', 'says', 'God', 'bless', 'test', 'faith', 'past', 'words', 'King', 'judge', 'curse', 'fear', 'kingdom']
+    },
+    {
+        ref: 'Matthew 28:19',
+        text: 'Go ye therefore, and {teach} all {nations}, {baptizing} them in the {name} of the {Father}, and of the {Son}, and of the {Holy} {Ghost}.',
+        decoys: ['judge', 'peoples', 'blessing', 'word', 'Lord', 'Daughter', 'Spirit', 'Sacred', 'heal', 'kingdoms', 'washing', 'light', 'King', 'Mother', 'Blessed', 'Angel']
+    },
+    {
+        ref: 'Psalm 46:10',
+        text: 'Be {still}, and {know} that I am {God}: I will be {exalted} among the {heathen}, I will be {exalted} in the {earth}.',
+        decoys: ['quiet', 'see', 'Lord', 'praised', 'nations', 'glorified', 'heavens', 'calm', 'hear', 'King', 'blessed', 'people', 'feared', 'waters']
+    },
+    {
+        ref: 'Romans 10:9',
+        text: 'If thou shalt {confess} with thy {mouth} the Lord {Jesus}, and shalt {believe} in thine {heart} that God hath {raised} him from the {dead}, thou shalt be {saved}.',
+        decoys: ['declare', 'hands', 'Christ', 'trust', 'soul', 'lifted', 'grave', 'blessed', 'speak', 'mind', 'Lord', 'hope', 'spirit', 'taken', 'dust', 'forgiven']
+    }
+];
+
+// ══════════════════════════════════════
+// ACHIEVEMENTS
+// ══════════════════════════════════════
+
+var ACHIEVEMENTS = [
+    { id: 'first_verse', icon: '\u{1F4D6}', name: 'First Steps', desc: 'Complete your first verse' },
+    { id: 'streak_5', icon: '\u{1F525}', name: 'On Fire', desc: '5 correct in a row' },
+    { id: 'streak_10', icon: '\u{2B50}', name: 'Unstoppable', desc: '10 correct in a row' },
+    { id: 'perfect', icon: '\u{1F451}', name: 'Perfect', desc: 'Complete a verse with no mistakes' },
+    { id: 'three_verses', icon: '\u{1F4DA}', name: 'Scholar', desc: 'Complete 3 verses' },
+    { id: 'five_verses', icon: '\u{1F3C6}', name: 'Devoted', desc: 'Complete 5 verses' },
+    { id: 'all_verses', icon: '\u{1F31F}', name: 'Word Walker', desc: 'Complete all verses' },
+    { id: 'speed_30', icon: '\u{26A1}', name: 'Swift', desc: 'Complete a verse in under 30 seconds' },
+    { id: 'ten_verses', icon: '\u{1F54A}', name: 'Faithful', desc: 'Complete 10 total verses' },
+];
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+
+var state = loadState();
+
+function loadState() {
+    try {
+        var s = JSON.parse(localStorage.getItem('s4h_scripture_state'));
+        if (s && s.completed) return s;
+    } catch(e) {}
+    return { completed: {}, totalCompleted: 0, bestStreak: 0, achievements: [], totalAttempts: 0 };
+}
+
+function saveState() {
+    try { localStorage.setItem('s4h_scripture_state', JSON.stringify(state)); } catch(e) {}
+}
+
+// Game state
+var currentVerse = null;
+var blanks = [];
+var blankIdx = 0;
+var streak = 0;
+var bestStreakThisRound = 0;
+var mistakes = 0;
+var startTime = 0;
+
+// ══════════════════════════════════════
+// MENU
+// ══════════════════════════════════════
+
+function showMenu() {
+    document.getElementById('verseMenu').className = 'verse-menu show';
+    document.getElementById('gameArea').style.display = 'none';
+    document.getElementById('completeScreen').className = 'complete-screen';
+    renderMenu();
+}
+
+function renderMenu() {
+    var list = document.getElementById('verseList');
+    list.innerHTML = '';
+    VERSES.forEach(function(v, i) {
+        var done = state.completed[v.ref];
+        var item = document.createElement('div');
+        item.className = 'verse-list-item';
+        item.innerHTML =
+            '<div>' +
+                '<div class="vl-ref">' + v.ref + '</div>' +
+                '<div class="vl-preview">' + v.text.replace(/\{[^}]+\}/g, '____').slice(0, 60) + '...</div>' +
+            '</div>' +
+            '<span class="vl-badge ' + (done ? 'completed' : 'new') + '">' + (done ? '\u2713 Done' : 'Play') + '</span>';
+        item.addEventListener('click', function() { startVerse(i); });
+        list.appendChild(item);
+    });
+    renderAchievements();
+    updateStats();
+}
+
+function renderAchievements() {
+    var grid = document.getElementById('achGrid');
+    grid.innerHTML = '';
+    ACHIEVEMENTS.forEach(function(a) {
+        var unlocked = state.achievements.indexOf(a.id) !== -1;
+        var el = document.createElement('div');
+        el.className = 'ach-item' + (unlocked ? ' unlocked' : '');
+        el.innerHTML = '<div class="ach-emoji">' + a.icon + '</div><div class="ach-name">' + a.name + '</div>';
+        el.title = a.desc;
+        grid.appendChild(el);
+    });
+}
+
+function updateStats() {
+    var ct = 0;
+    for (var k in state.completed) ct++;
+    document.getElementById('statVerses').textContent = state.totalCompleted || ct;
+    document.getElementById('statStreak').textContent = streak;
+    document.getElementById('statBest').textContent = state.bestStreak || 0;
+    document.getElementById('statAch').textContent = state.achievements.length;
+}
+
+// ══════════════════════════════════════
+// GAME
+// ══════════════════════════════════════
+
+function startVerse(idx) {
+    currentVerse = VERSES[idx];
+    blanks = [];
+    blankIdx = 0;
+    streak = 0;
+    bestStreakThisRound = 0;
+    mistakes = 0;
+    startTime = Date.now();
+
+    // Parse blanks
+    var parts = currentVerse.text.split(/\{([^}]+)\}/);
+    var html = '';
+    var blankCount = 0;
+    for (var i = 0; i < parts.length; i++) {
+        if (i % 2 === 0) {
+            html += parts[i];
+        } else {
+            blanks.push(parts[i]);
+            html += '<span class="blank" data-idx="' + blankCount + '">' + parts[i] + '</span>';
+            blankCount++;
+        }
+    }
+
+    document.getElementById('verseRef').textContent = currentVerse.ref;
+    document.getElementById('verseText').innerHTML = html;
+    document.getElementById('verseMenu').className = 'verse-menu';
+    document.getElementById('gameArea').style.display = 'block';
+    document.getElementById('completeScreen').className = 'complete-screen';
+    document.getElementById('streakBar').style.display = 'none';
+
+    updateProgress();
+    showChoices();
+}
+
+function showChoices() {
+    if (blankIdx >= blanks.length) {
+        finishVerse();
+        return;
+    }
+
+    // Highlight active blank
+    var allBlanks = document.querySelectorAll('.blank');
+    allBlanks.forEach(function(b) { b.classList.remove('active'); });
+    allBlanks[blankIdx].classList.add('active');
+    // Scroll active blank into view
+    allBlanks[blankIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    var correct = blanks[blankIdx];
+    // Pick 3 random decoys
+    var decoys = shuffle(currentVerse.decoys.filter(function(d) {
+        return d.toLowerCase() !== correct.toLowerCase();
+    })).slice(0, 3);
+
+    var options = shuffle([correct].concat(decoys));
+    var letters = ['A', 'B', 'C', 'D'];
+
+    var choicesEl = document.getElementById('choices');
+    choicesEl.innerHTML = '';
+    options.forEach(function(opt, i) {
+        var btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = '<span class="letter">' + letters[i] + '</span> ' + capitalize(opt);
+        btn.addEventListener('click', function() { pickAnswer(btn, opt, correct); });
+        choicesEl.appendChild(btn);
+    });
+}
+
+function pickAnswer(btn, picked, correct) {
+    var allBtns = document.querySelectorAll('.choice-btn');
+    if (picked.toLowerCase() === correct.toLowerCase()) {
+        btn.classList.add('correct');
+        allBtns.forEach(function(b) { b.style.pointerEvents = 'none'; });
+
+        // Fill blank
+        var blankEl = document.querySelector('.blank[data-idx="' + blankIdx + '"]');
+        blankEl.classList.remove('active');
+        blankEl.classList.add('filled');
+        blankEl.style.color = 'var(--gold-light)';
+
+        streak++;
+        state.totalAttempts++;
+        if (streak > bestStreakThisRound) bestStreakThisRound = streak;
+        if (streak > state.bestStreak) state.bestStreak = streak;
+
+        // Show streak
+        if (streak >= 3) {
+            document.getElementById('streakBar').style.display = 'flex';
+            document.getElementById('streakCount').textContent = streak;
+        }
+
+        // Check streak achievements
+        if (streak >= 5) unlock('streak_5');
+        if (streak >= 10) unlock('streak_10');
+
+        blankIdx++;
+        updateProgress();
+        setTimeout(showChoices, 500);
+    } else {
+        btn.classList.add('wrong');
+        mistakes++;
+        streak = 0;
+        state.totalAttempts++;
+        document.getElementById('streakBar').style.display = 'none';
+    }
+    saveState();
+    updateStats();
+}
+
+function finishVerse() {
+    var elapsed = Math.round((Date.now() - startTime) / 1000);
+    var accuracy = Math.round((blanks.length / (blanks.length + mistakes)) * 100);
+
+    state.completed[currentVerse.ref] = { accuracy: accuracy, time: elapsed, date: new Date().toISOString() };
+    state.totalCompleted = (state.totalCompleted || 0) + 1;
+    saveState();
+
+    // Achievements
+    unlock('first_verse');
+    if (mistakes === 0) unlock('perfect');
+    if (elapsed < 30) unlock('speed_30');
+
+    var completedCount = 0;
+    for (var k in state.completed) completedCount++;
+    if (completedCount >= 3) unlock('three_verses');
+    if (completedCount >= 5) unlock('five_verses');
+    if (completedCount >= VERSES.length) unlock('all_verses');
+    if (state.totalCompleted >= 10) unlock('ten_verses');
+
+    // Show complete screen
+    document.getElementById('gameArea').style.display = 'none';
+    document.getElementById('completeScreen').className = 'complete-screen show';
+    document.getElementById('completeSub').textContent = currentVerse.ref + ' — ' + (mistakes === 0 ? 'Perfect!' : mistakes + ' mistake' + (mistakes > 1 ? 's' : ''));
+    document.getElementById('csAccuracy').textContent = accuracy + '%';
+    document.getElementById('csStreak').textContent = bestStreakThisRound;
+    document.getElementById('csTime').textContent = elapsed + 's';
+
+    updateStats();
+}
+
+function shareOnX() {
+    var elapsed = Math.round((Date.now() - startTime) / 1000);
+    var accuracy = state.completed[currentVerse.ref] ? state.completed[currentVerse.ref].accuracy : 100;
+    var completedCount = 0;
+    for (var k in state.completed) completedCount++;
+
+    var text = '\u2728 Scripture Memory \u2728\n\n' +
+        'Just completed ' + currentVerse.ref + '!\n' +
+        '\u{1F3AF} ' + accuracy + '% accuracy\n' +
+        '\u{1F525} ' + bestStreakThisRound + ' streak\n' +
+        '\u{1F4D6} ' + completedCount + '/' + VERSES.length + ' verses\n\n' +
+        'Come track the Word with me \u{1F64F}\n\n' +
+        '#Scripture #BibleMemory #S4H';
+
+    var url = 'https://inclawbate.com/apps/scripture-memory';
+    window.open('https://x.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url), '_blank');
+}
+
+// ══════════════════════════════════════
+// ACHIEVEMENTS ENGINE
+// ══════════════════════════════════════
+
+function unlock(id) {
+    if (state.achievements.indexOf(id) !== -1) return;
+    state.achievements.push(id);
+    saveState();
+
+    var ach = ACHIEVEMENTS.find(function(a) { return a.id === id; });
+    if (!ach) return;
+
+    // Show toast
+    document.getElementById('achToastIcon').textContent = ach.icon;
+    document.getElementById('achToastText').textContent = ach.name + ' Unlocked!';
+    document.getElementById('achToastSub').textContent = ach.desc;
+    var toast = document.getElementById('achToast');
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 3000);
+}
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+
+function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+}
+
+function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function updateProgress() {
+    var pct = blanks.length > 0 ? Math.round((blankIdx / blanks.length) * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = blankIdx + ' / ' + blanks.length + ' blanks';
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+
+showMenu();
+</script>
+
+</body>
+</html>
