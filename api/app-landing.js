@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     // Fetch app
     const { data: app, error } = await sb
         .from('user_apps')
-        .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, created_at, is_public, has_code, app_url')
+        .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, created_at, is_public, app_url')
         .eq('slug', slug)
         .eq('is_public', true)
         .maybeSingle();
