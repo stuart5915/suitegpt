@@ -337,6 +337,56 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'getAdminDashboard': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          if (!PLATFORM_WALLETS.has(addr)) {
+            ws.send(JSON.stringify({ type: 'adminDashboard', data: { error: 'Not a platform wallet' } }));
+            break;
+          }
+          const wallet = rooms.getWalletBalance(addr);
+          const agents = rooms.getAgentsForWallet(addr);
+          const chipsInPlay = agents.filter(a => a.status === 'playing').reduce((s, a) => s + (a.chips || 0), 0);
+          const chipsInLobby = agents.filter(a => a.status === 'lobby').reduce((s, a) => s + (a.chipStack || 0), 0);
+          const totalAgentChips = chipsInPlay + chipsInLobby;
+
+          // Compute global rake from all tables
+          let globalTotalRake = 0;
+          const roomBreakdown = {};
+          for (const [roomId, room] of Object.entries(rooms.rooms)) {
+            if (room.isSandbox) continue;
+            let agentCount = 0, roomChips = 0, tableCount = room.tables.length;
+            for (const table of room.tables) {
+              globalTotalRake += table.totalRake || 0;
+              for (const a of table.agents) {
+                if (a.isCustom) { agentCount++; roomChips += a.chips || 0; }
+              }
+            }
+            roomBreakdown[roomId] = { name: room.name, agentCount, totalChips: roomChips, tableCount, bb: room.bb };
+          }
+
+          const autoTopUp = rooms.getAutoTopUp(addr);
+          ws.send(JSON.stringify({
+            type: 'adminDashboard',
+            data: {
+              walletBalance: wallet.balance,
+              chipsInPlay,
+              chipsInLobby,
+              totalAgentChips,
+              totalSystemChips: wallet.balance + totalAgentChips,
+              pendingRake: rooms.pendingRakeChips || 0,
+              globalTotalRake,
+              totalHands: rooms.totalHandsPlayed,
+              autoTopUp,
+              agents,
+              rooms: roomBreakdown,
+              viewers: clients.size,
+              timestamp: Date.now()
+            }
+          }));
+          break;
+        }
+
         case 'leaveTable': {
           const addr = getClientWallet(client);
           if (client.walletAddress && !requireAuth(client, ws)) break;

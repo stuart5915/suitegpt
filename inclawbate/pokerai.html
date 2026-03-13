@@ -1936,6 +1936,149 @@
     color: var(--accent-primary);
   }
 
+  /* ADMIN LIQUIDITY ENGINE DASHBOARD */
+  .admin-dash {
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,215,0,0.04));
+    border: 1px solid rgba(212,175,55,0.3);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .admin-dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .admin-dash-header:hover { background: rgba(212,175,55,0.06); }
+  .admin-dash-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #d4af37;
+  }
+  .admin-dash-toggle {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .admin-dash-toggle.open { transform: rotate(180deg); }
+  .admin-dash-body { padding: 0 16px 14px; }
+  .admin-dash-loop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .admin-dash-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(212,175,55,0.08);
+    border: 1px solid rgba(212,175,55,0.2);
+    border-radius: 8px;
+    min-width: 90px;
+  }
+  .admin-dash-node-icon { font-size: 18px; }
+  .admin-dash-node-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .admin-dash-node-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #d4af37;
+  }
+  .admin-dash-arrow {
+    font-size: 16px;
+    color: rgba(212,175,55,0.5);
+    padding: 0 4px;
+  }
+  .admin-dash-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .admin-dash-metric {
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+  }
+  .admin-dash-metric-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .admin-dash-metric-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .admin-dash-rooms {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .admin-dash-room {
+    flex: 1;
+    min-width: 100px;
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+  }
+  .admin-dash-room-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+  }
+  .admin-dash-room-stat {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .admin-dash-agents-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .admin-dash-agents-table th {
+    text-align: left;
+    padding: 6px 8px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-dash-agents-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+  }
+  .admin-dash-agents-table tr:hover td { background: rgba(212,175,55,0.04); }
+  .admin-dash-status { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .admin-dash-status.playing { background: var(--accent-green); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+  .admin-dash-status.lobby { background: var(--accent-gold); opacity: 0.6; }
+
   /* Responsive */
   /* ROOM TABS */
   .room-tabs {
@@ -3784,6 +3927,18 @@
               </div>
             </div>
           </div>
+          <!-- Admin Liquidity Engine Dashboard (platform wallet only) -->
+          <div id="adminDashboard" class="admin-dash" style="display:none">
+            <div class="admin-dash-header" onclick="toggleAdminDashboard()">
+              <div class="admin-dash-title">⚙ Liquidity Engine</div>
+              <div class="admin-dash-toggle" id="adminDashToggle">▼</div>
+            </div>
+            <div class="admin-dash-body" id="adminDashBody" style="display:none">
+              <div id="adminDashContent">
+                <div style="text-align:center;color:var(--text-muted);padding:16px;font-size:12px">Loading...</div>
+              </div>
+            </div>
+          </div>
           <div class="my-agents-grid" id="myAgentsGrid">
             <div class="no-agents-msg">
               <div class="icon">🤖</div>
@@ -4666,6 +4821,10 @@ function handleMessage(msg) {
 
     case 'myBackings':
       // Data available if needed for a dedicated backings view
+      break;
+
+    case 'adminDashboard':
+      if (msg.data && !msg.data.error) renderAdminDashboard(msg.data);
       break;
 
     case 'pong':
@@ -5768,6 +5927,7 @@ function showView(name) {
   const idx = names.indexOf(name);
   if (idx >= 0) tabs[idx].classList.add('active');
 
+  if (name !== 'myagents') stopAdminDashRefresh();
   if (name === 'agents') renderAgentsGrid();
   if (name === 'leaderboard') renderLeaderboard();
   if (name === 'myagents') refreshMyAgentsView();
@@ -6345,6 +6505,13 @@ function refreshMyAgentsView() {
   if (adminBar) {
     adminBar.style.display = (_admin && !isSandbox) ? 'block' : 'none';
   }
+  const adminDash = document.getElementById('adminDashboard');
+  if (adminDash) {
+    const showDash = _admin && !isSandbox;
+    adminDash.style.display = showDash ? 'block' : 'none';
+    if (showDash) startAdminDashRefresh();
+    else stopAdminDashRefresh();
+  }
 }
 
 // === Admin Credit ===
@@ -6357,6 +6524,109 @@ function adminCreditChips(amount) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'adminCredit', amount }));
   }
+}
+
+// === Admin Liquidity Engine Dashboard ===
+
+let _adminDashInterval = null;
+let _adminDashOpen = false;
+
+function toggleAdminDashboard() {
+  _adminDashOpen = !_adminDashOpen;
+  const body = document.getElementById('adminDashBody');
+  const toggle = document.getElementById('adminDashToggle');
+  if (body) body.style.display = _adminDashOpen ? 'block' : 'none';
+  if (toggle) toggle.classList.toggle('open', _adminDashOpen);
+  if (_adminDashOpen) requestAdminDashboard();
+}
+
+function requestAdminDashboard() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'getAdminDashboard' }));
+  }
+}
+
+function startAdminDashRefresh() {
+  stopAdminDashRefresh();
+  requestAdminDashboard();
+  _adminDashInterval = setInterval(requestAdminDashboard, 10000);
+}
+
+function stopAdminDashRefresh() {
+  if (_adminDashInterval) { clearInterval(_adminDashInterval); _adminDashInterval = null; }
+}
+
+function renderAdminDashboard(d) {
+  const el = document.getElementById('adminDashContent');
+  if (!el) return;
+
+  const fmt = n => (n || 0).toLocaleString();
+
+  // Visual loop
+  let html = `<div class="admin-dash-loop">
+    <div class="admin-dash-node"><div class="admin-dash-node-icon">💰</div><div class="admin-dash-node-label">Wallet</div><div class="admin-dash-node-value">${fmt(d.walletBalance)}</div></div>
+    <div class="admin-dash-arrow">→</div>
+    <div class="admin-dash-node"><div class="admin-dash-node-icon">🤖</div><div class="admin-dash-node-label">Agents</div><div class="admin-dash-node-value">${fmt(d.chipsInPlay)}</div></div>
+    <div class="admin-dash-arrow">→</div>
+    <div class="admin-dash-node"><div class="admin-dash-node-icon">🏦</div><div class="admin-dash-node-label">Rake</div><div class="admin-dash-node-value">${fmt(d.globalTotalRake)}</div></div>
+    <div class="admin-dash-arrow">→</div>
+    <div class="admin-dash-node"><div class="admin-dash-node-icon">♻️</div><div class="admin-dash-node-label">Recycled</div><div class="admin-dash-node-value">${d.autoTopUp.enabled ? 'ON' : 'OFF'}</div></div>
+  </div>`;
+
+  // Metrics grid
+  html += `<div class="admin-dash-metrics">
+    <div class="admin-dash-metric"><div class="admin-dash-metric-label">Total System</div><div class="admin-dash-metric-value">${fmt(d.totalSystemChips)}</div></div>
+    <div class="admin-dash-metric"><div class="admin-dash-metric-label">Hands Played</div><div class="admin-dash-metric-value">${fmt(d.totalHands)}</div></div>
+    <div class="admin-dash-metric"><div class="admin-dash-metric-label">Pending Rake</div><div class="admin-dash-metric-value">${fmt(d.pendingRake)}</div></div>
+    <div class="admin-dash-metric"><div class="admin-dash-metric-label">Viewers</div><div class="admin-dash-metric-value">${d.viewers}</div></div>
+    <div class="admin-dash-metric"><div class="admin-dash-metric-label">In Lobby</div><div class="admin-dash-metric-value">${fmt(d.chipsInLobby)}</div></div>
+  </div>`;
+
+  // Room breakdown
+  const roomEntries = Object.entries(d.rooms || {});
+  if (roomEntries.length) {
+    html += '<div class="admin-dash-rooms">';
+    for (const [rid, r] of roomEntries) {
+      html += `<div class="admin-dash-room">
+        <div class="admin-dash-room-name">${r.name || rid}</div>
+        <div class="admin-dash-room-stat">${r.agentCount} agents · ${fmt(r.totalChips)} chips</div>
+        <div class="admin-dash-room-stat">${r.tableCount} table${r.tableCount !== 1 ? 's' : ''}</div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // Agent table
+  const agents = d.agents || [];
+  if (agents.length) {
+    // Sort: playing first, then by chips descending
+    agents.sort((a, b) => {
+      if (a.status === 'playing' && b.status !== 'playing') return -1;
+      if (b.status === 'playing' && a.status !== 'playing') return 1;
+      return (b.chips || b.chipStack || 0) - (a.chips || a.chipStack || 0);
+    });
+    html += `<table class="admin-dash-agents-table">
+      <thead><tr><th></th><th>Agent</th><th>Room</th><th>Stack</th><th>P&L</th><th>Hands</th><th>Win%</th></tr></thead><tbody>`;
+    for (const a of agents) {
+      const chips = a.chips || a.chipStack || 0;
+      const pnl = a.pnl || 0;
+      const pnlColor = pnl > 0 ? 'var(--accent-green)' : pnl < 0 ? '#ef4444' : 'var(--text-muted)';
+      const pnlStr = pnl > 0 ? '+' + fmt(pnl) : fmt(pnl);
+      const winPct = a.handsPlayed > 0 ? ((a.handsWon / a.handsPlayed) * 100).toFixed(1) + '%' : '—';
+      html += `<tr>
+        <td><span class="admin-dash-status ${a.status}"></span></td>
+        <td>${a.emoji || '🤖'} ${a.name || 'Agent'}</td>
+        <td>${a.roomId || '—'}</td>
+        <td style="font-family:'Rajdhani';font-weight:700">${fmt(chips)}</td>
+        <td style="color:${pnlColor};font-family:'Rajdhani';font-weight:700">${pnlStr}</td>
+        <td>${a.handsPlayed || 0}</td>
+        <td>${winPct}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  }
+
+  el.innerHTML = html;
 }
 
 // === Auto Top-Up ===
