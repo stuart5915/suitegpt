@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Goods Tech — Free, Open Tools for the Decentralized Future</title>
+    <meta name="description" content="Open-source DeFi education, community-owned infrastructure, and free tools — built for everyone. Explore courses, simulators, AI poker, and more.">
+    <meta name="keywords" content="public goods, crypto public goods, defi education, open source, community tools, blockchain, base, free defi courses">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Public Goods Tech — Free, Open Tools for Everyone">
+    <meta property="og:description" content="Open-source DeFi education, community-owned infrastructure, and free tools built for the decentralized future.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://publicgoods.tech">
+    <meta property="og:site_name" content="Public Goods Tech">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <meta name="twitter:title" content="Public Goods Tech — Free, Open Tools for Everyone">
+    <meta name="twitter:description" content="Open-source DeFi education, community-owned infrastructure, and free tools built for the decentralized future.">
+
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Public Goods Tech",
+        "url": "https://publicgoods.tech",
+        "description": "Free, open tools and education for the decentralized future.",
+        "sameAs": [
+            "https://x.com/inclawbate",
+            "https://t.me/inclawbate",
+            "https://inclawbate.com"
+        ],
+        "foundingDate": "2025",
+        "knowsAbout": ["DeFi", "Public Goods", "Blockchain Education", "Open Source"]
+    }
+    </script>
+
+    <link rel="canonical" href="https://publicgoods.tech/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127759;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0b0f14;
+            --bg-card: #111820;
+            --bg-elevated: #161d27;
+            --border: #1e2a38;
+            --border-hover: #2d3f54;
+            --text: #e8ecf1;
+            --text-secondary: #8899aa;
+            --text-dim: #556677;
+            --accent: #34d399;
+            --accent-dim: rgba(52, 211, 153, 0.12);
+            --accent-glow: rgba(52, 211, 153, 0.08);
+            --accent-2: #60a5fa;
+            --accent-2-dim: rgba(96, 165, 250, 0.12);
+            --gold: #fbbf24;
+            --gold-dim: rgba(251, 191, 36, 0.12);
+            --coral: #f97066;
+            --coral-dim: rgba(249, 112, 102, 0.1);
+            --purple: #a78bfa;
+            --purple-dim: rgba(167, 139, 250, 0.12);
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+            --max-w: 1120px;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --radius-full: 9999px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+        a:hover { color: #6ee7b7; }
+
+        /* ── Nav ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 56px;
+            background: rgba(11, 15, 20, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--text); font-weight: 800; font-size: 0.95rem;
+            letter-spacing: -0.02em;
+        }
+        .nav-brand span { font-size: 1.1rem; }
+        .nav-links { display: flex; gap: 6px; }
+        .nav-link {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .nav-link:hover { color: var(--text); background: var(--accent-glow); }
+        .nav-link--cta {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+        .nav-link--cta:hover { background: rgba(52, 211, 153, 0.18); color: var(--accent); }
+
+        @media (max-width: 600px) {
+            .nav-links { display: none; }
+        }
+
+        /* ── Hero ── */
+        .hero {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: var(--mono);
+            font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border: 1px solid rgba(52, 211, 153, 0.15);
+            padding: 5px 16px;
+            border-radius: var(--radius-full);
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #e8ecf1 0%, #34d399 45%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.12rem;
+            color: var(--text-secondary);
+            max-width: 580px;
+            margin: 0 auto 32px;
+            line-height: 1.65;
+        }
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-weight: 700; font-size: 0.9rem;
+            transition: all 0.15s;
+            border: none; cursor: pointer;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #0b0f14;
+        }
+        .btn-primary:hover { opacity: 0.88; color: #0b0f14; }
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--border-hover); color: var(--text); }
+
+        /* ── Stats strip ── */
+        .stats-strip {
+            max-width: var(--max-w);
+            margin: 0 auto 64px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat-val {
+            font-family: var(--mono);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .stat-lbl {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        /* ── Section headers ── */
+        .section-header {
+            max-width: var(--max-w);
+            margin: 0 auto 32px;
+            padding: 0 24px;
+        }
+        .section-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        /* ── Project grid ── */
+        .grid {
+            max-width: var(--max-w);
+            margin: 0 auto 80px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .card-banner {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-banner img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            position: absolute; inset: 0;
+        }
+        .card-banner-emoji { font-size: 2.8rem; position: relative; z-index: 1; }
+
+        .card-body {
+            padding: 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .tag {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+        }
+        .tag-green { background: var(--accent-dim); color: var(--accent); }
+        .tag-blue { background: var(--accent-2-dim); color: var(--accent-2); }
+        .tag-gold { background: var(--gold-dim); color: var(--gold); }
+        .tag-coral { background: var(--coral-dim); color: var(--coral); }
+        .tag-purple { background: var(--purple-dim); color: var(--purple); }
+        .tag-live { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.15); }
+
+        .card-name {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .card-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: 14px;
+            flex: 1;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .card-stat-val {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+        .card-stat-lbl {
+            font-size: 0.58rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+
+        /* Card links */
+        .card-links {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+        }
+        .cl {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.68rem;
+            font-weight: 600;
+            transition: all 0.12s;
+            white-space: nowrap;
+        }
+        .cl:hover { border-color: var(--accent); color: var(--accent); }
+        .cl svg { width: 12px; height: 12px; flex-shrink: 0; }
+        .cl-primary {
+            background: var(--accent);
+            border-color: transparent;
+            color: #0b0f14;
+            font-weight: 700;
+        }
+        .cl-primary:hover { opacity: 0.88; color: #0b0f14; }
+        .cl-contract {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+        }
+        .cl-contract:hover { color: var(--accent-2); border-color: var(--accent-2); }
+
+        /* ── Mission section ── */
+        .mission {
+            max-width: var(--max-w);
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+        .mission-inner {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 48px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        .mission h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        .mission p {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .mission-values {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .mission-value {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 14px 18px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+        .mission-value-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            line-height: 1;
+            margin-top: 2px;
+        }
+        .mission-value-text h3 {
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .mission-value-text p {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 24px;
+            text-align: center;
+        }
+        .footer-inner {
+            max-width: var(--max-w);
+            margin: 0 auto;
+        }
+        .footer-powered {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+        .footer-powered a { color: var(--text-secondary); }
+        .footer-powered a:hover { color: var(--accent); }
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .footer-link {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        .footer-link:hover { color: var(--text-secondary); }
+        .footer-copy {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: repeat(2, 1fr); }
+            .mission-inner { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2.2rem; }
+            .hero { padding: 100px 20px 60px; }
+            .stats-strip { gap: 24px; }
+            .mission-inner { padding: 28px; }
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hero { animation: fadeUp 0.6s ease both; }
+        .stats-strip { animation: fadeUp 0.6s ease both 0.1s; }
+        .card { animation: fadeUp 0.4s ease both; }
+        .card:nth-child(1) { animation-delay: 0.08s; }
+        .card:nth-child(2) { animation-delay: 0.12s; }
+        .card:nth-child(3) { animation-delay: 0.16s; }
+        .card:nth-child(4) { animation-delay: 0.2s; }
+        .card:nth-child(5) { animation-delay: 0.24s; }
+        .card:nth-child(6) { animation-delay: 0.28s; }
+        .mission { animation: fadeUp 0.5s ease both 0.2s; }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span>&#127759;</span> Public Goods Tech
+    </a>
+    <div class="nav-links">
+        <a href="#projects" class="nav-link">Projects</a>
+        <a href="#mission" class="nav-link">Mission</a>
+        <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="nav-link nav-link--cta">Learn DeFi</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-badge">&#127759; Open &middot; Free &middot; Community-Owned</div>
+    <h1>Public Goods for the Decentralized Future</h1>
+    <p>Free education, open infrastructure, and community-owned tools &mdash; built for everyone, funded by the ecosystem, not by gatekeepers.</p>
+    <div class="hero-actions">
+        <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="btn btn-primary">Start Learning DeFi</a>
+        <a href="#projects" class="btn btn-secondary">Explore Projects</a>
+    </div>
+</section>
+
+<!-- Stats -->
+<div class="stats-strip">
+    <div class="stat">
+        <div class="stat-val">6</div>
+        <div class="stat-lbl">Free Courses</div>
+    </div>
+    <div class="stat">
+        <div class="stat-val">94</div>
+        <div class="stat-lbl">DeFi Terms</div>
+    </div>
+    <div class="stat">
+        <div class="stat-val">6</div>
+        <div class="stat-lbl">Live Projects</div>
+    </div>
+    <div class="stat">
+        <div class="stat-val">Base</div>
+        <div class="stat-lbl">Network</div>
+    </div>
+    <div class="stat">
+        <div class="stat-val">$0</div>
+        <div class="stat-lbl">Cost to Learn</div>
+    </div>
+</div>
+
+<!-- Projects -->
+<div class="section-header" id="projects">
+    <div class="section-label">Projects</div>
+    <h2 class="section-title">What We've Built</h2>
+</div>
+
+<div class="grid">
+
+    <!-- DeFiKnowledge -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #0a0f1e 0%, #152040 100%);">
+            <span class="card-banner-emoji">&#128218;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-blue">Education</span>
+                <span class="tag tag-live">Live</span>
+            </div>
+            <h3 class="card-name">DeFiKnowledge</h3>
+            <p class="card-desc">Free DeFi learning platform. Structured courses from beginner to advanced, 94-term glossary, protocol explorer, and sandbox simulator.</p>
+            <div class="card-stats">
+                <div><span class="card-stat-val">6</span> <span class="card-stat-lbl">Courses</span></div>
+                <div><span class="card-stat-val">94</span> <span class="card-stat-lbl">Terms</span></div>
+                <div><span class="card-stat-val">29</span> <span class="card-stat-lbl">Modules</span></div>
+            </div>
+            <div class="card-links">
+                <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="cl cl-primary">Visit Site &rarr;</a>
+                <a href="https://defiknowledge.com/learn" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    Courses
+                </a>
+                <a href="https://defiknowledge.com/glossary" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    Glossary
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PokerAI -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 100%);">
+            <span class="card-banner-emoji">&#127183;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-coral">Product</span>
+                <span class="tag tag-purple">On-Chain</span>
+                <span class="tag tag-live">Live</span>
+            </div>
+            <h3 class="card-name">PokerAI</h3>
+            <p class="card-desc">AI agents play Texas Hold'em with real on-chain chips. Spectate, bet on hands, and earn from the self-funding rake pool on Base.</p>
+            <div class="card-stats">
+                <div><span class="card-stat-val">6</span> <span class="card-stat-lbl">Agents</span></div>
+                <div><span class="card-stat-val">2.5%</span> <span class="card-stat-lbl">Rake</span></div>
+                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Network</span></div>
+            </div>
+            <div class="card-links">
+                <a href="https://inclawbate.com/pokerai" target="_blank" rel="noopener" class="cl cl-primary">Play Now &rarr;</a>
+                <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    @inclawbate
+                </a>
+                <a href="https://basescan.org/address/0x810a68b796D6C89F181133355EFe297A36e547D0" target="_blank" rel="noopener" class="cl cl-contract">0x810a...47D0</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLAWS Staking -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #0a1e1e 0%, #0d2e2e 100%);">
+            <span class="card-banner-emoji">&#129438;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-green">DeFi</span>
+                <span class="tag tag-live">Live</span>
+            </div>
+            <h3 class="card-name">CLAWS Staking</h3>
+            <p class="card-desc">Community-owned yield. Stake $CLAWS and earn daily rewards from ecosystem revenue. All value flows back to participants.</p>
+            <div class="card-stats">
+                <div><span class="card-stat-val">CLAWS</span> <span class="card-stat-lbl">Token</span></div>
+                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Network</span></div>
+            </div>
+            <div class="card-links">
+                <a href="https://inclawbate.com/stake" target="_blank" rel="noopener" class="cl cl-primary">Stake Now &rarr;</a>
+                <a href="https://inclawbate.com/tokens" target="_blank" rel="noopener" class="cl">Token Info</a>
+                <a href="https://basescan.org/address/0x7ca47B141639B893C6782823C0b219f872056379" target="_blank" rel="noopener" class="cl cl-contract">0x7ca4...6379</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FightFarm -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #1a1a0a 0%, #2d2d15 100%);">
+            <span class="card-banner-emoji">&#9876;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-purple">Game</span>
+                <span class="tag tag-gold">NFT</span>
+            </div>
+            <h3 class="card-name">FightFarm</h3>
+            <p class="card-desc">NFT farming meets PvP battles. Grow, train, and fight creatures for on-chain rewards.</p>
+            <div class="card-links">
+                <a href="https://fightfarm.app" target="_blank" rel="noopener" class="cl cl-primary">Visit Site &rarr;</a>
+                <a href="https://x.com/fabordeofficial" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    @fabordeofficial
+                </a>
+                <a href="https://t.me/fightfarmnft" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                    Telegram
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- AgentScape -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #150a2e 0%, #221545 100%);">
+            <span class="card-banner-emoji">&#127917;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-purple">Game</span>
+                <span class="tag tag-blue">Multiplayer</span>
+            </div>
+            <h3 class="card-name">AgentScape</h3>
+            <p class="card-desc">Multiplayer browser RPG where AI agents roam a shared persistent world. Real-time networking on Colyseus.</p>
+            <div class="card-links">
+                <a href="https://agentscape.app" target="_blank" rel="noopener" class="cl cl-primary">Play &rarr;</a>
+                <a href="https://agentscape.app/home" target="_blank" rel="noopener" class="cl">Landing Page</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- S4H -->
+    <div class="card">
+        <div class="card-banner" style="background: linear-gradient(135deg, #2e2a0a 0%, #3b3510 100%);">
+            <span class="card-banner-emoji">&#128591;</span>
+        </div>
+        <div class="card-body">
+            <div class="card-tags">
+                <span class="tag tag-gold">Philanthropy</span>
+                <span class="tag tag-green">DeFi</span>
+            </div>
+            <h3 class="card-name">Salvation 4 Humanity</h3>
+            <p class="card-desc">Ecosystem surplus funds real-world good. Stake S4H, earn rewards, and contribute to meaningful change.</p>
+            <div class="card-stats">
+                <div><span class="card-stat-val">S4H</span> <span class="card-stat-lbl">Token</span></div>
+                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Network</span></div>
+            </div>
+            <div class="card-links">
+                <a href="https://salvation4humanity.com" target="_blank" rel="noopener" class="cl cl-primary">Visit Site &rarr;</a>
+                <a href="https://t.me/salvation4humanity" target="_blank" rel="noopener" class="cl">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                    Telegram
+                </a>
+                <a href="https://basescan.org/address/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07" target="_blank" rel="noopener" class="cl cl-contract">0x30F5...B07</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Mission -->
+<div id="mission" class="mission">
+    <div class="mission-inner">
+        <div>
+            <h2>Why Public Goods?</h2>
+            <p>The best infrastructure is the kind everyone can use. We build tools that are free to access, open by default, and funded by the value they create &mdash; not by locking users in.</p>
+            <p>Every project here is either free to use, open-source, or returns value directly to its community. No VC gates. No paywalls on education. No extraction.</p>
+        </div>
+        <div class="mission-values">
+            <div class="mission-value">
+                <span class="mission-value-icon">&#128272;</span>
+                <div class="mission-value-text">
+                    <h3>Free Access</h3>
+                    <p>Education and core tools cost nothing. Learning DeFi shouldn't require DeFi.</p>
+                </div>
+            </div>
+            <div class="mission-value">
+                <span class="mission-value-icon">&#128257;</span>
+                <div class="mission-value-text">
+                    <h3>Value Flows Back</h3>
+                    <p>Revenue from the ecosystem goes to stakers and builders, not rent-seekers.</p>
+                </div>
+            </div>
+            <div class="mission-value">
+                <span class="mission-value-icon">&#127760;</span>
+                <div class="mission-value-text">
+                    <h3>Open Infrastructure</h3>
+                    <p>Anyone can build on top of what we've built. Apps, tools, integrations &mdash; all open.</p>
+                </div>
+            </div>
+            <div class="mission-value">
+                <span class="mission-value-icon">&#129309;</span>
+                <div class="mission-value-text">
+                    <h3>Community-Owned</h3>
+                    <p>No single entity controls it. The community governs, builds, and benefits together.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-inner">
+        <p class="footer-powered">Powered by <a href="https://inclawbate.com" target="_blank" rel="noopener">Inclawbate</a> &mdash; We Incubate Anything for Anyone</p>
+        <div class="footer-links">
+            <a href="https://inclawbate.com" target="_blank" rel="noopener" class="footer-link">Inclawbate</a>
+            <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="footer-link">DeFiKnowledge</a>
+            <a href="https://inclawbate.com/apps" target="_blank" rel="noopener" class="footer-link">App Store</a>
+            <a href="https://inclawbate.com/stake" target="_blank" rel="noopener" class="footer-link">Staking</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X / Twitter</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 Public Goods Tech. Built with purpose.</p>
+    </div>
+</footer>
+
+</body>
+</html>
