@@ -825,15 +825,15 @@ class RoomManager {
       const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._pending && (!b._activatedAt || Date.now() - b._activatedAt > 1000));
       if (backings.length === 0) continue;
 
-      // Backer's share = their original stake / total pool at start of hand
-      // This gives a fixed proportional ownership that doesn't drift
-      // e.g. agent 10K + backer 1K = backer owns 1K/11K = 9.09% of gains/losses
+      // Backer's share = their CURRENT value / total pool at start of hand
+      // Uses currentValue (not original chipsStaked) so the share stays proportional
+      // as the backer's value changes over time
       const totalPool = agent._startChips;
       if (totalPool <= 0) continue;
 
       const updates = [];
       for (const b of backings) {
-        const share = Math.min(1, b.chipsStaked / totalPool);
+        const share = Math.min(1, b.currentValue / totalPool);
         const backerDelta = Math.floor(delta * share);
         const newValue = Math.max(0, b.currentValue + backerDelta);
         updates.push({ id: b.id, currentValue: newValue });
