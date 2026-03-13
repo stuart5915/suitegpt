@@ -362,7 +362,7 @@ const WS_URL = location.hostname === 'localhost' || location.hostname === '127.0
   : 'wss://hopeful-curiosity-production-a507.up.railway.app';
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
-const VAULT_ADDRESS = 'REPLACE_WITH_VAULT_ADDRESS';
+const VAULT_ADDRESS = ''; // TODO: set after deploying CrashVault to Base
 const CLAWS_ABI = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
 const VAULT_ABI = ['function deposit(uint256 amount) external'];
 const BASE_CHAIN_ID = '0x2105'; // 8453
@@ -691,8 +691,8 @@ function updateNav() {
         <span style="font-weight:700">${user.balance.toLocaleString()}</span>
         <span class="token">CLAWS</span>
       </div>
-      <button class="btn btn-ghost" onclick="showDeposit()" style="font-size:11px">Deposit</button>
-      <button class="btn btn-ghost" onclick="showWithdraw()" style="font-size:11px">Withdraw</button>
+      ${VAULT_ADDRESS ? '<button class="btn btn-ghost" onclick="showDeposit()" style="font-size:11px">Deposit</button>' : ''}
+      ${VAULT_ADDRESS ? '<button class="btn btn-ghost" onclick="showWithdraw()" style="font-size:11px">Withdraw</button>' : ''}
       <button class="btn btn-dark" onclick="logout()">${escHtml(user.username.length > 10 ? user.username.slice(0,6)+'...' : user.username)}</button>
     `;
   } else {
