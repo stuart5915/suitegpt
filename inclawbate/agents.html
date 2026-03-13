@@ -207,6 +207,15 @@
         .explore-card-footer a { color: var(--lobster-400); text-decoration: none; font-weight: 600; }
         .empty-state { text-align: center; padding: var(--space-3xl) var(--space-lg); color: var(--text-dim); font-size: 0.9rem; }
 
+        /* ── Promo suggestion chips ── */
+        .promo-chip {
+            padding: 5px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: 999px; color: var(--text-dim); font-family: var(--font-body);
+            font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+        }
+        .promo-chip:hover { border-color: var(--lobster-300); color: var(--text-secondary); }
+        .promo-chip.selected { background: rgba(232,121,85,0.1); border-color: var(--lobster-400); color: var(--lobster-300); }
+
         /* ── Personality Studio ── */
         .persona-field { margin-bottom: var(--space-md); }
         .persona-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
@@ -323,6 +332,16 @@
                 <label>Token Symbol <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
                 <input type="text" id="wizToken" placeholder="e.g. CLAWS" maxlength="20" style="text-transform:uppercase">
                 <label>What does it promote? <span style="font-weight:400;color:var(--text-dim)">(1-2 sentences)</span></label>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">A token / crypto project</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">An app on Inclawbate</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">A brand or business</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">A community / DAO</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">Personal brand / influencer</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">NFT collection</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">A game</button>
+                    <button type="button" class="promo-chip" onclick="wizDescChip(this)">Something else</button>
+                </div>
                 <textarea id="wizDesc" placeholder="e.g. CLAWS is the Inclawbate ecosystem token. Stake it, earn rewards, use it across all Inclawbate apps." maxlength="300" style="min-height:50px"></textarea>
                 <div class="wiz-btns"><button class="wiz-btn wiz-btn-back" onclick="closeWizard()">Cancel</button><button class="wiz-btn wiz-btn-next" onclick="wizNext(1)">Next</button></div>
             </div>
@@ -1080,6 +1099,24 @@ function goToStep(n){_wizStep=n;for(var i=0;i<4;i++){document.getElementById('wi
 function wizNext(s){if(s===1&&!document.getElementById('wizName').value.trim()){toast('Enter a name',true);return;}goToStep(s);}
 function wizBack(s){goToStep(s);}
 function pickVibe(btn){document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');_vibe=btn.dataset.vibe;document.getElementById('wizCustom').style.display=_vibe==='custom'?'block':'none';}
+
+function wizDescChip(btn){
+    document.querySelectorAll('.promo-chip').forEach(function(c){c.classList.remove('selected');});
+    btn.classList.add('selected');
+    var desc=document.getElementById('wizDesc');
+    var type=btn.textContent.trim();
+    var starters={
+        'A token / crypto project':'It promotes $TOKEN — ',
+        'An app on Inclawbate':'It promotes an app that ',
+        'A brand or business':'It promotes a business that ',
+        'A community / DAO':'It promotes a community focused on ',
+        'Personal brand / influencer':'It posts as a personal brand that ',
+        'NFT collection':'It promotes an NFT collection that ',
+        'A game':'It promotes a game where players ',
+        'Something else':''
+    };
+    if(!desc.value.trim()){desc.value=starters[type]||'';desc.focus();}
+}
 
 async function wizConnectX(){
     var auth=getAuth();if(!auth||!auth.token){toast('Sign in first',true);return;}
