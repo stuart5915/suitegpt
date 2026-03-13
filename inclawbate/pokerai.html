@@ -6307,10 +6307,10 @@ function refreshMyAgentsView() {
   renderMyAgents();
   _applyOpenPanels();
 
-  // Show auto-top-up bar on USDC rooms when wallet connected
+  // Show auto-top-up bar only for platform wallet on USDC rooms
   const autoTopUpBar = document.getElementById('autoTopUpBar');
   if (autoTopUpBar) {
-    autoTopUpBar.style.display = (wallet && !isSandbox) ? 'block' : 'none';
+    autoTopUpBar.style.display = (isPlatformWallet && !isSandbox) ? 'block' : 'none';
   }
 
   // Show admin credit bar only for platform wallet
@@ -6448,7 +6448,7 @@ function renderMyAgents() {
           <button class="compact-btn btn-sitout" onclick="leaveTable('${agent.id}');this.textContent='...';this.disabled=true">✕</button>
         </div>
       </div>
-      <div id="compactExpand-${agent.id}" class="compact-expand">
+      <div id="compactExpand-${agent.id}" class="compact-expand" style="display:block">
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <div style="font-size:11px;color:var(--text-muted)">
             <span style="color:var(--accent-gold)">${formatChips(agent.chips)}</span> stack · started ${formatChips(agent.baseChips)} · ${agent.handsPlayed} hands · ${wr}% WR
