@@ -61,12 +61,17 @@ input::placeholder{color:rgba(136,117,170,0.5)}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--purple);border-radius:2px}
+.msg-bar{padding:10px 14px;border-radius:var(--radius);font-size:0.82rem;text-align:center;margin-bottom:12px;display:none;animation:fadeIn 0.2s}
+.msg-bar.error{display:block;background:rgba(255,51,102,0.12);border:1px solid rgba(255,51,102,0.3);color:var(--red)}
+.msg-bar.info{display:block;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--cyan)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:480px){.container{padding:20px}.stats-grid{grid-template-columns:1fr 1fr;gap:8px}}
 </style>
 </head>
 <body>
 <div class="container">
     <a href="/dashboard" style="font-size:0.78rem;color:var(--text-dim);text-decoration:none;display:inline-block;margin-bottom:12px">&larr; Back to Dashboard</a>
+    <div class="msg-bar" id="msgBar"></div>
     <h1>AutoBuy</h1>
     <p class="subtitle">DCA into $CLAWS - deposit once, buys happen automatically</p>
 
@@ -200,6 +205,14 @@ let pollTimer = null;
 
 // === WALLET ===
 
+function showMsg(text, type) {
+    var bar = document.getElementById('msgBar');
+    bar.textContent = text;
+    bar.className = 'msg-bar ' + (type || 'info');
+    clearTimeout(bar._t);
+    bar._t = setTimeout(function() { bar.className = 'msg-bar'; }, 6000);
+}
+
 var _eth = null; // Stored EIP-1193 provider reference
 
 function getEth() {
@@ -209,7 +222,7 @@ function getEth() {
 
 async function connectWallet() {
     var eth = getEth();
-    if (!eth) { alert('No wallet detected. Open this page in your wallet browser or install MetaMask.'); return; }
+    if (!eth) { showMsg('No wallet detected. Open this page in your wallet browser or install MetaMask.', 'error'); return; }
     _eth = eth;
 
     try {
@@ -233,7 +246,7 @@ async function connectWallet() {
                     });
                     provider = new ethers.BrowserProvider(eth);
                 } else {
-                    alert('Please switch to Base network in your wallet.');
+                    showMsg('Please switch to Base network in your wallet.', 'error');
                     return;
                 }
             }
@@ -246,7 +259,7 @@ async function connectWallet() {
         await checkPosition();
     } catch (e) {
         console.error('Wallet connection error:', e);
-        alert('Connection failed: ' + (e.shortMessage || e.message || e));
+        showMsg('Connection failed: ' + (e.shortMessage || e.message || e), 'error');
     }
 }
 
@@ -316,7 +329,7 @@ function showComplete(totalClaws) {
 
 async function doDeposit() {
     if (!contract || !signer) {
-        alert('Wallet not connected. Click "Connect Wallet" first.');
+        showMsg('Wallet not connected. Click "Connect Wallet" first.', 'error');
         return;
     }
 
@@ -324,10 +337,10 @@ async function doDeposit() {
     const interval = parseInt(document.getElementById('interval').value);
     const numBuys = calcNumBuys();
 
-    if (!totalEth || totalEth <= 0) { alert('Enter total ETH to spend'); return; }
-    if (!document.getElementById('endDate').value) { alert('Pick an end date'); return; }
-    if (numBuys < 2) { alert('End date too soon - need at least 2 buy intervals'); return; }
-    if (numBuys > 1000) { alert('Too many buys (max 1000). Pick a shorter range or slower frequency.'); return; }
+    if (!totalEth || totalEth <= 0) { showMsg('Enter total ETH to spend', 'error'); return; }
+    if (!document.getElementById('endDate').value) { showMsg('Pick an end date', 'error'); return; }
+    if (numBuys < 2) { showMsg('End date too soon - need at least 2 buy intervals', 'error'); return; }
+    if (numBuys > 1000) { showMsg('Too many buys (max 1000). Pick a shorter range or slower frequency.', 'error'); return; }
 
     const btn = document.getElementById('depositBtn');
     btn.disabled = true;
@@ -359,11 +372,11 @@ async function doDeposit() {
         if (msg.includes('user rejected') || msg.includes('denied') || msg.includes('User denied')) {
             // User cancelled - do nothing
         } else if (msg.includes('Already active')) {
-            alert('You already have an active DCA position. Withdraw first.');
+            showMsg('You already have an active DCA position. Withdraw first.', 'error');
         } else if (msg.includes('insufficient funds') || msg.includes('INSUFFICIENT_FUNDS')) {
-            alert('Not enough ETH in your wallet for this deposit + gas.');
+            showMsg('Not enough ETH in your wallet for this deposit + gas.', 'error');
         } else {
-            alert('Transaction failed: ' + msg.slice(0, 200));
+            showMsg('Transaction failed: ' + msg.slice(0, 200), 'error');
         }
     } finally {
         btn.disabled = false;
@@ -374,28 +387,54 @@ async function doDeposit() {
 // === WITHDRAW ===
 
 async function doWithdraw() {
+    console.log('[AutoBuy] doWithdraw called, contract:', !!contract, 'signer:', !!signer);
     if (!contract || !signer) {
-        alert('Wallet not connected. Please reconnect.');
+        showMsg('Wallet not connected. Please reconnect.', 'error');
         return;
     }
-    if (!confirm('Stop your DCA and withdraw remaining ETH?')) return;
 
     const btn = document.querySelector('.withdraw-btn');
+
+    // Two-click confirmation: first click shows warning, second click executes
+    if (!btn.dataset.confirmed) {
+        btn.dataset.confirmed = '1';
+        btn.textContent = 'Confirm Withdraw? Click Again';
+        btn.style.background = 'rgba(255,51,102,0.15)';
+        setTimeout(function() {
+            btn.dataset.confirmed = '';
+            btn.textContent = 'Stop & Withdraw Remaining ETH';
+            btn.style.background = '';
+        }, 4000);
+        return;
+    }
+    btn.dataset.confirmed = '';
+
     btn.disabled = true;
     btn.innerHTML = '<span class="loading"></span>Withdrawing...';
 
     try {
-        // Ensure signer is still valid and on Base
+        // Re-create signer from stored provider to avoid stale references
         var eth = getEth();
-        if (eth) {
-            const network = await provider.getNetwork();
-            if (Number(network.chainId) !== BASE_CHAIN_ID) {
-                btn.innerHTML = '<span class="loading"></span>Switching to Base...';
-                await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-                provider = new ethers.BrowserProvider(eth);
-                signer = await provider.getSigner();
-                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            }
+        if (!eth) {
+            showMsg('Wallet provider lost. Please refresh and reconnect.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Stop & Withdraw Remaining ETH';
+            return;
+        }
+
+        // Always refresh provider/signer before tx to avoid stale state
+        provider = new ethers.BrowserProvider(eth);
+        signer = await provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        // Switch to Base if needed
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== BASE_CHAIN_ID) {
+            btn.innerHTML = '<span class="loading"></span>Switching to Base...';
+            await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            provider = new ethers.BrowserProvider(eth);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         }
 
         btn.innerHTML = '<span class="loading"></span>Confirm in wallet...';
@@ -404,13 +443,14 @@ async function doWithdraw() {
         await tx.wait();
         await checkPosition();
     } catch (e) {
+        console.error('[AutoBuy] withdraw error:', e);
         const msg = e.reason || e.shortMessage || e.message || String(e);
         if (!msg.includes('user rejected') && !msg.includes('denied') && !msg.includes('User denied')) {
             if (msg.includes('No active position') || msg.includes('Not active')) {
-                alert('No active position to withdraw from.');
+                showMsg('No active position to withdraw from.', 'info');
                 await checkPosition();
             } else {
-                alert('Withdraw failed: ' + msg.slice(0, 200));
+                showMsg('Withdraw failed: ' + msg.slice(0, 200), 'error');
             }
         }
     } finally {
