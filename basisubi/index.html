@@ -97,6 +97,9 @@
         .nav-links li { flex-shrink: 0; }
         .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
         .nav-links a:hover { color: var(--text); }
+        .nav-wallet-btn { background: var(--accent-dim); border: 1px solid var(--border-accent); color: var(--accent-bright); font-family: var(--mono); font-size: 0.75rem; font-weight: 500; padding: 7px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+        .nav-wallet-btn:hover { background: var(--accent-glow); color: var(--text); }
+        .nav-wallet-btn.connected { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 
         /* ═══ BUTTONS ═══ */
         .btn {
@@ -1336,6 +1339,7 @@
             .stats-inner { grid-template-columns: 1fr 1fr; }
             .nav-links { gap: 12px; }
             .nav-links a { font-size: 0.68rem; }
+            .nav-wallet-btn { font-size: 0.65rem; padding: 5px 10px; }
             .hero-orbital { width: 350px; height: 350px; }
             /* vault mobile */
             #sim-canvas { height: 240px; }
@@ -1532,6 +1536,7 @@
                 <li><a href="#marketplace">Vaults</a></li>
                 <li><a href="/dashboard" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
             </ul>
+            <button class="nav-wallet-btn" id="nav-wallet-btn" onclick="navConnectWallet()">Connect Wallet</button>
         </div>
     </nav>
 
@@ -4573,9 +4578,13 @@
                 }
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
-                btn.textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                var shortAddr2 = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                btn.textContent = shortAddr2;
                 btn.classList.add('connected');
                 btn.disabled = false;
+                window._navWalletAddress = userAddress;
+                var navBtn = document.getElementById('nav-wallet-btn');
+                if (navBtn) { navBtn.textContent = shortAddr2; navBtn.classList.add('connected'); }
                 refreshPositions();
             } catch(e) {
                 console.error('Connect error:', e);
@@ -6382,6 +6391,11 @@
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 var provider = new ethers.BrowserProvider(window.ethereum);
                 dashSigner = await provider.getSigner();
+                var addr = await dashSigner.getAddress();
+                var short = addr.slice(0, 6) + '...' + addr.slice(-4);
+                window._navWalletAddress = addr;
+                var navBtn = document.getElementById('nav-wallet-btn');
+                if (navBtn) { navBtn.textContent = short; navBtn.classList.add('connected'); }
                 await loadDashVaults();
             } catch(e) {
                 alert('Wallet connection failed: ' + e.message);
@@ -6662,6 +6676,48 @@
 
         // Load on page init
         loadMarketplaceVaults();
+    })();
+
+    // ═══ GLOBAL NAV WALLET ═══
+    window.navConnectWallet = async function() {
+        var btn = document.getElementById('nav-wallet-btn');
+        if (!window.ethereum) { alert('Install MetaMask or a compatible wallet'); return; }
+        btn.disabled = true; btn.textContent = 'Connecting...';
+        try {
+            var p = new ethers.BrowserProvider(window.ethereum);
+            await p.send('eth_requestAccounts', []);
+            var net = await p.getNetwork();
+            if (Number(net.chainId) !== 8453) {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+                p = new ethers.BrowserProvider(window.ethereum);
+            }
+            var s = await p.getSigner();
+            var addr = await s.getAddress();
+            var short = addr.slice(0, 6) + '...' + addr.slice(-4);
+            btn.textContent = short; btn.classList.add('connected'); btn.disabled = false;
+            window._navWalletAddress = addr;
+            // Sync toolkit connect button
+            var tkBtn = document.getElementById('tk-connect-btn');
+            if (tkBtn) { tkBtn.textContent = short; tkBtn.classList.add('connected'); }
+        } catch(e) {
+            btn.disabled = false; btn.textContent = 'Connect Wallet';
+            if (e.code !== 4001) alert('Connection failed: ' + e.message);
+        }
+    };
+
+    // Auto-detect already-connected wallet
+    (async function() {
+        if (!window.ethereum) return;
+        try {
+            var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+                var addr = accounts[0];
+                var short = addr.slice(0, 6) + '...' + addr.slice(-4);
+                var btn = document.getElementById('nav-wallet-btn');
+                if (btn) { btn.textContent = short; btn.classList.add('connected'); }
+                window._navWalletAddress = addr;
+            }
+        } catch(e) {}
     })();
     </script>
 
