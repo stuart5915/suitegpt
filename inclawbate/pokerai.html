@@ -4232,6 +4232,12 @@ let pingInterval = null;
 // $POKERAI AIRDROP APY
 // ============================================================
 let isPlatformWallet = false;
+const PLATFORM_WALLET_ADDR = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+function isAdmin() {
+  if (isPlatformWallet) return true;
+  const w = getWallet();
+  return w && w.address && w.address.toLowerCase() === PLATFORM_WALLET_ADDR;
+}
 const AIRDROP_TOKENS = 15_000_000_000;  // 15B tokens
 const AIRDROP_DAYS = 90;
 const TOKEN_SUPPLY = 100_000_000_000;   // 100B total supply
@@ -4558,15 +4564,16 @@ function handleMessage(msg) {
     case 'walletBalance':
       walletBalance = msg.data.balance || 0;
       if (msg.data.isPlatformWallet !== undefined) {
-        const changed = msg.data.isPlatformWallet !== isPlatformWallet;
         isPlatformWallet = msg.data.isPlatformWallet;
-        // Update admin bar visibility whenever platform status is confirmed
+      }
+      // Always update admin bar visibility (uses isAdmin() which checks both server flag AND wallet address)
+      {
         const _isSandbox = activeRoom === 'sandbox';
+        const _isAdm = isAdmin();
         const _autoBar = document.getElementById('autoTopUpBar');
         const _adminBar = document.getElementById('adminCreditBar');
-        if (_autoBar) _autoBar.style.display = (isPlatformWallet && !_isSandbox) ? 'block' : 'none';
-        if (_adminBar) _adminBar.style.display = (isPlatformWallet && !_isSandbox) ? 'block' : 'none';
-        if (changed) refreshMyAgentsView();
+        if (_autoBar) _autoBar.style.display = (_isAdm && !_isSandbox) ? 'block' : 'none';
+        if (_adminBar) _adminBar.style.display = (_isAdm && !_isSandbox) ? 'block' : 'none';
       }
       updateWalletUI();
       break;
@@ -6314,16 +6321,15 @@ function refreshMyAgentsView() {
   renderMyAgents();
   _applyOpenPanels();
 
-  // Show auto-top-up bar only for platform wallet on USDC rooms
+  // Show admin bars only for platform wallet on USDC rooms
+  const _admin = isAdmin();
   const autoTopUpBar = document.getElementById('autoTopUpBar');
   if (autoTopUpBar) {
-    autoTopUpBar.style.display = (isPlatformWallet && !isSandbox) ? 'block' : 'none';
+    autoTopUpBar.style.display = (_admin && !isSandbox) ? 'block' : 'none';
   }
-
-  // Show admin credit bar only for platform wallet
   const adminBar = document.getElementById('adminCreditBar');
   if (adminBar) {
-    adminBar.style.display = (isPlatformWallet && !isSandbox) ? 'block' : 'none';
+    adminBar.style.display = (_admin && !isSandbox) ? 'block' : 'none';
   }
 }
 
