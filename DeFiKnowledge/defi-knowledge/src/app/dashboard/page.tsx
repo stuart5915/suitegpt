@@ -37,25 +37,32 @@ export default function DashboardPage() {
           <h2>Quick Actions</h2>
           <div className="actions-grid">
             <ActionCard
+              icon="📚"
+              title="Learn DeFi"
+              description="6 structured courses from beginner to advanced"
+              href="/learn"
+              color="blue"
+            />
+            <ActionCard
+              icon="📖"
+              title="Glossary"
+              description="Browse 94 DeFi terms and definitions"
+              href="/glossary"
+              color="green"
+            />
+            <ActionCard
+              icon="🔍"
+              title="Explore"
+              description="Discover DeFi protocols and actions"
+              href="/explore"
+              color="purple"
+            />
+            <ActionCard
               icon="🎮"
               title="Simulator"
               description="Practice with mock funds across all platforms"
               href="/simulator"
               color="purple"
-            />
-            <ActionCard
-              icon="📚"
-              title="Learn DeFi"
-              description="Educational guides and concept explainers"
-              href="/learn"
-              color="blue"
-            />
-            <ActionCard
-              icon="🚀"
-              title="Get Started"
-              description="Ready for real DeFi? See recommended platforms"
-              href="/get-started"
-              color="green"
             />
           </div>
         </section>

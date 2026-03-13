@@ -20,14 +20,17 @@ export default function Navbar() {
         <Link href="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>
           Dashboard
         </Link>
-        <Link href="/simulator" className={`nav-link ${pathname === '/simulator' ? 'active' : ''}`}>
-          Simulator
-        </Link>
-        <Link href="/learn" className={`nav-link ${pathname === '/learn' ? 'active' : ''}`}>
+        <Link href="/learn" className={`nav-link ${pathname?.startsWith('/learn') ? 'active' : ''}`}>
           Learn
         </Link>
-        <Link href="/get-started" className={`nav-link ${pathname === '/get-started' ? 'active' : ''}`}>
-          Get Started
+        <Link href="/glossary" className={`nav-link ${pathname === '/glossary' ? 'active' : ''}`}>
+          Glossary
+        </Link>
+        <Link href="/explore" className={`nav-link ${pathname === '/explore' ? 'active' : ''}`}>
+          Explore
+        </Link>
+        <Link href="/simulator" className={`nav-link ${pathname?.startsWith('/simulator') ? 'active' : ''}`}>
+          Simulator
         </Link>
       </div>
 
