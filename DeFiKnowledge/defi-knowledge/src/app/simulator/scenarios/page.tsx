@@ -34,9 +34,8 @@ export default function ScenariosPage() {
 
                     <div style={{ background: 'linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%)', border: '1px solid #3d3d5c', borderRadius: '16px', padding: '48px', textAlign: 'center' }}>
                         <span style={{ fontSize: '64px', display: 'block', marginBottom: '16px' }}>🚧</span>
-                        <p style={{
-                            color: #94a3b8', marginBottom: '16px' }}>Scenarios coming soon!</p>
-                                <p style = {{ color: '#64748b', fontSize: '14px' }}>We're creating guided challenges to help you learn:
+                        <p style={{ color: '#94a3b8', marginBottom: '16px' }}>Scenarios coming soon!</p>
+                        <p style={{ color: '#64748b', fontSize: '14px' }}>We&apos;re creating guided challenges to help you learn:
                         <br />• Your first swap
                         <br />• Earning yield
                         <br />• Managing risk
