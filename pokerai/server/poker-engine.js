@@ -173,6 +173,7 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   let rules = agent.rules || {};
   const headsUp = playerCount <= 2; // much looser play with fewer opponents
   const promptMods = _parsePrompt(agent);
+  let rawRankStrength = 0; // raw hand rank before noise/boosts (for rule checks)
 
   let strength = 0.3;
   if (communityCards.length > 0) {
@@ -181,7 +182,8 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     //   high card=0.12, pair=0.45, two pair=0.62, trips=0.75,
     //   straight=0.82, flush=0.86, full house=0.91, quads=0.95, straight flush=0.98
     const RANK_STRENGTH = [0.12, 0.45, 0.62, 0.75, 0.82, 0.86, 0.91, 0.95, 0.98];
-    strength = RANK_STRENGTH[handEval.rank] * 0.85 + Math.random() * 0.15;
+    rawRankStrength = RANK_STRENGTH[handEval.rank];
+    strength = rawRankStrength * 0.85 + Math.random() * 0.15;
     // Hands are relatively stronger with fewer opponents
     if (headsUp) strength = Math.min(0.98, strength + 0.20);
     else if (playerCount <= 4) strength = Math.min(0.98, strength + 0.08);
@@ -236,13 +238,19 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   // Cap raises: 2-4x BB preflop, up to 2x pot post-flop (never more than 25% of stack)
   const potBasedMax = communityCards.length === 0
     ? Math.max(minRaise, bb * 4)
-    : Math.max(minRaise, Math.min(pot * 2, Math.floor(agent.chips * 0.25)));
+    : Math.max(minRaise, Math.min(pot * 2, Math.floor(agent.chips * 0.5)));
   const maxRaise = Math.min(agent.chips, potBasedMax);
   const raiseAmt = Math.max(minRaise, Math.floor(minRaise + Math.random() * (maxRaise - minRaise)));
 
   // If can't afford to call, either all-in or fold
   if (toCall >= agent.chips) {
-    if (rules.neverAllIn && promptMods.allInBoost <= 0) return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
+    // neverAllIn: call (commit remaining chips) instead of folding if hand is decent or pot odds are good
+    if (rules.neverAllIn && promptMods.allInBoost <= 0) {
+      if (strength > 0.35 || (pot > 0 && agent.chips <= pot * 0.3)) {
+        return { type: 'call', label: `Call ${agent.chips} (all chips)`, amount: agent.chips };
+      }
+      return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
+    }
     // Require decent hand strength to commit entire stack (prompt can lower threshold)
     const allInThreshold = Math.max(0.2, 0.5 - (promptMods.allInBoost || 0) / 100);
     if (strength > allInThreshold || (strength > allInThreshold - 0.15 && r < 20)) {
@@ -280,9 +288,9 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 
   // === RULE: Slow Play — sometimes trap with strong (but not monster) hands ===
   if (rules.slowPlay && decision.type === 'raise') {
-    // Never slow-play monsters (full house+ = 0.86+) — always bet/raise to build pot
-    // For strong hands (0.65-0.85), trap ~50% of the time
-    if (strength >= 0.65 && strength < 0.86 && Math.random() < 0.5) {
+    // Never slow-play monsters (full house+ raw 0.91+) — always bet/raise to build pot
+    // For strong hands (two pair through flush, raw 0.62-0.86), trap ~50% of the time
+    if (rawRankStrength >= 0.62 && rawRankStrength < 0.91 && Math.random() < 0.5) {
       if (toCall > 0) {
         decision = { type: 'call', label: `Call ${toCall} (trap)`, amount: toCall };
       } else {
@@ -358,36 +366,35 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
 
   if (agent.style === 'aggressive') {
     if (strength > 0.4 && r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.25 || r < 25) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.25 || r < 10) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
     if (strength > 0.5 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.4 || r < 15) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.4) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
     if (r < agent.bluffPct * 0.4 && agent.chips > raiseAmt) return { type: 'raise', label: `Bluff Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.3 || r < 40) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.3 || r < 20) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'mathematical') {
     const potOdds = pot > 0 ? toCall / (pot + toCall) : 1;
-    if (strength > potOdds + 0.2 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > potOdds + 0.15 && r < 45 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
     if (strength > potOdds) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'chaotic') {
     const chaos = Math.random();
-    if (chaos < 0.2 && agent.chips > raiseAmt) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
-    // Only all-in with strong hands (strength > 0.7)
-    if (chaos < 0.3 && strength > 0.7 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
-    if (chaos < 0.7) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (chaos < 0.25 && agent.chips > raiseAmt) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
+    if (chaos < 0.35 && strength > 0.6 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    if (chaos < 0.65) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   // balanced
-  if (strength > 0.65 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-  if (strength > 0.4 || r < 25) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+  if (strength > 0.5 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+  if (strength > 0.35 || r < 10) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   return { type: 'fold', label: 'Fold', amount: 0 };
 }
 
@@ -642,7 +649,8 @@ class PokerEngine {
     // Betting continues until everyone has acted and all bets are matched
     let n = this.agents.length;
     let startIdx = this.currentTurnIndex;
-    let lastRaiserIdx = -1;
+    // Preflop: BB acts last (gets option to raise even if everyone limps)
+    let lastRaiserIdx = (bbIdx >= 0) ? bbIdx : -1;
     let actedCount = 0;
 
     while (true) {
