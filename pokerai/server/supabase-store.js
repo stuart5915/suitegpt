@@ -211,6 +211,17 @@ class SupabaseStore {
     });
   }
 
+  async getTotalDepositedChips(walletAddress) {
+    const addr = walletAddress.toLowerCase();
+    const { data, error } = await this.supabase
+      .from('poker_transactions')
+      .select('chip_amount')
+      .eq('wallet_address', addr)
+      .eq('type', 'deposit');
+    if (error) { console.error('[SupabaseStore] getTotalDepositedChips failed:', error.message); return 0; }
+    return (data || []).reduce((sum, r) => sum + (r.chip_amount || 0), 0);
+  }
+
   // =========== Backings ===========
 
   getBackingsForAgent(agentId) {
