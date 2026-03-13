@@ -8,6 +8,31 @@ const BETWEEN_HANDS_DELAY = 3000;
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Variable thinking time — bigger decisions take longer
+function getThinkTime(agent, pot, currentHighBet, roundBet) {
+  const toCall = Math.max(0, currentHighBet - roundBet);
+  let ms = 2000; // base: 2s minimum
+
+  // Facing a bet — pressure scales with stack commitment
+  if (toCall > 0) {
+    const pressure = toCall / Math.max(agent.chips, 1);
+    if (pressure > 0.5) ms += 4000;       // half stack+ to call
+    else if (pressure > 0.25) ms += 2500;  // quarter stack
+    else if (pressure > 0.1) ms += 1000;   // meaningful bet
+    else ms += 500;                         // small bet
+  }
+
+  // Bigger pot = more at stake
+  const potRatio = pot / Math.max(agent.chips, 1);
+  if (potRatio > 1) ms += 2000;
+  else if (potRatio > 0.5) ms += 1000;
+
+  // Randomness ±30% so agents don't feel robotic
+  ms = Math.floor(ms * (0.7 + Math.random() * 0.6));
+
+  return Math.max(2000, Math.min(12000, ms));
+}
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -608,10 +633,10 @@ class PokerEngine {
         return true;
       }
 
-      // Show "Thinking..." on this agent
+      // Show "Thinking..." on this agent — variable delay based on decision pressure
       this.currentTurnIndex = startIdx;
       this.broadcastGameState();
-      await sleep(ACTION_DELAY);
+      await sleep(getThinkTime(agent, this.pot, this.currentHighBet, agent.roundBet));
 
       const activePlayers = this.agents.filter(a => !a.folded).length;
       const action = agentDecide(agent, this.communityCards, this.pot, this.bb, this.currentHighBet, agent.roundBet, activePlayers);
