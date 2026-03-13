@@ -3420,7 +3420,7 @@ function init() {
     // Init buy credits panel
     initBuyCredits();
 
-    loadOverview();
+    loadOverview().then(function() { loadInsights(); });
     loadProjects();
     loadUserProjects();
     loadStakingPools();
@@ -3587,7 +3587,7 @@ async function rejectProject(id) {
 
     // Check initial hash
     var hash = window.location.hash.replace('#', '');
-    if (hash && ['projects','tokens','apps','staking','agents','incubation'].indexOf(hash) !== -1) {
+    if (hash && ['projects','tokens','apps','staking','agents','insights','incubation'].indexOf(hash) !== -1) {
         switchTab(hash);
     } else {
         // Default: "All" is active
@@ -3596,6 +3596,72 @@ async function rejectProject(id) {
         });
     }
 })();
+
+// ══════════════════════════════════════
+// INSIGHTS
+// ══════════════════════════════════════
+
+async function loadInsights() {
+    const auth = getStoredAuth();
+    if (!auth) return;
+
+    // Use cached data from loadOverview where possible
+    const apps = _cachedUserApps || [];
+    const totalUpvotes = apps.reduce(function(sum, a) { return sum + (a.upvote_count || 0); }, 0);
+
+    var el;
+    el = document.getElementById('insAppsCreated');
+    if (el) el.textContent = apps.length;
+    el = document.getElementById('insUpvotes');
+    if (el) el.textContent = totalUpvotes;
+
+    // Credits
+    var creditsEl = document.getElementById('profileCredits');
+    var credits = creditsEl ? creditsEl.textContent.replace(/,/g, '') : '0';
+    el = document.getElementById('insCredits');
+    if (el) el.textContent = Number(credits).toLocaleString();
+
+    // Saved apps count
+    try {
+        var savedResp = await fetch(API_BASE + '/apps?saved=true', { headers: authHeaders() });
+        if (savedResp.ok) {
+            var savedData = await savedResp.json();
+            el = document.getElementById('insSaved');
+            if (el) el.textContent = savedData.apps ? savedData.apps.length : 0;
+        }
+    } catch(e) {}
+
+    // Staking positions count
+    var stakingRows = document.querySelectorAll('#myStakingPositionsList .staking-position-card');
+    el = document.getElementById('insStaking');
+    if (el) el.textContent = stakingRows.length;
+
+    // Projects count
+    var projectRows = document.querySelectorAll('#projectsList .project-card, #projectsList .overview-card');
+    el = document.getElementById('insProjects');
+    if (el) el.textContent = projectRows.length;
+
+    // App performance list
+    var listEl = document.getElementById('insAppsList');
+    if (!listEl) return;
+    if (!apps.length) {
+        listEl.innerHTML = '<div class="overview-empty"><p>No apps yet. <a href="/build" style="color:var(--seafoam-400)">Build one</a></p></div>';
+        return;
+    }
+    var sorted = apps.slice().sort(function(a, b) { return (b.upvote_count || 0) - (a.upvote_count || 0); });
+    listEl.innerHTML = sorted.map(function(a) {
+        var cat = a.category || 'other';
+        var price = a.claws_price > 0 ? a.claws_price + ' CLAWS' : 'Free';
+        return '<div class="insight-app-row">' +
+            '<span class="insight-app-name">' + esc(a.name) + '</span>' +
+            '<div class="insight-app-stats">' +
+                '<span class="insight-app-stat"><span class="stat-icon">\u{1F44D}</span> ' + (a.upvote_count || 0) + '</span>' +
+                '<span class="insight-app-stat"><span class="stat-icon">\u{1F3F7}</span> ' + esc(cat) + '</span>' +
+                '<span class="insight-app-stat">' + esc(price) + '</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
 
 // ══════════════════════════════════════
 // AI AGENTS PANEL

@@ -19,10 +19,10 @@
 | # | Task | Status | Why it matters |
 |---|------|--------|----------------|
 | 6 | "Create Account" flow — wallet created on signup | done | Removes wallet barrier for normies. Like signing in. |
-| 7 | 50 apps goal + LLM chat that suggests/ideates apps | todo | Platform value scales with app count. AI fills gaps. |
+| 7 | 50 apps goal + LLM chat that suggests/ideates apps | done | 98 apps live. AI chat on /apps page. |
 | 8 | AgentScape as a game in the app store | done | Cross-pollination between products. |
-| 9 | Insights tab in app | todo | Users see their activity, engagement, earnings. |
-| 10 | Profile section — all your stuff in one place | todo | Platform stickiness. Identity layer. |
+| 9 | Insights tab in dashboard | done | Stats grid + app performance list in dashboard. |
+| 10 | Profile section — all your stuff in one place | done | Dashboard IS the profile. |
 | 11 | Track running apps — who's using what, logging activity | todo | Data for reward distribution + insights. |
 | 12 | ChatGPT integration — suggest apps | todo | AI-powered discovery. |
 
@@ -111,6 +111,10 @@
 | "How to Build a Business" article | 2026-03-12 | Published. Covers full flywheel + "message us" CTA. |
 | "Create Account" flow (Privy social login) | 2026-03-12 | Google + Email login with embedded wallets. Nav shows email, dashboard has wallet card. |
 | AgentScape in app store + daily evolution system | 2026-03-12 | Listed in /apps. World evolves daily via cron. Chronicle page at agentscape.app/chronicle. |
+| SEO landing pages + dynamic sitemap for all 98+ apps | 2026-03-12 | Server-rendered /app/{slug} pages with meta tags, OG, JSON-LD. Dynamic XML sitemap at /sitemap.xml. |
+| 50 apps goal (98 live) + AI chat on /apps | 2026-03-12 | Surpassed goal. AI chat suggests apps. |
+| Profile/Dashboard consolidated | 2026-03-12 | Dashboard is the profile — wallet, credits, apps, staking, agents all in one place. |
+| Insights tab in dashboard | 2026-03-12 | Stats grid (apps, upvotes, credits, saved, staking, projects) + app performance breakdown. |
 | AutoBuy CLAWS tool | 2026-03-12 | Smart contract + UI + cron keeper. Live on Base. |
 | CLAWS tokenomics article | 2026-03-06 | Published. |
 | Wallet selector modal (multi-wallet + mobile deep links) | 2026-03-06 | Shipped. All pages. |
