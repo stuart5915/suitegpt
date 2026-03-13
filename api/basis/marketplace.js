@@ -19,6 +19,7 @@ export default async function handler(req, res) {
       const sortCol = sort === 'apy' ? 'estimated_apy'
                     : sort === 'return' ? 'total_return_pct'
                     : sort === 'newest' ? 'created_at'
+                    : sort === 'active' ? 'rebalance_count'
                     : 'tvl_usdc';
 
       let query = supabase

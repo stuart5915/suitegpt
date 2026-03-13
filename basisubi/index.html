@@ -1636,6 +1636,7 @@
             <div class="mp-sort-bar fade-in">
                 <button class="mp-sort-btn active" onclick="mpSort('apy')" id="mp-sort-apy">APY</button>
                 <button class="mp-sort-btn" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
+                <button class="mp-sort-btn" onclick="mpSort('active')" id="mp-sort-active">Most Active</button>
                 <button class="mp-sort-btn" onclick="mpSort('newest')" id="mp-sort-newest">Newest</button>
                 <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mp-count">0 vaults</span>
                 <button class="mp-create-btn" onclick="openCreateVaultModal()">+ Create Vault</button>
@@ -1658,36 +1659,80 @@
                     </div>
                     <button class="mp-detail-close" onclick="closeVaultDetail()">&times;</button>
                 </div>
+
+                <!-- Est APY hero -->
+                <div style="text-align:center; padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:16px;">
+                    <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Estimated APY</div>
+                    <div style="font-family:var(--mono); font-size:2rem; font-weight:700;" id="mp-d-apy">0%</div>
+                    <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:2px;" id="mp-d-desc"></div>
+                </div>
+
+                <!-- Performance stats -->
                 <div class="mp-detail-stats">
                     <div class="mp-detail-stat">
                         <div class="mp-card-stat-label">TVL</div>
                         <div class="mp-card-stat-value" id="mp-d-tvl">$0</div>
                     </div>
                     <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Return</div>
-                        <div class="mp-card-stat-value" id="mp-d-return">0%</div>
+                        <div class="mp-card-stat-label">7d</div>
+                        <div class="mp-card-stat-value" id="mp-d-7d">0%</div>
                     </div>
                     <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Max DD</div>
-                        <div class="mp-card-stat-value" id="mp-d-dd">0%</div>
+                        <div class="mp-card-stat-label">30d</div>
+                        <div class="mp-card-stat-value" id="mp-d-30d">0%</div>
                     </div>
                     <div class="mp-detail-stat">
                         <div class="mp-card-stat-label">Fee</div>
                         <div class="mp-card-stat-value" id="mp-d-fee">0%</div>
                     </div>
                 </div>
+
+                <!-- ═══ CURRENT VAULT PARAMETERS ═══ -->
+                <div style="background:var(--surface); border:1px solid var(--border-accent); border-radius:12px; padding:16px; margin-bottom:16px;">
+                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--accent-bright); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Current Parameters</div>
+
+                    <!-- Allocation -->
+                    <div style="margin-bottom:12px;">
+                        <div class="mp-card-alloc" id="mp-d-alloc" style="height:12px; margin-bottom:6px;"></div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px;">
+                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--accent-bright); text-transform:uppercase;">LP</div>
+                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-lp">0%</div>
+                            </div>
+                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--green); text-transform:uppercase;">Long</div>
+                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-long">0%</div>
+                            </div>
+                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+                                <div style="font-family:var(--mono); font-size:0.58rem; color:#ff6450; text-transform:uppercase;">Short</div>
+                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-short">0%</div>
+                            </div>
+                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--text-dim); text-transform:uppercase;">Hold</div>
+                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-hold">0%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LP Range -->
+                    <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                        <div style="font-family:var(--mono); font-size:0.62rem; color:var(--cyan); text-transform:uppercase; flex-shrink:0;">LP Range</div>
+                        <div style="font-family:var(--mono); font-size:0.9rem; font-weight:600; color:var(--text);" id="mp-d-lp-range">Standard &#177;2%</div>
+                        <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-left:auto;" id="mp-d-lp-ticks">400 ticks</div>
+                    </div>
+
+                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:8px;" id="mp-d-updated">Last updated: --</div>
+                </div>
+
+                <!-- ═══ CONFIG CHANGE HISTORY ═══ -->
                 <div style="margin-bottom:16px;">
-                    <div class="mp-card-stat-label" style="margin-bottom:6px;">Current Allocation</div>
-                    <div class="mp-card-alloc" id="mp-d-alloc" style="height:10px;"></div>
-                    <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.65rem; color:var(--text-dim); margin-top:4px;">
-                        <span id="mp-d-alloc-lp">LP 0%</span>
-                        <span id="mp-d-alloc-long">Long 0%</span>
-                        <span id="mp-d-alloc-short">Short 0%</span>
-                        <span id="mp-d-alloc-hold">Hold 0%</span>
+                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Parameter History</div>
+                    <div id="mp-d-history" style="max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+                        <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); padding:12px; text-align:center;">No changes recorded yet</div>
                     </div>
                 </div>
-                <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-bottom:10px;" id="mp-d-lp-range">LP Range: Standard &#177;2%</div>
-                <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:16px;" id="mp-d-desc"></div>
+
+                <!-- Deposit/Withdraw -->
                 <div class="mp-deposit-row">
                     <div class="mp-deposit-input">
                         <label style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:4px;">Deposit USDC</label>
@@ -5759,20 +5804,22 @@
 
             document.getElementById('mp-d-name').textContent = v.name;
             document.getElementById('mp-d-manager').textContent = 'Manager: ' + (v.manager_name || shortAddr(v.manager_address));
+            document.getElementById('mp-d-desc').textContent = v.description || '';
+
+            // Est APY
+            var apyVal = v.estimated_apy || 0;
+            var apyColor = apyVal >= 10 ? 'var(--green)' : apyVal >= 5 ? 'var(--cyan)' : 'var(--text-secondary)';
+            document.getElementById('mp-d-apy').innerHTML = '<span style="color:' + apyColor + '">' + apyVal.toFixed(1) + '%</span>';
+
+            // Stats
             document.getElementById('mp-d-tvl').textContent = formatUSD(v.tvl_usdc || 0);
-
-            const retColor = (v.total_return_pct || 0) >= 0 ? 'var(--green)' : '#ff6450';
-            document.getElementById('mp-d-return').innerHTML = '<span style="color:' + retColor + '">' + ((v.total_return_pct || 0) >= 0 ? '+' : '') + (v.total_return_pct || 0).toFixed(1) + '%</span>';
-            document.getElementById('mp-d-dd').innerHTML = '<span style="color:#ff6450">-' + Math.abs(v.max_drawdown_pct || 0).toFixed(1) + '%</span>';
+            var r7d = v.return_7d || 0;
+            var r30d = v.return_30d || 0;
+            document.getElementById('mp-d-7d').innerHTML = '<span style="color:' + (r7d >= 0 ? 'var(--green)' : '#ff6450') + '">' + (r7d >= 0 ? '+' : '') + r7d.toFixed(1) + '%</span>';
+            document.getElementById('mp-d-30d').innerHTML = '<span style="color:' + (r30d >= 0 ? 'var(--green)' : '#ff6450') + '">' + (r30d >= 0 ? '+' : '') + r30d.toFixed(1) + '%</span>';
             document.getElementById('mp-d-fee').textContent = ((v.performance_fee_bps || 0) / 100).toFixed(0) + '%';
-            document.getElementById('mp-d-desc').textContent = v.description || 'No description provided.';
 
-            // LP range from brain config
-            var lpRange = (v.brain_config && v.brain_config.lp_range) || 400;
-            var lpPct = (lpRange / 200).toFixed(0);
-            var rangeName = lpRange <= 200 ? 'Tight' : lpRange <= 400 ? 'Standard' : lpRange <= 800 ? 'Wide' : 'Ultra Wide';
-            document.getElementById('mp-d-lp-range').textContent = 'LP Range: ' + rangeName + ' \u00B1' + lpPct + '% (' + lpRange + ' ticks)';
-
+            // Current parameters - Allocation
             const lp = (v.alloc_lp_bps || 0) / 100;
             const lo = (v.alloc_long_bps || 0) / 100;
             const sh = (v.alloc_short_bps || 0) / 100;
@@ -5782,13 +5829,27 @@
                 (lo > 0 ? '<div class="mp-card-alloc-seg" style="width:' + lo + '%; background:var(--green);"></div>' : '') +
                 (sh > 0 ? '<div class="mp-card-alloc-seg" style="width:' + sh + '%; background:#ff6450;"></div>' : '') +
                 (ho > 0 ? '<div class="mp-card-alloc-seg" style="width:' + ho + '%; background:var(--text-dim);"></div>' : '');
-            document.getElementById('mp-d-alloc-lp').textContent = 'LP ' + lp + '%';
-            document.getElementById('mp-d-alloc-long').textContent = 'Long ' + lo + '%';
-            document.getElementById('mp-d-alloc-short').textContent = 'Short ' + sh + '%';
-            document.getElementById('mp-d-alloc-hold').textContent = 'Hold ' + ho + '%';
+            document.getElementById('mp-d-alloc-lp').textContent = lp + '%';
+            document.getElementById('mp-d-alloc-long').textContent = lo + '%';
+            document.getElementById('mp-d-alloc-short').textContent = sh + '%';
+            document.getElementById('mp-d-alloc-hold').textContent = ho + '%';
+
+            // LP Range
+            var lpRange = (v.brain_config && v.brain_config.lp_range) || 400;
+            var lpPct = (lpRange / 200).toFixed(0);
+            var rangeName = lpRange <= 200 ? 'Tight' : lpRange <= 400 ? 'Standard' : lpRange <= 800 ? 'Wide' : 'Ultra Wide';
+            document.getElementById('mp-d-lp-range').textContent = rangeName + ' \u00B1' + lpPct + '%';
+            document.getElementById('mp-d-lp-ticks').textContent = lpRange + ' ticks';
+
+            // Last updated
+            var updatedStr = v.updated_at ? new Date(v.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--';
+            document.getElementById('mp-d-updated').textContent = 'Last updated: ' + updatedStr;
 
             document.getElementById('mp-detail').classList.add('show');
             document.getElementById('mp-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Load config change history
+            loadVaultHistory(v.vault_address);
 
             // Load on-chain position if wallet connected
             loadUserPosition(v.vault_address);
@@ -5796,6 +5857,57 @@
             // Check if user is manager → show dashboard
             checkManagerAndShowDash(v);
         };
+
+        async function loadVaultHistory(vaultAddr) {
+            var el = document.getElementById('mp-d-history');
+            try {
+                var resp = await fetch('/api/basis/vault-log?vault_address=' + vaultAddr + '&limit=20');
+                var data = await resp.json();
+                var logs = data.logs || [];
+                if (logs.length === 0) {
+                    el.innerHTML = '<div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); padding:12px; text-align:center;">No parameter changes recorded yet</div>';
+                    return;
+                }
+                var html = '';
+                logs.forEach(function(log) {
+                    var date = new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    var typeColor = log.change_type === 'allocation' ? 'var(--accent-bright)' : log.change_type === 'lp_params' ? 'var(--cyan)' : 'var(--text-secondary)';
+                    var desc = '';
+                    if (log.change_type === 'brain_config' && log.new_value) {
+                        var bc = log.new_value;
+                        var parts = [];
+                        var lpV = bc.lp || (bc.allocLpBps ? bc.allocLpBps/100 : 0);
+                        var loV = bc.long || (bc.allocLongBps ? bc.allocLongBps/100 : 0);
+                        var shV = bc.short || (bc.allocShortBps ? bc.allocShortBps/100 : 0);
+                        var hoV = bc.hold || (bc.allocHoldBps ? bc.allocHoldBps/100 : 0);
+                        if (lpV || loV || shV || hoV) parts.push('LP ' + lpV + '% / Long ' + loV + '% / Short ' + shV + '% / Hold ' + hoV + '%');
+                        if (bc.lpRangeTicks || bc.lp_range) parts.push('Range: ' + (bc.lpRangeTicks || bc.lp_range) + ' ticks');
+                        if (bc.leverage) parts.push('Leverage: ' + bc.leverage);
+                        desc = parts.length > 0 ? parts.join(' · ') : (log.note || 'Config updated');
+                    } else if (log.change_type === 'allocation' && log.new_value) {
+                        var n = log.new_value;
+                        desc = 'LP ' + (n.lp || 0) + '% / Long ' + (n.long || 0) + '% / Short ' + (n.short || 0) + '% / Hold ' + (n.hold || 0) + '%';
+                    } else if (log.change_type === 'lp_params' && log.new_value) {
+                        var range = log.new_value.lp_range || log.new_value.range_width || '?';
+                        desc = 'LP range set to ' + range + ' ticks';
+                    } else {
+                        desc = log.note || log.change_type;
+                    }
+                    var noteHtml = (log.note && log.note !== desc) ? '<div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:2px; font-style:italic;">' + escapeHtml(log.note) + '</div>' : '';
+                    html += '<div style="display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">' +
+                        '<div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); min-width:90px; flex-shrink:0;">' + date + '</div>' +
+                        '<div style="flex:1;">' +
+                            '<span style="font-family:var(--mono); font-size:0.62rem; color:' + typeColor + '; text-transform:uppercase;">' + escapeHtml(log.change_type) + '</span>' +
+                            '<div style="font-family:var(--mono); font-size:0.68rem; color:var(--text); margin-top:2px;">' + escapeHtml(desc) + '</div>' +
+                            noteHtml +
+                        '</div>' +
+                    '</div>';
+                });
+                el.innerHTML = html;
+            } catch(e) {
+                el.innerHTML = '<div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); padding:12px; text-align:center;">Could not load history</div>';
+            }
+        }
 
         window.closeVaultDetail = function() {
             document.getElementById('mp-detail').classList.remove('show');
