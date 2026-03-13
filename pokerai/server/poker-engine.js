@@ -177,7 +177,11 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   let strength = 0.3;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
-    strength = (handEval.rank / 8) * 0.85 + Math.random() * 0.15;
+    // Map hand rank to strength — pairs are playable, not trash
+    //   high card=0.12, pair=0.45, two pair=0.62, trips=0.75,
+    //   straight=0.82, flush=0.86, full house=0.91, quads=0.95, straight flush=0.98
+    const RANK_STRENGTH = [0.12, 0.45, 0.62, 0.75, 0.82, 0.86, 0.91, 0.95, 0.98];
+    strength = RANK_STRENGTH[handEval.rank] * 0.85 + Math.random() * 0.15;
     // Hands are relatively stronger with fewer opponents
     if (headsUp) strength = Math.min(0.98, strength + 0.20);
     else if (playerCount <= 4) strength = Math.min(0.98, strength + 0.08);
@@ -214,8 +218,8 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   if (promptMods.riverBluff && communityCards.length === 5) strength += 0.12;
   strength = Math.min(0.95, Math.max(0.05, strength));
 
-  // === RULE: Tight Preflop — fold weak hands preflop (disabled in heads-up) ===
-  if (rules.tightPreflop && communityCards.length === 0 && !headsUp) {
+  // === RULE: Tight Preflop — fold weak hands preflop (disabled in heads-up, never fold free checks) ===
+  if (rules.tightPreflop && communityCards.length === 0 && !headsUp && toCall > 0) {
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
     const paired = c1 === c2;
     const highCard = Math.max(c1, c2);
@@ -259,6 +263,11 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 
   // Make the base decision first, then apply rule overrides
   let decision = _baseDecision(effectiveAgent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
+
+  // Never fold when getting great pot odds (small bet into big pot)
+  if (decision.type === 'fold' && toCall > 0 && toCall <= pot * 0.2) {
+    decision = { type: 'call', label: `Call ${toCall}`, amount: toCall };
+  }
 
   // === RULE: Never All-In — downgrade all-in to a big raise or call ===
   if (rules.neverAllIn && decision.type === 'allin') {
