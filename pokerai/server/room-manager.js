@@ -807,17 +807,24 @@ class RoomManager {
       // so the deposit itself isn't counted as profit
       const delta = agent.chips - agent._startChips;
 
+      // Save original pool size BEFORE pending activation inflates it
+      const originalStartChips = agent._startChips;
+
+      // Track IDs of backings activated this cycle (excluded from P&L)
+      const justActivatedIds = new Set();
+
       // Activate pending backings (queued mid-hand, now safe to include)
       if (agent._pendingBackings && agent._pendingBackings.length > 0) {
         let pendingTotal = 0;
         for (const pb of agent._pendingBackings) {
           agent.chips += pb.amount;
           pendingTotal += pb.amount;
+          if (pb.backingId) justActivatedIds.add(pb.backingId);
           // Mark backing as activated — clear pending flag
           const backing = this.store.getBackingById(pb.backingId);
           if (backing) {
             delete backing._pending;
-            backing._activatedAt = Date.now();
+            backing._activatedAt = Date.now(); // Used for withdrawal cooldown
           }
         }
         // Update _startChips to include newly activated backings
@@ -827,14 +834,13 @@ class RoomManager {
         agent._pendingBackings = [];
       }
       if (delta !== 0) {
-        // Only include active (non-pending) backings in P&L distribution
-        // _pending = not yet activated, _activatedAt < 1s = just activated this cycle
-        const backings = this.store.getBackingsForAgent(agent.id).filter(b => !b._pending && (!b._activatedAt || Date.now() - b._activatedAt > 1000));
+        // Exclude pending backings AND just-activated backings from P&L
+        // (just-activated backings didn't play this hand, only start next hand)
+        const backings = this.store.getBackingsForAgent(agent.id)
+          .filter(b => !b._pending && !justActivatedIds.has(b.id));
 
-        // Backer's share = their CURRENT value / total pool at start of hand
-        // Uses currentValue (not original chipsStaked) so the share stays proportional
-        // as the backer's value changes over time
-        const totalPool = agent._startChips;
+        // Use ORIGINAL pool size (before pending activation inflated _startChips)
+        const totalPool = originalStartChips;
 
         if (backings.length > 0 && totalPool > 0) {
           const updates = [];
