@@ -392,6 +392,36 @@ body::before {
     flex-wrap: wrap;
 }
 
+/* Translation picker */
+.translation-picker {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+}
+.trans-btn {
+    background: var(--surface);
+    border: 1px solid var(--gold-border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+.trans-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+.trans-btn.active {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--text-bright);
+}
+
 /* Verse picker (menu) */
 .verse-menu {
     display: none;
@@ -557,6 +587,15 @@ body::before {
         </div>
     </div>
 
+    <!-- Translation Picker -->
+    <div class="translation-picker" id="translationPicker">
+        <button class="trans-btn active" data-t="ESV">ESV</button>
+        <button class="trans-btn" data-t="KJV">KJV</button>
+        <button class="trans-btn" data-t="NKJV">NKJV</button>
+        <button class="trans-btn" data-t="NLT">NLT</button>
+        <button class="trans-btn" data-t="NASB">NASB</button>
+    </div>
+
     <!-- Verse Menu -->
     <div class="verse-menu show" id="verseMenu">
         <h2>Choose a Verse</h2>
@@ -627,66 +666,140 @@ body::before {
 // VERSE DATA
 // ══════════════════════════════════════
 
+var selectedTranslation = 'ESV';
+
 var VERSES = [
     {
         ref: 'John 1:1',
-        text: 'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.',
-        decoys: ['end', 'truck', 'house', 'light', 'man', 'world', 'truth', 'spirit', 'law', 'king', 'prophet', 'angel']
+        text: {
+            ESV:  'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.',
+            KJV:  'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.',
+            NKJV: 'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.',
+            NLT:  'In the {beginning} the {Word} already {existed}. The {Word} was with {God}, and the {Word} was {God}.',
+            NASB: 'In the {beginning} was the {Word}, and the {Word} was with {God}, and the {Word} was {God}.'
+        },
+        decoys: ['end', 'truck', 'house', 'light', 'man', 'world', 'truth', 'spirit', 'law', 'king', 'prophet', 'angel', 'remained']
     },
     {
         ref: 'Genesis 1:1',
-        text: 'In the {beginning}, {God} created the {heavens} and the {earth}.',
+        text: {
+            ESV:  'In the {beginning}, {God} created the {heavens} and the {earth}.',
+            KJV:  'In the {beginning} {God} created the {heaven} and the {earth}.',
+            NKJV: 'In the {beginning} {God} created the {heavens} and the {earth}.',
+            NLT:  'In the {beginning} {God} created the {heavens} and the {earth}.',
+            NASB: 'In the {beginning} {God} created the {heavens} and the {earth}.'
+        },
         decoys: ['end', 'angels', 'waters', 'darkness', 'mountains', 'stars', 'light', 'king']
     },
     {
         ref: 'Psalm 23:1',
-        text: 'The {LORD} is my {shepherd}; I shall not {want}.',
-        decoys: ['king', 'father', 'teacher', 'guard', 'worry', 'sleep', 'fear', 'rest']
+        text: {
+            ESV:  'The {LORD} is my {shepherd}; I shall not {want}.',
+            KJV:  'The {LORD} is my {shepherd}; I shall not {want}.',
+            NKJV: 'The {LORD} is my {shepherd}; I shall not {want}.',
+            NLT:  'The {LORD} is my {shepherd}; I have all that I {need}.',
+            NASB: 'The {LORD} is my {shepherd}, I will not be in {want}.'
+        },
+        decoys: ['king', 'father', 'teacher', 'guard', 'worry', 'sleep', 'fear', 'rest', 'need', 'lack']
     },
     {
         ref: 'John 3:16',
-        text: 'For {God} so {loved} the {world}, that he gave his only {Son}, that whoever {believes} in him should not {perish} but have {eternal} life.',
-        decoys: ['angels', 'hated', 'church', 'daughter', 'doubts', 'prosper', 'endless', 'created', 'knew', 'people', 'brother', 'trusts', 'suffer', 'abundant']
+        text: {
+            ESV:  'For {God} so {loved} the {world}, that he gave his only {Son}, that whoever {believes} in him should not {perish} but have {eternal} life.',
+            KJV:  'For {God} so {loved} the {world}, that he gave his only {begotten} {Son}, that whosoever {believeth} in him should not {perish}, but have {everlasting} life.',
+            NKJV: 'For {God} so {loved} the {world} that He gave His only {begotten} {Son}, that whoever {believes} in Him should not {perish} but have {everlasting} life.',
+            NLT:  'For this is how {God} {loved} the {world}: He gave his one and only {Son}, so that everyone who {believes} in him will not {perish} but have {eternal} life.',
+            NASB: 'For {God} so {loved} the {world}, that He gave His only {Son}, so that everyone who {believes} in Him will not {perish}, but have {eternal} life.'
+        },
+        decoys: ['angels', 'hated', 'church', 'daughter', 'doubts', 'prosper', 'endless', 'created', 'knew', 'people', 'forgotten', 'begotten', 'everlasting', 'trusts']
     },
     {
         ref: 'Proverbs 3:5',
-        text: '{Trust} in the {LORD} with all your {heart}, and do not {lean} on your own {understanding}.',
-        decoys: ['believe', 'king', 'soul', 'rest', 'wisdom', 'hope', 'spirit', 'mind', 'strength']
+        text: {
+            ESV:  '{Trust} in the {LORD} with all your {heart}, and do not {lean} on your own {understanding}.',
+            KJV:  '{Trust} in the {LORD} with all thine {heart}; and {lean} not unto thine own {understanding}.',
+            NKJV: '{Trust} in the {LORD} with all your {heart}, and {lean} not on your own {understanding}.',
+            NLT:  '{Trust} in the {LORD} with all your {heart}; do not {depend} on your own {understanding}.',
+            NASB: '{Trust} in the {LORD} with all your {heart} and do not {lean} on your own {understanding}.'
+        },
+        decoys: ['believe', 'king', 'soul', 'rest', 'wisdom', 'hope', 'spirit', 'mind', 'depend', 'rely']
     },
     {
         ref: 'Philippians 4:13',
-        text: 'I can do all {things} through him who {strengthens} me.',
-        decoys: ['works', 'blesses', 'guides', 'deeds', 'challenges', 'protects']
+        text: {
+            ESV:  'I can do all {things} through him who {strengthens} me.',
+            KJV:  'I can do all {things} through {Christ} which {strengtheneth} me.',
+            NKJV: 'I can do all {things} through {Christ} who {strengthens} me.',
+            NLT:  'For I can do {everything} through {Christ}, who gives me {strength}.',
+            NASB: 'I can do all {things} through Him who {strengthens} me.'
+        },
+        decoys: ['works', 'blesses', 'guides', 'deeds', 'God', 'challenges', 'protects', 'Christ', 'everything', 'strengtheneth']
     },
     {
         ref: 'Romans 8:28',
-        text: 'And we know that for those who {love} {God} all {things} work {together} for {good}, for those who are {called} according to his {purpose}.',
-        decoys: ['fear', 'angels', 'works', 'alone', 'evil', 'chosen', 'plan', 'deeds', 'apart', 'glory', 'serve', 'Lord', 'blessed', 'promise']
+        text: {
+            ESV:  'And we know that for those who {love} {God} all {things} work {together} for {good}, for those who are {called} according to his {purpose}.',
+            KJV:  'And we know that all {things} work {together} for {good} to them that {love} {God}, to them who are the {called} according to his {purpose}.',
+            NKJV: 'And we know that all {things} work {together} for {good} to those who {love} {God}, to those who are the {called} according to His {purpose}.',
+            NLT:  'And we know that {God} causes {everything} to work {together} for the {good} of those who {love} God and are {called} according to his {purpose} for them.',
+            NASB: 'And we know that {God} causes all {things} to work {together} for {good} to those who {love} God, to those who are {called} according to His {purpose}.'
+        },
+        decoys: ['fear', 'angels', 'works', 'alone', 'evil', 'chosen', 'plan', 'deeds', 'apart', 'glory', 'serve', 'Lord', 'everything']
     },
     {
         ref: 'Isaiah 40:31',
-        text: 'But they who {wait} for the {LORD} shall {renew} their {strength}; they shall mount up with {wings} like {eagles}.',
-        decoys: ['run', 'God', 'find', 'faith', 'swords', 'lions', 'hope', 'king', 'lose', 'courage', 'arms', 'doves']
+        text: {
+            ESV:  'But they who {wait} for the {LORD} shall {renew} their {strength}; they shall mount up with {wings} like {eagles}.',
+            KJV:  'But they that {wait} upon the {LORD} shall {renew} their {strength}; they shall mount up with {wings} as {eagles}.',
+            NKJV: 'But those who {wait} on the {LORD} shall {renew} their {strength}; they shall mount up with {wings} like {eagles}.',
+            NLT:  'But those who {trust} in the {LORD} will find new {strength}. They will {soar} high on {wings} like {eagles}.',
+            NASB: 'Yet those who {wait} for the {LORD} will gain new {strength}; they will mount up with {wings} like {eagles}.'
+        },
+        decoys: ['run', 'God', 'find', 'faith', 'swords', 'lions', 'hope', 'king', 'lose', 'courage', 'arms', 'doves', 'trust', 'soar']
     },
     {
         ref: 'Jeremiah 29:11',
-        text: 'For I know the {plans} I have for you, {declares} the {LORD}, plans for {welfare} and not for {evil}, to give you a {future} and a {hope}.',
-        decoys: ['thoughts', 'says', 'God', 'glory', 'good', 'past', 'words', 'King', 'judgment', 'fear', 'kingdom', 'wealth']
+        text: {
+            ESV:  'For I know the {plans} I have for you, {declares} the {LORD}, plans for {welfare} and not for {evil}, to give you a {future} and a {hope}.',
+            KJV:  'For I know the {thoughts} that I think toward you, {saith} the {LORD}, {thoughts} of {peace}, and not of {evil}, to give you an expected {end}.',
+            NKJV: 'For I know the {thoughts} that I think toward you, {says} the {LORD}, {thoughts} of {peace} and not of {evil}, to give you a {future} and a {hope}.',
+            NLT:  'For I know the {plans} I have for you, {says} the {LORD}. They are {plans} for {good} and not for {disaster}, to give you a {future} and a {hope}.',
+            NASB: 'For I know the {plans} that I have for you, {declares} the {LORD}, plans for {prosperity} and not for {disaster}, to give you a {future} and a {hope}.'
+        },
+        decoys: ['words', 'God', 'glory', 'past', 'King', 'judgment', 'fear', 'kingdom', 'wealth', 'thoughts', 'says', 'declares', 'saith', 'welfare', 'peace', 'prosperity']
     },
     {
         ref: 'Matthew 28:19',
-        text: 'Go therefore and make {disciples} of all {nations}, {baptizing} them in the {name} of the {Father} and of the {Son} and of the {Holy} {Spirit}.',
-        decoys: ['followers', 'peoples', 'blessing', 'word', 'Lord', 'Daughter', 'Ghost', 'Sacred', 'heal', 'kingdoms', 'washing', 'light', 'King', 'Mother', 'Blessed', 'Angel']
+        text: {
+            ESV:  'Go therefore and make {disciples} of all {nations}, {baptizing} them in the {name} of the {Father} and of the {Son} and of the {Holy} {Spirit}.',
+            KJV:  'Go ye therefore, and {teach} all {nations}, {baptizing} them in the {name} of the {Father}, and of the {Son}, and of the {Holy} {Ghost}.',
+            NKJV: 'Go therefore and make {disciples} of all the {nations}, {baptizing} them in the {name} of the {Father} and of the {Son} and of the {Holy} {Spirit}.',
+            NLT:  'Therefore, go and make {disciples} of all the {nations}, {baptizing} them in the {name} of the {Father} and the {Son} and the {Holy} {Spirit}.',
+            NASB: 'Go, therefore, and make {disciples} of all the {nations}, {baptizing} them in the {name} of the {Father} and the {Son} and the {Holy} {Spirit}.'
+        },
+        decoys: ['followers', 'peoples', 'blessing', 'word', 'Lord', 'Daughter', 'Ghost', 'Sacred', 'heal', 'kingdoms', 'washing', 'King', 'teach', 'disciples']
     },
     {
         ref: 'Psalm 46:10',
-        text: 'Be {still}, and {know} that I am {God}. I will be {exalted} among the {nations}, I will be {exalted} in the {earth}!',
-        decoys: ['quiet', 'see', 'Lord', 'praised', 'people', 'glorified', 'heavens', 'calm', 'hear', 'King', 'blessed', 'churches', 'feared', 'waters']
+        text: {
+            ESV:  'Be {still}, and {know} that I am {God}. I will be {exalted} among the {nations}, I will be {exalted} in the {earth}!',
+            KJV:  'Be {still}, and {know} that I am {God}: I will be {exalted} among the {heathen}, I will be {exalted} in the {earth}.',
+            NKJV: 'Be {still}, and {know} that I am {God}; I will be {exalted} among the {nations}, I will be {exalted} in the {earth}!',
+            NLT:  'Be {still}, and {know} that I am {God}! I will be {honored} by every {nation}. I will be {honored} throughout the {world}.',
+            NASB: 'Stop {striving} and {know} that I am {God}; I will be {exalted} among the {nations}, I will be {exalted} in the {earth}.'
+        },
+        decoys: ['quiet', 'see', 'Lord', 'praised', 'people', 'glorified', 'heavens', 'calm', 'hear', 'King', 'blessed', 'feared', 'waters', 'honored', 'striving', 'heathen']
     },
     {
         ref: 'Romans 10:9',
-        text: 'If you {confess} with your {mouth} that Jesus is {Lord} and {believe} in your {heart} that God {raised} him from the {dead}, you will be {saved}.',
-        decoys: ['declare', 'hands', 'King', 'trust', 'soul', 'lifted', 'grave', 'blessed', 'speak', 'mind', 'Christ', 'hope', 'spirit', 'taken', 'dust', 'forgiven']
+        text: {
+            ESV:  'If you {confess} with your {mouth} that Jesus is {Lord} and {believe} in your {heart} that God {raised} him from the {dead}, you will be {saved}.',
+            KJV:  'That if thou shalt {confess} with thy {mouth} the Lord {Jesus}, and shalt {believe} in thine {heart} that God hath {raised} him from the {dead}, thou shalt be {saved}.',
+            NKJV: 'That if you {confess} with your {mouth} the Lord {Jesus} and {believe} in your {heart} that God has {raised} Him from the {dead}, you will be {saved}.',
+            NLT:  'If you openly {declare} that Jesus is {Lord} and {believe} in your {heart} that God {raised} him from the {dead}, you will be {saved}.',
+            NASB: 'That if you {confess} with your {mouth} Jesus as {Lord}, and {believe} in your {heart} that God {raised} Him from the {dead}, you will be {saved}.'
+        },
+        decoys: ['deny', 'hands', 'King', 'trust', 'soul', 'lifted', 'grave', 'blessed', 'speak', 'mind', 'Christ', 'hope', 'spirit', 'taken', 'dust', 'forgiven', 'declare']
     }
 ];
 
@@ -754,7 +867,7 @@ function renderMenu() {
         item.innerHTML =
             '<div>' +
                 '<div class="vl-ref">' + v.ref + '</div>' +
-                '<div class="vl-preview">' + v.text.replace(/\{[^}]+\}/g, '____').slice(0, 60) + '...</div>' +
+                '<div class="vl-preview">' + (v.text[selectedTranslation] || v.text.ESV).replace(/\{[^}]+\}/g, '____').slice(0, 60) + '...</div>' +
             '</div>' +
             '<span class="vl-badge ' + (done ? 'completed' : 'new') + '">' + (done ? '\u2713 Done' : 'Play') + '</span>';
         item.addEventListener('click', function() { startVerse(i); });
@@ -800,7 +913,8 @@ function startVerse(idx) {
     startTime = Date.now();
 
     // Parse blanks
-    var parts = currentVerse.text.split(/\{([^}]+)\}/);
+    var verseText = currentVerse.text[selectedTranslation] || currentVerse.text.ESV;
+    var parts = verseText.split(/\{([^}]+)\}/);
     var html = '';
     var blankCount = 0;
     for (var i = 0; i < parts.length; i++) {
@@ -936,7 +1050,7 @@ function shareOnX() {
     for (var k in state.completed) completedCount++;
 
     var text = '\u2728 Scripture Memory \u2728\n\n' +
-        'Just completed ' + currentVerse.ref + '!\n' +
+        'Just completed ' + currentVerse.ref + ' (' + selectedTranslation + ')!\n' +
         '\u{1F3AF} ' + accuracy + '% accuracy\n' +
         '\u{1F525} ' + bestStreakThisRound + ' streak\n' +
         '\u{1F4D6} ' + completedCount + '/' + VERSES.length + ' verses\n\n' +
@@ -990,6 +1104,31 @@ function updateProgress() {
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressText').textContent = blankIdx + ' / ' + blanks.length + ' blanks';
 }
+
+// ══════════════════════════════════════
+// TRANSLATION PICKER
+// ══════════════════════════════════════
+
+document.querySelectorAll('.trans-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.trans-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        selectedTranslation = btn.getAttribute('data-t');
+        try { localStorage.setItem('s4h_translation', selectedTranslation); } catch(e) {}
+        renderMenu();
+    });
+});
+
+// Restore saved translation
+try {
+    var saved = localStorage.getItem('s4h_translation');
+    if (saved && ['ESV','KJV','NKJV','NLT','NASB'].indexOf(saved) !== -1) {
+        selectedTranslation = saved;
+        document.querySelectorAll('.trans-btn').forEach(function(b) {
+            b.classList.toggle('active', b.getAttribute('data-t') === saved);
+        });
+    }
+} catch(e) {}
 
 // ══════════════════════════════════════
 // INIT
