@@ -4608,6 +4608,15 @@ function handleMessage(msg) {
       checkDepositBalance();
       break;
 
+    case 'checkDepositResult':
+      if (msg.data.credited > 0) {
+        showToast(`Credited ${msg.data.credited.toLocaleString()} chips from deposit`, 'success');
+      } else if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      }
+      document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
+      break;
+
     case 'rewardsUpdate':
       handleRewardsUpdate(msg.data);
       break;
@@ -6141,11 +6150,10 @@ async function doDeposit() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
 
-    // Tell server to re-check on-chain deposits via WebSocket (setWallet handler does the check)
+    // Tell server to verify on-chain deposit and credit chips
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
+      ws.send(JSON.stringify({ type: 'checkDeposit' }));
     }
-    document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
     closeVault();
   } catch (e) {
     console.error('Deposit failed:', e);
@@ -6159,8 +6167,9 @@ async function doDeposit() {
 }
 
 function checkDepositBalance() {
-  // Trigger deposit check via WebSocket — setWallet handler on server checks on-chain deposits
-  syncWalletToServer();
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'checkDeposit' }));
+  }
 }
 
 function doWithdraw() {
