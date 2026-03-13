@@ -4560,8 +4560,8 @@
                     btn.disabled = false; btn.textContent = 'Connect Wallet';
                     return;
                 }
+                await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
                 provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send('eth_requestAccounts', []);
                 var network = await provider.getNetwork();
                 if (Number(network.chainId) !== BASE_CHAIN_ID) {
                     try {
@@ -6388,7 +6388,7 @@
         window.dashConnectWallet = async function() {
             if (!window.ethereum) { alert('No wallet detected. Install MetaMask.'); return; }
             try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
                 var provider = new ethers.BrowserProvider(window.ethereum);
                 dashSigner = await provider.getSigner();
                 var addr = await dashSigner.getAddress();
@@ -6679,13 +6679,25 @@
     })();
 
     // ═══ GLOBAL NAV WALLET ═══
-    window.navConnectWallet = async function() {
+    function navDisconnect() {
+        window._navWalletAddress = null;
         var btn = document.getElementById('nav-wallet-btn');
+        btn.textContent = 'Connect Wallet'; btn.classList.remove('connected');
+        var tkBtn = document.getElementById('tk-connect-btn');
+        if (tkBtn) { tkBtn.textContent = 'Connect Wallet'; tkBtn.classList.remove('connected'); }
+    }
+
+    window.navConnectWallet = async function() {
+        // If already connected, disconnect
+        if (window._navWalletAddress) { navDisconnect(); return; }
+
         if (!window.ethereum) { alert('Install MetaMask or a compatible wallet'); return; }
+        var btn = document.getElementById('nav-wallet-btn');
         btn.disabled = true; btn.textContent = 'Connecting...';
         try {
+            // wallet_requestPermissions forces the account picker every time
+            await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
             var p = new ethers.BrowserProvider(window.ethereum);
-            await p.send('eth_requestAccounts', []);
             var net = await p.getNetwork();
             if (Number(net.chainId) !== 8453) {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
@@ -6696,7 +6708,6 @@
             var short = addr.slice(0, 6) + '...' + addr.slice(-4);
             btn.textContent = short; btn.classList.add('connected'); btn.disabled = false;
             window._navWalletAddress = addr;
-            // Sync toolkit connect button
             var tkBtn = document.getElementById('tk-connect-btn');
             if (tkBtn) { tkBtn.textContent = short; tkBtn.classList.add('connected'); }
         } catch(e) {
@@ -6704,21 +6715,6 @@
             if (e.code !== 4001) alert('Connection failed: ' + e.message);
         }
     };
-
-    // Auto-detect already-connected wallet
-    (async function() {
-        if (!window.ethereum) return;
-        try {
-            var accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts && accounts.length > 0) {
-                var addr = accounts[0];
-                var short = addr.slice(0, 6) + '...' + addr.slice(-4);
-                var btn = document.getElementById('nav-wallet-btn');
-                if (btn) { btn.textContent = short; btn.classList.add('connected'); }
-                window._navWalletAddress = addr;
-            }
-        } catch(e) {}
-    })();
     </script>
 
 </body>
