@@ -1634,8 +1634,8 @@
 
             <!-- Sort & Create Bar -->
             <div class="mp-sort-bar fade-in">
-                <button class="mp-sort-btn active" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
-                <button class="mp-sort-btn" onclick="mpSort('return')" id="mp-sort-return">Return</button>
+                <button class="mp-sort-btn active" onclick="mpSort('apy')" id="mp-sort-apy">APY</button>
+                <button class="mp-sort-btn" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
                 <button class="mp-sort-btn" onclick="mpSort('newest')" id="mp-sort-newest">Newest</button>
                 <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mp-count">0 vaults</span>
                 <button class="mp-create-btn" onclick="openCreateVaultModal()">+ Create Vault</button>
@@ -5645,7 +5645,7 @@
         ];
 
         let mpVaults = [];
-        let mpCurrentSort = 'tvl';
+        let mpCurrentSort = 'apy';
         let mpSelectedVault = null;
 
         // Load vaults from API
@@ -5689,11 +5689,19 @@
             // Build card HTML
             let html = '';
             mpVaults.forEach(function(v, i) {
-                const retColor = v.total_return_pct >= 0 ? 'var(--green)' : '#ff6450';
+                const apyVal = v.estimated_apy || 0;
+                const apyColor = apyVal >= 10 ? 'var(--green)' : apyVal >= 5 ? 'var(--cyan)' : 'var(--text-secondary)';
+                const apyStr = apyVal.toFixed(1) + '%';
                 const tvlStr = formatUSD(v.tvl_usdc || 0);
-                const retStr = (v.total_return_pct >= 0 ? '+' : '') + (v.total_return_pct || 0).toFixed(1) + '%';
-                const ddStr = '-' + Math.abs(v.max_drawdown_pct || 0).toFixed(1) + '%';
                 const feeStr = ((v.performance_fee_bps || 0) / 100).toFixed(0) + '%';
+
+                // Period returns
+                const r7d = v.return_7d || 0;
+                const r30d = v.return_30d || 0;
+                const r7dColor = r7d >= 0 ? 'var(--green)' : '#ff6450';
+                const r30dColor = r30d >= 0 ? 'var(--green)' : '#ff6450';
+                const r7dStr = (r7d >= 0 ? '+' : '') + r7d.toFixed(1) + '%';
+                const r30dStr = (r30d >= 0 ? '+' : '') + r30d.toFixed(1) + '%';
 
                 const lpW = v.alloc_lp_bps / 100;
                 const longW = v.alloc_long_bps / 100;
@@ -5713,10 +5721,14 @@
                         '</div>' +
                         '<div class="mp-card-fee">' + feeStr + ' fee</div>' +
                     '</div>' +
+                    '<div style="text-align:center; padding:10px 0 6px; border-bottom:1px solid var(--border); margin-bottom:10px;">' +
+                        '<div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Est. APY</div>' +
+                        '<div style="font-family:var(--mono); font-size:1.4rem; font-weight:700; color:' + apyColor + ';">' + apyStr + '</div>' +
+                    '</div>' +
                     '<div class="mp-card-stats">' +
                         '<div class="mp-card-stat"><div class="mp-card-stat-label">TVL</div><div class="mp-card-stat-value">' + tvlStr + '</div></div>' +
-                        '<div class="mp-card-stat"><div class="mp-card-stat-label">Return</div><div class="mp-card-stat-value" style="color:' + retColor + '">' + retStr + '</div></div>' +
-                        '<div class="mp-card-stat"><div class="mp-card-stat-label">Max DD</div><div class="mp-card-stat-value" style="color:#ff6450">' + ddStr + '</div></div>' +
+                        '<div class="mp-card-stat"><div class="mp-card-stat-label">7d</div><div class="mp-card-stat-value" style="color:' + r7dColor + '">' + r7dStr + '</div></div>' +
+                        '<div class="mp-card-stat"><div class="mp-card-stat-label">30d</div><div class="mp-card-stat-value" style="color:' + r30dColor + '">' + r30dStr + '</div></div>' +
                     '</div>' +
                     '<div class="mp-card-config">' +
                         (lpW > 0 ? '<span class="mp-card-tag" style="color:var(--accent-bright);">LP ' + lpW + '%</span>' : '') +

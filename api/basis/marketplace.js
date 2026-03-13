@@ -14,14 +14,18 @@ export default async function handler(req, res) {
   try {
     // GET — list all vaults (with optional sorting)
     if (req.method === 'GET') {
-      const { sort = 'tvl', order = 'desc', manager, limit = 50 } = req.query;
+      const { sort = 'apy', order = 'desc', manager, limit = 50 } = req.query;
+
+      const sortCol = sort === 'apy' ? 'estimated_apy'
+                    : sort === 'return' ? 'total_return_pct'
+                    : sort === 'newest' ? 'created_at'
+                    : 'tvl_usdc';
 
       let query = supabase
         .from('vault_marketplace')
         .select('*')
         .eq('is_active', true)
-        .order(sort === 'return' ? 'total_return_pct' : sort === 'newest' ? 'created_at' : 'tvl_usdc',
-               { ascending: order === 'asc' })
+        .order(sortCol, { ascending: order === 'asc' })
         .limit(parseInt(limit));
 
       if (manager) {

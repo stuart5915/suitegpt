@@ -16,7 +16,8 @@ const supabase = createClient(
 );
 
 // ── Backtest Config ──
-const LP_APY = 0.15;
+const BASE_LP_APY = 0.15;       // Base LP APY at standard range
+const LP_APY = BASE_LP_APY;
 const AAVE_BORROW_RATE = 0.035;
 const AAVE_SUPPLY_RATE = 0.03;
 const SWAP_COST_BPS = 5;
@@ -260,6 +261,36 @@ async function fetchPrices(days) {
   }));
 }
 
+// ── Estimate current APY from brain config ──
+// Based on current DeFi rates, not historical performance
+function estimateAPY(brainConfig) {
+  const lp = brainConfig.lp / 100;
+  const long = brainConfig.long / 100;
+  const short = brainConfig.short / 100;
+  const hold = brainConfig.hold / 100;
+  const lpRange = brainConfig.lp_range || 400;
+
+  // Tighter LP range = higher fee APY (more concentrated = more fees per $)
+  const rangeMult = Math.min(400 / Math.max(lpRange, 100), 4);
+  const lpAPY = BASE_LP_APY * rangeMult;
+
+  // Long: earns when ETH goes up. In a neutral market, net is roughly:
+  // ETH staking/appreciation (~4-8%) * leverage(1.5x) - borrow cost(3.5%)
+  // Conservative estimate: ~5% in neutral, higher in bull
+  const longAPY = 0.05;
+
+  // Short: profitable when ETH declines. In neutral market:
+  // Supply rate on collateral (~3%) - borrow cost (~3.5%) = slightly negative
+  // But shorts provide hedge value, estimate ~1% net in neutral
+  const shortAPY = 0.01;
+
+  // Hold: USDC supply rate on Aave
+  const holdAPY = AAVE_SUPPLY_RATE;
+
+  const grossAPY = (lp * lpAPY) + (long * longAPY) + (short * shortAPY) + (hold * holdAPY);
+  return +(grossAPY * 100).toFixed(1);
+}
+
 // ── Main ──
 async function main() {
   const priceData = await fetchPrices(180);
@@ -269,14 +300,20 @@ async function main() {
 
   for (const vault of VAULTS) {
     const perf = backtest(priceData, vault);
-    console.log(`${vault.name.padEnd(22)} | Return: ${(perf.total_return_pct >= 0 ? '+' : '') + perf.total_return_pct}%  | APY: ${perf.annualized_apy}%  | Max DD: -${perf.max_drawdown_pct}%  | Sharpe: ${perf.sharpe_ratio}  | Rebalances: ${perf.rebalance_count}`);
+    const estAPY = estimateAPY(vault.brain_config);
+
+    // Also backtest shorter periods for 7d and 30d returns
+    const perf7d = priceData.length > 37 ? backtest(priceData.slice(-37), vault) : perf;
+    const perf30d = priceData.length > 60 ? backtest(priceData.slice(-60), vault) : perf;
+
+    console.log(`${vault.name.padEnd(22)} | Est APY: ${estAPY}%  | 7d: ${perf7d.total_return_pct}%  | 30d: ${perf30d.total_return_pct}%  | 180d: ${perf.total_return_pct}%  | Max DD: -${perf.max_drawdown_pct}%`);
 
     // Simulate TVL (random but weighted by strategy appeal)
     const baseTVL = vault.deposit_cap_usdc * (0.1 + Math.random() * 0.4);
     const depositors = Math.floor(3 + Math.random() * 25);
 
     const row = {
-      vault_address: vault.manager_address, // use as placeholder until real deployment
+      vault_address: vault.manager_address,
       manager_address: vault.manager_address,
       name: vault.name,
       description: vault.description,
@@ -286,7 +323,10 @@ async function main() {
       deposit_cap_usdc: vault.deposit_cap_usdc,
       manager_name: vault.manager_name,
       tvl_usdc: Math.round(baseTVL),
+      estimated_apy: estAPY,
       total_return_pct: perf.total_return_pct,
+      return_7d: perf7d.total_return_pct,
+      return_30d: perf30d.total_return_pct,
       max_drawdown_pct: perf.max_drawdown_pct,
       sharpe_ratio: perf.sharpe_ratio,
       share_price: +(1 + perf.total_return_pct / 100).toFixed(6),
