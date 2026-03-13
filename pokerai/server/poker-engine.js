@@ -278,12 +278,16 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     }
   }
 
-  // === RULE: Slow Play — with strong hands, check/call instead of raising ===
-  if (rules.slowPlay && strength > 0.65 && (decision.type === 'raise')) {
-    if (toCall > 0) {
-      decision = { type: 'call', label: `Call ${toCall} (trap)`, amount: toCall };
-    } else {
-      decision = { type: 'check', label: 'Check (trap)', amount: 0 };
+  // === RULE: Slow Play — sometimes trap with strong (but not monster) hands ===
+  if (rules.slowPlay && decision.type === 'raise') {
+    // Never slow-play monsters (full house+ = 0.86+) — always bet/raise to build pot
+    // For strong hands (0.65-0.85), trap ~50% of the time
+    if (strength >= 0.65 && strength < 0.86 && Math.random() < 0.5) {
+      if (toCall > 0) {
+        decision = { type: 'call', label: `Call ${toCall} (trap)`, amount: toCall };
+      } else {
+        decision = { type: 'check', label: 'Check (trap)', amount: 0 };
+      }
     }
   }
 
@@ -301,12 +305,23 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards) {
   // No bet to match — can check or bet
   if (toCall === 0) {
+    // Monster hands (full house+ = 0.86+) — ALL styles should bet most of the time
+    if (strength >= 0.86) {
+      if (r < 80) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 }; // occasional trap
+    }
+    // Very strong hands (trips/straight/flush = 0.62-0.85) — bet majority of the time
+    if (strength >= 0.62) {
+      if (r < 65) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+
     if (agent.style === 'aggressive') {
       if (r < agent.raisePct) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
       return { type: 'check', label: 'Check', amount: 0 };
     }
     if (agent.style === 'conservative') {
-      if (strength > 0.7 && r < 40) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      if (strength > 0.5 && r < 35) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
       return { type: 'check', label: 'Check', amount: 0 };
     }
     if (agent.style === 'bluffer') {
@@ -314,30 +329,41 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
       return { type: 'check', label: 'Check', amount: 0 };
     }
     if (agent.style === 'mathematical') {
-      if (strength > 0.6 && r < 45) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      if (strength > 0.5 && r < 45) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
       return { type: 'check', label: 'Check', amount: 0 };
     }
     if (agent.style === 'chaotic') {
       const chaos = Math.random();
       if (chaos < 0.25) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
-      // Only all-in with strong hands (strength > 0.7)
       if (chaos < 0.35 && strength > 0.7 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
       return { type: 'check', label: 'Check', amount: 0 };
     }
     // balanced
-    if (strength > 0.6 && r < 40) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.5 && r < 40) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
     return { type: 'check', label: 'Check', amount: 0 };
   }
 
   // There's a bet to match — call, raise, or fold
+
+  // Monster hands (full house+) — always raise regardless of style
+  if (strength >= 0.86 && agent.chips > raiseAmt) {
+    if (r < 75) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    return { type: 'call', label: `Call ${toCall}`, amount: toCall }; // occasional flat-call
+  }
+  // Very strong hands (trips/straight/flush) — raise most of the time
+  if (strength >= 0.62 && agent.chips > raiseAmt) {
+    if (r < 55) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+  }
+
   if (agent.style === 'aggressive') {
-    if (strength > 0.5 && r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.4 && r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
     if (strength > 0.25 || r < 25) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
-    if (strength > 0.7 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.5 || r < 15) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.5 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.4 || r < 15) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
