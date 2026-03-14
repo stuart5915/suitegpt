@@ -330,6 +330,52 @@
         .inclaw-platform-status.soon { color: #fbbf24; }
         .inclaw-presence { margin-bottom: var(--space-lg); }
 
+        /* Token Launch Panel */
+        .launch-panel {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); margin-bottom: var(--space-md);
+            overflow: hidden; animation: fadeUp 0.3s ease;
+        }
+        .launch-panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: linear-gradient(135deg, rgba(232,121,85,0.08), rgba(99,102,241,0.08));
+            border-bottom: 1px solid var(--border-subtle);
+            font-weight: 800; font-size: 0.9rem; color: var(--text-primary);
+        }
+        .launch-panel-close {
+            background: none; border: none; color: var(--text-dim); font-size: 1.2rem;
+            cursor: pointer; padding: 2px 6px; border-radius: 6px;
+        }
+        .launch-panel-close:hover { color: var(--text-primary); background: var(--bg-surface); }
+        .launch-panel-body { padding: 14px 16px; }
+        .launch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .launch-field { margin-bottom: 10px; }
+        .launch-field label {
+            display: block; font-size: 0.72rem; font-weight: 700;
+            color: var(--text-secondary); margin-bottom: 3px;
+        }
+        .launch-req { color: var(--lobster-400); }
+        .launch-field input {
+            width: 100%; padding: 8px 10px; background: var(--bg-surface);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font-body); font-size: 0.82rem;
+            box-sizing: border-box; transition: border-color 0.15s;
+        }
+        .launch-field input:focus { border-color: var(--lobster-400); outline: none; }
+        .launch-field input.filled { border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.04); }
+        .launch-status {
+            font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;
+            min-height: 1.2em; font-family: var(--font-mono);
+        }
+        .launch-deploy-btn {
+            width: 100%; padding: 12px; background: var(--accent-gradient);
+            border: none; border-radius: var(--radius-md); color: #fff;
+            font-family: var(--font-body); font-size: 0.9rem; font-weight: 800;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .launch-deploy-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .launch-deploy-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
         /* Marketing agents section */
         .marketing-agents-section { margin-bottom: var(--space-md); animation: fadeUp 0.5s ease 0.1s both; }
         .marketing-agents-header { margin-bottom: var(--space-md); }
@@ -729,6 +775,52 @@
             <p>Your AI-powered workspace assistant. Launch tokens, build apps, manage agents.</p>
             <div class="hub-chat-status"><span class="hub-chat-status-dot"></span> Online</div>
         </div>
+        <!-- ═══ TOKEN LAUNCH PANEL ═══ -->
+        <div class="launch-panel" id="launchPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F680; Launch a Token</span>
+                <button class="launch-panel-close" onclick="closeLaunchPanel()">&times;</button>
+            </div>
+            <div class="launch-panel-body">
+                <div class="launch-row">
+                    <div class="launch-field">
+                        <label>Token Name <span class="launch-req">*</span></label>
+                        <input type="text" id="launchName" placeholder="e.g. MoonCat" maxlength="32">
+                    </div>
+                    <div class="launch-field" style="max-width:120px">
+                        <label>Symbol <span class="launch-req">*</span></label>
+                        <input type="text" id="launchSymbol" placeholder="MCAT" maxlength="10" style="text-transform:uppercase">
+                    </div>
+                </div>
+                <div class="launch-field">
+                    <label>Description <span class="launch-req">*</span></label>
+                    <input type="text" id="launchDesc" placeholder="What is this token about?" maxlength="280">
+                </div>
+                <div class="launch-row">
+                    <div class="launch-field">
+                        <label>Image URL</label>
+                        <input type="text" id="launchImage" placeholder="https://...">
+                    </div>
+                    <div class="launch-field">
+                        <label>Website</label>
+                        <input type="text" id="launchWebsite" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="launch-row">
+                    <div class="launch-field">
+                        <label>X Handle</label>
+                        <input type="text" id="launchX" placeholder="@handle">
+                    </div>
+                    <div class="launch-field">
+                        <label>Telegram</label>
+                        <input type="text" id="launchTG" placeholder="https://t.me/...">
+                    </div>
+                </div>
+                <div class="launch-status" id="launchStatus"></div>
+                <button class="launch-deploy-btn" id="launchDeployBtn" onclick="handleChatDeploy()">&#x1F680; Deploy Token on Base</button>
+            </div>
+        </div>
+
         <div class="hub-chat-container">
             <div class="hub-chat-messages" id="chatMessages">
                 <div class="chat-msg chat-msg-bot">
@@ -1355,7 +1447,7 @@ function chatAddMessage(text, isUser, functionCalled) {
         browse_apps: [{ label: 'Browse All Apps', href: '/apps' }],
         get_staking_info: [{ label: 'Go to Staking', href: '/stake' }],
         get_basis_vaults: [{ label: 'View Vaults', href: 'https://basisubi.com' }],
-        launch_token_info: [{ label: 'Open Launchpad', href: '/inclawbator' }],
+        // launch_token_info opens panel inline — no link needed
         build_app_info: [{ label: 'Open App Builder', href: '/build' }, { label: 'Browse Apps', href: '/apps' }],
         create_agent_info: [{ label: 'Go to Dashboard', href: '/dashboard' }],
         create_staking_info: [{ label: 'Apply for Staking', href: '/inclawbator' }, { label: 'DM on Telegram', href: 'https://t.me/StuartDeFi' }]
@@ -1400,6 +1492,54 @@ function chatHideTyping() {
     if (el) el.remove();
 }
 
+// ═══ Token Launch Panel ═══
+function showLaunchPanel() {
+    var p = document.getElementById('launchPanel');
+    if (p) p.style.display = '';
+}
+function closeLaunchPanel() {
+    var p = document.getElementById('launchPanel');
+    if (p) p.style.display = 'none';
+}
+function fillLaunchForm(args) {
+    if (!args) return;
+    var map = {
+        token_name: 'launchName', token_symbol: 'launchSymbol',
+        description: 'launchDesc', image_url: 'launchImage',
+        website_url: 'launchWebsite', x_handle: 'launchX', telegram_url: 'launchTG'
+    };
+    Object.keys(map).forEach(function(k) {
+        if (args[k]) {
+            var el = document.getElementById(map[k]);
+            if (el) { el.value = args[k]; el.classList.add('filled'); }
+        }
+    });
+    var missing = ['token_name','token_symbol','description'].filter(function(k) {
+        var el = document.getElementById(map[k]);
+        return !el || !el.value.trim();
+    });
+    var status = document.getElementById('launchStatus');
+    if (status) status.textContent = missing.length ? 'Still need: ' + missing.join(', ') : 'Ready to deploy!';
+    var btn = document.getElementById('launchDeployBtn');
+    if (btn) btn.disabled = missing.length > 0;
+}
+function handleChatDeploy() {
+    var name = (document.getElementById('launchName')?.value || '').trim();
+    var symbol = (document.getElementById('launchSymbol')?.value || '').trim();
+    var desc = (document.getElementById('launchDesc')?.value || '').trim();
+    if (!name || !symbol || !desc) return;
+    var msg = 'Deploy my token: ' + name + ' (' + symbol + ') — ' + desc;
+    var img = (document.getElementById('launchImage')?.value || '').trim();
+    var web = (document.getElementById('launchWebsite')?.value || '').trim();
+    var xh = (document.getElementById('launchX')?.value || '').trim();
+    var tg = (document.getElementById('launchTG')?.value || '').trim();
+    if (img) msg += '\nImage: ' + img;
+    if (web) msg += '\nWebsite: ' + web;
+    if (xh) msg += '\nX: @' + xh.replace(/^@/,'');
+    if (tg) msg += '\nTelegram: ' + tg;
+    chatSendMessage(msg);
+}
+
 async function chatSendMessage(text) {
     if (!text.trim() || _chatSending) return;
     _chatSending = true;
@@ -1426,6 +1566,13 @@ async function chatSendMessage(text) {
         chatHideTyping();
         if (data.reply) chatAddMessage(data.reply, false, data.function_called);
         else chatAddMessage('Sorry, something went wrong. Try again!', false);
+        // Handle launch panel actions
+        if (data.function_called === 'launch_token_info') {
+            showLaunchPanel();
+        }
+        if (data.function_called === 'configure_token_launch' && data.tool_args) {
+            fillLaunchForm(data.tool_args);
+        }
         if (data.session_id) {
             _chatSessionId = data.session_id;
             try { localStorage.setItem('inclawbator_session', _chatSessionId); } catch(e) {}

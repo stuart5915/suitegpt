@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosy
 
 You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help people take action:
 
-LAUNCH A TOKEN — When someone wants to launch/create/deploy a token, use launch_token_info. They can self-serve on the Inclawbator launchpad (Clanker on Base). Do NOT send them to incubation for token launches.
+LAUNCH A TOKEN — When someone wants to launch/create/deploy a token, first use launch_token_info to open the launch form. Then ask them for details: token name, symbol, and description (required). Also ask about optional fields: image URL, website, X handle, telegram. As you gather info, call configure_token_launch with whatever details you have so far — you can call it multiple times as you learn more. The form will auto-fill on their screen. When all required fields are filled, tell them to click Deploy. Do NOT send them to a different page.
 
 BUILD AN APP — When someone wants to build/create an app, use build_app_info. They can use the AI app builder at inclawbate.com/build — no code needed.
 
@@ -106,8 +106,27 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'launch_token_info',
-      description: 'Get info on how to launch a token on Inclawbate via Clanker. Use when someone wants to launch, create, or deploy a token.',
+      description: 'Open the token launch form. Use this FIRST when someone wants to launch a token, before gathering details.',
       parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'configure_token_launch',
+      description: 'Fill in token details on the launch form. Call this as you gather info from the user. You can call it multiple times — each call updates the form with new fields.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token_name: { type: 'string', description: 'Token name (e.g. MoonCat)' },
+          token_symbol: { type: 'string', description: 'Token symbol, max 10 chars (e.g. MCAT)' },
+          description: { type: 'string', description: 'Token description, max 280 chars' },
+          image_url: { type: 'string', description: 'Token logo image URL' },
+          website_url: { type: 'string', description: 'Project website URL' },
+          x_handle: { type: 'string', description: 'X/Twitter handle' },
+          telegram_url: { type: 'string', description: 'Telegram group URL' }
+        }
+      }
     }
   },
   {
@@ -216,18 +235,32 @@ function getIncubationInfo() {
 
 function launchTokenInfo() {
   return JSON.stringify({
-    how: 'Launch a token directly from the Inclawbator launchpad — powered by Clanker on Base.',
-    steps: [
-      '1. Go to inclawbate.com/inclawbator',
-      '2. Click "Launch a Token"',
-      '3. Fill out: token name, description, image URL, website, socials',
-      '4. Choose allocation tier (0% free, or burn CLAWS for 1-10% pre-allocation)',
-      '5. Connect wallet and deploy — Clanker handles LP automatically'
-    ],
-    details: 'Clanker deploys your token on Base with automatic Uniswap V3 liquidity. You get a token address, LP pair, and your project page on Inclawbate.',
-    allocation_tiers: '0% = free launch, 1% = burn 50K CLAWS, 2% = burn 250K, 5% = burn 1M, 10% = burn 5M',
-    url: 'https://inclawbate.com/inclawbator',
-    note: 'After launching, you can add staking, build an app, or set up a marketing agent for your token.'
+    action: 'show_launch_form',
+    message: 'Token launch form is now open. Ask the user for: token name, symbol, and description (required). Image URL, website, and socials are optional.',
+    note: 'Clanker deploys on Base with automatic Uniswap V3 liquidity. Free to launch (0% allocation) or burn CLAWS for 1-10% pre-allocation.'
+  });
+}
+
+function configureTokenLaunch(args) {
+  const fields = {};
+  if (args.token_name) fields.token_name = args.token_name;
+  if (args.token_symbol) fields.token_symbol = args.token_symbol.toUpperCase();
+  if (args.description) fields.description = args.description;
+  if (args.image_url) fields.image_url = args.image_url;
+  if (args.website_url) fields.website_url = args.website_url;
+  if (args.x_handle) fields.x_handle = args.x_handle.replace(/^@/, '');
+  if (args.telegram_url) fields.telegram_url = args.telegram_url;
+  const filled = Object.keys(fields);
+  const missing = ['token_name', 'token_symbol', 'description'].filter(f => !fields[f]);
+  return JSON.stringify({
+    action: 'fill_launch_form',
+    fields,
+    filled_count: filled.length,
+    missing_required: missing,
+    ready: missing.length === 0,
+    message: missing.length === 0
+      ? 'All required fields are filled! The user can review and click Deploy.'
+      : 'Still need: ' + missing.join(', ')
   });
 }
 
@@ -369,6 +402,7 @@ async function executeTool(name, args) {
     case 'get_ecosystem_info': return getEcosystemInfo();
     case 'get_incubation_info': return getIncubationInfo();
     case 'launch_token_info': return launchTokenInfo();
+    case 'configure_token_launch': return configureTokenLaunch(args);
     case 'build_app_info': return buildAppInfo();
     case 'create_agent_info': return createAgentInfo();
     case 'create_staking_info': return createStakingInfo();
@@ -437,10 +471,12 @@ export default async function handler(req, res) {
       // Push assistant message with tool_calls to history
       history.push({ role: 'assistant', content: choice.message.content || null, tool_calls: toolCalls });
 
+      let toolArgs = null;
       for (const tc of toolCalls) {
         functionCalled = tc.function.name;
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
+        toolArgs = args;
         const result = await executeTool(tc.function.name, args);
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
       }
@@ -459,7 +495,7 @@ export default async function handler(req, res) {
           else fallback = toolData.message || JSON.stringify(toolData);
         } catch (e) {}
         history.push({ role: 'assistant', content: fallback });
-        return res.status(200).json({ reply: fallback, function_called: functionCalled, session_id: sid });
+        return res.status(200).json({ reply: fallback, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
       }
       choice = data.choices?.[0];
     }
@@ -483,7 +519,7 @@ export default async function handler(req, res) {
 
     history.push({ role: 'assistant', content: reply });
 
-    return res.status(200).json({ reply, function_called: functionCalled, session_id: sid });
+    return res.status(200).json({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
   } catch (e) {
     console.error('Agent chat error:', e);
     return res.status(500).json({ error: 'Agent error: ' + e.message });

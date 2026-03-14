@@ -193,7 +193,7 @@ Real data (use ONLY these numbers):
 - Recent: ${recentAppList || 'various'}
 - Token: $CLAWS on Base, website: inclawbate.com
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. Output ONLY the tweet.`;
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. ALWAYS use @ before X handles (e.g. @abhiontwt not abhiontwt). Output ONLY the tweet.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -402,6 +402,7 @@ RULES:
 - No quotation marks around the tweet
 - Lowercase is fine, even preferred for casual tweets
 - Mix up formats: questions, one-liners, hot takes, mini-stories, shoutouts, stats
+- When mentioning builders, ALWAYS use @ before their handle (e.g. @abhiontwt not abhiontwt)
 - When mentioning builders or apps, use REAL names from the data above
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
