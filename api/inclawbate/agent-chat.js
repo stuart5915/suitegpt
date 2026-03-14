@@ -7,32 +7,35 @@ const APP_API = 'https://inclawbate.com/api/inclawbate';
 
 const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosystem agent. Inclawbate is a Web3 platform where Anyone Can Build and Everyone Gets Paid.
 
-You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help people:
+You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help people take action:
 
-1. DISCOVER APPS — Use browse_apps to find community-built apps in the app store.
+LAUNCH A TOKEN — When someone wants to launch/create/deploy a token, use launch_token_info. They can self-serve on the Inclawbator launchpad (Clanker on Base). Do NOT send them to incubation for token launches.
 
-2. BUILD SOMETHING — Use suggest_app_ideas to inspire builders. Point them to inclawbate.com/build where AI builds apps with no code.
+BUILD AN APP — When someone wants to build/create an app, use build_app_info. They can use the AI app builder at inclawbate.com/build — no code needed.
 
-3. STAKE CLAWS — Use get_staking_info to explain CLAWS staking and earning passive income through the Inclawbate ecosystem.
+CREATE A MARKETING AGENT — When someone wants to set up an AI agent that posts to X/Twitter, use create_agent_info. They create agents from their dashboard.
 
-4. FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis (Aerodrome LP + Aave leverage strategies on Base). Users can deposit USDC to earn yield, or become vault managers to earn performance fees.
+CREATE A STAKE POOL — When someone wants staking for their token, use create_staking_info. Staking deployment is handled by the Inclawbate team as part of the incubation program.
 
-5. EXPLORE ECOSYSTEM — Use get_ecosystem_info to give an overview of everything Inclawbate offers: apps, tokens, staking, Basis vaults, PokerAI, skills marketplace, and more.
+DISCOVER APPS — Use browse_apps to find community-built apps in the app store.
 
-6. INCUBATION — ONLY when someone explicitly wants the team to build something FOR them (token launch, staking, website, branding). Use get_incubation_info. Tell them to DM @StuartDeFi on Telegram or @stuman on X.
+STAKE CLAWS — Use get_staking_info to explain CLAWS staking and earning passive income.
 
-7. WORKSPACE — If a wallet address is provided, use get_user_workspace to see what the user has built (apps, agents, vaults). Reference their existing stuff by name and suggest next steps.
+FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis.
+
+EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
+
+FULL-SERVICE INCUBATION — ONLY when someone wants the team to handle everything (token + staking + branding + marketing as a package). Use get_incubation_info.
+
+WORKSPACE — If a wallet address is provided, use get_user_workspace to see what the user has built.
 
 Guidelines:
-- Start by understanding what the person needs
-- If the user has a connected wallet, consider using get_user_workspace to personalize your advice
-- If an existing app or tool solves their problem, recommend it first
-- For DeFi/yield questions, check Basis vaults
-- For passive income questions, mention both CLAWS staking and Basis vaults
-- Be friendly, concise, and helpful
+- ALWAYS use the right tool for the request — match launch/build/agent/staking to their specific tools
+- Be actionable — tell them exactly what to do and where to go
 - Keep responses under 3 sentences when possible
-- When recommending apps, vaults, or tools, include direct links
-- You are The Inclawbator — speak with confidence about the whole ecosystem`;
+- Include direct links when recommending pages or tools
+- If the user has a connected wallet, personalize your advice with get_user_workspace
+- Be friendly, concise, and confident`;
 
 const TOOLS = [
   {
@@ -96,6 +99,38 @@ const TOOLS = [
     function: {
       name: 'get_staking_info',
       description: 'Get CLAWS token staking info — how to stake, rewards, APY.',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'launch_token_info',
+      description: 'Get info on how to launch a token on Inclawbate via Clanker. Use when someone wants to launch, create, or deploy a token.',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'build_app_info',
+      description: 'Get info on how to build an app on Inclawbate using the AI app builder. Use when someone wants to build, create, or make an app.',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_agent_info',
+      description: 'Get info on how to create a marketing AI agent that auto-posts to X/Twitter. Use when someone wants to set up an agent.',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_staking_info',
+      description: 'Get info on how to create a staking pool for a token. Use when someone wants to set up staking or a stake pool.',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -176,6 +211,75 @@ function getIncubationInfo() {
     services: ['Token launch on Base', 'Staking contract + CLAWS rewards', 'Branding/logo', 'Landing page', 'Marketing', 'X/Twitter presence', 'Revenue sharing via LP fees'],
     cost: 'Free. Small fee split from LP trading fees.',
     contact: { telegram: 'https://t.me/StuartDeFi', x: 'https://x.com/stuman' }
+  });
+}
+
+function launchTokenInfo() {
+  return JSON.stringify({
+    how: 'Launch a token directly from the Inclawbator launchpad — powered by Clanker on Base.',
+    steps: [
+      '1. Go to inclawbate.com/inclawbator',
+      '2. Click "Launch a Token"',
+      '3. Fill out: token name, description, image URL, website, socials',
+      '4. Choose allocation tier (0% free, or burn CLAWS for 1-10% pre-allocation)',
+      '5. Connect wallet and deploy — Clanker handles LP automatically'
+    ],
+    details: 'Clanker deploys your token on Base with automatic Uniswap V3 liquidity. You get a token address, LP pair, and your project page on Inclawbate.',
+    allocation_tiers: '0% = free launch, 1% = burn 50K CLAWS, 2% = burn 250K, 5% = burn 1M, 10% = burn 5M',
+    url: 'https://inclawbate.com/inclawbator',
+    note: 'After launching, you can add staking, build an app, or set up a marketing agent for your token.'
+  });
+}
+
+function buildAppInfo() {
+  return JSON.stringify({
+    how: 'Build an app with AI — no code needed. Describe what you want and the builder creates it.',
+    steps: [
+      '1. Go to inclawbate.com/build',
+      '2. Sign in with your wallet',
+      '3. Describe the app you want (e.g. "A staking dashboard for my token")',
+      '4. AI generates the full app with HTML/CSS/JS',
+      '5. Preview it live, iterate on changes, then publish',
+      '6. Your app gets a URL: inclawbate.com/apps/your-app-name'
+    ],
+    features: 'Supports APIs, wallet integrations, canvas, images, and more. You can fork and edit existing apps too.',
+    url: 'https://inclawbate.com/build',
+    browse_apps: 'https://inclawbate.com/apps'
+  });
+}
+
+function createAgentInfo() {
+  return JSON.stringify({
+    how: 'Create an AI marketing agent that auto-posts to X/Twitter about your project.',
+    steps: [
+      '1. Go to inclawbate.com/dashboard',
+      '2. Open the "My Agents" tab',
+      '3. Click "Create New Agent"',
+      '4. Choose a vibe (degen, builder, scholar, academic, or custom)',
+      '5. Set agent name, posts per day (1-8), and optional profile pic',
+      '6. Link to your existing token/project or create standalone',
+      '7. Connect an X/Twitter account to the agent',
+      '8. Agent starts auto-posting based on its persona and schedule'
+    ],
+    features: 'Personality customization, posting schedule, draft review, post history, and engagement tracking.',
+    url: 'https://inclawbate.com/dashboard',
+    note: 'Agents need credits to run. You can buy credits from the dashboard.'
+  });
+}
+
+function createStakingInfo() {
+  return JSON.stringify({
+    how: 'Staking pools are deployed by the Inclawbate team as part of the incubation program.',
+    process: [
+      '1. You need an existing token (launch one at inclawbate.com/inclawbator if needed)',
+      '2. Apply for incubation — request staking setup for your token',
+      '3. The team deploys a staking contract using the Inclawbate staking factory',
+      '4. Your token gets a staking page at inclawbate.com/stake',
+      '5. Stakers earn CLAWS rewards powered by ecosystem revenue'
+    ],
+    contact: { telegram: 'https://t.me/StuartDeFi', x: 'https://x.com/stuman' },
+    apply_url: 'https://inclawbate.com/inclawbator',
+    note: 'Staking is free to set up — it comes as part of the incubation package with revenue sharing via LP fees.'
   });
 }
 
@@ -264,6 +368,10 @@ async function executeTool(name, args) {
     case 'suggest_app_ideas': return suggestAppIdeas(args);
     case 'get_ecosystem_info': return getEcosystemInfo();
     case 'get_incubation_info': return getIncubationInfo();
+    case 'launch_token_info': return launchTokenInfo();
+    case 'build_app_info': return buildAppInfo();
+    case 'create_agent_info': return createAgentInfo();
+    case 'create_staking_info': return createStakingInfo();
     case 'get_basis_vaults': return await getBasisVaults(args);
     case 'get_staking_info': return getStakingInfo();
     case 'get_user_workspace': return await getUserWorkspace(args);
