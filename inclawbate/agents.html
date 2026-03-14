@@ -99,49 +99,121 @@
         }
         .hub-action-btn:hover { border-color: var(--lobster-300); color: var(--lobster-300); background: hsla(9,52%,54%,0.06); }
 
-        /* ═══ ZONE 4: CHAT ═══ */
-        .hub-chat-section { margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease 0.15s both; }
-        .hub-chat-label {
-            display: flex; align-items: center; gap: 8px;
-            font-family: var(--font-display); font-size: 0.92rem; font-weight: 900;
-            color: var(--text-primary); margin-bottom: var(--space-md);
+        /* ═══ ZONE 4: CHAT (hero element) ═══ */
+        .hub-chat-section { margin-bottom: var(--space-xl); }
+
+        .hub-chat-header {
+            text-align: center; margin-bottom: var(--space-lg);
         }
-        .hub-chat-label-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 2s ease-in-out infinite; }
+        .hub-chat-header h2 {
+            font-family: var(--font-display); font-size: 1.6rem; font-weight: 900;
+            background: var(--title-gradient); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: 4px;
+        }
+        .hub-chat-header p {
+            font-size: 0.85rem; color: var(--text-dim);
+        }
+        .hub-chat-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.72rem; font-weight: 700; color: #4ade80;
+            margin-top: 6px;
+        }
+        .hub-chat-status-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+        }
+
         .hub-chat-container {
-            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
-            border-radius: 20px; overflow: hidden;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 24px; overflow: hidden;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.03) inset;
+            position: relative;
         }
+        .hub-chat-container::before {
+            content: ''; position: absolute; inset: -1px; border-radius: 25px;
+            background: linear-gradient(135deg, hsla(9,52%,54%,0.2), hsla(270,60%,60%,0.1), transparent 50%);
+            z-index: -1; pointer-events: none;
+        }
+
         .hub-chat-messages {
-            max-height: 320px; min-height: 80px; overflow-y: auto;
-            padding: var(--space-lg) var(--space-lg) var(--space-sm);
-            display: flex; flex-direction: column; gap: var(--space-md); scroll-behavior: smooth;
+            min-height: 200px; max-height: 420px; overflow-y: auto;
+            padding: var(--space-xl) var(--space-xl) var(--space-md);
+            display: flex; flex-direction: column; gap: var(--space-lg); scroll-behavior: smooth;
         }
+        @media(min-width:768px) { .hub-chat-messages { min-height: 280px; max-height: 480px; } }
         .hub-chat-messages::-webkit-scrollbar { width: 4px; }
         .hub-chat-messages::-webkit-scrollbar-track { background: transparent; }
         .hub-chat-messages::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
         .chat-msg { display: flex; gap: var(--space-sm); align-items: flex-start; animation: msg-in 0.35s ease; }
         @keyframes msg-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .chat-msg-user { flex-direction: row-reverse; }
-        .chat-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
-        .chat-msg-user .chat-avatar { background: hsla(9,52%,54%,0.15); border-color: hsla(9,52%,54%,0.25); font-size: 0.7rem; color: var(--lobster-300); }
-        .chat-bubble { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-sm) var(--space-md); font-size: 0.86rem; line-height: 1.6; color: var(--text-primary); max-width: 85%; word-wrap: break-word; }
-        .chat-msg-user .chat-bubble { background: hsla(9,52%,54%,0.12); border-color: hsla(9,52%,54%,0.2); color: var(--lobster-200); }
+        .chat-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, hsla(9,52%,54%,0.15), hsla(270,60%,60%,0.1));
+            border: 1px solid var(--border-subtle); display: flex; align-items: center;
+            justify-content: center; font-size: 1rem; flex-shrink: 0;
+        }
+        .chat-msg-user .chat-avatar {
+            background: hsla(9,52%,54%,0.15); border-color: hsla(9,52%,54%,0.25);
+            font-size: 0.75rem; color: var(--lobster-300);
+        }
+        .chat-bubble {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 18px; border-top-left-radius: 4px;
+            padding: var(--space-md) var(--space-lg);
+            font-size: 0.88rem; line-height: 1.7; color: var(--text-primary);
+            max-width: 82%; word-wrap: break-word;
+        }
+        .chat-msg-user .chat-bubble {
+            background: linear-gradient(135deg, hsla(9,52%,54%,0.14), hsla(9,52%,54%,0.08));
+            border-color: hsla(9,52%,54%,0.22); color: var(--lobster-200);
+            border-radius: 18px; border-top-right-radius: 4px;
+        }
         .chat-bubble a { color: var(--lobster-300); text-decoration: underline; text-underline-offset: 2px; }
         .chat-bubble a:hover { color: var(--lobster-200); }
-        .chat-typing { display: flex; gap: 4px; padding: var(--space-sm) var(--space-md); align-items: center; }
-        .chat-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); animation: typing-bounce 1.4s ease-in-out infinite; }
+
+        .chat-typing { display: flex; gap: 5px; padding: var(--space-sm) var(--space-md); align-items: center; }
+        .chat-typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lobster-400); animation: typing-bounce 1.4s ease-in-out infinite; }
         .chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing-bounce { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-6px); opacity:1; } }
-        .chat-input-row { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-lg); border-top: 1px solid var(--border-subtle); }
-        .chat-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-family: var(--font-body); font-size: 0.88rem; padding: var(--space-sm) 0; }
+        @keyframes typing-bounce { 0%,60%,100% { transform:translateY(0); opacity:0.3; } 30% { transform:translateY(-8px); opacity:1; } }
+
+        .chat-input-row {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl);
+            border-top: 1px solid var(--border-subtle);
+            background: rgba(255,255,255,0.02);
+        }
+        .chat-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: var(--text-primary); font-family: var(--font-body);
+            font-size: 0.92rem; padding: var(--space-sm) 0;
+        }
         .chat-input::placeholder { color: var(--text-dim); }
-        .chat-send { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-gradient); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
-        .chat-send:hover { transform: scale(1.08); }
-        .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .hub-chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
-        .chat-prompt-chip { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 5px 14px; font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-        .chat-prompt-chip:hover { border-color: var(--lobster-400); color: var(--text-primary); background: hsla(9,52%,54%,0.08); }
+        .chat-send {
+            width: 42px; height: 42px; border-radius: 14px;
+            background: var(--accent-gradient); border: none; color: #fff;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
+            box-shadow: 0 2px 12px rgba(211,111,76,0.3);
+        }
+        .chat-send:hover { transform: scale(1.06); box-shadow: 0 4px 18px rgba(211,111,76,0.4); }
+        .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .hub-chat-chips {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-md);
+            justify-content: center;
+        }
+        .chat-prompt-chip {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 999px; padding: 8px 18px; font-family: var(--font-body);
+            font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .chat-prompt-chip:hover { border-color: var(--lobster-400); color: var(--text-primary); background: hsla(9,52%,54%,0.08); transform: translateY(-1px); }
         .chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
         .chat-action-btn { display: inline-flex; align-items: center; gap: 5px; background: hsla(9,52%,54%,0.1); border: 1px solid hsla(9,52%,54%,0.25); border-radius: 999px; padding: 5px 14px; font-family: var(--font-body); font-size: 0.74rem; font-weight: 700; color: var(--lobster-300); text-decoration: none; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .chat-action-btn:hover { background: hsla(9,52%,54%,0.18); border-color: var(--lobster-400); }
@@ -621,33 +693,22 @@
         </div>
     </section>
 
-    <!-- ═══ ZONE 2: WORKSPACE ═══ -->
-    <div id="heroSection">
-        <div id="hubWorkspace"></div>
-    </div>
-
-    <!-- ═══ ZONE 3: QUICK ACTIONS ═══ -->
-    <section class="hub-actions">
-        <button class="hub-action-btn" onclick="hubChatFill('I want to launch a new token')">+ New Token</button>
-        <button class="hub-action-btn" onclick="hubChatFill('Build me an app')">+ New App</button>
-        <button class="hub-action-btn" onclick="hubChatFill('Create a stake pool for my token')">+ Stake Pool</button>
-        <button class="hub-action-btn" onclick="hubChatFill('Set up an AI agent for my project')">+ New Agent</button>
-    </section>
-
-    <!-- ═══ ZONE 4: THE INCLAWBATOR CHAT ═══ -->
+    <!-- ═══ THE INCLAWBATOR CHAT (hero) ═══ -->
     <section class="hub-chat-section">
-        <div class="hub-chat-label">
-            <span>&#129438;</span> The Inclawbator <span class="hub-chat-label-dot"></span>
+        <div class="hub-chat-header">
+            <h2>&#129438; The Inclawbator</h2>
+            <p>Your AI-powered workspace assistant. Launch tokens, build apps, manage agents.</p>
+            <div class="hub-chat-status"><span class="hub-chat-status-dot"></span> Online</div>
         </div>
         <div class="hub-chat-container">
             <div class="hub-chat-messages" id="chatMessages">
                 <div class="chat-msg chat-msg-bot">
                     <div class="chat-avatar">&#129438;</div>
-                    <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; your workspace assistant. I can see what you've built and help you launch tokens, build apps, manage agents, and find yield. What do you need?</div>
+                    <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; your workspace assistant. I can help you launch tokens, build apps, manage agents, and find yield. What are we building?</div>
                 </div>
             </div>
             <form class="chat-input-row" id="chatForm" autocomplete="off">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Ask the Inclawbator..." maxlength="500" autocomplete="off">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Ask the Inclawbator anything..." maxlength="500" autocomplete="off">
                 <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
             </form>
         </div>
@@ -657,6 +718,19 @@
             <button class="chat-prompt-chip" data-prompt="Set up an AI agent for my project">&#x1F916; New agent</button>
             <button class="chat-prompt-chip" data-prompt="Show me the best yield vaults">&#x1F4B0; Find yield</button>
         </div>
+    </section>
+
+    <!-- ═══ WORKSPACE ═══ -->
+    <div id="heroSection">
+        <div id="hubWorkspace"></div>
+    </div>
+
+    <!-- ═══ QUICK ACTIONS ═══ -->
+    <section class="hub-actions">
+        <button class="hub-action-btn" onclick="hubChatFill('I want to launch a new token')">+ New Token</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Build me an app')">+ New App</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Create a stake pool for my token')">+ Stake Pool</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Set up an AI agent for my project')">+ New Agent</button>
     </section>
 
     <!-- ═══ THE INCLAWBATOR (hidden — replaced by hub chat) ═══ -->
