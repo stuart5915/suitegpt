@@ -488,12 +488,18 @@ export default async function handler(req, res) {
         // Return tool result directly as fallback
         const lastTool = history.filter(m => m.role === 'tool').pop();
         let fallback = 'Here are some ideas!';
-        try {
-          const toolData = JSON.parse(lastTool.content);
-          if (toolData.ideas) fallback = toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
-          else if (toolData.apps) fallback = toolData.apps.map(a => a.name + ' — ' + a.url).join('\n• ');
-          else fallback = toolData.message || JSON.stringify(toolData);
-        } catch (e) {}
+        // User-friendly fallbacks for launch tools
+        if (functionCalled === 'launch_token_info') fallback = "I've opened the token launch form for you! Fill in your token name, symbol, and description — then hit Deploy. What do you want to call your token?";
+        else if (functionCalled === 'configure_token_launch') {
+          try { const td = JSON.parse(lastTool.content); fallback = td.ready ? "Looking good! Review the details and click Deploy when you're ready." : "I've filled in what I have so far. " + (td.missing_required?.length ? "Still need: " + td.missing_required.join(', ') + ". What's next?" : ''); } catch(e) { fallback = "I've updated the form with your details!"; }
+        } else {
+          try {
+            const toolData = JSON.parse(lastTool.content);
+            if (toolData.ideas) fallback = toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
+            else if (toolData.apps) fallback = toolData.apps.map(a => a.name + ' — ' + a.url).join('\n• ');
+            else fallback = toolData.message || JSON.stringify(toolData);
+          } catch (e) {}
+        }
         history.push({ role: 'assistant', content: fallback });
         return res.status(200).json({ reply: fallback, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
       }
@@ -506,14 +512,20 @@ export default async function handler(req, res) {
 
     // If reply is empty but we had tool data, build a fallback from it
     if (!reply && functionCalled) {
-      const lastTool = history.filter(m => m.role === 'tool').pop();
-      try {
-        const toolData = JSON.parse(lastTool.content);
-        if (toolData.ideas) reply = 'Here are some ideas:\n• ' + toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
-        else if (toolData.apps) reply = 'Check these out:\n' + toolData.apps.map(a => '• ' + a.name + ' — ' + a.url).join('\n');
-        else if (toolData.description) reply = toolData.description;
-        else reply = toolData.message || 'Check out our apps at inclawbate.com/apps!';
-      } catch (e) { reply = 'Check out inclawbate.com/apps to explore what we have!'; }
+      if (functionCalled === 'launch_token_info') {
+        reply = "I've opened the token launch form for you! Fill in your token name, symbol, and description — then hit Deploy. What do you want to call your token?";
+      } else if (functionCalled === 'configure_token_launch') {
+        try { const td = JSON.parse(history.filter(m => m.role === 'tool').pop().content); reply = td.ready ? "Looking good! Review the details and click Deploy when you're ready." : "I've updated the form. " + (td.missing_required?.length ? "Still need: " + td.missing_required.join(', ') : ''); } catch(e) { reply = "I've updated the form!"; }
+      } else {
+        const lastTool = history.filter(m => m.role === 'tool').pop();
+        try {
+          const toolData = JSON.parse(lastTool.content);
+          if (toolData.ideas) reply = 'Here are some ideas:\n• ' + toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
+          else if (toolData.apps) reply = 'Check these out:\n' + toolData.apps.map(a => '• ' + a.name + ' — ' + a.url).join('\n');
+          else if (toolData.description) reply = toolData.description;
+          else reply = toolData.message || 'Check out our apps at inclawbate.com/apps!';
+        } catch (e) { reply = 'Check out inclawbate.com/apps to explore what we have!'; }
+      }
     }
     if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
 
