@@ -10,6 +10,14 @@ const { RoomManager, PLATFORM_WALLETS } = require('./room-manager');
 const { createChallenge, verifySignature, getChallengeMessage } = require('./wallet-auth');
 const { RewardEngine } = require('./reward-engine');
 
+// Crash handlers — keep server alive on random errors
+process.on('uncaughtException', (err) => {
+  console.error('[CRASH] Uncaught exception:', err.message, err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[CRASH] Unhandled rejection:', reason);
+});
+
 // Optional: chain + supabase (graceful fallback to JSON store if not configured)
 let chain = null;
 let useSupabase = false;
@@ -101,7 +109,24 @@ function requireAuth(client, ws) {
   return true;
 }
 
+// Heartbeat — prune dead WebSocket connections every 30s
+setInterval(() => {
+  for (const [ws, client] of clients) {
+    if (ws._isAlive === false) {
+      clients.delete(ws);
+      ws.terminate();
+      continue;
+    }
+    ws._isAlive = false;
+    try { ws.ping(); } catch (e) { /* ignore */ }
+  }
+}, 30000);
+
 wss.on('connection', (ws) => {
+  ws._isAlive = true;
+  ws.on('pong', () => { ws._isAlive = true; });
+  ws.on('error', (err) => { console.error('[WS] Connection error:', err.message); });
+
   const sessionId = uuidv4();
   clients.set(ws, { sessionId, activeRoom: 'sandbox', authenticated: false });
 
