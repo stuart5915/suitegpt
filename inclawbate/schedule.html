@@ -1225,11 +1225,14 @@
         }
     };
 
-    // Wire up character counter
-    document.getElementById('draftModalText').addEventListener('input', updateDraftCount);
-    // Close modal on overlay click
-    document.getElementById('draftModal').addEventListener('click', function(e) {
-        if (e.target === this) closeDraftModal();
+    // Wire up character counter + modal close (elements are after this script, so defer)
+    document.addEventListener('DOMContentLoaded', function() {
+        var dmt = document.getElementById('draftModalText');
+        if (dmt) dmt.addEventListener('input', updateDraftCount);
+        var dm = document.getElementById('draftModal');
+        if (dm) dm.addEventListener('click', function(e) {
+            if (e.target === this) closeDraftModal();
+        });
     });
 
     // ── @inclawbator Feed ──
