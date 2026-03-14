@@ -467,97 +467,32 @@ const CLAWS_ABI = ['function approve(address spender, uint256 amount) returns (b
 const VAULT_ABI = ['function deposit(uint256 amount) external'];
 const BASE_CHAIN_ID = '0x2105'; // 8453
 
-// ── Sound Effects (Web Audio API) ────────────────────────────────────
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
+// ── Sound Effects ────────────────────────────────────────────────────
+const flySfx = new Audio('/inclawbate/assets/fly-sfx.mp3');
+const crashSfx = new Audio('/inclawbate/assets/crash-sfx.mp3');
+flySfx.loop = true;
+flySfx.volume = 0.4;
+crashSfx.volume = 0.6;
 
 function playCrashSound() {
-  try {
-    const ctx = getAudioCtx();
-    // Low rumble + noise burst
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.5);
-    // Impact hit
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'square';
-    osc2.frequency.setValueAtTime(80, ctx.currentTime);
-    osc2.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.2);
-    gain2.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(ctx.currentTime);
-    osc2.stop(ctx.currentTime + 0.3);
-  } catch(e) {}
+  try { crashSfx.currentTime = 0; crashSfx.play(); } catch(e) {}
 }
 
-let flyOsc = null, flyGain = null;
 function startFlySound() {
-  try {
-    const ctx = getAudioCtx();
-    if (flyOsc) return;
-    flyOsc = ctx.createOscillator();
-    flyGain = ctx.createGain();
-    flyOsc.type = 'sine';
-    flyOsc.frequency.setValueAtTime(220, ctx.currentTime);
-    flyGain.gain.setValueAtTime(0.06, ctx.currentTime);
-    flyOsc.connect(flyGain);
-    flyGain.connect(ctx.destination);
-    flyOsc.start(ctx.currentTime);
-  } catch(e) {}
+  try { flySfx.currentTime = 0; flySfx.play(); } catch(e) {}
 }
 
 function updateFlyPitch(multiplier) {
-  try {
-    if (flyOsc && flyGain) {
-      const ctx = getAudioCtx();
-      // Pitch rises with multiplier
-      flyOsc.frequency.setValueAtTime(220 + Math.min(multiplier * 40, 600), ctx.currentTime);
-      flyGain.gain.setValueAtTime(Math.min(0.06 + multiplier * 0.005, 0.12), ctx.currentTime);
-    }
-  } catch(e) {}
+  // Increase volume slightly as multiplier rises
+  try { flySfx.volume = Math.min(0.4 + multiplier * 0.02, 0.7); } catch(e) {}
 }
 
 function stopFlySound() {
-  try {
-    if (flyGain) {
-      const ctx = getAudioCtx();
-      flyGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-    }
-    setTimeout(() => {
-      try { if (flyOsc) { flyOsc.stop(); flyOsc = null; flyGain = null; } } catch(e) { flyOsc = null; flyGain = null; }
-    }, 150);
-  } catch(e) { flyOsc = null; flyGain = null; }
+  try { flySfx.pause(); flySfx.currentTime = 0; flySfx.volume = 0.4; } catch(e) {}
 }
 
 function playCashoutSound() {
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
-  } catch(e) {}
+  // No separate cashout SFX file yet — silent for now
 }
 
 // ── State ───────────────────────────────────────────────────────────
