@@ -275,9 +275,9 @@ const STYLE_EXAMPLES = [
 async function fetchPlatformContext() {
     const results = { totalApps: 0, recentApps: [], builders: [], topApps: [] };
 
-    const [appsRes, countRes, buildersRes] = await Promise.allSettled([
+    const [appsRes, countRes, buildersRes, profilesRes] = await Promise.allSettled([
         supabase.from('user_apps')
-            .select('name, slug, category, upvote_count, view_count, creator_x_handle')
+            .select('name, slug, category, upvote_count, view_count, creator_x_handle, creator_wallet')
             .eq('is_public', true)
             .order('created_at', { ascending: false })
             .limit(20),
@@ -285,22 +285,47 @@ async function fetchPlatformContext() {
             .select('*', { count: 'exact', head: true })
             .eq('is_public', true),
         supabase.from('user_apps')
-            .select('creator_x_handle')
+            .select('creator_x_handle, creator_wallet')
             .eq('is_public', true)
             .not('creator_x_handle', 'is', null),
+        // Fetch current x_handles from human_profiles (source of truth)
+        supabase.from('human_profiles')
+            .select('wallet_address, x_handle')
+            .not('x_handle', 'is', null),
     ]);
+
+    // Build wallet → current x_handle mapping from profiles
+    const walletToHandle = {};
+    if (profilesRes.status === 'fulfilled') {
+        (profilesRes.value.data || []).forEach(p => {
+            if (p.wallet_address && p.x_handle) {
+                walletToHandle[p.wallet_address.toLowerCase()] = p.x_handle;
+            }
+        });
+    }
+
+    // Helper: get the most current handle for an app
+    function currentHandle(app) {
+        if (app.creator_wallet) {
+            const fresh = walletToHandle[app.creator_wallet.toLowerCase()];
+            if (fresh) return fresh;
+        }
+        return app.creator_x_handle;
+    }
 
     if (countRes.status === 'fulfilled') results.totalApps = countRes.value.count || 0;
     if (appsRes.status === 'fulfilled') {
-        results.recentApps = (appsRes.value.data || []).slice(0, 15);
-        results.topApps = [...(appsRes.value.data || [])]
+        const apps = (appsRes.value.data || []).map(a => ({ ...a, creator_x_handle: currentHandle(a) }));
+        results.recentApps = apps.slice(0, 15);
+        results.topApps = [...apps]
             .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
             .slice(0, 5);
     }
     if (buildersRes.status === 'fulfilled') {
         const handles = {};
         (buildersRes.value.data || []).forEach(a => {
-            if (a.creator_x_handle) handles[a.creator_x_handle] = (handles[a.creator_x_handle] || 0) + 1;
+            const handle = currentHandle(a);
+            if (handle) handles[handle] = (handles[handle] || 0) + 1;
         });
         results.builders = Object.entries(handles)
             .sort((a, b) => b[1] - a[1])
