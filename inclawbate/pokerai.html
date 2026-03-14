@@ -3844,6 +3844,7 @@
                   <div class="bal-actions">
                     <button onclick="openVault()" class="bal-btn bal-btn-deposit">Deposit</button>
                     <button onclick="openVault('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
+                    <button onclick="refreshBalance()" id="refreshBalBtn" class="bal-btn" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text-muted);padding:4px 8px;font-size:11px" title="Sync balance with on-chain deposits">↻</button>
                   </div>
                 </div>
                 <!-- $POKERAI Rewards -->
@@ -6330,6 +6331,13 @@ function checkDepositBalance() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'checkDeposit' }));
   }
+}
+
+function refreshBalance() {
+  const btn = document.getElementById('refreshBalBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  checkDepositBalance();
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 3000);
 }
 
 function doWithdraw() {
