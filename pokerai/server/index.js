@@ -297,32 +297,33 @@ wss.on('connection', (ws) => {
         }
 
         case 'checkDeposit': {
-          // Full reconciliation: compare on-chain net vs what the wallet actually has
+          // Reconcile: compare on-chain GROSS deposits vs total deposit credits ever given
+          // (Old logic used net deposits which broke when users withdrew admin-credited chips)
           if (!requireAuth(client, ws)) break;
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
             const stats = await chain.playerStats(addr); // resilient call with fallback RPCs
             const onChainDepositedChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
-            const onChainWithdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
-            const onChainNet = onChainDepositedChips - onChainWithdrawnChips;
 
-            // What the wallet actually has: balance + chips in agents
-            const walletBal = rooms.getWalletBalance(addr).balance || 0;
-            const agentChips = rooms.getChipsInPlay(addr) || 0;
-            const actualTotal = walletBal + agentChips;
+            // How many chips have we EVER credited for deposits? (from poker_transactions table)
+            const dbCredited = rooms.store.getTotalDepositedChips
+              ? await rooms.store.getTotalDepositedChips(addr)
+              : 0;
 
-            // If on-chain net > what wallet has, chips are missing
-            if (onChainNet > actualTotal && onChainNet - actualTotal >= 100) {
-              const credit = onChainNet - actualTotal;
+            // If on-chain gross deposits > total credits ever given, chips are missing
+            if (onChainDepositedChips > dbCredited && onChainDepositedChips - dbCredited >= 100) {
+              const credit = onChainDepositedChips - dbCredited;
               await rooms.store.addBalance(addr, credit);
               await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
               sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: credit } }));
-              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain net: ${onChainNet}, wallet+agents: ${actualTotal})`);
+              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited})`);
             } else {
+              const walletBal = rooms.getWalletBalance(addr).balance || 0;
+              const agentChips = rooms.getChipsInPlay(addr) || 0;
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
-              console.log(`[CheckDeposit] ${addr} OK — on-chain net: ${onChainNet}, wallet: ${walletBal}, agents: ${agentChips}`);
+              console.log(`[CheckDeposit] ${addr} OK — on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited}, wallet: ${walletBal}, agents: ${agentChips}`);
             }
           } catch (e) {
             console.error('[CheckDeposit] Failed:', e.message);
