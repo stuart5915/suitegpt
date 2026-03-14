@@ -1310,8 +1310,14 @@
     }
 
     // ── Init ──
-    initSchedule();
-    loadFeed();
+    initSchedule().catch(function(e) {
+        console.error('Schedule init error:', e);
+        document.getElementById('schedSlots').innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:#f87171">Error loading schedule: ' + (e.message || e) + '</div>';
+    });
+    loadFeed().catch(function(e) {
+        console.error('Feed load error:', e);
+        document.getElementById('xFeedList').innerHTML = '<div class="x-feed-empty">Could not load feed.</div>';
+    });
 })();
 </script>
 
