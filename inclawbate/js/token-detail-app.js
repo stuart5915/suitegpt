@@ -8,6 +8,7 @@ var API_BASE = '/api/inclawbate/inclawbator';
 
 var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var S4H_ADDRESS = '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07';
+var POKERAI_ADDRESS = '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07';
 
 
 // Hardcoded metadata for tokens not in the inclawbator DB
@@ -36,6 +37,17 @@ EXTRA_TOKENS[S4H_ADDRESS.toLowerCase()] = {
     website_url: 'https://salvation4humanity.com',
     x_handle: 'salvation4h',
     telegram_url: 'https://t.me/salvation4humanity'
+};
+EXTRA_TOKENS[POKERAI_ADDRESS.toLowerCase()] = {
+    token_name: 'PokerAI',
+    token_symbol: 'POKERAI',
+    token_address: POKERAI_ADDRESS,
+    logo_url: '/inclawbate/assets/pokerai-logo.png',
+    tier: 'ecosystem',
+    description: 'The native token of PokerAI — AI poker agents powered by Inclawbate.',
+    is_clanker: true,
+    website_url: 'https://pokerai.app',
+    x_handle: 'inclawbate'
 };
 
 var state = { project: null, market: null, wallet: null };

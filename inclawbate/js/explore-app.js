@@ -70,6 +70,15 @@
             tier: 'incubated',
             staking_address: '0x65Aec0C9fd455822F1cC0e3De7965B106d182017',
             created_at: '2025-04-01T00:00:00Z'
+        },
+        {
+            token_name: 'PokerAI',
+            token_symbol: 'POKERAI',
+            token_address: '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07',
+            logo_url: '/inclawbate/assets/pokerai-logo.png',
+            status: 'active',
+            tier: 'ecosystem',
+            created_at: '2026-03-14T00:00:00Z'
         }
     ];
 
