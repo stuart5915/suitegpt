@@ -806,8 +806,9 @@
                 var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
                 if (isAdmin && !isPast) {
                     html += '<div class="sched-draft-actions">';
-                    html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')">\u2713</button>';
-                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')">\u270E</button>';
+                    html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve">\u2713</button>';
+                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')" title="Edit">\u270E</button>';
+                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._regenSlot(\'' + booked.id + '\')" title="Regenerate">\u21BB</button>';
                     html += '</div>';
                 }
 
@@ -1276,6 +1277,39 @@
             renderSlots(_selectedDay);
             alert('Approved ' + (data.approved || 0) + ' drafts — they will auto-post at their scheduled times.');
         } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._regenSlot = async function(slotId) {
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+
+        var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+        if (!slot) return;
+
+        // Show regenerating state
+        slot._regen = true;
+        renderSlots(_selectedDay);
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'regenerate_slot', slot_id: slotId })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+
+            // Update local state
+            if (data.slot) {
+                var idx = _schedSlots.findIndex(function(s) { return s.id === slotId; });
+                if (idx !== -1) _schedSlots[idx] = data.slot;
+            }
+            renderSlots(_selectedDay);
+        } catch(e) {
+            alert('Regenerate failed: ' + e.message);
+        } finally {
+            if (slot) delete slot._regen;
+        }
     };
 
     window._uploadSlotImage = function(slotId) {

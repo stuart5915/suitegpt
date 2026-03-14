@@ -155,6 +155,79 @@ export default async function handler(req, res) {
             return res.json({ ok: true, status: newStatus });
         }
 
+        if (action === 'regenerate_slot') {
+            const { slot_id } = req.body;
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+
+            // Get the existing slot
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .eq('booked_by_wallet', 'system-autofill')
+                .single();
+            if (!slot) return res.status(404).json({ error: 'Slot not found' });
+
+            const opts = slot.tweet_options || {};
+            const pillarName = opts.pillar || 'Incubation CTA';
+            const angle = opts.angle || 'general';
+            const pillar = PILLARS.find(p => p.name === pillarName) || PILLARS[6];
+
+            // Fetch real platform context
+            const ctx = await fetchPlatformContext();
+            const topBuilders = ctx.builders.map(b => `@${b.handle} (${b.apps} apps)`).join(', ');
+            const topAppList = ctx.topApps.map(a => `${a.name} (${a.view_count || 0} views)`).join(', ');
+            const recentAppList = ctx.recentApps.slice(0, 8).map(a =>
+                `${a.name}${a.creator_x_handle ? ' by @' + a.creator_x_handle : ''}`
+            ).join(', ');
+
+            const prompt = `You are @inclawbator. Generate ONE tweet.
+
+Pillar: ${pillar.name} — ${pillar.desc}
+Angle: ${angle}
+
+Real data (use ONLY these numbers):
+- ${ctx.totalApps}+ apps on inclawbate
+- Top builders: ${topBuilders || 'growing community'}
+- Popular apps: ${topAppList || 'various'}
+- Recent: ${recentAppList || 'various'}
+- Token: $CLAWS on Base, website: inclawbate.com
+
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. Output ONLY the tweet.`;
+
+            try {
+                const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        max_tokens: 300,
+                        temperature: 0.95,
+                        messages: [{ role: 'user', content: prompt }]
+                    })
+                });
+                const data = await resp.json();
+                let tweetText = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '').replace(/^\d+[\.\)]\s*/, '');
+
+                if (!tweetText || tweetText.length > 280) {
+                    return res.status(500).json({ error: 'Generated tweet invalid or too long' });
+                }
+
+                const newStatus = pillar.needsImage ? 'needs_image' : 'needs_review';
+                const { data: updated, error } = await supabase
+                    .from('agent_schedule')
+                    .update({ tweet_text: tweetText, status: newStatus })
+                    .eq('id', slot_id)
+                    .select()
+                    .single();
+
+                if (error) return res.status(500).json({ error: error.message });
+                return res.json({ ok: true, slot: updated });
+            } catch(e) {
+                return res.status(500).json({ error: 'Regeneration failed: ' + e.message });
+            }
+        }
+
         if (action === 'approve_all') {
             const { date: approveDate } = req.body;
             if (!approveDate) return res.status(400).json({ error: 'date required' });
