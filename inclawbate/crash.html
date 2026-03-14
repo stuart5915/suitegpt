@@ -15,7 +15,8 @@
   --success:#599368;--success-bg:#EEF5F0;
   --danger:#D95F5F;--danger-bg:#FEF2F2;
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+@media(min-width:768px){body{overflow:hidden}}
 .font-display{font-family:'Outfit',sans-serif}
 
 /* Scrollbar */
@@ -429,7 +430,7 @@ input[type=number]{-moz-appearance:textfield}
 </div>
 
 <!-- ── Deposit Modal ── -->
-<div class="modal-overlay" id="depositModal">
+<div class="modal-overlay" id="depositModal" onclick="if(event.target===this)closeDeposit()">
   <div class="modal" style="position:relative">
     <button class="modal-close" onclick="closeDeposit()">&times;</button>
     <div class="modal-icon">&#x1F99E;</div>
@@ -443,7 +444,7 @@ input[type=number]{-moz-appearance:textfield}
 </div>
 
 <!-- ── Withdraw Modal ── -->
-<div class="modal-overlay" id="withdrawModal">
+<div class="modal-overlay" id="withdrawModal" onclick="if(event.target===this)closeWithdraw()">
   <div class="modal" style="position:relative">
     <button class="modal-close" onclick="closeWithdraw()">&times;</button>
     <div class="modal-icon">&#x1F99E;</div>
@@ -930,7 +931,7 @@ function logout() {
 
 // ── Deposit ─────────────────────────────────────────────────────────
 function showDeposit() { $('depositModal').classList.add('open'); $('depositAmount').focus(); $('depositError').textContent = ''; $('depositStatus').textContent = ''; }
-function closeDeposit() { $('depositModal').classList.remove('open'); }
+function closeDeposit() { $('depositModal').classList.remove('open'); $('depositBtn').textContent = 'Deposit'; $('depositBtn').disabled = false; }
 
 async function doDeposit() {
   const amount = Math.floor(Number($('depositAmount').value) || 0);

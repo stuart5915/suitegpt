@@ -125,14 +125,11 @@ async function verifyDeposit(txHash, wallet) {
   if (!receipt) return { ok: false, error: 'Transaction not found — wait for confirmation' };
   if (receipt.status !== 1) return { ok: false, error: 'Transaction failed on chain' };
 
-  // 3. Check it went to our vault
-  if (!VAULT_ADDRESS || receipt.to.toLowerCase() !== VAULT_ADDRESS.toLowerCase()) {
-    return { ok: false, error: 'Transaction not sent to vault contract' };
-  }
-
-  // 4. Parse Deposit event from logs
+  // 3. Parse Deposit event from logs (check vault contract emitted it)
   let depositEvent = null;
   for (const log of receipt.logs) {
+    // Only accept Deposit events from our vault contract
+    if (!VAULT_ADDRESS || log.address.toLowerCase() !== VAULT_ADDRESS.toLowerCase()) continue;
     try {
       const parsed = VAULT_IFACE.parseLog({ topics: log.topics, data: log.data });
       if (parsed && parsed.name === 'Deposit') {
@@ -142,7 +139,7 @@ async function verifyDeposit(txHash, wallet) {
     } catch {}
   }
 
-  if (!depositEvent) return { ok: false, error: 'No Deposit event found in transaction' };
+  if (!depositEvent) return { ok: false, error: 'No Deposit event found — ensure you deposited to the vault contract' };
 
   // 5. Verify the depositor matches
   const depositor = depositEvent.args[0].toLowerCase();
