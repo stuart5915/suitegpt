@@ -298,21 +298,11 @@ wss.on('connection', (ws) => {
 
         case 'checkDeposit': {
           // User-triggered deposit check — compare on-chain total deposited vs recorded deposit transactions
-          // Uses gross deposited (not net), since withdrawals are tracked separately
           if (!requireAuth(client, ws)) break;
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
-            // Fresh provider + contract to avoid stale connection issues
-            const { ethers: eth } = require('ethers');
-            const freshProvider = new eth.JsonRpcProvider(process.env.BASE_RPC_URL || 'https://mainnet.base.org');
-            const freshVault = new eth.Contract(process.env.VAULT_CONTRACT_ADDRESS, [
-              'function playerStats(address player) external view returns (uint256 deposited, uint256 withdrawn, uint256 nonce)'
-            ], freshProvider);
-            const rpcTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('RPC timeout')), 8000));
-            const stats = await Promise.race([freshVault.playerStats(addr), rpcTimeout]);
-            freshProvider.destroy();
-
+            const stats = await chain.playerStats(addr); // resilient call with fallback RPCs
             const onChainDeposited = Math.floor((Number(stats[0]) * 10000) / 1e6);
             const alreadyCredited = await rooms.store.getTotalDepositedChips(addr);
             if (onChainDeposited > alreadyCredited) {

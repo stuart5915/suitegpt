@@ -16,27 +16,82 @@ const VAULT_ABI = [
 const CHIPS_PER_USDC = 10_000;
 const USDC_DECIMALS = 1_000_000; // 1e6
 
+// Fallback RPCs — tried in order if primary fails
+const FALLBACK_RPCS = [
+  'https://base.llamarpc.com',
+  'https://base-mainnet.public.blastapi.io',
+  'https://1rpc.io/base',
+  'https://mainnet.base.org'
+];
+
+// Wrap any promise with a timeout
+function withTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('RPC timeout')), ms))
+  ]);
+}
+
 class ChainService {
   constructor(config) {
     this.rpcUrl = config.rpcUrl;
+    this.rpcList = [this.rpcUrl, ...FALLBACK_RPCS.filter(u => u !== this.rpcUrl)];
     this.vaultAddress = config.vaultAddress;
     this.operatorKey = config.operatorKey;
 
+    // Primary provider + operator wallet (for write txs)
     this.provider = new ethers.JsonRpcProvider(this.rpcUrl);
     this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
     this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
-    this.vaultReadOnly = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.provider);
 
     // Callback for when a deposit is detected
     this.onDeposit = null;
+    this._listenerActive = false;
 
     console.log(`[Chain] Vault: ${this.vaultAddress}`);
     console.log(`[Chain] Operator: ${this.operatorWallet.address}`);
+    console.log(`[Chain] RPCs: ${this.rpcList.join(', ')}`);
   }
 
-  /// Start listening for Deposit events on-chain
+  // =========== Resilient RPC calls ===========
+
+  // Try a read-only call across all RPCs until one works
+  async _resilientCall(fn, timeoutMs = 8000) {
+    for (const rpcUrl of this.rpcList) {
+      try {
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const contract = new ethers.Contract(this.vaultAddress, VAULT_ABI, provider);
+        const result = await withTimeout(fn(contract), timeoutMs);
+        provider.destroy();
+        return result;
+      } catch (e) {
+        // Try next RPC
+      }
+    }
+    throw new Error('All RPCs failed');
+  }
+
+  // =========== Event Listener with auto-reconnect ===========
+
   startListening() {
-    this.vaultReadOnly.on('Deposit', (player, usdcAmount, chips) => {
+    this._startListener();
+
+    // Health check every 60s — restart listener if provider went stale
+    this._healthInterval = setInterval(async () => {
+      try {
+        const bn = await withTimeout(this.provider.getBlockNumber(), 5000);
+        if (!bn) throw new Error('No block number');
+      } catch (e) {
+        console.error('[Chain] Provider health check failed, reconnecting...', e.message);
+        this._reconnectProvider();
+      }
+    }, 60_000);
+  }
+
+  _startListener() {
+    this.provider.removeAllListeners();
+    const readOnly = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.provider);
+    readOnly.on('Deposit', (player, usdcAmount, chips) => {
       const addr = player.toLowerCase();
       const usdc = Number(usdcAmount) / USDC_DECIMALS;
       const chipAmt = Number(chips);
@@ -45,31 +100,74 @@ class ChainService {
         this.onDeposit(addr, chipAmt, Number(usdcAmount));
       }
     });
+    this._listenerActive = true;
     console.log('[Chain] Listening for Deposit events...');
   }
 
-  /// Process a player withdrawal — sends USDC from vault to player
+  _reconnectProvider() {
+    try {
+      this.provider.destroy();
+    } catch (e) { /* ignore */ }
+
+    // Cycle through RPCs to find one that works
+    const currentIdx = this.rpcList.indexOf(this.rpcUrl);
+    const nextIdx = (currentIdx + 1) % this.rpcList.length;
+    const nextRpc = this.rpcList[nextIdx];
+
+    console.log(`[Chain] Switching provider to: ${nextRpc}`);
+    this.provider = new ethers.JsonRpcProvider(nextRpc);
+    this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
+    this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
+    this.rpcUrl = nextRpc;
+
+    this._startListener();
+  }
+
+  // =========== Read operations (resilient) ===========
+
+  async playerStats(address) {
+    return this._resilientCall(c => c.playerStats(address));
+  }
+
+  async getVaultStats() {
+    return this._resilientCall(async (c) => {
+      const [balance, rakeInfo] = await Promise.all([c.vaultBalance(), c.rakeInfo()]);
+      return {
+        vaultBalanceUsdc: Number(balance) / USDC_DECIMALS,
+        vaultBalanceChips: Number(balance) * CHIPS_PER_USDC / USDC_DECIMALS,
+        rake: {
+          recipient1: rakeInfo[0],
+          recipient2: rakeInfo[1],
+          splitPct1: Number(rakeInfo[2]),
+          unclaimed1Usdc: Number(rakeInfo[3]) / USDC_DECIMALS,
+          unclaimed2Usdc: Number(rakeInfo[4]) / USDC_DECIMALS,
+          totalRecordedUsdc: Number(rakeInfo[5]) / USDC_DECIMALS
+        }
+      };
+    });
+  }
+
+  // =========== Write operations (use primary provider) ===========
+
   async processWithdraw(playerAddress, chipAmount) {
     const usdcAmount = Math.floor((chipAmount * USDC_DECIMALS) / CHIPS_PER_USDC);
     if (usdcAmount <= 0) {
       return { error: 'Amount too small to withdraw' };
     }
 
-    // Check vault has enough
-    const balance = await this.vaultReadOnly.vaultBalance();
-    if (Number(balance) < usdcAmount) {
-      return { error: 'Insufficient USDC in vault' };
-    }
-
-    // Check contract not paused
-    const isPaused = await this.vaultReadOnly.paused();
-    if (isPaused) {
-      return { error: 'Contract is paused' };
+    // Pre-check with resilient read
+    try {
+      const balance = await this._resilientCall(c => c.vaultBalance());
+      if (Number(balance) < usdcAmount) return { error: 'Insufficient USDC in vault' };
+      const isPaused = await this._resilientCall(c => c.paused());
+      if (isPaused) return { error: 'Contract is paused' };
+    } catch (e) {
+      return { error: 'Cannot verify vault state — try again' };
     }
 
     try {
-      const tx = await this.vault.processWithdraw(playerAddress, chipAmount);
-      const receipt = await tx.wait();
+      const tx = await withTimeout(this.vault.processWithdraw(playerAddress, chipAmount), 30000);
+      const receipt = await withTimeout(tx.wait(), 30000);
       console.log(`[Chain] Withdrawal processed: ${playerAddress} → ${chipAmount} chips → ${usdcAmount / USDC_DECIMALS} USDC (tx: ${receipt.hash})`);
       return {
         success: true,
@@ -83,41 +181,20 @@ class ChainService {
     }
   }
 
-  /// Record rake on-chain (converts chip rake to USDC units, splits between recipients)
   async recordRake(rakeChips) {
     if (rakeChips <= 0) return;
-    // Convert chips → USDC smallest units: 1 chip = 100 USDC units
     const usdcAmount = Math.floor((rakeChips * USDC_DECIMALS) / CHIPS_PER_USDC);
     if (usdcAmount <= 0) return;
 
     try {
-      const tx = await this.vault.recordRake(usdcAmount);
-      await tx.wait();
+      const tx = await withTimeout(this.vault.recordRake(usdcAmount), 30000);
+      await withTimeout(tx.wait(), 30000);
       console.log(`[Chain] Rake recorded: ${rakeChips} chips → ${usdcAmount / USDC_DECIMALS} USDC`);
     } catch (e) {
       console.error(`[Chain] recordRake failed:`, e.message);
     }
   }
 
-  /// Get vault stats
-  async getVaultStats() {
-    const balance = await this.vaultReadOnly.vaultBalance();
-    const rakeInfo = await this.vaultReadOnly.rakeInfo();
-    return {
-      vaultBalanceUsdc: Number(balance) / USDC_DECIMALS,
-      vaultBalanceChips: Number(balance) * CHIPS_PER_USDC / USDC_DECIMALS,
-      rake: {
-        recipient1: rakeInfo[0],
-        recipient2: rakeInfo[1],
-        splitPct1: Number(rakeInfo[2]),
-        unclaimed1Usdc: Number(rakeInfo[3]) / USDC_DECIMALS,
-        unclaimed2Usdc: Number(rakeInfo[4]) / USDC_DECIMALS,
-        totalRecordedUsdc: Number(rakeInfo[5]) / USDC_DECIMALS
-      }
-    };
-  }
-
-  /// Convert between chips and USDC
   static chipsToUsdc(chips) {
     return (chips * USDC_DECIMALS) / CHIPS_PER_USDC / USDC_DECIMALS;
   }
