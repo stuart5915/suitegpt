@@ -303,17 +303,16 @@ wss.on('connection', (ws) => {
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
-            // Retry up to 2 times on RPC failures
-            let stats;
-            for (let attempt = 0; attempt < 3; attempt++) {
-              try {
-                stats = await chain.vaultReadOnly.playerStats(addr);
-                break;
-              } catch (rpcErr) {
-                if (attempt < 2) { await new Promise(r => setTimeout(r, 1000)); continue; }
-                throw rpcErr;
-              }
-            }
+            // Fresh provider + contract to avoid stale connection issues
+            const { ethers: eth } = require('ethers');
+            const freshProvider = new eth.JsonRpcProvider(process.env.BASE_RPC_URL || 'https://mainnet.base.org');
+            const freshVault = new eth.Contract(process.env.VAULT_CONTRACT_ADDRESS, [
+              'function playerStats(address player) external view returns (uint256 deposited, uint256 withdrawn, uint256 nonce)'
+            ], freshProvider);
+            const rpcTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('RPC timeout')), 8000));
+            const stats = await Promise.race([freshVault.playerStats(addr), rpcTimeout]);
+            freshProvider.destroy();
+
             const onChainDeposited = Math.floor((Number(stats[0]) * 10000) / 1e6);
             const alreadyCredited = await rooms.store.getTotalDepositedChips(addr);
             if (onChainDeposited > alreadyCredited) {
@@ -768,9 +767,11 @@ app.get('/wallet/:address', async (req, res) => {
 });
 
 app.get('/health', async (req, res) => {
-  const vaultStats = chain ? await chain.getVaultStats() : null;
-  const tokenVaultStats = tokenChain ? await tokenChain.getVaultStats() : null;
-  const rewardStats = tokenChain ? await tokenChain.getRewardStats().catch(() => null) : null;
+  // Timeout wrapper — don't let RPC calls hang the health endpoint
+  const withTimeout = (p, ms = 5000) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+  const vaultStats = chain ? await withTimeout(chain.getVaultStats()) : null;
+  const tokenVaultStats = tokenChain ? await withTimeout(tokenChain.getVaultStats()) : null;
+  const rewardStats = tokenChain ? await withTimeout(tokenChain.getRewardStats().catch(() => null)) : null;
   res.json({
     status: 'ok',
     version: 10,
