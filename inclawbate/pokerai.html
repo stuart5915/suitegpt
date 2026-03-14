@@ -4738,7 +4738,7 @@ function handleMessage(msg) {
         const _isAdm = isAdmin();
         const _autoBar = document.getElementById('autoTopUpBar');
         const _adminBar = document.getElementById('adminCreditBar');
-        if (_autoBar) _autoBar.style.display = (!_isSandbox) ? 'block' : 'none';
+        if (_autoBar) _autoBar.style.display = getWallet() ? 'block' : 'none';
         if (_adminBar) _adminBar.style.display = (_isAdm && !_isSandbox) ? 'block' : 'none';
       }
       updateWalletUI();
@@ -6527,11 +6527,11 @@ function refreshMyAgentsView() {
   renderMyAgents();
   _applyOpenPanels();
 
-  // Show admin bars only for platform wallet on USDC rooms
+  // Show auto top-up bar for any connected wallet (agents may be on real tables even if watching sandbox)
   const _admin = isAdmin();
   const autoTopUpBar = document.getElementById('autoTopUpBar');
   if (autoTopUpBar) {
-    autoTopUpBar.style.display = (!isSandbox) ? 'block' : 'none';
+    autoTopUpBar.style.display = wallet ? 'block' : 'none';
   }
   const adminBar = document.getElementById('adminCreditBar');
   if (adminBar) {
