@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Claws Crash — Inclawbate</title>
+<link rel="icon" type="image/png" href="/inclawbate/assets/claws-crash-logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -29,8 +30,9 @@ input[type=number]{-moz-appearance:textfield}
 .navbar{min-height:48px;background:rgba(255,255,255,0.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:4px 8px;flex-shrink:0;z-index:30;flex-wrap:wrap;gap:4px}
 @media(min-width:768px){.navbar{min-height:56px;padding:0 16px;flex-wrap:nowrap;gap:0}}
 .logo{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text);flex-shrink:0}
-.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;box-shadow:0 2px 8px rgba(211,111,76,0.2);flex-shrink:0}
-@media(min-width:768px){.logo-icon{width:36px;height:36px;border-radius:10px;font-size:20px}}
+.logo-icon{width:28px;height:28px;border-radius:50%;flex-shrink:0;overflow:hidden}
+.logo-icon img{width:100%;height:100%;object-fit:cover}
+@media(min-width:768px){.logo-icon{width:36px;height:36px}}
 .logo-text h1{font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;line-height:1;letter-spacing:-0.5px}
 @media(min-width:768px){.logo-text h1{font-size:16px}}
 .logo-text span{display:none}
@@ -235,7 +237,7 @@ input[type=number]{-moz-appearance:textfield}
 <!-- ── Navbar ── -->
 <nav class="navbar">
   <a href="#" class="logo">
-    <div class="logo-icon">&#x1F99E;</div>
+    <div class="logo-icon"><img src="/inclawbate/assets/claws-crash-logo.png" alt="Claws Crash"></div>
     <div class="logo-text">
       <h1>CLAWS CRASH</h1>
       <span>Inclawbate</span>
@@ -262,7 +264,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="game-col">
     <!-- Banner -->
     <div class="game-banner">
-      <img src="/assets/claws-crash-banner.png" alt="Claws Crash">
+      <img src="/inclawbate/assets/claws-crash-banner.png" alt="Claws Crash">
       <a href="https://x.com/abhiontwt" target="_blank" rel="noopener" class="builder-credit">
         <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
         Built by @abhiontwt
@@ -465,6 +467,99 @@ const CLAWS_ABI = ['function approve(address spender, uint256 amount) returns (b
 const VAULT_ABI = ['function deposit(uint256 amount) external'];
 const BASE_CHAIN_ID = '0x2105'; // 8453
 
+// ── Sound Effects (Web Audio API) ────────────────────────────────────
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playCrashSound() {
+  try {
+    const ctx = getAudioCtx();
+    // Low rumble + noise burst
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+    // Impact hit
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(80, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.2);
+    gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime);
+    osc2.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+}
+
+let flyOsc = null, flyGain = null;
+function startFlySound() {
+  try {
+    const ctx = getAudioCtx();
+    if (flyOsc) return;
+    flyOsc = ctx.createOscillator();
+    flyGain = ctx.createGain();
+    flyOsc.type = 'sine';
+    flyOsc.frequency.setValueAtTime(220, ctx.currentTime);
+    flyGain.gain.setValueAtTime(0.06, ctx.currentTime);
+    flyOsc.connect(flyGain);
+    flyGain.connect(ctx.destination);
+    flyOsc.start(ctx.currentTime);
+  } catch(e) {}
+}
+
+function updateFlyPitch(multiplier) {
+  try {
+    if (flyOsc && flyGain) {
+      const ctx = getAudioCtx();
+      // Pitch rises with multiplier
+      flyOsc.frequency.setValueAtTime(220 + Math.min(multiplier * 40, 600), ctx.currentTime);
+      flyGain.gain.setValueAtTime(Math.min(0.06 + multiplier * 0.005, 0.12), ctx.currentTime);
+    }
+  } catch(e) {}
+}
+
+function stopFlySound() {
+  try {
+    if (flyGain) {
+      const ctx = getAudioCtx();
+      flyGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    }
+    setTimeout(() => {
+      try { if (flyOsc) { flyOsc.stop(); flyOsc = null; flyGain = null; } } catch(e) { flyOsc = null; flyGain = null; }
+    }, 150);
+  } catch(e) { flyOsc = null; flyGain = null; }
+}
+
+function playCashoutSound() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch(e) {}
+}
+
 // ── State ───────────────────────────────────────────────────────────
 let ws = null;
 let user = null;      // { username, balance, wallet }
@@ -536,6 +631,7 @@ function handleMessage(msg) {
       if (!msg.ok) showBetError(msg.error);
       break;
     case 'cashout_result':
+      if (msg.ok) playCashoutSound();
       break;
     case 'deposit_result':
       if (msg.ok) {
@@ -592,8 +688,14 @@ function updateGameState(state) {
     curvePoints = [];
     $('crashFlash').classList.remove('visible');
     $('gameContainer').classList.remove('shake');
+    startFlySound();
+  }
+  if (state.phase === 'flying') {
+    updateFlyPitch(state.multiplier);
   }
   if (state.phase === 'crashed' && prevPhase !== 'crashed') {
+    stopFlySound();
+    playCrashSound();
     $('crashFlash').classList.add('visible');
     $('gameContainer').classList.add('shake');
     setTimeout(() => $('gameContainer').classList.remove('shake'), 400);
@@ -614,6 +716,7 @@ function updateGameState(state) {
     if (currentTab === 'history') renderBetHistory();
   }
   if (state.phase === 'waiting' && prevPhase !== 'waiting') {
+    stopFlySound();
     $('crashFlash').classList.remove('visible');
     curvePoints = [];
   }
