@@ -271,24 +271,22 @@ wss.on('connection', (ws) => {
         }
 
         case 'checkDeposit': {
-          // User-triggered deposit check — compare on-chain deposits vs recorded deposit transactions
-          // (not total balance, which includes admin credits/rake/winnings)
+          // User-triggered deposit check — compare on-chain total deposited vs recorded deposit transactions
+          // Uses gross deposited (not net), since withdrawals are tracked separately
           if (!requireAuth(client, ws)) break;
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
             const stats = await chain.vault.playerStats(addr);
-            const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
-            const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
-            const netDeposited = onChainChips - withdrawnChips;
+            const onChainDeposited = Math.floor((Number(stats[0]) * 10000) / 1e6);
             const alreadyCredited = await rooms.store.getTotalDepositedChips(addr);
-            if (netDeposited > alreadyCredited) {
-              const credit = netDeposited - alreadyCredited;
+            if (onChainDeposited > alreadyCredited) {
+              const credit = onChainDeposited - alreadyCredited;
               await rooms.store.addBalance(addr, credit);
               await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
               sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: credit } }));
-              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain: ${netDeposited}, already credited: ${alreadyCredited})`);
+              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain deposited: ${onChainDeposited}, already credited: ${alreadyCredited})`);
             } else {
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
             }
