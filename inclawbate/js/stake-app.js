@@ -2162,9 +2162,9 @@ async function init() {
                 var key = p.token_symbol.toLowerCase();
                 if (POOLS[key]) return; // don't overwrite hardcoded pools
                 // Determine reward token — factory deploys use CLAWS
-                var isSelfReward = !p.reward_token_address ||
-                    p.reward_token_address.toLowerCase() === p.token_address.toLowerCase();
                 var rToken = p.reward_token_address || '0x7ca47B141639B893C6782823C0b219f872056379'; // default CLAWS
+                var isSelfReward = p.reward_token_address &&
+                    p.reward_token_address.toLowerCase() === p.token_address.toLowerCase();
                 var rTicker = p.reward_token_symbol || (isSelfReward ? p.token_symbol : 'CLAWS');
 
                 POOLS[key] = {
