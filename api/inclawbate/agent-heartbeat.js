@@ -397,8 +397,14 @@ export default async function handler(req, res) {
                     x_refresh_token: null
                 };
 
-                const genResult = await generateTweet(projectWithPersona);
-                const tweetText = genResult.text;
+                // Use user-submitted tweet_text if present, otherwise generate with AI
+                let tweetText;
+                if (slot.tweet_text && slot.tweet_text.trim().length > 0) {
+                    tweetText = slot.tweet_text.trim();
+                } else {
+                    const genResult = await generateTweet(projectWithPersona);
+                    tweetText = genResult.text;
+                }
                 if (!tweetText || tweetText.length > 280) {
                     throw new Error('Generated tweet invalid or too long');
                 }

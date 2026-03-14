@@ -343,6 +343,23 @@
         .sched-slot--draft:hover { border-color:rgba(251,191,36,0.5); }
         .sched-tag--draft { background:rgba(251,191,36,0.15);color:#fbbf24; }
         .sched-tag--needs-image { background:rgba(251,146,36,0.15);color:#fb923c; }
+        .sched-slot--pending { border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.04); }
+        .sched-slot--pending:hover { border-color:rgba(99,102,241,0.5); }
+        .sched-tag--pending { background:rgba(99,102,241,0.15);color:#818cf8; }
+        .sched-charcount { font-size:0.7rem;color:var(--text-dim);text-align:right;margin-top:4px; }
+        .review-card { background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:12px;padding:14px; }
+        .review-card-header { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+        .review-card-logo { width:28px;height:28px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700; }
+        .review-card-logo img { width:100%;height:100%;border-radius:8px;object-fit:cover; }
+        .review-card-name { font-weight:700;font-size:0.85rem; }
+        .review-card-time { font-size:0.7rem;color:var(--text-dim);margin-left:auto; }
+        .review-card-text { font-size:0.8rem;line-height:1.5;padding:10px;background:var(--surface-2);border-radius:8px;margin-bottom:10px;white-space:pre-wrap; }
+        .review-card-actions { display:flex;gap:8px; }
+        .review-btn { flex:1;padding:8px;border-radius:8px;border:none;font-weight:700;font-size:0.75rem;cursor:pointer;transition:all 0.15s; }
+        .review-btn--approve { background:rgba(34,197,94,0.15);color:#22c55e; }
+        .review-btn--approve:hover { background:rgba(34,197,94,0.3); }
+        .review-btn--reject { background:rgba(239,68,68,0.15);color:#ef4444; }
+        .review-btn--reject:hover { background:rgba(239,68,68,0.3); }
         .sched-draft-text {
             font-size:0.75rem;color:var(--text-secondary);line-height:1.4;
             margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;
@@ -448,40 +465,54 @@
                 <div class="sched-projects" id="schedProjectPicker"></div>
             </div>
 
-            <!-- Content angle -->
-            <div class="sched-field">
-                <div class="sched-field-label">What should the tweet be about?</div>
-                <textarea id="schedBookAngle" placeholder="e.g. hype the community, announce staking rewards, meme about gas fees..." maxlength="200"></textarea>
+            <!-- User tweet text (non-admin) -->
+            <div class="sched-field" id="schedUserFields">
+                <div class="sched-field-label">Write your tweet</div>
+                <textarea id="schedBookTweet" placeholder="What do you want @inclawbator to post? Write the exact tweet..." maxlength="280" oninput="updateBookCharCount()"></textarea>
+                <div class="sched-charcount" id="schedBookCharCount">0/280</div>
             </div>
 
-            <!-- Tone pills -->
-            <div class="sched-field">
-                <div class="sched-field-label">Vibe</div>
-                <div class="sched-tones" id="schedTonePicker">
-                    <div class="sched-tone selected" data-tone="default">Auto</div>
-                    <div class="sched-tone" data-tone="hype">Hype</div>
-                    <div class="sched-tone" data-tone="chill">Chill</div>
-                    <div class="sched-tone" data-tone="degen">Degen</div>
-                    <div class="sched-tone" data-tone="professional">Pro</div>
-                    <div class="sched-tone" data-tone="meme">Meme</div>
+            <!-- Admin-only fields -->
+            <div id="schedAdminFields" style="display:none">
+                <div class="sched-field">
+                    <div class="sched-field-label">What should the tweet be about?</div>
+                    <textarea id="schedBookAngle" placeholder="e.g. hype the community, announce staking rewards, meme about gas fees..." maxlength="200"></textarea>
+                </div>
+                <div class="sched-field">
+                    <div class="sched-field-label">Vibe</div>
+                    <div class="sched-tones" id="schedTonePicker">
+                        <div class="sched-tone selected" data-tone="default">Auto</div>
+                        <div class="sched-tone" data-tone="hype">Hype</div>
+                        <div class="sched-tone" data-tone="chill">Chill</div>
+                        <div class="sched-tone" data-tone="degen">Degen</div>
+                        <div class="sched-tone" data-tone="professional">Pro</div>
+                        <div class="sched-tone" data-tone="meme">Meme</div>
+                    </div>
+                </div>
+                <div class="sched-field">
+                    <div class="sched-field-label">Include</div>
+                    <div class="sched-toggles">
+                        <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptMentionToken"> $TOKEN</label>
+                        <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptAppLink"> App link</label>
+                        <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptProjectLink"> Project link</label>
+                        <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptMentionStaking"> Staking</label>
+                    </div>
                 </div>
             </div>
 
-            <!-- Toggle pills -->
-            <div class="sched-field">
-                <div class="sched-field-label">Include</div>
-                <div class="sched-toggles">
-                    <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptMentionToken"> $TOKEN</label>
-                    <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptAppLink"> App link</label>
-                    <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptProjectLink"> Project link</label>
-                    <label class="sched-toggle" onclick="this.classList.toggle('on')"><input type="checkbox" id="schedOptMentionStaking"> Staking</label>
-                </div>
-            </div>
-
-            <button class="sched-btn" id="schedBookBtn" onclick="bookSlot()">Book This Slot</button>
+            <button class="sched-btn" id="schedBookBtn" onclick="bookSlot()">Submit Tweet</button>
             <div class="sched-success" id="schedBookSuccess"></div>
             <div class="sched-error" id="schedBookError"></div>
         </div>
+    </section>
+
+    <!-- Admin Review Queue -->
+    <section class="sched-section" id="reviewQueueSection" style="display:none">
+        <div class="sched-header">
+            <h2>Review Queue</h2>
+            <div class="sched-header-meta" id="reviewQueueCount"></div>
+        </div>
+        <div id="reviewQueueList" style="display:flex;flex-direction:column;gap:8px"></div>
     </section>
 
     <!-- @inclawbator X Feed -->
@@ -598,6 +629,7 @@
         renderPillarWeek();
         renderDayStrip();
         selectDay(new Date(start));
+        loadReviewQueue();
     }
 
     function renderPillarWeek() {
@@ -707,12 +739,14 @@
             var isMine = booked && booked.booked_by_wallet === _userWallet;
             var isPosted = booked && booked.status === 'posted';
             var isDraft = booked && (booked.status === 'needs_review' || booked.status === 'needs_image');
+            var isPending = booked && booked.status === 'pending_review';
             var isAutofill = booked && booked.booked_by_wallet === 'system-autofill';
 
             var el = document.createElement('div');
             var cls = 'sched-slot';
             if (isPast && !booked) cls += ' sched-slot--past';
             else if (isPosted) cls += ' sched-slot--posted';
+            else if (isPending) cls += ' sched-slot--pending';
             else if (isDraft) cls += ' sched-slot--draft';
             else if (isMine) cls += ' sched-slot--mine';
             else if (booked) cls += ' sched-slot--booked';
@@ -762,10 +796,18 @@
                 if (booked.content_angle) {
                     html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
                 }
+                if (booked.tweet_text) {
+                    html += '<div class="sched-draft-text">' + escHtml(booked.tweet_text).slice(0, 80) + (booked.tweet_text.length > 80 ? '...' : '') + '</div>';
+                }
                 html += '</div>';
 
                 if (isPosted) {
                     html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                } else if (isPending && isMine) {
+                    html += '<span class="sched-tag sched-tag--pending">pending review</span>';
+                    html += '<button onclick="event.stopPropagation();window._schedCancel(\'' + booked.id + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">cancel</button>';
+                } else if (isPending) {
+                    html += '<span class="sched-tag sched-tag--pending">pending</span>';
                 } else if (isMine && !isPast) {
                     html += '<span class="sched-tag sched-tag--mine">yours</span>';
                     html += '<button onclick="event.stopPropagation();window._schedCancel(\'' + booked.id + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">cancel</button>';
@@ -876,13 +918,19 @@
 
         renderProjectPicker(null, false);
 
+        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        document.getElementById('schedAdminFields').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('schedUserFields').style.display = isAdmin ? 'none' : 'block';
+
+        document.getElementById('schedBookTweet').value = '';
+        document.getElementById('schedBookCharCount').textContent = '0/280';
         document.getElementById('schedBookAngle').value = '';
         setSelectedTone('default');
         setTweetOptions({});
         document.getElementById('schedBookSuccess').style.display = 'none';
         document.getElementById('schedBookError').style.display = 'none';
         document.getElementById('schedBookBtn').disabled = false;
-        document.getElementById('schedBookBtn').textContent = 'Book This Slot';
+        document.getElementById('schedBookBtn').textContent = isAdmin ? 'Book This Slot' : 'Submit Tweet';
         document.getElementById('schedBookBtn').setAttribute('onclick', 'bookSlot()');
         form.removeAttribute('data-edit-id');
 
@@ -965,7 +1013,7 @@
         var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
         if (!isAdmin) {
             var activeBookings = _schedSlots.filter(function(s) {
-                return s.booked_by_wallet === _userWallet && s.status === 'scheduled' && new Date(s.scheduled_at) > new Date();
+                return s.booked_by_wallet === _userWallet && (s.status === 'scheduled' || s.status === 'pending_review') && new Date(s.scheduled_at) > new Date();
             });
             if (activeBookings.length >= 3) {
                 document.getElementById('schedBookError').textContent = 'Max 3 active bookings. Cancel one first.';
@@ -987,20 +1035,25 @@
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + auth.token
                 },
-                body: JSON.stringify({
+                body: JSON.stringify(isAdmin ? {
                     action: 'book',
                     project_id: projectId,
                     scheduled_at: document.getElementById('schedBookSlotTime').value,
                     content_angle: document.getElementById('schedBookAngle').value,
                     tone: getSelectedTone(),
                     tweet_options: getTweetOptions()
+                } : {
+                    action: 'book',
+                    project_id: projectId,
+                    scheduled_at: document.getElementById('schedBookSlotTime').value,
+                    tweet_text: document.getElementById('schedBookTweet').value
                 })
             });
 
             var data = await resp.json();
             if (!resp.ok) throw new Error(data.error || 'Booking failed');
 
-            document.getElementById('schedBookSuccess').textContent = 'Booked! @inclawbator will tweet at this time.';
+            document.getElementById('schedBookSuccess').textContent = isAdmin ? 'Booked! @inclawbator will tweet at this time.' : 'Submitted! Your tweet will be posted once approved.';
             document.getElementById('schedBookSuccess').style.display = 'block';
 
             if (data.slot) {
@@ -1234,6 +1287,91 @@
             if (e.target === this) closeDraftModal();
         });
     });
+
+    // ── Tweet char counter ──
+    window.updateBookCharCount = function() {
+        var ta = document.getElementById('schedBookTweet');
+        var el = document.getElementById('schedBookCharCount');
+        if (ta && el) el.textContent = (ta.value || '').length + '/280';
+    };
+
+    // ── Admin Review Queue ──
+    async function loadReviewQueue() {
+        var section = document.getElementById('reviewQueueSection');
+        if (!section) return;
+        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        if (!isAdmin) { section.style.display = 'none'; return; }
+
+        try {
+            var resp = await fetch('/api/inclawbate/agent-schedule?pending=true');
+            var data = await resp.json();
+            var pending = data.slots || [];
+
+            if (pending.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            document.getElementById('reviewQueueCount').textContent = pending.length + ' pending';
+
+            var list = document.getElementById('reviewQueueList');
+            list.innerHTML = '';
+
+            pending.forEach(function(s) {
+                var slotTime = new Date(s.scheduled_at);
+                var timeStr = slotTime.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' at ' + slotTime.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+                var logoChar = (s.project_name || '?').charAt(0).toUpperCase();
+                var logoHtml = s.project_logo
+                    ? '<img src="' + escHtml(s.project_logo) + '" alt="">'
+                    : logoChar;
+
+                var card = document.createElement('div');
+                card.className = 'review-card';
+                card.innerHTML = '<div class="review-card-header">'
+                    + '<div class="review-card-logo">' + logoHtml + '</div>'
+                    + '<div class="review-card-name">' + escHtml(s.project_name || 'Project') + '</div>'
+                    + '<div class="review-card-time">' + timeStr + '</div>'
+                    + '</div>'
+                    + '<div class="review-card-text">' + escHtml(s.tweet_text || '(no text)') + '</div>'
+                    + '<div class="review-card-actions">'
+                    + '<button class="review-btn review-btn--approve" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'approve\')">Approve</button>'
+                    + '<button class="review-btn review-btn--reject" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'reject\')">Reject</button>'
+                    + '</div>';
+                list.appendChild(card);
+            });
+        } catch(e) {
+            section.style.display = 'none';
+        }
+    }
+
+    window._reviewSlot = async function(slotId, decision) {
+        if (decision === 'reject' && !confirm('Reject this tweet?')) return;
+        var auth = getAuth();
+        if (!auth || !auth.token) { alert('Sign in first'); return; }
+
+        try {
+            var resp = await fetch('/api/inclawbate/agent-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'review', slot_id: slotId, decision: decision })
+            });
+            var data = await resp.json();
+            if (data.error) throw new Error(data.error);
+
+            // Update local state
+            var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+            if (slot) slot.status = (decision === 'approve') ? 'scheduled' : 'rejected';
+            if (decision === 'reject') {
+                _schedSlots = _schedSlots.filter(function(s) { return s.id !== slotId; });
+            }
+
+            renderSlots(_selectedDay);
+            loadReviewQueue();
+        } catch(e) {
+            alert('Failed: ' + e.message);
+        }
+    };
 
     // ── @inclawbator Feed ──
 

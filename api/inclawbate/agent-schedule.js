@@ -63,12 +63,23 @@ export default async function handler(req, res) {
         const start = req.query.start || new Date().toISOString();
         const end = req.query.end || new Date(Date.now() + MAX_DAYS_AHEAD * 86400000).toISOString();
 
+        // Admin review queue
+        if (req.query.pending === 'true') {
+            const { data, error } = await supabase
+                .from('agent_schedule')
+                .select('*, projects(name, logo_url, slug, token_symbol)')
+                .eq('status', 'pending_review')
+                .order('scheduled_at', { ascending: true });
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ slots: (data || []).map(sanitizeSlot) });
+        }
+
         const { data, error } = await supabase
             .from('agent_schedule')
             .select('*, projects(name, logo_url, slug, token_symbol)')
             .gte('scheduled_at', start)
             .lte('scheduled_at', end)
-            .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image'])
+            .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image', 'pending_review'])
             .order('scheduled_at', { ascending: true });
 
         if (error) return res.status(500).json({ error: error.message });
@@ -98,10 +109,17 @@ export default async function handler(req, res) {
 
         // ── Book a slot ──
         if (action === 'book') {
-            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options } = req.body;
+            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options, tweet_text } = req.body;
+            const isAdmin = FREE_WALLETS.includes(wallet);
 
             if (!project_id || !scheduled_at) {
                 return res.status(400).json({ error: 'project_id and scheduled_at required' });
+            }
+            if (!isAdmin && (!tweet_text || tweet_text.trim().length === 0)) {
+                return res.status(400).json({ error: 'Tweet text is required' });
+            }
+            if (tweet_text && tweet_text.length > 280) {
+                return res.status(400).json({ error: 'Tweet must be 280 characters or less' });
             }
 
             // Validate project
@@ -137,7 +155,7 @@ export default async function handler(req, res) {
                 .from('agent_schedule')
                 .select('id', { count: 'exact', head: true })
                 .eq('booked_by_wallet', wallet)
-                .eq('status', 'scheduled');
+                .in('status', ['scheduled', 'pending_review']);
 
             if ((count || 0) >= MAX_ACTIVE_BOOKINGS) {
                 return res.status(429).json({ error: 'Max ' + MAX_ACTIVE_BOOKINGS + ' active bookings. Cancel one first.' });
@@ -151,10 +169,11 @@ export default async function handler(req, res) {
                 content_angle: (content_angle || '').slice(0, 200) || null,
                 tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
                 catchphrase: (catchphrase || '').slice(0, 100) || null,
-                status: 'scheduled',
+                status: isAdmin ? 'scheduled' : 'pending_review',
                 paid_amount: paidClaws,
                 tweet_options: tweet_options || {}
             };
+            if (tweet_text) insertData.tweet_text = tweet_text.trim();
             if (tx_hash) insertData.tx_hash = tx_hash;
 
             const { data: slot, error: insertErr } = await supabase
@@ -175,19 +194,23 @@ export default async function handler(req, res) {
 
         // ── Edit a slot ──
         if (action === 'edit') {
-            const { slot_id, content_angle, tone, tweet_options } = req.body;
+            const { slot_id, content_angle, tone, tweet_options, tweet_text } = req.body;
             if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
 
             const { data: slot } = await supabase
                 .from('agent_schedule')
                 .select('*')
                 .eq('id', slot_id)
-                .eq('status', 'scheduled')
+                .in('status', ['scheduled', 'pending_review'])
                 .single();
 
             if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
-            if (slot.booked_by_wallet !== wallet) {
+            const isAdmin = FREE_WALLETS.includes(wallet);
+            if (slot.booked_by_wallet !== wallet && !isAdmin) {
                 return res.status(403).json({ error: 'Not your slot' });
+            }
+            if (!isAdmin && slot.status === 'scheduled') {
+                return res.status(403).json({ error: 'Cannot edit an approved slot' });
             }
             if (new Date(slot.scheduled_at).getTime() <= Date.now()) {
                 return res.status(400).json({ error: 'Cannot edit past slots' });
@@ -197,6 +220,10 @@ export default async function handler(req, res) {
             if (content_angle !== undefined) updates.content_angle = (content_angle || '').slice(0, 200) || null;
             if (tone !== undefined) updates.tone = ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default';
             if (tweet_options !== undefined) updates.tweet_options = tweet_options || {};
+            if (tweet_text !== undefined) {
+                if (tweet_text.length > 280) return res.status(400).json({ error: 'Tweet must be 280 characters or less' });
+                updates.tweet_text = tweet_text.trim();
+            }
 
             const { error: updateErr } = await supabase
                 .from('agent_schedule')
@@ -221,11 +248,11 @@ export default async function handler(req, res) {
                 .from('agent_schedule')
                 .select('*')
                 .eq('id', slot_id)
-                .eq('status', 'scheduled')
+                .in('status', ['scheduled', 'pending_review'])
                 .single();
 
             if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
-            if (slot.booked_by_wallet !== wallet) {
+            if (slot.booked_by_wallet !== wallet && !FREE_WALLETS.includes(wallet)) {
                 return res.status(403).json({ error: 'Not your slot' });
             }
             if (new Date(slot.scheduled_at).getTime() <= Date.now()) {
@@ -238,6 +265,45 @@ export default async function handler(req, res) {
                 .eq('id', slot_id);
 
             return res.status(200).json({ cancelled: true });
+        }
+
+        // ── Review a pending slot (admin only) ──
+        if (action === 'review') {
+            if (!FREE_WALLETS.includes(wallet)) {
+                return res.status(403).json({ error: 'Admin only' });
+            }
+            const { slot_id, decision, tweet_text } = req.body;
+            if (!slot_id || !decision) return res.status(400).json({ error: 'slot_id and decision required' });
+            if (!['approve', 'reject'].includes(decision)) {
+                return res.status(400).json({ error: 'decision must be approve or reject' });
+            }
+
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .eq('status', 'pending_review')
+                .single();
+
+            if (!slot) return res.status(404).json({ error: 'Slot not found or not pending review' });
+
+            const updates = {};
+            if (decision === 'approve') {
+                updates.status = 'scheduled';
+                if (tweet_text && tweet_text.trim().length > 0 && tweet_text.length <= 280) {
+                    updates.tweet_text = tweet_text.trim();
+                }
+            } else {
+                updates.status = 'rejected';
+            }
+
+            const { error: updateErr } = await supabase
+                .from('agent_schedule')
+                .update(updates)
+                .eq('id', slot_id);
+
+            if (updateErr) return res.status(500).json({ error: updateErr.message });
+            return res.status(200).json({ updated: true, status: updates.status });
         }
 
         return res.status(400).json({ error: 'Unknown action' });
