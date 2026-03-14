@@ -85,27 +85,22 @@ export default async function handler(req, res) {
             isAdmin = true;
         }
 
-        // Allow admin wallet via JWT
+        // Allow admin wallet via JWT (same auth as agent-schedule.js)
         if (!isAdmin && authHeader?.startsWith('Bearer ')) {
             try {
-                const jwt = await import('jsonwebtoken');
-                const token = authHeader.split(' ')[1];
-                const decoded = jwt.default.verify(token, process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'fallback');
-                if (decoded.sub) {
+                const { authenticateRequest } = await import('./x-callback.js');
+                const user = authenticateRequest(req);
+                if (user && user.sub) {
                     const { data: profile } = await supabase
                         .from('human_profiles')
                         .select('wallet_address')
-                        .eq('id', decoded.sub)
+                        .eq('id', user.sub)
                         .single();
                     if (profile && ADMIN_WALLETS.includes(profile.wallet_address?.toLowerCase())) {
                         isAdmin = true;
                     }
                 }
-            } catch(e) {
-                if (e.name === 'TokenExpiredError') {
-                    return res.status(401).json({ error: 'Session expired — log out and log back in' });
-                }
-            }
+            } catch(e) {}
         }
 
         if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
