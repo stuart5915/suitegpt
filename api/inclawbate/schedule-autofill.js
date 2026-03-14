@@ -101,7 +101,11 @@ export default async function handler(req, res) {
                         isAdmin = true;
                     }
                 }
-            } catch(e) {}
+            } catch(e) {
+                if (e.name === 'TokenExpiredError') {
+                    return res.status(401).json({ error: 'Session expired — log out and log back in' });
+                }
+            }
         }
 
         if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
