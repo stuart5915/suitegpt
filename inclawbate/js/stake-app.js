@@ -746,15 +746,16 @@ window.addClawsToWallet = function() {
     window.addTokenToWallet('0x7ca47B141639B893C6782823C0b219f872056379', 'CLAWS', 18, 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg');
 };
 
+var _connectedProvider = null; // stores the provider used during successful connection
+
 function getProvider() {
+    // Always prefer the provider that was actually used to connect
+    if (_connectedProvider) return _connectedProvider;
     // Privy embedded wallet provider (set by connectPoolWallet)
     if (window._privyProvider) return window._privyProvider;
-    // Try WalletKit first — check isConnected(), but also try getProvider() as fallback
-    // since Reown's isConnected() can be stale while the provider still works
-    if (window.WalletKit) {
-        if (window.WalletKit.isConnected()) return window.WalletKit.getProvider();
-        var wkProvider = window.WalletKit.getProvider();
-        if (wkProvider) return wkProvider;
+    // WalletKit — ONLY if actively connected (stale providers cause "no wallet" errors)
+    if (window.WalletKit && window.WalletKit.isConnected()) {
+        return window.WalletKit.getProvider();
     }
     return window.ethereum || (window.phantom && window.phantom.ethereum) || null;
 }
@@ -964,6 +965,7 @@ async function connectPoolWallet() {
         var wkProvider = window.WalletKit.getProvider();
         if (wkAddr && wkProvider) {
             walletAddr = wkAddr;
+            _connectedProvider = wkProvider;
             try { localStorage.setItem('_stake_wallet', wkAddr); } catch (e) {}
             if (currentPoolKey && POOLS[currentPoolKey]) {
                 onPoolWalletConnected(wkAddr, POOLS[currentPoolKey], currentPoolKey);
@@ -978,6 +980,7 @@ async function connectPoolWallet() {
             var privyProvider = await window.PrivyAuth.getEthereumProvider();
             if (privyProvider && typeof privyProvider.request === 'function') {
                 window._privyProvider = privyProvider;
+                _connectedProvider = privyProvider;
                 var privyAccounts = await privyProvider.request({ method: 'eth_accounts' });
                 if (privyAccounts && privyAccounts.length > 0) {
                     walletAddr = privyAccounts[0];
@@ -1043,6 +1046,7 @@ async function connectPoolWallet() {
             }
         }
         walletAddr = addr;
+        _connectedProvider = eth; // remember which provider actually worked
         try { localStorage.setItem('_stake_wallet', addr); } catch (e) {}
         if (currentPoolKey && POOLS[currentPoolKey]) {
             onPoolWalletConnected(addr, POOLS[currentPoolKey], currentPoolKey);
@@ -1061,6 +1065,7 @@ async function connectPoolWallet() {
 function disconnectPoolWallet() {
     walletAddr = null;
     walletBalance = 0;
+    _connectedProvider = null;
     try { localStorage.removeItem('_stake_wallet'); } catch (e) {}
     // Always try to disconnect WalletKit — isConnected() can be stale
     if (window.WalletKit) {
