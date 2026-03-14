@@ -328,6 +328,7 @@
         .inclaw-platform-status { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
         .inclaw-platform-status.live { color: #4ade80; }
         .inclaw-platform-status.soon { color: #fbbf24; }
+        .inclaw-presence { margin-bottom: var(--space-lg); }
 
         /* Marketing agents section */
         .marketing-agents-section { margin-bottom: var(--space-md); animation: fadeUp 0.5s ease 0.1s both; }
@@ -691,6 +692,33 @@
                 <div class="hub-summary" id="hubSummary"></div>
             </div>
             <button class="hub-connect-btn" id="hubConnectBtn" onclick="hubConnect()">Connect Wallet</button>
+        </div>
+    </section>
+
+    <!-- ═══ AGENT PRESENCE CARDS ═══ -->
+    <section class="inclaw-presence" id="presenceCards">
+        <div class="inclaw-platforms-label">The Inclawbator &mdash; Talk to it anywhere</div>
+        <div class="inclaw-platforms">
+            <a href="https://app.virtuals.io/prototypes/inclawbator" target="_blank" rel="noopener" class="inclaw-platform">
+                <div class="inclaw-platform-icon">&#x1F7E3;</div>
+                <div class="inclaw-platform-name">Virtuals</div>
+                <div class="inclaw-platform-status live">Live</div>
+            </a>
+            <a href="#" class="inclaw-platform" style="opacity:0.5;pointer-events:none;">
+                <div class="inclaw-platform-icon">&#x1F916;</div>
+                <div class="inclaw-platform-name">Bankr</div>
+                <div class="inclaw-platform-status soon">Soon</div>
+            </a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="inclaw-platform">
+                <div class="inclaw-platform-icon">&#x2708;&#xFE0F;</div>
+                <div class="inclaw-platform-name">Telegram</div>
+                <div class="inclaw-platform-status live">Live</div>
+            </a>
+            <a href="/inclawbator" class="inclaw-platform">
+                <div class="inclaw-platform-icon">&#129438;</div>
+                <div class="inclaw-platform-name">On-Site Chat</div>
+                <div class="inclaw-platform-status live">Live</div>
+            </a>
         </div>
     </section>
 
@@ -1440,6 +1468,36 @@ function hubBoot() {
     };
 }
 setTimeout(hubBoot, 100);
+
+// ── Route-based view switching ──
+(function() {
+    var path = window.location.pathname.replace(/\/$/, '');
+    var isAgentsPage = (path === '/agents');
+    var isInclawbatorPage = (path === '/inclawbator');
+
+    // Elements
+    var chatSection = document.querySelector('.hub-chat-section');
+    var heroSection = document.getElementById('heroSection');
+    var quickActions = document.querySelector('.hub-actions');
+    var marketingSection = document.getElementById('marketingSection');
+    var profileBar = document.getElementById('hubProfile');
+
+    if (isAgentsPage) {
+        // /agents — show marketing agents only, hide chat/workspace
+        if (chatSection) chatSection.style.display = 'none';
+        if (heroSection) heroSection.style.display = 'none';
+        if (quickActions) quickActions.style.display = 'none';
+        // Auto-expand marketing section
+        if (marketingSection && !marketingSection.classList.contains('open')) {
+            marketingSection.classList.add('open');
+        }
+        // Update page title
+        document.title = 'Marketing Agents — Inclawbate';
+    } else if (isInclawbatorPage) {
+        // /inclawbator — show chat, hide marketing section
+        if (marketingSection) marketingSection.style.display = 'none';
+    }
+})();
 
 // ══════════════════════════════════════
 // EXISTING MARKETING AGENTS CODE
