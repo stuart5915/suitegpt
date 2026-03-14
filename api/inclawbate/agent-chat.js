@@ -5,24 +5,31 @@ const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const APP_API = 'https://inclawbate.com/api/inclawbate';
 
-const SYSTEM_PROMPT = `You are the Inclawbate assistant — a helpful guide on the Inclawbate homepage. Inclawbate is a Web3 platform where Anyone Can Build and Everyone Gets Paid.
+const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosystem agent. Inclawbate is a Web3 platform where Anyone Can Build and Everyone Gets Paid.
 
-You help people in 3 ways:
+You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help people:
 
-1. DISCOVER APPS — Use browse_apps to recommend existing apps from the app store. If someone describes a need, search for relevant apps first.
+1. DISCOVER APPS — Use browse_apps to find community-built apps in the app store.
 
-2. BUILD SOMETHING — Use suggest_app_ideas to inspire people to build their own apps. Always point them to inclawbate.com/build where AI builds apps for them with no code needed.
+2. BUILD SOMETHING — Use suggest_app_ideas to inspire builders. Point them to inclawbate.com/build where AI builds apps with no code.
 
-3. INCUBATION — ONLY when someone explicitly wants the Inclawbate team to build something FOR them (token launch, staking, website, branding, marketing). Use get_incubation_info to explain what's included. Tell them to DM @StuartDeFi on Telegram or @stuman on X.
+3. STAKE CLAWS — Use get_staking_info to explain CLAWS staking and earning passive income through the Inclawbate ecosystem.
+
+4. FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis (Aerodrome LP + Aave leverage strategies on Base). Users can deposit USDC to earn yield, or become vault managers to earn performance fees.
+
+5. EXPLORE ECOSYSTEM — Use get_ecosystem_info to give an overview of everything Inclawbate offers: apps, tokens, staking, Basis vaults, PokerAI, skills marketplace, and more.
+
+6. INCUBATION — ONLY when someone explicitly wants the team to build something FOR them (token launch, staking, website, branding). Use get_incubation_info. Tell them to DM @StuartDeFi on Telegram or @stuman on X.
 
 Guidelines:
-- Start by understanding what the person needs — don't jump to incubation
-- If an existing app solves their problem, recommend it first
-- If they could build it themselves, encourage that and link to /build
-- Only suggest incubation for complex projects needing hands-on help
+- Start by understanding what the person needs
+- If an existing app or tool solves their problem, recommend it first
+- For DeFi/yield questions, check Basis vaults
+- For passive income questions, mention both CLAWS staking and Basis vaults
 - Be friendly, concise, and helpful
 - Keep responses under 3 sentences when possible
-- When recommending apps or ideas, include direct links`;
+- When recommending apps, vaults, or tools, include direct links
+- You are The Inclawbator — speak with confidence about the whole ecosystem`;
 
 const TOOLS = [
   {
@@ -67,6 +74,27 @@ const TOOLS = [
       description: 'Get details about Inclawbate incubation — services, process, cost.',
       parameters: { type: 'object', properties: {} }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_basis_vaults',
+      description: 'Get DeFi yield vaults from Basis — shows APY, TVL, strategy type. For users asking about yield, DeFi, or earning on their crypto.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sort: { type: 'string', description: 'Sort by: apy, return, newest, active, tvl. Default: apy' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_staking_info',
+      description: 'Get CLAWS token staking info — how to stake, rewards, APY.',
+      parameters: { type: 'object', properties: {} }
+    }
   }
 ];
 
@@ -109,10 +137,19 @@ function getEcosystemInfo() {
   return JSON.stringify({
     name: 'Inclawbate', tagline: 'Anyone Can Build. Everyone Gets Paid.',
     website: 'https://inclawbate.com',
-    description: 'Web3 ecosystem where AI agents hire humans, apps are built by anyone, and tokens share revenue.',
-    features: ['App Store', 'Inclawbator (token launchpad)', 'Skills Marketplace', 'Code Auditor', 'X Search'],
-    token: { name: 'CLAWS', address: '0x7ca47B141639B893C6782823C0b219f872056379', chain: 'Base' },
-    links: { apps: 'https://inclawbate.com/apps', tools: 'https://inclawbate.com/tools', build: 'https://inclawbate.com/build', stake: 'https://inclawbate.com/stake' }
+    description: 'Web3 ecosystem where AI agents hire humans, apps are built by anyone, and tokens share revenue. The ecosystem spans DeFi, gaming, AI agents, and community tools.',
+    products: [
+      { name: 'App Store', description: 'Community-built apps — browse or build your own with AI', url: 'https://inclawbate.com/apps' },
+      { name: 'App Builder', description: 'AI builds apps for you, no code needed', url: 'https://inclawbate.com/build' },
+      { name: 'Basis', description: 'DeFi yield vaults — Aerodrome LP + Aave leverage on Base', url: 'https://basisubi.com' },
+      { name: 'PokerAI', description: 'AI poker — watch agents play, deposit USDC chips', url: 'https://pokerai.app' },
+      { name: 'CLAWS Staking', description: 'Stake CLAWS to earn passive income', url: 'https://inclawbate.com/stake' },
+      { name: 'Skills Marketplace', description: 'Browse and use agent skills', url: 'https://inclawbate.com/skills' },
+      { name: 'Incubation', description: 'Full-service token launch + branding + marketing', url: 'https://inclawbate.com/inclawbator' },
+      { name: 'AgentScape', description: 'On-chain agent RPG game', url: 'https://agentscape.app' }
+    ],
+    token: { name: 'CLAWS', address: '0x7ca47B141639B893C6782823C0b219f872056379', chain: 'Base', staking: 'https://inclawbate.com/stake' },
+    links: { apps: 'https://inclawbate.com/apps', build: 'https://inclawbate.com/build', stake: 'https://inclawbate.com/stake', basis: 'https://basisubi.com', poker: 'https://pokerai.app', ecosystem: 'https://inclawbate.com/ecosystem' }
   });
 }
 
@@ -125,12 +162,49 @@ function getIncubationInfo() {
   });
 }
 
+async function getBasisVaults(args) {
+  try {
+    const sort = args.sort || 'apy';
+    const res = await fetch('https://inclawbate.com/api/basis/marketplace?sort=' + sort + '&limit=8');
+    const data = await res.json();
+    const vaults = (data.vaults || []).map(v => ({
+      name: v.name,
+      manager: v.manager_name || 'Anonymous',
+      apy: v.estimated_apy ? v.estimated_apy.toFixed(1) + '%' : 'N/A',
+      tvl: v.tvl_usdc ? '$' + Number(v.tvl_usdc).toLocaleString() : '$0',
+      return_7d: v.return_7d ? v.return_7d.toFixed(2) + '%' : 'N/A',
+      fee: v.performance_fee_bps ? (v.performance_fee_bps / 100) + '%' : '0%',
+      strategy: v.brain_config || {}
+    }));
+    if (!vaults.length) return JSON.stringify({ message: 'No vaults found yet. Check back soon at https://basisubi.com' });
+    return JSON.stringify({ count: vaults.length, vaults, explore: 'https://basisubi.com', deposit_info: 'Deposit USDC into any vault to earn yield. Vaults use Aerodrome LP + Aave leverage strategies on Base.' });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch vaults', explore: 'https://basisubi.com' });
+  }
+}
+
+function getStakingInfo() {
+  return JSON.stringify({
+    token: 'CLAWS',
+    address: '0x7ca47B141639B893C6782823C0b219f872056379',
+    chain: 'Base',
+    staking_url: 'https://inclawbate.com/stake',
+    how_it_works: 'Stake CLAWS to earn rewards from the Inclawbate ecosystem. Staking powers the agentic UBI model — stakers earn passive income while supporting ecosystem growth.',
+    rewards: 'CLAWS rewards distributed from ecosystem revenue (app fees, incubation, LP fees)',
+    staking_contract: '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6',
+    steps: ['Connect wallet at inclawbate.com/stake', 'Approve CLAWS tokens', 'Stake your CLAWS', 'Earn rewards automatically'],
+    buy_claws: 'https://app.uniswap.org/swap?outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base'
+  });
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'browse_apps': return await browseApps(args);
     case 'suggest_app_ideas': return suggestAppIdeas(args);
     case 'get_ecosystem_info': return getEcosystemInfo();
     case 'get_incubation_info': return getIncubationInfo();
+    case 'get_basis_vaults': return await getBasisVaults(args);
+    case 'get_staking_info': return getStakingInfo();
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
