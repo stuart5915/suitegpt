@@ -35,6 +35,26 @@ const SLOT_ANGLES = {
     'Weekly Recap':        ['shipped this week', 'top apps', 'community highlights', 'stats roundup', 'next week preview'],
 };
 
+// Brand archetype — injected into all image prompt generation
+const BRAND_IMAGE_CONTEXT = `INCLAWBATE VISUAL BRAND (follow this strictly):
+- Mascot: A stylized coral-red lobster character (#e5533d), confident and builder-energy, NOT cute/kawaii. Can hold tools, laptops, tokens, phones. Expressive eyes.
+- Colors: Coral red (#e5533d) primary, seafoam teal (#4db6ac) secondary, dark near-black backgrounds (#06060b to #0a0a11), warm sand/gold (#d4a574) for premium accents.
+- Style: Dark backgrounds ALWAYS. Neon coral and teal glow effects on edges. Futuristic but warm, NOT sterile corporate. Subtle grain/noise texture. Clean composition with breathing room.
+- Aesthetic: Crypto-native Web3. Floating holographic UI panels, glowing app interfaces, blockchain nodes, token coins, charts. Organic + tech fusion (lobster claws on circuit boards, coral reef meets server farm).
+- DON'T: No bright/white backgrounds. No stock photo energy. No clip art. No pure blue (use teal). No text in images. No realistic photography of people. No busy/cluttered scenes.
+- Format: 1:1 aspect ratio for social media. Single focal point.`;
+
+// Scene templates per pillar
+const PILLAR_SCENE_HINTS = {
+    'App Spotlight': 'A glowing app interface floating center-frame, slightly tilted in 3D perspective. The lobster mascot peeks from behind the screen.',
+    'Builder Shoutout': 'Moody workspace scene. A stylized character or lobster at a glowing desk with holographic screens showing code. Late-night builder grinding energy.',
+    'DeFi / CLAWS Update': 'Abstract token ecosystem. A coral coin with claw marks floating center, surrounded by orbiting data streams in seafoam teal. Yield arrows pointing up.',
+    'Weekly Recap': 'Split-panel mosaic of mini app screens, token charts, and builder avatars connected by glowing coral lines. Dashboard perspective.',
+    'How-To / Tips': 'Clean dark UI mockup showing a step-by-step process. Numbered steps glow in coral. The lobster points at the current step. Futuristic instruction manual.',
+    'Community Vibes': 'Stylized characters or lobsters in a neon-lit crypto lounge. Coral and teal lighting. Some on phones, some on laptops. Web3 co-working party energy.',
+    'Incubation CTA': 'The lobster in a dramatic pose — emerging from a glowing portal or standing atop a stack of apps. Coral energy radiating outward. Confident, powerful.',
+};
+
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com', 'https://www.inclawbate.com',
     'http://localhost:3000', 'http://localhost:5500',
@@ -209,7 +229,11 @@ Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-na
 
 Output in this format:
 TWEET: [the tweet]
-IMAGE: [a short image prompt for AI image generation — vivid, specific, social-media-friendly, no text in image, 1:1 aspect ratio]`;
+IMAGE: [a detailed image prompt for AI image generation, 2-3 sentences]
+
+${BRAND_IMAGE_CONTEXT}
+
+${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT: ' + PILLAR_SCENE_HINTS[pillar.name] : ''}`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -217,7 +241,7 @@ IMAGE: [a short image prompt for AI image generation — vivid, specific, social
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
-                        max_tokens: 400,
+                        max_tokens: 500,
                         temperature: 0.95,
                         messages: [{ role: 'user', content: prompt }]
                     })
@@ -262,18 +286,19 @@ IMAGE: [a short image prompt for AI image generation — vivid, specific, social
             if (!slot) return res.status(404).json({ error: 'Slot not found' });
 
             const tweetText = slot.tweet_text || '';
-            const imgPrompt = `Given this tweet for @inclawbator (a Web3/crypto app builder platform called Inclawbate):
+            const opts = slot.tweet_options || {};
+            const pillarName = opts.pillar || '';
+            const sceneHint = PILLAR_SCENE_HINTS[pillarName] || '';
+            const imgPrompt = `You are generating an image prompt for an AI image generator (like Midjourney, DALL-E, or Flux).
 
+The image accompanies this tweet from @inclawbator:
 "${tweetText}"
 
-Write a single image prompt for AI image generation that would make a great visual to accompany this tweet on X/Twitter.
+${BRAND_IMAGE_CONTEXT}
 
-Rules:
-- Vivid, specific, visually striking
-- Social-media-friendly, eye-catching, 1:1 aspect ratio
-- No text/words in the image
-- Crypto/Web3 aesthetic (neon, dark backgrounds, futuristic) when relevant
-- Output ONLY the image prompt, nothing else.`;
+${sceneHint ? 'SCENE SUGGESTION for this content type (' + pillarName + '): ' + sceneHint : ''}
+
+Write ONE detailed image prompt (2-3 sentences) that would produce a stunning, on-brand visual for this tweet. Be specific about composition, lighting, colors, and subject. Output ONLY the prompt, nothing else.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -281,7 +306,7 @@ Rules:
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
-                        max_tokens: 200,
+                        max_tokens: 300,
                         temperature: 0.95,
                         messages: [{ role: 'user', content: imgPrompt }]
                     })
@@ -487,11 +512,15 @@ RULES:
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
 
-Generate ${emptyHours.length} tweets. For each tweet, also write a short image prompt (for AI image generation) that would make a good visual to accompany the tweet.
+Generate ${emptyHours.length} tweets. For each tweet, also write a detailed image prompt (2-3 sentences) for AI image generation that follows the brand guide below.
+
+${BRAND_IMAGE_CONTEXT}
+
+${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT for today (' + pillar.name + '): ' + PILLAR_SCENE_HINTS[pillar.name] : ''}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [image prompt — vivid, specific, social-media-friendly, no text in image, 1:1 aspect ratio]
+IMAGE: [detailed image prompt following the brand guide above]
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
 
@@ -506,7 +535,7 @@ Output ONLY the numbered entries in the TWEET/IMAGE format. Nothing else.`;
             },
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
-                max_tokens: 1200,
+                max_tokens: 1500,
                 temperature: 0.9,
                 messages: [{ role: 'user', content: batchPrompt }]
             })
