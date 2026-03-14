@@ -192,6 +192,9 @@ class RoomManager {
         if (excess > 0) {
           agent.chips -= excess;
           this.store.addBalance(agent.walletAddress, excess);
+          agent.totalCashedOut = (agent.totalCashedOut || 0) + excess;
+          if (!agent.autoEvents) agent.autoEvents = [];
+          agent.autoEvents.push({ type: 'cashout', amount: excess, chips: agent.chips, time: Date.now() });
           console.log(`[AutoCashOut] ${agent.name}: -${excess} chips to wallet`);
           if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
         }
@@ -209,6 +212,9 @@ class RoomManager {
         const deducted = this.store.deductBalance(agent.walletAddress, topUp);
         if (deducted === false) continue; // wallet couldn't cover it, skip
         agent.chips += topUp;
+        agent.totalDeposited = (agent.totalDeposited || 0) + topUp;
+        if (!agent.autoEvents) agent.autoEvents = [];
+        agent.autoEvents.push({ type: 'topup', amount: topUp, chips: agent.chips, time: Date.now() });
         console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
 
         if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
@@ -941,6 +947,10 @@ class RoomManager {
 
     // Reset baseChips for real-money rooms — sandbox P&L shouldn't carry over
     lobbyAgent.baseChips = lobbyAgent.chipStack;
+    // Track total invested/cashed-out for accurate P&L across auto top-ups/cash-outs
+    lobbyAgent.totalDeposited = lobbyAgent.chipStack;
+    lobbyAgent.totalCashedOut = 0;
+    lobbyAgent.autoEvents = [];
 
     // If agent is already funded (via fundAgent), use their existing stack
     // Otherwise fund inline (legacy flow)

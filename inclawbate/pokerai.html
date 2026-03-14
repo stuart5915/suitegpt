@@ -5578,7 +5578,7 @@ function renderAgentHistory() {
 
   const wallet = getWallet();
   const isMine = agent.isCustom && wallet && agent.walletAddress === wallet.address;
-  const pnl = agent.chips - agent.baseChips;
+  const pnl = (agent.chips + (agent.totalCashedOut || 0)) - (agent.totalDeposited || agent.baseChips);
   const pnlColor = pnl >= 0 ? '#22c55e' : '#ef4444';
   const pnlSign = pnl >= 0 ? '+' : '';
   const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
@@ -5636,7 +5636,7 @@ function renderAgentsSidebar() {
   const wallet = getWallet();
   container.innerHTML = gameState.agents.map(agent => {
     const isMine = agent.isCustom && wallet && agent.walletAddress === wallet.address;
-    const pnl = isMine ? agent.chips - agent.baseChips : null;
+    const pnl = isMine ? (agent.chips + (agent.totalCashedOut || 0)) - (agent.totalDeposited || agent.baseChips) : null;
     const pnlColor = pnl !== null ? (pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)') : '';
     const pnlSign = pnl !== null ? (pnl >= 0 ? '+' : '') : '';
     const borderStyle = isMine ? 'border-color:rgba(34,197,94,0.4);' : '';
@@ -5733,8 +5733,8 @@ function _renderRosterFromCache() {
     });
   } else if (_rosterSort === 'pnl') {
     sorted.sort((a, b) => {
-      const pnlA = a.chips - (a.baseChips || a.chips);
-      const pnlB = b.chips - (b.baseChips || b.chips);
+      const pnlA = (a.chips + (a.totalCashedOut || 0)) - (a.totalDeposited || a.baseChips || a.chips);
+      const pnlB = (b.chips + (b.totalCashedOut || 0)) - (b.totalDeposited || b.baseChips || b.chips);
       return pnlB - pnlA;
     });
   } else if (_rosterSort === 'hands') {
@@ -5742,7 +5742,7 @@ function _renderRosterFromCache() {
   }
   container.innerHTML = sorted.map((agent, i) => {
     const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
-    const pnl = agent.chips - (agent.baseChips || agent.chips);
+    const pnl = (agent.chips + (agent.totalCashedOut || 0)) - (agent.totalDeposited || agent.baseChips || agent.chips);
     const pnlClass = pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'neutral';
     const pnlStr = pnl > 0 ? '+' + formatChips(pnl) : pnl < 0 ? '-' + formatChips(Math.abs(pnl)) : '±0';
     const roomClass = agent.room || 'sandbox';
@@ -5878,7 +5878,7 @@ function _renderLeaderboardFromCache() {
       return wrB !== wrA ? wrB - wrA : b.handsPlayed - a.handsPlayed;
     });
   } else if (_leaderboardSort === 'pnl') {
-    sorted.sort((a, b) => (b.chips - (b.baseChips || b.chips)) - (a.chips - (a.baseChips || a.chips)));
+    sorted.sort((a, b) => ((b.chips + (b.totalCashedOut || 0)) - (b.totalDeposited || b.baseChips || b.chips)) - ((a.chips + (a.totalCashedOut || 0)) - (a.totalDeposited || a.baseChips || a.chips)));
   } else if (_leaderboardSort === 'hands') {
     sorted.sort((a, b) => b.handsPlayed - a.handsPlayed);
   } else if (_leaderboardSort === 'stack') {
@@ -5888,7 +5888,7 @@ function _renderLeaderboardFromCache() {
   const tbody = document.getElementById('leaderboardBody');
   tbody.innerHTML = sorted.map((agent, i) => {
     const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
-    const pnl = agent.chips - (agent.baseChips || agent.chips);
+    const pnl = (agent.chips + (agent.totalCashedOut || 0)) - (agent.totalDeposited || agent.baseChips || agent.chips);
     const pnlColor = pnl > 0 ? 'var(--accent-green)' : pnl < 0 ? 'var(--accent-red)' : 'var(--text-muted)';
     const pnlStr = pnl > 0 ? '+' + formatChips(pnl) : pnl < 0 ? '-' + formatChips(Math.abs(pnl)) : '±0';
     const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
@@ -6744,7 +6744,7 @@ function renderMyAgents() {
     </div>`;
     html += `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:${lobby.length > 0 ? '20px' : '0'}">`;
     html += playing.map(agent => {
-      const pnl = agent.chips - agent.baseChips;
+      const pnl = (agent.chips + (agent.totalCashedOut || 0)) - (agent.totalDeposited || agent.baseChips);
       const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
       const pnlSign = pnl >= 0 ? '+' : '';
       const cardClass = pnl >= 0 ? 'profitable' : 'losing';
@@ -6780,7 +6780,7 @@ function renderMyAgents() {
       <div id="compactExpand-${agent.id}" class="compact-expand" style="display:block">
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <div style="font-size:11px;color:var(--text-muted)">
-            <span style="color:var(--accent-gold)">${formatChips(agent.chips)}</span> stack · started ${formatChips(agent.baseChips)} · ${agent.handsPlayed} hands · ${wr}% WR
+            invested <span style="color:var(--accent-gold)">${formatChips(agent.totalDeposited || agent.baseChips)}</span>${(agent.totalCashedOut || 0) > 0 ? ` · cashed out <span style="color:var(--accent-green)">${formatChips(agent.totalCashedOut)}</span>` : ''} · ${agent.handsPlayed} hands · ${wr}% WR
           </div>
           <div style="display:flex;gap:4px;margin-left:auto">
             <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:5px 12px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif">WATCH</button>
@@ -6789,6 +6789,16 @@ function renderMyAgents() {
             <button onclick="leaveTable('${agent.id}');this.textContent='Leaving...';this.disabled=true;this.style.opacity='0.5'" style="padding:5px 12px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sit Out</button>
           </div>
         </div>
+        ${(agent.autoEvents && agent.autoEvents.length > 0) ? `
+        <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px;max-height:80px;overflow-y:auto">
+          ${agent.autoEvents.slice(-10).reverse().map(e => {
+            const isTopUp = e.type === 'topup';
+            const color = isTopUp ? 'var(--accent-gold)' : 'var(--accent-green)';
+            const icon = isTopUp ? '↑' : '↓';
+            const label = isTopUp ? 'refill' : 'cash-out';
+            return `<div style="font-size:10px;color:${color}">${icon} ${isTopUp ? '+' : '-'}${e.amount.toLocaleString()} ${label} → ${formatChips(e.chips)}</div>`;
+          }).join('')}
+        </div>` : ''}
       </div>`;
     }).join('');
     html += `</div>`;
