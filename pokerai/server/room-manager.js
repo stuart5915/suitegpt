@@ -223,10 +223,12 @@ class RoomManager {
     // This keeps the system self-sustaining when admin is bootstrapping tables
     if (table.contractPool <= 0) return;
 
-    // Find all unique wallets with auto-top-up at this table
+    // Find all unique PLATFORM wallets with auto-top-up at this table
+    // Rake recycling is admin-only — regular users should NOT receive rake credits
     const wallets = new Set();
     for (const a of table.agents) {
       if (a.isCustom && a.walletAddress) {
+        if (!PLATFORM_WALLETS.has(a.walletAddress.toLowerCase())) continue;
         const config = this.autoTopUp.get(a.walletAddress);
         if (config && config.enabled) wallets.add(a.walletAddress);
       }
