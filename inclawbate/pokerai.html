@@ -6310,11 +6310,8 @@ async function doDeposit() {
     document.getElementById('depositAmount').value = '';
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
-
-    // Tell server to verify on-chain deposit and credit chips
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'checkDeposit' }));
-    }
+    // Event listener handles crediting automatically — no need to call checkDeposit here
+    // (calling both causes a race condition → double credit)
     closeVault();
   } catch (e) {
     console.error('Deposit failed:', e);
