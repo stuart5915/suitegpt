@@ -458,8 +458,8 @@
             <input type="hidden" id="schedBookSlotTime" value="">
             <input type="hidden" id="schedBookProject" value="">
 
-            <!-- Project picker -->
-            <div class="sched-field">
+            <!-- Project picker (admin only) -->
+            <div class="sched-field" id="schedProjectField" style="display:none">
                 <div class="sched-field-label">Project</div>
                 <div class="sched-projects" id="schedProjectPicker"></div>
             </div>
@@ -918,6 +918,7 @@
         renderProjectPicker(null, false);
 
         var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        document.getElementById('schedProjectField').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('schedAdminFields').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('schedUserFields').style.display = isAdmin ? 'none' : 'block';
 
@@ -1001,15 +1002,15 @@
             return;
         }
 
+        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
         var projectId = document.getElementById('schedBookProject').value;
-        if (!projectId) {
+        if (isAdmin && !projectId) {
             document.getElementById('schedBookError').textContent = 'Select a project first';
             document.getElementById('schedBookError').style.display = 'block';
             return;
         }
 
         // Enforce max 3 active bookings per user (admins exempt)
-        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
         if (!isAdmin) {
             var activeBookings = _schedSlots.filter(function(s) {
                 return s.booked_by_wallet === _userWallet && (s.status === 'scheduled' || s.status === 'pending_review') && new Date(s.scheduled_at) > new Date();
@@ -1043,7 +1044,7 @@
                     tweet_options: getTweetOptions()
                 } : {
                     action: 'book',
-                    project_id: projectId,
+                    project_id: projectId || (_schedProjects.length ? _schedProjects[0].id : null),
                     scheduled_at: document.getElementById('schedBookSlotTime').value,
                     tweet_text: document.getElementById('schedBookTweet').value
                 })
