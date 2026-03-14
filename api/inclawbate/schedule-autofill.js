@@ -134,6 +134,44 @@ export default async function handler(req, res) {
             return res.json({ ok: true });
         }
 
+        if (action === 'set_image') {
+            const { slot_id, image_url } = req.body;
+            if (!slot_id || !image_url) return res.status(400).json({ error: 'slot_id and image_url required' });
+            // Store image URL in tweet_options and flip status from needs_image → needs_review
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('tweet_options, status')
+                .eq('id', slot_id)
+                .single();
+            const opts = slot?.tweet_options || {};
+            opts.image_url = image_url;
+            const newStatus = slot?.status === 'needs_image' ? 'needs_review' : slot?.status;
+            const { error } = await supabase
+                .from('agent_schedule')
+                .update({ tweet_options: opts, status: newStatus })
+                .eq('id', slot_id)
+                .eq('booked_by_wallet', 'system-autofill');
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true, status: newStatus });
+        }
+
+        if (action === 'approve_all') {
+            const { date: approveDate } = req.body;
+            if (!approveDate) return res.status(400).json({ error: 'date required' });
+            const dayStart = approveDate + 'T00:00:00Z';
+            const nextDay = new Date(new Date(dayStart).getTime() + 2 * 86400000).toISOString();
+            const { data: updated, error } = await supabase
+                .from('agent_schedule')
+                .update({ status: 'scheduled' })
+                .eq('booked_by_wallet', 'system-autofill')
+                .in('status', ['needs_review', 'needs_image'])
+                .gte('scheduled_at', dayStart)
+                .lt('scheduled_at', nextDay)
+                .select('id');
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true, approved: (updated || []).length });
+        }
+
         return res.status(400).json({ error: 'Unknown action' });
     }
 

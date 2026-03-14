@@ -132,9 +132,9 @@ async function postTweetOAuth2(text, accessToken) {
     return { tweetId: data.data?.id || null };
 }
 
-// ── Post via shared @inclawbator account (OAuth 1.0a fallback) ──
+// ── OAuth 1.0a signing helper ──
 
-async function postTweetShared(text) {
+function buildOAuth1Header(method, url, extraParams) {
     const X_API_KEY = process.env.INCLAWBATOR_X_API_KEY;
     const X_API_SECRET = process.env.INCLAWBATOR_X_API_SECRET;
     const X_ACCESS_TOKEN = process.env.INCLAWBATOR_X_ACCESS_TOKEN;
@@ -149,10 +149,9 @@ async function postTweetShared(text) {
         oauth_signature_method: 'HMAC-SHA1',
         oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
         oauth_token: X_ACCESS_TOKEN,
-        oauth_version: '1.0'
+        oauth_version: '1.0',
+        ...extraParams
     };
-
-    const url = 'https://api.twitter.com/2/tweets';
 
     const paramString = Object.keys(oauth)
         .sort()
@@ -160,7 +159,7 @@ async function postTweetShared(text) {
         .join('&');
 
     const signatureBase = [
-        'POST',
+        method,
         encodeURIComponent(url),
         encodeURIComponent(paramString)
     ].join('&');
@@ -169,10 +168,58 @@ async function postTweetShared(text) {
     const signature = crypto.createHmac('sha1', signingKey).update(signatureBase).digest('base64');
     oauth.oauth_signature = signature;
 
-    const authHeader = 'OAuth ' + Object.keys(oauth)
-        .sort()
+    // Only include oauth_ params in header (not extra params)
+    const headerParams = Object.keys(oauth).filter(k => k.startsWith('oauth_')).sort();
+    return 'OAuth ' + headerParams
         .map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauth[k])}"`)
         .join(', ');
+}
+
+// ── Upload image to X via v1.1 media/upload (OAuth 1.0a) ──
+
+async function uploadMediaToX(imageUrl) {
+    // Download image from URL
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) throw new Error('Failed to download image: ' + imgResp.status);
+    const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
+    const base64Data = imgBuffer.toString('base64');
+
+    const contentType = imgResp.headers.get('content-type') || 'image/png';
+
+    const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
+    const authHeader = buildOAuth1Header('POST', uploadUrl, {});
+
+    // Use URL-encoded form body (X API v1.1 media upload)
+    const body = new URLSearchParams();
+    body.append('media_data', base64Data);
+
+    const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: body.toString()
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error('Media upload failed: ' + (data.error || JSON.stringify(data.errors || data)));
+    }
+
+    return data.media_id_string;
+}
+
+// ── Post via shared @inclawbator account (OAuth 1.0a fallback) ──
+
+async function postTweetShared(text, mediaIds) {
+    const url = 'https://api.twitter.com/2/tweets';
+    const authHeader = buildOAuth1Header('POST', url, {});
+
+    const payload = { text };
+    if (mediaIds && mediaIds.length > 0) {
+        payload.media = { media_ids: mediaIds };
+    }
 
     const response = await fetch(url, {
         method: 'POST',
@@ -180,7 +227,7 @@ async function postTweetShared(text) {
             'Authorization': authHeader,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text })
+        body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -337,7 +384,19 @@ export default async function handler(req, res) {
             // Auto-fill slots (no project) — already have tweet_text, just post it
             if (!project && slot.tweet_text && slot.booked_by_wallet === 'system-autofill') {
                 try {
-                    const tweetId = await postTweetShared(slot.tweet_text);
+                    // Upload image if present in tweet_options
+                    const opts = slot.tweet_options || {};
+                    let mediaIds = null;
+                    if (opts.image_url) {
+                        try {
+                            const mediaId = await uploadMediaToX(opts.image_url);
+                            mediaIds = [mediaId];
+                        } catch(imgErr) {
+                            // Log but don't fail — post without image
+                            errors.push({ slot: slot.id, warning: 'Image upload failed: ' + imgErr.message });
+                        }
+                    }
+                    const tweetId = await postTweetShared(slot.tweet_text, mediaIds);
                     await supabase.from('agent_schedule')
                         .update({ status: 'posted', tweet_id: tweetId })
                         .eq('id', slot.id);
@@ -409,8 +468,20 @@ export default async function handler(req, res) {
                     throw new Error('Generated tweet invalid or too long');
                 }
 
+                // Upload image if present
+                const slotOpts = slot.tweet_options || {};
+                let slotMediaIds = null;
+                if (slotOpts.image_url) {
+                    try {
+                        const mediaId = await uploadMediaToX(slotOpts.image_url);
+                        slotMediaIds = [mediaId];
+                    } catch(imgErr) {
+                        errors.push(`${project.name}: Image upload warning: ${imgErr.message}`);
+                    }
+                }
+
                 // Post to shared @inclawbator
-                const tweetId = await postTweetShared(tweetText);
+                const tweetId = await postTweetShared(tweetText, slotMediaIds);
 
                 // Mark slot as posted
                 await supabase

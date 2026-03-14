@@ -374,6 +374,20 @@
         .sched-draft-btn:hover { border-color:var(--text-dim);color:var(--text-primary); }
         .sched-draft-btn--approve { border-color:rgba(34,197,94,0.4);color:#4ade80; }
         .sched-draft-btn--approve:hover { background:rgba(34,197,94,0.1); }
+        .sched-tag--clickable { cursor:pointer;border:1px dashed rgba(251,146,36,0.5);transition:all 0.15s; }
+        .sched-tag--clickable:hover { background:rgba(251,146,36,0.25);border-color:#fb923c; }
+        .sched-slot-thumb {
+            width:48px;height:48px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0;
+            cursor:pointer;border:1px solid var(--border-subtle);transition:border-color 0.15s;
+        }
+        .sched-slot-thumb:hover { border-color:var(--lobster-400); }
+        .approve-all-btn {
+            display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+            border-radius:var(--radius-md);border:1px solid rgba(34,197,94,0.4);
+            background:rgba(34,197,94,0.08);color:#4ade80;font-size:0.75rem;
+            font-weight:600;cursor:pointer;transition:all 0.15s;
+        }
+        .approve-all-btn:hover { background:rgba(34,197,94,0.2);border-color:#4ade80; }
 
         /* ── Auto-fill button ── */
         .autofill-btn {
@@ -434,6 +448,9 @@
                 <div class="sched-header-meta">Free &middot; max 3 active</div>
                 <button type="button" class="autofill-btn" id="autofillBtn" style="display:none" onclick="window._autofillDay()">
                     &#x2728; Auto-fill empty slots
+                </button>
+                <button type="button" class="approve-all-btn" id="approveAllBtn" style="display:none" onclick="window._approveAll()">
+                    &#x2713; Approve all
                 </button>
             </div>
         </div>
@@ -664,6 +681,13 @@
         var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
         var btn = document.getElementById('autofillBtn');
         btn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+        // Show approve-all button if there are draft slots
+        var hasDrafts = _schedSlots.some(function(s) {
+            return s.booked_by_wallet === 'system-autofill' && (s.status === 'needs_review' || s.status === 'needs_image');
+        });
+        var approveBtn = document.getElementById('approveAllBtn');
+        approveBtn.style.display = (isAdmin && hasDrafts) ? 'inline-flex' : 'none';
     }
 
     function renderDayStrip() {
@@ -767,8 +791,13 @@
                 }
                 html += '</div>';
 
-                if (booked.status === 'needs_image') {
-                    html += '<span class="sched-tag sched-tag--needs-image">needs image</span>';
+                var slotOpts = booked.tweet_options || {};
+                var hasImage = !!slotOpts.image_url;
+
+                if (hasImage) {
+                    html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
+                } else if (booked.status === 'needs_image') {
+                    html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 } else {
                     html += '<span class="sched-tag sched-tag--draft">review</span>';
                 }
@@ -778,6 +807,7 @@
                     html += '<div class="sched-draft-actions">';
                     html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')">\u2713</button>';
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')">\u270E</button>';
+                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Upload image">\u{1F4F7}</button>';
                     html += '</div>';
                 }
 
@@ -1192,8 +1222,9 @@
             if (data.drafts && data.drafts.length) {
                 data.drafts.forEach(function(d) { _schedSlots.push(d); });
                 renderSlots(_selectedDay);
+                updatePillarBanner(_selectedDay); // Refresh approve-all visibility
             }
-            alert('Generated ' + (data.generated || 0) + ' drafts for ' + (data.pillar || 'today'));
+            alert('Generated ' + (data.generated || 0) + ' drafts for ' + (data.pillar || 'today') + '. Review them, add images, then approve.');
         } catch(e) {
             alert('Failed to generate: ' + e.message);
         } finally {
@@ -1215,11 +1246,85 @@
             var data = await resp.json();
             if (data.error) { alert(data.error); return; }
 
-            // Update local state
             var slot = _schedSlots.find(function(s) { return s.id === slotId; });
             if (slot) slot.status = 'scheduled';
             renderSlots(_selectedDay);
         } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._approveAll = async function() {
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+        if (!_selectedDay) return;
+        var dayStr = _selectedDay.toISOString().split('T')[0];
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'approve_all', date: dayStr })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+
+            // Update local state for all draft slots on this day
+            _schedSlots.forEach(function(s) {
+                if (s.booked_by_wallet === 'system-autofill' && (s.status === 'needs_review' || s.status === 'needs_image')) {
+                    s.status = 'scheduled';
+                }
+            });
+            renderSlots(_selectedDay);
+            alert('Approved ' + (data.approved || 0) + ' drafts — they will auto-post at their scheduled times.');
+        } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._uploadSlotImage = function(slotId) {
+        var inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        inp.onchange = async function() {
+            if (!inp.files || !inp.files[0]) return;
+            var file = inp.files[0];
+            if (file.size > 3 * 1024 * 1024) { alert('Image must be under 3MB'); return; }
+
+            var auth = getAuth();
+            if (!auth || !auth.token) { alert('Sign in first'); return; }
+
+            // Read as base64
+            var reader = new FileReader();
+            reader.onload = async function() {
+                try {
+                    // Upload to Supabase via upload endpoint
+                    var uploadResp = await fetch('/api/inclawbate/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                        body: JSON.stringify({ file_data: reader.result, file_name: file.name, file_type: file.type })
+                    });
+                    var uploadData = await uploadResp.json();
+                    if (uploadData.error) { alert(uploadData.error); return; }
+
+                    // Save image URL to slot
+                    var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                        body: JSON.stringify({ action: 'set_image', slot_id: slotId, image_url: uploadData.url })
+                    });
+                    var data = await resp.json();
+                    if (data.error) { alert(data.error); return; }
+
+                    // Update local state
+                    var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+                    if (slot) {
+                        if (!slot.tweet_options) slot.tweet_options = {};
+                        slot.tweet_options.image_url = uploadData.url;
+                        if (slot.status === 'needs_image') slot.status = 'needs_review';
+                    }
+                    renderSlots(_selectedDay);
+                } catch(e) { alert('Upload failed: ' + e.message); }
+            };
+            reader.readAsDataURL(file);
+        };
+        inp.click();
     };
 
     var _editingSlotId = null;
