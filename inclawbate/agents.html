@@ -1616,6 +1616,258 @@ function hubBoot() {
 }
 setTimeout(hubBoot, 100);
 
+// ══════════════════════════════════════
+// TOKEN LAUNCH PANEL
+// ══════════════════════════════════════
+
+var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
+var CLANKER_HOOK_DYNAMIC_V2 = '0xd60D6B218116cFd801E28F78d011a203D2b068Cc';
+var CLANKER_LP_LOCKER = '0x63D2DfEA64b3433F4071A98665bcD7Ca14d93496';
+var CLANKER_SNIPER_AUCTION = '0xebB25BB797D82CB78E1bc70406b13233c0854413';
+var WETH_BASE = '0x4200000000000000000000000000000000000006';
+var INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+var BASE_CHAIN_ID = '0x2105';
+
+var DEPLOY_TOKEN_ABI = [{
+    name: 'deployToken', type: 'function', stateMutability: 'payable',
+    inputs: [{ name: 'deploymentConfig', type: 'tuple', components: [
+        { name: 'tokenConfig', type: 'tuple', components: [
+            { name: 'tokenAdmin', type: 'address' }, { name: 'name', type: 'string' },
+            { name: 'symbol', type: 'string' }, { name: 'salt', type: 'bytes32' },
+            { name: 'image', type: 'string' }, { name: 'metadata', type: 'string' },
+            { name: 'context', type: 'string' }, { name: 'originatingChainId', type: 'uint256' }
+        ]},
+        { name: 'poolConfig', type: 'tuple', components: [
+            { name: 'hook', type: 'address' }, { name: 'pairedToken', type: 'address' },
+            { name: 'tickIfToken0IsClanker', type: 'int24' }, { name: 'tickSpacing', type: 'int24' },
+            { name: 'poolData', type: 'bytes' }
+        ]},
+        { name: 'lockerConfig', type: 'tuple', components: [
+            { name: 'locker', type: 'address' }, { name: 'rewardAdmins', type: 'address[]' },
+            { name: 'rewardRecipients', type: 'address[]' }, { name: 'rewardBps', type: 'uint16[]' },
+            { name: 'tickLower', type: 'int24[]' }, { name: 'tickUpper', type: 'int24[]' },
+            { name: 'positionBps', type: 'uint16[]' }, { name: 'lockerData', type: 'bytes' }
+        ]},
+        { name: 'mevModuleConfig', type: 'tuple', components: [
+            { name: 'mevModule', type: 'address' }, { name: 'mevModuleData', type: 'bytes' }
+        ]},
+        { name: 'extensionConfigs', type: 'tuple[]', components: [
+            { name: 'extension', type: 'address' }, { name: 'msgValue', type: 'uint256' },
+            { name: 'extensionBps', type: 'uint16' }, { name: 'extensionData', type: 'bytes' }
+        ]}
+    ]}],
+    outputs: [{ name: 'tokenAddress', type: 'address' }]
+}];
+
+var DYNAMIC_FEE_POOL_DATA = '0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000c350000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000007800000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000001dcd65000000000000000000000000000000000000000000000000000000001dcd65000000000000000000000000000000000000000000000000000000000000001d4c';
+
+function showLaunchPanel() {
+    document.getElementById('launchPanel').style.display = 'block';
+    document.getElementById('launchPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeLaunchPanel() {
+    document.getElementById('launchPanel').style.display = 'none';
+}
+
+function fillLaunchForm(args) {
+    showLaunchPanel();
+    var map = {
+        token_name: 'launchName', token_symbol: 'launchSymbol',
+        description: 'launchDesc', image_url: 'launchImage',
+        website_url: 'launchWebsite', x_handle: 'launchX', telegram_url: 'launchTG'
+    };
+    for (var key in map) {
+        if (args[key]) {
+            var el = document.getElementById(map[key]);
+            if (el) {
+                el.value = args[key];
+                el.classList.add('filled');
+            }
+        }
+    }
+    updateLaunchStatus();
+}
+
+function updateLaunchStatus() {
+    var name = document.getElementById('launchName').value.trim();
+    var symbol = document.getElementById('launchSymbol').value.trim();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var missing = [];
+    if (!name) missing.push('name');
+    if (!symbol) missing.push('symbol');
+    if (!desc) missing.push('description');
+    var el = document.getElementById('launchStatus');
+    if (missing.length === 0) {
+        el.textContent = 'Ready to deploy!';
+        el.style.color = '#4ade80';
+    } else {
+        el.textContent = 'Still need: ' + missing.join(', ');
+        el.style.color = 'var(--text-dim)';
+    }
+}
+
+// Listen for manual field edits
+['launchName','launchSymbol','launchDesc','launchImage','launchWebsite','launchX','launchTG'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+        if (this.value.trim()) this.classList.add('filled');
+        else this.classList.remove('filled');
+        updateLaunchStatus();
+    });
+});
+
+async function handleChatDeploy() {
+    var name = document.getElementById('launchName').value.trim();
+    var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var imageUrl = document.getElementById('launchImage').value.trim();
+    var website = document.getElementById('launchWebsite').value.trim();
+    var xHandle = document.getElementById('launchX').value.trim();
+    var telegram = document.getElementById('launchTG').value.trim();
+
+    if (!name) { toast('Token name is required', true); return; }
+    if (!symbol) { toast('Symbol is required', true); return; }
+    if (!desc) { toast('Description is required', true); return; }
+
+    var auth = getAuth();
+    if (!auth || !auth.wallet) {
+        toast('Connect your wallet first', true);
+        if (typeof navWalletConnect === 'function') navWalletConnect();
+        return;
+    }
+
+    var btn = document.getElementById('launchDeployBtn');
+    btn.disabled = true;
+    btn.textContent = 'Connecting to Base...';
+    var statusEl = document.getElementById('launchStatus');
+
+    try {
+        var provider = window.ethereum;
+        if (window.privyProvider) provider = window.privyProvider;
+        if (!provider) throw new Error('No wallet provider found');
+
+        // Switch to Base
+        try {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await provider.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                });
+            }
+        }
+
+        btn.textContent = 'Sign in wallet...';
+        statusEl.textContent = 'Encoding Clanker deployment...';
+        statusEl.style.color = 'var(--text-dim)';
+
+        // Encode deploy calldata
+        var iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
+        var saltBytes = new Uint8Array(32);
+        crypto.getRandomValues(saltBytes);
+        var salt = '0x' + Array.from(saltBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+        var wallet = auth.wallet;
+        var coder = ethers.AbiCoder.defaultAbiCoder();
+        var sniperMevData = coder.encode(['uint256','uint256','uint256'], [666777, 41673, 15]);
+
+        var deploymentConfig = {
+            tokenConfig: {
+                tokenAdmin: wallet, name: name, symbol: symbol, salt: salt,
+                image: imageUrl, metadata: '', context: '', originatingChainId: 8453
+            },
+            poolConfig: {
+                hook: CLANKER_HOOK_DYNAMIC_V2, pairedToken: WETH_BASE,
+                tickIfToken0IsClanker: -230400, tickSpacing: 200, poolData: DYNAMIC_FEE_POOL_DATA
+            },
+            lockerConfig: {
+                locker: CLANKER_LP_LOCKER,
+                rewardAdmins: [wallet, INCLAWBATE_TREASURY],
+                rewardRecipients: [wallet, INCLAWBATE_TREASURY],
+                rewardBps: [8000, 2000],
+                tickLower: [-230400], tickUpper: [-120000], positionBps: [10000],
+                lockerData: '0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001'
+            },
+            mevModuleConfig: { mevModule: CLANKER_SNIPER_AUCTION, mevModuleData: sniperMevData },
+            extensionConfigs: []
+        };
+
+        var calldata = iface.encodeFunctionData('deployToken', [deploymentConfig]);
+
+        btn.textContent = 'Confirm in wallet...';
+        statusEl.textContent = 'Waiting for wallet signature...';
+
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: wallet, to: CLANKER_V4, data: calldata, gas: '0x7A1200' }]
+        });
+
+        btn.textContent = 'Deploying...';
+        statusEl.textContent = 'Transaction sent! Waiting for confirmation...';
+        statusEl.style.color = '#fbbf24';
+
+        // Poll for receipt
+        var receipt = null;
+        for (var i = 0; i < 90; i++) {
+            await new Promise(function(r) { setTimeout(r, 2000); });
+            receipt = await provider.request({ method: 'eth_getTransactionReceipt', params: [txHash] });
+            if (receipt) break;
+        }
+        if (!receipt || receipt.status === '0x0') throw new Error('Transaction failed');
+
+        // Extract token address from Transfer(0x0 → ...) log
+        var tokenAddress = null;
+        var transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+        for (var j = 0; j < (receipt.logs || []).length; j++) {
+            var log = receipt.logs[j];
+            if (log.topics && log.topics[0] === transferTopic && log.topics[1] === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+                tokenAddress = '0x' + log.address.slice(-40);
+                break;
+            }
+        }
+        if (!tokenAddress && receipt.logs.length) tokenAddress = '0x' + receipt.logs[0].address.slice(-40);
+        if (!tokenAddress) throw new Error('Could not find deployed token address');
+
+        statusEl.textContent = 'Token deployed! Registering on Inclawbate...';
+        statusEl.style.color = '#4ade80';
+
+        // Register with API
+        var jwtToken = localStorage.getItem('inclawbate_token');
+        var regHeaders = { 'Content-Type': 'application/json' };
+        if (jwtToken) regHeaders['Authorization'] = 'Bearer ' + jwtToken;
+        await fetch('/api/inclawbate/inclawbator', {
+            method: 'POST', headers: regHeaders,
+            body: JSON.stringify({
+                action: 'register', token_address: tokenAddress, token_name: name,
+                token_symbol: symbol, deploy_tx_hash: txHash, description: desc,
+                website_url: website, logo_url: imageUrl || null,
+                x_handle: xHandle || null, telegram_url: telegram || null,
+                fee_split_bps: 2000, tier: 'permissionless',
+                creator_wallet: wallet, allocation_pct: 0, burn_amount: 0
+            })
+        });
+
+        btn.textContent = 'Deployed!';
+        btn.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)';
+        statusEl.innerHTML = '$' + esc(symbol) + ' deployed at <a href="https://basescan.org/address/' + tokenAddress + '" target="_blank" style="color:#4ade80">' + tokenAddress.slice(0, 8) + '...' + tokenAddress.slice(-6) + '</a>';
+
+        chatAddMessage('$' + symbol + ' is live! Token: ' + tokenAddress + ' \u2014 https://basescan.org/address/' + tokenAddress, false);
+        setTimeout(function() { hubLoadWorkspace(wallet); }, 2000);
+
+    } catch(e) {
+        var errMsg = e.message || 'Deploy failed';
+        if (errMsg.includes('rejected') || errMsg.includes('denied')) errMsg = 'Transaction rejected by wallet';
+        btn.disabled = false;
+        btn.textContent = '\u{1F680} Deploy Token on Base';
+        btn.style.background = '';
+        statusEl.textContent = errMsg;
+        statusEl.style.color = '#f87171';
+        toast(errMsg, true);
+    }
+}
+
 // ── Route-based view switching ──
 (function() {
     var path = window.location.pathname.replace(/\/$/, '');
