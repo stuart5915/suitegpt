@@ -758,7 +758,7 @@ app.get('/wallet/:address', async (req, res) => {
 
 app.get('/health', async (req, res) => {
   // Timeout wrapper — don't let RPC calls hang the health endpoint
-  const withTimeout = (p, ms = 5000) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+  const withTimeout = (p, ms = 10000) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
   const vaultStats = chain ? await withTimeout(chain.getVaultStats()) : null;
   const tokenVaultStats = tokenChain ? await withTimeout(tokenChain.getVaultStats()) : null;
   const rewardStats = tokenChain ? await withTimeout(tokenChain.getRewardStats().catch(() => null)) : null;
