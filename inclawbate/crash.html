@@ -249,6 +249,7 @@ input[type=number]{-moz-appearance:textfield}
       <span style="font-weight:700" id="vaultTvl">...</span>
       <span class="token">CLAWS</span>
     </div>
+    <button class="help-btn" onclick="toggleMute()" id="muteBtn" title="Toggle Sound">🔊</button>
     <button class="help-btn" onclick="showTutorial()" title="How to Play">?</button>
     <div class="network-dot" title="Live"></div>
     <div id="navAuth">
@@ -468,6 +469,9 @@ const VAULT_ABI = ['function deposit(uint256 amount) external'];
 const BASE_CHAIN_ID = '0x2105'; // 8453
 
 // ── Sound Effects ────────────────────────────────────────────────────
+const isInIframe = window.self !== window.top;
+let sfxMuted = isInIframe || localStorage.getItem('crash_muted') === '1';
+
 const flySfx = new Audio('/inclawbate/assets/fly-sfx.mp3');
 const crashSfx = new Audio('/inclawbate/assets/crash-sfx.mp3');
 flySfx.loop = true;
@@ -475,15 +479,17 @@ flySfx.volume = 0.4;
 crashSfx.volume = 0.6;
 
 function playCrashSound() {
+  if (sfxMuted) return;
   try { crashSfx.currentTime = 0; crashSfx.play(); } catch(e) {}
 }
 
 function startFlySound() {
+  if (sfxMuted) return;
   try { flySfx.currentTime = 0; flySfx.play(); } catch(e) {}
 }
 
 function updateFlyPitch(multiplier) {
-  // Increase volume slightly as multiplier rises
+  if (sfxMuted) return;
   try { flySfx.volume = Math.min(0.4 + multiplier * 0.02, 0.7); } catch(e) {}
 }
 
@@ -491,8 +497,13 @@ function stopFlySound() {
   try { flySfx.pause(); flySfx.currentTime = 0; flySfx.volume = 0.4; } catch(e) {}
 }
 
-function playCashoutSound() {
-  // No separate cashout SFX file yet — silent for now
+function playCashoutSound() {}
+
+function toggleMute() {
+  sfxMuted = !sfxMuted;
+  localStorage.setItem('crash_muted', sfxMuted ? '1' : '0');
+  $('muteBtn').textContent = sfxMuted ? '🔇' : '🔊';
+  if (sfxMuted) stopFlySound();
 }
 
 // ── State ───────────────────────────────────────────────────────────
@@ -1272,6 +1283,8 @@ function init() {
   drawFrame();
   connect();
   fetchVaultTvl();
+  // Set initial mute button state
+  if (sfxMuted) $('muteBtn').textContent = '🔇';
   setInterval(fetchVaultTvl, 30000); // refresh TVL every 30s
 
   // Show tutorial on first visit
