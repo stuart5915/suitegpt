@@ -109,6 +109,18 @@ export default async function handler(req, res) {
             return await generateDrafts(req, res, date);
         }
 
+        if (action === 'delete_slot') {
+            const { slot_id } = req.body;
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+            const { error } = await supabase
+                .from('agent_schedule')
+                .delete()
+                .eq('id', slot_id)
+                .eq('booked_by_wallet', 'system-autofill');
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true });
+        }
+
         if (action === 'approve') {
             const { slot_id } = req.body;
             const { error } = await supabase
