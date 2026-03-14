@@ -1088,22 +1088,17 @@
         document.getElementById('schedBookSlotTime').value = slotTime.toISOString();
         document.getElementById('schedBookProject').value = '';
 
-        renderProjectPicker(null, false);
-
-        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
-        document.getElementById('schedProjectField').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('schedAdminFields').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('schedUserFields').style.display = isAdmin ? 'none' : 'block';
+        // Everyone sees the same simple form — write your tweet
+        document.getElementById('schedProjectField').style.display = 'none';
+        document.getElementById('schedAdminFields').style.display = 'none';
+        document.getElementById('schedUserFields').style.display = 'block';
 
         document.getElementById('schedBookTweet').value = '';
         document.getElementById('schedBookCharCount').textContent = '0/280';
-        document.getElementById('schedBookAngle').value = '';
-        setSelectedTone('default');
-        setTweetOptions({});
         document.getElementById('schedBookSuccess').style.display = 'none';
         document.getElementById('schedBookError').style.display = 'none';
         document.getElementById('schedBookBtn').disabled = false;
-        document.getElementById('schedBookBtn').textContent = isAdmin ? 'Book This Slot' : 'Submit Tweet';
+        document.getElementById('schedBookBtn').textContent = 'Submit Tweet';
         document.getElementById('schedBookBtn').setAttribute('onclick', 'bookSlot()');
         form.removeAttribute('data-edit-id');
 
@@ -1176,9 +1171,9 @@
         }
 
         var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
-        var projectId = document.getElementById('schedBookProject').value;
-        if (isAdmin && !projectId) {
-            document.getElementById('schedBookError').textContent = 'Select a project first';
+        var tweetText = (document.getElementById('schedBookTweet').value || '').trim();
+        if (!tweetText) {
+            document.getElementById('schedBookError').textContent = 'Write your tweet first';
             document.getElementById('schedBookError').style.display = 'block';
             return;
         }
@@ -1208,25 +1203,17 @@
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + auth.token
                 },
-                body: JSON.stringify(isAdmin ? {
+                body: JSON.stringify({
                     action: 'book',
-                    project_id: projectId,
                     scheduled_at: document.getElementById('schedBookSlotTime').value,
-                    content_angle: document.getElementById('schedBookAngle').value,
-                    tone: getSelectedTone(),
-                    tweet_options: getTweetOptions()
-                } : {
-                    action: 'book',
-                    project_id: projectId || (_schedProjects.length ? _schedProjects[0].id : null),
-                    scheduled_at: document.getElementById('schedBookSlotTime').value,
-                    tweet_text: document.getElementById('schedBookTweet').value
+                    tweet_text: tweetText
                 })
             });
 
             var data = await resp.json();
             if (!resp.ok) throw new Error(data.error || 'Booking failed');
 
-            document.getElementById('schedBookSuccess').textContent = isAdmin ? 'Booked! @inclawbator will tweet at this time.' : 'Submitted! Your tweet will be posted once approved.';
+            document.getElementById('schedBookSuccess').textContent = isAdmin ? 'Booked! @inclawbator will tweet at this time.' : 'Submitted! Your tweet will be reviewed and posted once approved.';
             document.getElementById('schedBookSuccess').style.display = 'block';
 
             if (data.slot) {
