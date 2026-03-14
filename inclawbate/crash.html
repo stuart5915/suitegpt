@@ -99,10 +99,9 @@ input[type=number]{-moz-appearance:textfield}
 /* Canvas */
 .game-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
 
-/* Claw marks */
-.claw-marks{position:absolute;inset:0;z-index:20;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0}
-.claw-marks.visible{animation:slash 1.5s ease-out forwards}
-.claw-marks svg{width:120%;height:120%;transform:rotate(12deg)}
+/* Crash flash */
+.crash-flash{position:absolute;inset:0;z-index:20;pointer-events:none;opacity:0;background:radial-gradient(circle,rgba(217,95,95,0.25),rgba(217,95,95,0.08));transition:opacity 0.1s}
+.crash-flash.visible{opacity:1;animation:crashPulse 0.6s ease-out forwards}
 
 /* ── Bet Panel ── */
 .bet-panel{background:var(--surface);border-radius:20px;border:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);position:relative;z-index:10;flex-shrink:0}
@@ -219,11 +218,11 @@ input[type=number]{-moz-appearance:textfield}
   10%,30%,50%,70%,90%{transform:translate(-6px,3px) rotate(-1deg)}
   20%,40%,60%,80%{transform:translate(6px,-3px) rotate(1deg)}
 }
-@keyframes slash{
-  0%{opacity:0;transform:scale(0.9)}
-  10%{opacity:1;transform:scale(1)}
-  90%{opacity:1}
-  100%{opacity:0;transform:scale(1.05)}
+@keyframes crashPulse{
+  0%{opacity:1}
+  30%{opacity:0.6}
+  60%{opacity:0.8}
+  100%{opacity:0}
 }
 @keyframes pulseSoft{
   0%,100%{opacity:1}50%{opacity:0.6}
@@ -287,18 +286,8 @@ input[type=number]{-moz-appearance:textfield}
       <!-- Canvas -->
       <canvas class="game-canvas" id="gameCanvas"></canvas>
 
-      <!-- Claw Marks -->
-      <div class="claw-marks" id="clawMarks">
-        <svg width="400" height="400" viewBox="0 0 400 400" fill="none">
-          <defs><filter id="blur"><feGaussianBlur stdDeviation="8"/></filter></defs>
-          <path d="M50 80 Q 150 200 100 350" stroke="#D95F5F" stroke-width="12" stroke-linecap="round" fill="none"/>
-          <path d="M120 50 Q 220 200 180 370" stroke="#D95F5F" stroke-width="16" stroke-linecap="round" fill="none"/>
-          <path d="M200 30 Q 300 180 270 340" stroke="#D95F5F" stroke-width="12" stroke-linecap="round" fill="none"/>
-          <path d="M50 80 L 100 350" stroke="rgba(217,95,95,0.3)" stroke-width="24" stroke-linecap="round" filter="url(#blur)" fill="none"/>
-          <path d="M120 50 L 180 370" stroke="rgba(217,95,95,0.3)" stroke-width="32" stroke-linecap="round" filter="url(#blur)" fill="none"/>
-          <path d="M200 30 L 270 340" stroke="rgba(217,95,95,0.3)" stroke-width="24" stroke-linecap="round" filter="url(#blur)" fill="none"/>
-        </svg>
-      </div>
+      <!-- Crash Flash -->
+      <div class="crash-flash" id="crashFlash"></div>
     </div>
 
     <!-- Bet Panel -->
@@ -466,7 +455,6 @@ input[type=number]{-moz-appearance:textfield}
 
 <script>
 // ── Config ──────────────────────────────────────────────────────────
-// TODO: Replace with Railway URL after deployment
 const WS_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
   ? 'ws://localhost:4000'
   : 'wss://hopeful-curiosity-production-a507.up.railway.app';
@@ -602,11 +590,11 @@ function updateGameState(state) {
   if (state.phase === 'flying' && prevPhase !== 'flying') {
     flyStartTime = Date.now();
     curvePoints = [];
-    $('clawMarks').classList.remove('visible');
+    $('crashFlash').classList.remove('visible');
     $('gameContainer').classList.remove('shake');
   }
   if (state.phase === 'crashed' && prevPhase !== 'crashed') {
-    $('clawMarks').classList.add('visible');
+    $('crashFlash').classList.add('visible');
     $('gameContainer').classList.add('shake');
     setTimeout(() => $('gameContainer').classList.remove('shake'), 400);
     // Record all bets from this round into history
@@ -626,13 +614,13 @@ function updateGameState(state) {
     if (currentTab === 'history') renderBetHistory();
   }
   if (state.phase === 'waiting' && prevPhase !== 'waiting') {
-    $('clawMarks').classList.remove('visible');
+    $('crashFlash').classList.remove('visible');
     curvePoints = [];
   }
   prevPhase = state.phase;
 
   // Track my bet
-  myBet = user ? state.bets.find(b => b.username === user.username) || null : null;
+  myBet = user ? state.bets.find(b => b.wallet === user.wallet) || null : null;
 
   // Auto-bet: place bet when countdown starts and no bet placed yet
   if (autoBetEnabled && user && state.phase === 'countdown' && !myBet) {

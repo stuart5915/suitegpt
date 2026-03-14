@@ -53,8 +53,7 @@ function generateCrashPoint(seed) {
 
 // ── In-Memory State ─────────────────────────────────────────────────
 const users = new Map(); // wallet -> { wallet, username, balance }
-const walletToUsername = new Map(); // wallet -> username
-const usernameToWallet = new Map(); // username -> wallet
+const walletToUsername = new Map(); // wallet -> username (display only)
 
 const leaderboard = {
   topProfit: [],
@@ -97,7 +96,6 @@ async function getOrCreateUser(wallet, username, forceSync) {
   };
   users.set(key, user);
   walletToUsername.set(key, user.username);
-  usernameToWallet.set(user.username, key);
   return user;
 }
 
@@ -250,6 +248,7 @@ function getPublicState() {
     crashPoint: game.phase === 'crashed' ? game.crashPoint : null,
     countdown: game.countdown,
     bets: game.bets.map(b => ({
+      wallet: b.wallet,
       username: b.username,
       amount: b.amount,
       autoCashout: b.autoCashout,
@@ -321,13 +320,10 @@ async function startRound() {
 
   // Persist all balances after round
   for (const bet of game.bets) {
-    const wallet = usernameToWallet.get(bet.username);
-    if (wallet) {
-      const user = users.get(wallet);
-      if (user) {
-        sendToUser(bet.username, { type: 'balance', balance: user.balance });
-        persistBalance(wallet, user.balance, user.username);
-      }
+    const user = users.get(bet.wallet);
+    if (user) {
+      sendToWallet(bet.wallet, { type: 'balance', balance: user.balance });
+      persistBalance(bet.wallet, user.balance, user.username);
     }
   }
 
@@ -369,25 +365,20 @@ function processCashout(bet, multiplier) {
   const winnings = Math.floor(bet.amount * cashoutMultiplier);
   bet.profit = winnings - bet.amount;
 
-  const wallet = usernameToWallet.get(bet.username);
-  if (wallet) {
-    const user = users.get(wallet);
-    if (user) {
-      user.balance += winnings;
-      sendToUser(bet.username, { type: 'balance', balance: user.balance });
-    }
+  const user = users.get(bet.wallet);
+  if (user) {
+    user.balance += winnings;
+    sendToWallet(bet.wallet, { type: 'balance', balance: user.balance });
   }
 }
 
-function placeBet(username, amount, autoCashout) {
+function placeBet(wallet, username, amount, autoCashout) {
   if (game.phase !== 'waiting' && game.phase !== 'countdown') {
     return { ok: false, error: 'Cannot bet now' };
   }
-  if (game.bets.find(b => b.username === username)) {
+  if (game.bets.find(b => b.wallet === wallet)) {
     return { ok: false, error: 'Already bet this round' };
   }
-  const wallet = usernameToWallet.get(username);
-  if (!wallet) return { ok: false, error: 'Not logged in' };
   const user = users.get(wallet);
   if (!user) return { ok: false, error: 'Not logged in' };
   if (amount < 1 || amount > 100000) {
@@ -399,9 +390,10 @@ function placeBet(username, amount, autoCashout) {
 
   user.balance -= amount;
   game.bets.push({
+    wallet,
     username,
     amount,
-    autoCashout: autoCashout && autoCashout > 1 ? autoCashout : null,
+    autoCashout: autoCashout && autoCashout >= 1.01 ? autoCashout : null,
     cashedOutAt: null,
     profit: null,
   });
@@ -410,18 +402,17 @@ function placeBet(username, amount, autoCashout) {
   return { ok: true, balance: user.balance };
 }
 
-function cashout(username) {
+function cashout(wallet) {
   if (game.phase !== 'flying') {
     return { ok: false, error: 'Not flying' };
   }
-  const bet = game.bets.find(b => b.username === username);
+  const bet = game.bets.find(b => b.wallet === wallet);
   if (!bet || bet.cashedOutAt !== null) {
     return { ok: false, error: 'No active bet' };
   }
   processCashout(bet, game.multiplier);
   broadcastState();
-  const wallet = usernameToWallet.get(username);
-  const user = wallet ? users.get(wallet) : null;
+  const user = users.get(wallet);
   return { ok: true, cashedOutAt: bet.cashedOutAt, profit: bet.profit, balance: user ? user.balance : 0 };
 }
 
@@ -580,11 +571,12 @@ wss.on('connection', (ws) => {
       }
 
       case 'bet': {
-        if (!info.username) {
+        if (!info.wallet) {
           ws.send(JSON.stringify({ type: 'error', error: 'Not logged in' }));
           return;
         }
         const result = placeBet(
+          info.wallet,
           info.username,
           Math.floor(Number(msg.amount) || 0),
           msg.autoCashout ? Number(msg.autoCashout) : null
@@ -597,11 +589,11 @@ wss.on('connection', (ws) => {
       }
 
       case 'cashout': {
-        if (!info.username) {
+        if (!info.wallet) {
           ws.send(JSON.stringify({ type: 'error', error: 'Not logged in' }));
           return;
         }
-        const result = cashout(info.username);
+        const result = cashout(info.wallet);
         ws.send(JSON.stringify({ type: 'cashout_result', ...result }));
         break;
       }
