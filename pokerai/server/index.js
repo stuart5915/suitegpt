@@ -315,7 +315,7 @@ wss.on('connection', (ws) => {
             if (onChainDepositedChips > dbCredited && onChainDepositedChips - dbCredited >= 100) {
               const credit = onChainDepositedChips - dbCredited;
               await rooms.store.addBalance(addr, credit);
-              await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
+              await rooms.store.recordTransaction(addr, 'deposit_reconcile', Math.floor(credit / 10000 * 1e6), credit);
               sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: credit } }));
               console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited})`);
