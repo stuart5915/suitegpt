@@ -499,11 +499,16 @@ const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // ── WebSocket ───────────────────────────────────────────────────────
+let reconnectDelay = 2000;
+let reconnectTimer = null;
+
 function connect() {
   if (ws && ws.readyState <= 1) return;
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   ws = new WebSocket(WS_URL);
   ws.onopen = () => {
     console.log('Connected to server');
+    reconnectDelay = 2000; // reset backoff on successful connect
     if (walletAddress) {
       ws.send(JSON.stringify({ type: 'auth', wallet: walletAddress, username: user ? user.username : '' }));
     }
@@ -513,8 +518,9 @@ function connect() {
     handleMessage(msg);
   };
   ws.onclose = () => {
-    console.log('Disconnected, reconnecting in 2s...');
-    setTimeout(connect, 2000);
+    console.log('Disconnected, reconnecting in ' + (reconnectDelay/1000) + 's...');
+    reconnectTimer = setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); // backoff up to 30s
   };
   ws.onerror = () => ws.close();
 }

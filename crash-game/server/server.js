@@ -619,9 +619,22 @@ wss.on('connection', (ws) => {
     }
   });
 
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
   ws.on('close', () => { clients.delete(ws); });
   ws.on('error', () => { clients.delete(ws); });
 });
+
+// Ping all clients every 25s to keep connections alive through Railway proxy
+const pingInterval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (!ws.isAlive) { ws.terminate(); return; }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 25000);
+
+wss.on('close', () => clearInterval(pingInterval));
 
 httpServer.listen(PORT, () => {
   console.log(`Claws Crash server running on port ${PORT}`);
