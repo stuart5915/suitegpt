@@ -257,11 +257,11 @@ ${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT: ' + PILLAR_SCENE_HINTS[pillar.n
                     return res.status(500).json({ error: 'Generated tweet invalid or too long' });
                 }
 
-                // Keep scheduled status — regen shouldn't un-approve a slot
+                const newStatus = pillar.needsImage ? 'needs_image' : 'needs_review';
                 const newOpts = { ...opts, image_prompt: imagePrompt };
                 const { data: updated, error } = await supabase
                     .from('agent_schedule')
-                    .update({ tweet_text: tweetText, status: 'scheduled', tweet_options: newOpts })
+                    .update({ tweet_text: tweetText, status: newStatus, tweet_options: newOpts })
                     .eq('id', slot_id)
                     .select()
                     .single();
@@ -580,8 +580,7 @@ Output ONLY the numbered entries in the TWEET/IMAGE format. Nothing else.`;
             if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
             slotTime.setUTCHours(hour, 0, 0, 0);
 
-            // Auto-approve: go straight to 'scheduled' so heartbeat posts them
-            // Images are optional — add before post time for media, otherwise text-only
+            const status = pillar.needsImage ? 'needs_image' : 'needs_review';
             const { data: inserted, error } = await supabase
                 .from('agent_schedule')
                 .insert({
@@ -589,7 +588,7 @@ Output ONLY the numbered entries in the TWEET/IMAGE format. Nothing else.`;
                     booked_by_wallet: 'system-autofill',
                     content_angle: `${pillar.emoji} ${pillar.name}: ${angle}`,
                     tone: 'default',
-                    status: 'scheduled',
+                    status,
                     tweet_text: tweetText,
                     tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage, image_prompt: imagePrompt },
                 })
