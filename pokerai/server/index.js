@@ -428,6 +428,22 @@ wss.on('connection', (ws) => {
             break;
           }
 
+          // Verify wallet signature on withdrawal request
+          if (!msg.signature || !msg.message) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Signature required for withdrawals' } }));
+            break;
+          }
+          try {
+            const recovered = require('ethers').verifyMessage(msg.message, msg.signature);
+            if (recovered.toLowerCase() !== addr) {
+              ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Signature does not match wallet' } }));
+              break;
+            }
+          } catch (e) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Invalid signature' } }));
+            break;
+          }
+
           if (chips < 1000) {
             ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Minimum withdrawal: 1,000 chips ($0.10)' } }));
             break;

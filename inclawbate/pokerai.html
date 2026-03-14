@@ -6340,18 +6340,35 @@ function refreshBalance() {
   setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 3000);
 }
 
-function doWithdraw() {
+async function doWithdraw() {
   const chips = parseInt(document.getElementById('withdrawChips').value);
   if (!chips || chips < 1000) { showToast('Minimum withdrawal: 1,000 chips ($0.10)', 'error'); return; }
   if (chips > walletBalance) { showToast(`Not enough chips. You have ${walletBalance.toLocaleString()}`, 'error'); return; }
 
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first', 'error'); return; }
+
   const btn = document.getElementById('withdrawBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Processing...';
+  btn.innerHTML = '<span class="spinner"></span>Sign to withdraw...';
 
-  // Send withdraw request via WebSocket — server handles the on-chain tx
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'withdrawUsdc', chips }));
+  try {
+    const usd = (chips / CHIPS_PER_USDC).toFixed(2);
+    const nonce = Math.random().toString(36).slice(2, 10);
+    const message = `PokerAI Withdraw\n${chips.toLocaleString()} chips ($${usd} USDC)\nTo: ${wallet.address}\nNonce: ${nonce}`;
+    const signature = await window.ethereum.request({
+      method: 'personal_sign',
+      params: [message, wallet.address]
+    });
+
+    btn.innerHTML = '<span class="spinner"></span>Processing...';
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'withdrawUsdc', chips, signature, message }));
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = 'Withdraw to Wallet';
+    showToast('Signature rejected — withdrawal cancelled', 'info');
   }
   // Result handled in handleMessage → withdrawUsdcResult
 }
