@@ -9,7 +9,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 const VALID_HOURS = [1, 13, 16, 19, 22];
 
@@ -178,8 +178,67 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
 }
 
+// Tweet format examples — teach the AI what good @inclawbator tweets look like
+const STYLE_EXAMPLES = [
+    // Short punchy
+    `someone just built a full staking dashboard on inclawbate in 10 minutes. no code. just vibes.`,
+    // Question hook
+    `what if you could launch a token, build an app for it, and set up marketing... all from one platform? that's inclawbate`,
+    // Builder shoutout
+    `@itsEvilDuck just dropped ClawsNet on inclawbate. social network built entirely with AI. go try it inclawbate.com/apps/clawsnet`,
+    // Stats flex
+    `100+ apps live on inclawbate rn. all built by regular people using AI. no devs needed.`,
+    // FOMO/CTA
+    `we're taking on new builds at inclawbate. you bring the idea, we bring the AI. spots filling up. inclawbate.com`,
+    // One-liner
+    `gm. the future of app development is typing what you want and hitting enter.`,
+    // Degen energy
+    `ser the app store of the future is being built on base and it's called inclawbate. not alpha, just facts.`,
+    // Thread-starter style
+    `built ClawCard in weeks, not months. inclawbate handled the code while i focused on the product. if you're sitting on an idea, stop waiting.`,
+];
+
+// Fetch real platform stats for accurate content
+async function fetchPlatformContext() {
+    const results = { totalApps: 0, recentApps: [], builders: [], topApps: [] };
+
+    const [appsRes, countRes, buildersRes] = await Promise.allSettled([
+        supabase.from('user_apps')
+            .select('name, slug, category, upvote_count, view_count, creator_x_handle')
+            .eq('is_public', true)
+            .order('created_at', { ascending: false })
+            .limit(20),
+        supabase.from('user_apps')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_public', true),
+        supabase.from('user_apps')
+            .select('creator_x_handle')
+            .eq('is_public', true)
+            .not('creator_x_handle', 'is', null),
+    ]);
+
+    if (countRes.status === 'fulfilled') results.totalApps = countRes.value.count || 0;
+    if (appsRes.status === 'fulfilled') {
+        results.recentApps = (appsRes.value.data || []).slice(0, 15);
+        results.topApps = [...(appsRes.value.data || [])]
+            .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+            .slice(0, 5);
+    }
+    if (buildersRes.status === 'fulfilled') {
+        const handles = {};
+        (buildersRes.value.data || []).forEach(a => {
+            if (a.creator_x_handle) handles[a.creator_x_handle] = (handles[a.creator_x_handle] || 0) + 1;
+        });
+        results.builders = Object.entries(handles)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([handle, count]) => ({ handle, apps: count }));
+    }
+
+    return results;
+}
+
 async function generateDrafts(req, res, targetDate) {
-    // Default to tomorrow
     const date = targetDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const dayOfWeek = new Date(date + 'T12:00:00Z').getUTCDay();
     const pillar = PILLARS[dayOfWeek];
@@ -196,105 +255,127 @@ async function generateDrafts(req, res, targetDate) {
         .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image']);
 
     const bookedHours = new Set((existing || []).map(s => new Date(s.scheduled_at).getUTCHours()));
-
-    // Find empty slots
     const emptyHours = VALID_HOURS.filter(h => !bookedHours.has(h));
     if (!emptyHours.length) {
         return res.json({ message: 'All slots filled', date, pillar: pillar.name });
     }
 
-    // Fetch real platform data for context
-    const [appsResult, statsResult] = await Promise.allSettled([
-        supabase.from('user_apps').select('name, slug, category, upvote_count, description, creator_x_handle')
-            .eq('is_public', true).order('created_at', { ascending: false }).limit(20),
-        supabase.from('user_apps').select('*', { count: 'exact', head: true }).eq('is_public', true),
-    ]);
+    // Fetch real platform data
+    const ctx = await fetchPlatformContext();
 
-    const recentApps = appsResult.status === 'fulfilled' ? (appsResult.value.data || []) : [];
-    const totalApps = statsResult.status === 'fulfilled' ? (statsResult.value.count || 0) : 0;
+    const recentAppList = ctx.recentApps.map(a =>
+        `${a.name} (${a.category || 'general'})${a.creator_x_handle ? ' by @' + a.creator_x_handle : ''}`
+    ).join(', ');
 
-    const appContext = recentApps.slice(0, 10).map(a =>
-        `- ${a.name} (${a.category}, ${a.upvote_count || 0} upvotes)${a.creator_x_handle ? ' by @' + a.creator_x_handle : ''}`
-    ).join('\n');
+    const topBuilders = ctx.builders.map(b => `@${b.handle} (${b.apps} apps)`).join(', ');
 
-    // Generate tweets for empty slots
-    const drafts = [];
+    const topAppList = ctx.topApps.map(a =>
+        `${a.name} (${a.view_count || 0} views)`
+    ).join(', ');
 
-    for (let i = 0; i < emptyHours.length; i++) {
-        const hour = emptyHours[i];
-        const angle = angles[i % angles.length];
+    // Pick random style examples for variety
+    const shuffled = [...STYLE_EXAMPLES].sort(() => Math.random() - 0.5);
+    const exampleBlock = shuffled.slice(0, 4).map((e, i) => `${i + 1}. "${e}"`).join('\n');
 
-        const slotTime = new Date(date + 'T00:00:00Z');
-        if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
-        slotTime.setUTCHours(hour, 0, 0, 0);
+    // Generate ALL tweets in one batch call for consistency + speed
+    const batchPrompt = `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn.
 
-        // Generate tweet with Claude
-        const prompt = `Generate a tweet for @inclawbator (the AI marketing agent for Inclawbate platform).
-
-Today's content pillar: ${pillar.name} — ${pillar.desc}
-Angle for this slot: ${angle}
-
-Platform context:
-- Inclawbate has ${totalApps}+ free apps
-- Token: $CLAWS on Base chain
+REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
+- Total apps: ${ctx.totalApps}+
+- Top builders: ${topBuilders || 'growing community'}
+- Popular apps: ${topAppList || 'various'}
+- Recent apps: ${recentAppList || 'various'}
+- Token: $CLAWS on Base
 - Website: inclawbate.com
-- Recent apps:\n${appContext}
+- App builder: inclawbate.com/build (AI builds apps, no code)
+- Staking: inclawbate.com/stake
 
-Rules:
-- Under 280 characters (STRICT)
-- No hashtags
-- No "excited to announce" or corporate speak
-- No em dashes
-- Be authentic, crypto-native, conversational
-- Vary tone: sometimes degen, sometimes chill, sometimes hype
-- Mention specific app names or stats when relevant
-- Output ONLY the tweet text`;
+TODAY'S PILLAR: ${pillar.name}
+Description: ${pillar.desc}
 
-        try {
-            const resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': ANTHROPIC_API_KEY,
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify({
-                    model: 'claude-haiku-4-5-20251001',
-                    max_tokens: 300,
-                    messages: [{ role: 'user', content: prompt }]
-                })
-            });
-            const data = await resp.json();
-            const tweetText = data.content?.[0]?.text?.trim().replace(/^["']|["']$/g, '') || '';
+STYLE EXAMPLES (match this vibe — short, punchy, crypto-native):
+${exampleBlock}
 
-            if (tweetText && tweetText.length <= 280) {
-                const status = pillar.needsImage ? 'needs_image' : 'needs_review';
-                const { data: inserted, error } = await supabase
-                    .from('agent_schedule')
-                    .insert({
-                        scheduled_at: slotTime.toISOString(),
-                        booked_by_wallet: 'system-autofill',
-                        content_angle: `${pillar.emoji} ${pillar.name}: ${angle}`,
-                        tone: 'default',
-                        status: status,
-                        tweet_text: tweetText,
-                        tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage },
-                    })
-                    .select()
-                    .single();
+RULES:
+- Each tweet MUST be under 280 characters (STRICT — count carefully)
+- No hashtags ever
+- No "excited to announce", "thrilled", "game-changing", or any corporate speak
+- No em dashes (—)
+- No quotation marks around the tweet
+- Lowercase is fine, even preferred for casual tweets
+- Mix up formats: questions, one-liners, hot takes, mini-stories, shoutouts, stats
+- When mentioning builders or apps, use REAL names from the data above
+- When citing numbers, use ONLY the real stats provided — NEVER invent numbers
+- Include inclawbate.com when it fits naturally (not every tweet)
+- Each tweet should feel DIFFERENT from the others — vary length, tone, structure
 
-                if (!error && inserted) drafts.push(inserted);
-            }
-        } catch(e) {
-            // Skip this slot on error
+Generate ${emptyHours.length} tweets, one per line. Each tweet is for a different angle:
+${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
+
+Output ONLY the tweets, one per line, numbered. Nothing else.`;
+
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + GROQ_API_KEY
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                max_tokens: 600,
+                temperature: 0.9,
+                messages: [{ role: 'user', content: batchPrompt }]
+            })
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+            return res.status(500).json({ error: 'AI generation failed: ' + (data.error.message || data.error) });
         }
-    }
 
-    return res.json({
-        date,
-        pillar: pillar.name,
-        generated: drafts.length,
-        empty_slots: emptyHours.length,
-        drafts,
-    });
+        const rawText = data.choices?.[0]?.message?.content || '';
+        // Parse numbered tweets: "1. tweet text" or "1) tweet text"
+        const lines = rawText.split('\n')
+            .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '').trim())
+            .filter(l => l.length > 0 && l.length <= 280);
+
+        const drafts = [];
+        for (let i = 0; i < emptyHours.length && i < lines.length; i++) {
+            const hour = emptyHours[i];
+            const angle = angles[i % angles.length];
+            const tweetText = lines[i];
+
+            const slotTime = new Date(date + 'T00:00:00Z');
+            if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
+            slotTime.setUTCHours(hour, 0, 0, 0);
+
+            const status = pillar.needsImage ? 'needs_image' : 'needs_review';
+            const { data: inserted, error } = await supabase
+                .from('agent_schedule')
+                .insert({
+                    scheduled_at: slotTime.toISOString(),
+                    booked_by_wallet: 'system-autofill',
+                    content_angle: `${pillar.emoji} ${pillar.name}: ${angle}`,
+                    tone: 'default',
+                    status,
+                    tweet_text: tweetText,
+                    tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage },
+                })
+                .select()
+                .single();
+
+            if (!error && inserted) drafts.push(inserted);
+        }
+
+        return res.json({
+            date,
+            pillar: pillar.name,
+            generated: drafts.length,
+            empty_slots: emptyHours.length,
+            drafts,
+        });
+    } catch(e) {
+        return res.status(500).json({ error: 'Generation failed: ' + e.message });
+    }
 }
