@@ -1892,20 +1892,26 @@ function routeApp() {
 // POOL CREATION MODAL
 // ══════════════════════════════════════
 
-var poolModalTokensCache = null;
 var poolModalDeploying = false;
+var poolModalResolvedToken = null; // { address, name, symbol, decimals }
+var poolModalLookupTimer = null;
 
 function openPoolModal() {
     var overlay = document.getElementById('poolModalOverlay');
     if (!overlay) return;
     overlay.classList.add('visible');
     // Reset state
-    document.getElementById('poolModalLoading').classList.remove('hidden');
-    document.getElementById('poolModalNoTokens').classList.add('hidden');
-    document.getElementById('poolModalForm').classList.add('hidden');
+    document.getElementById('poolModalTokenAddr').value = '';
+    document.getElementById('poolModalDesc').value = '';
     document.getElementById('poolModalStatus').textContent = '';
-    poolModalTokensCache = null;
-    loadPoolModalTokens();
+    document.getElementById('poolModalPreview').classList.add('hidden');
+    document.getElementById('poolModalWarning').classList.add('hidden');
+    document.getElementById('poolModalDeployBtn').disabled = true;
+    document.getElementById('poolModalDeployBtn').textContent = 'Deploy Pool';
+    var ts = document.getElementById('poolModalTokenStatus');
+    ts.textContent = '';
+    ts.className = 'pool-modal-token-status';
+    poolModalResolvedToken = null;
 }
 
 function closePoolModal() {
@@ -1913,76 +1919,108 @@ function closePoolModal() {
     if (overlay) overlay.classList.remove('visible');
 }
 
-async function loadPoolModalTokens() {
-    var loading = document.getElementById('poolModalLoading');
-    var noTokens = document.getElementById('poolModalNoTokens');
-    var form = document.getElementById('poolModalForm');
-    var select = document.getElementById('poolModalSelect');
+function onPoolModalAddrInput() {
+    var input = document.getElementById('poolModalTokenAddr');
+    var addr = input.value.trim();
+    var ts = document.getElementById('poolModalTokenStatus');
+    var preview = document.getElementById('poolModalPreview');
+    var warning = document.getElementById('poolModalWarning');
+    var deployBtn = document.getElementById('poolModalDeployBtn');
 
-    // Connect wallet if needed
-    var provider = getProvider();
-    if (!provider || !walletAddr) {
-        try {
-            var accounts = await (provider || window.ethereum).request({ method: 'eth_requestAccounts' });
-            if (accounts && accounts.length > 0) {
-                walletAddr = accounts[0];
-                provider = getProvider();
-            }
-        } catch (e) {}
-    }
-    if (!walletAddr) {
-        loading.classList.add('hidden');
-        noTokens.classList.remove('hidden');
-        noTokens.querySelector('p').textContent = 'Connect your wallet first.';
+    poolModalResolvedToken = null;
+    deployBtn.disabled = true;
+    preview.classList.add('hidden');
+    warning.classList.add('hidden');
+
+    if (poolModalLookupTimer) clearTimeout(poolModalLookupTimer);
+
+    if (!addr || addr.length < 42 || !addr.match(/^0x[0-9a-fA-F]{40}$/)) {
+        ts.textContent = addr.length > 0 ? 'Enter a valid 0x... contract address' : '';
+        ts.className = 'pool-modal-token-status' + (addr.length > 0 ? ' error' : '');
         return;
     }
 
-    loading.classList.remove('hidden');
-    noTokens.classList.add('hidden');
-    form.classList.add('hidden');
+    ts.textContent = 'Looking up token...';
+    ts.className = 'pool-modal-token-status loading';
+
+    // Debounce the lookup
+    poolModalLookupTimer = setTimeout(function() { lookupToken(addr); }, 400);
+}
+
+async function lookupToken(addr) {
+    var ts = document.getElementById('poolModalTokenStatus');
+    var preview = document.getElementById('poolModalPreview');
+    var warning = document.getElementById('poolModalWarning');
+    var deployBtn = document.getElementById('poolModalDeployBtn');
 
     try {
-        var res = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(walletAddr.toLowerCase()));
-        var data = await res.json();
-        var projects = (data.projects || []).filter(function(p) {
-            return p.token_address && p.status === 'active' && !p.staking_address;
-        });
-        poolModalTokensCache = projects;
+        // Call name(), symbol(), decimals() on the token contract
+        var nameRes = await contractRead(addr, '0x06fdde03'); // name()
+        var symbolRes = await contractRead(addr, '0x95d89b41'); // symbol()
+        var decimalsRes = await contractRead(addr, '0x313ce567'); // decimals()
 
-        loading.classList.add('hidden');
-
-        if (projects.length === 0) {
-            noTokens.classList.remove('hidden');
-            noTokens.querySelector('p').textContent = "You don't have any tokens without a staking pool.";
+        if (!nameRes || nameRes === '0x' || !symbolRes || symbolRes === '0x') {
+            ts.textContent = 'Not a valid ERC20 token';
+            ts.className = 'pool-modal-token-status error';
             return;
         }
 
-        form.classList.remove('hidden');
-        select.innerHTML = '<option value="">Choose a token...</option>';
-        projects.forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.token_address;
-            opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')';
-            opt.dataset.name = p.token_name || '';
-            opt.dataset.symbol = p.token_symbol || '';
-            select.appendChild(opt);
-        });
+        var name = decodeString(nameRes);
+        var symbol = decodeString(symbolRes);
+        var decimals = parseInt(decimalsRes, 16) || 18;
 
-        select.onchange = function() {
-            var preview = document.getElementById('poolModalPreview');
-            var sel = select.options[select.selectedIndex];
-            if (select.value && sel.dataset.name) {
-                document.getElementById('poolModalTokenName').textContent = sel.dataset.name;
-                document.getElementById('poolModalTokenSymbol').textContent = '$' + sel.dataset.symbol;
-                document.getElementById('poolModalIcon').textContent = (sel.dataset.symbol || '?')[0];
-                preview.classList.remove('hidden');
-            } else {
-                preview.classList.add('hidden');
+        if (!name || !symbol) {
+            ts.textContent = 'Could not read token name/symbol';
+            ts.className = 'pool-modal-token-status error';
+            return;
+        }
+
+        poolModalResolvedToken = { address: addr, name: name, symbol: symbol, decimals: decimals };
+
+        // Show preview
+        document.getElementById('poolModalTokenName').textContent = name;
+        document.getElementById('poolModalTokenSymbol').textContent = '$' + symbol;
+        document.getElementById('poolModalIcon').textContent = symbol[0];
+        preview.classList.remove('hidden');
+        ts.textContent = 'Token found on Base';
+        ts.className = 'pool-modal-token-status success';
+        deployBtn.disabled = false;
+
+        // Check if a pool already exists for this token
+        var existingPool = null;
+        for (var k in POOLS) {
+            if (POOLS[k].token && POOLS[k].token.toLowerCase() === addr.toLowerCase()) {
+                existingPool = POOLS[k];
+                break;
             }
-        };
+        }
+        if (existingPool) {
+            warning.textContent = 'A staking pool already exists for ' + existingPool.ticker + '. Deploying another will create a separate pool.';
+            warning.classList.remove('hidden');
+        }
     } catch (e) {
-        loading.textContent = 'Failed to load tokens.';
+        ts.textContent = 'Could not read token — check the address';
+        ts.className = 'pool-modal-token-status error';
     }
+}
+
+// Decode ABI-encoded string (name/symbol return)
+function decodeString(hex) {
+    if (!hex || hex === '0x' || hex.length < 66) return '';
+    try {
+        // Standard ABI: offset at 0x20, length at 0x40, data at 0x60
+        var stripped = hex.replace('0x', '');
+        var offset = parseInt(stripped.slice(0, 64), 16) * 2;
+        var len = parseInt(stripped.slice(offset, offset + 64), 16);
+        var data = stripped.slice(offset + 64, offset + 64 + len * 2);
+        var result = '';
+        for (var i = 0; i < data.length; i += 2) {
+            var code = parseInt(data.slice(i, i + 2), 16);
+            if (code === 0) break;
+            result += String.fromCharCode(code);
+        }
+        return result;
+    } catch (e) { return ''; }
 }
 
 function parsePoolDeployed(receipt) {
@@ -2001,14 +2039,11 @@ function parsePoolDeployed(receipt) {
 async function handlePoolModalDeploy() {
     if (poolModalDeploying) return;
 
-    var select = document.getElementById('poolModalSelect');
-    var tokenAddress = select ? select.value : '';
+    if (!poolModalResolvedToken) { stakeToast('Enter a valid token address first', 'error'); return; }
+    var tokenAddress = poolModalResolvedToken.address;
+    var tokenName = poolModalResolvedToken.name;
+    var tokenSymbol = poolModalResolvedToken.symbol;
     var desc = document.getElementById('poolModalDesc').value.trim();
-    var tokenName = document.getElementById('poolModalTokenName').textContent;
-    var tokenSymbol = document.getElementById('poolModalTokenSymbol').textContent.replace('$', '');
-
-    if (!tokenAddress || tokenAddress.length !== 42) { stakeToast('Select a token first', 'error'); return; }
-    if (!tokenName || tokenName === '--') { stakeToast('Select a token first', 'error'); return; }
 
     var provider = getProvider();
     if (!provider || !walletAddr) { stakeToast('Connect wallet first', 'error'); return; }
@@ -2061,20 +2096,8 @@ async function handlePoolModalDeploy() {
 
         status.textContent = 'Linking staking pool...';
 
-        // Register via API
-        var existingProject = poolModalTokensCache ? poolModalTokensCache.find(function(p) { return p.token_address === tokenAddress; }) : null;
-        if (existingProject && existingProject.id) {
-            await fetch('/api/inclawbate/inclawbator', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update-staking',
-                    project_id: existingProject.id,
-                    staking_address: stakingPool,
-                    staking_deploy_tx: txHash
-                })
-            });
-        } else {
+        // Register via API — register token + link staking pool
+        try {
             var regResp = await fetch('/api/inclawbate/inclawbator', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2090,19 +2113,20 @@ async function handlePoolModalDeploy() {
                 })
             });
             var regData = await regResp.json();
-            if (regData.project) {
+            var projectId = regData.project ? regData.project.id : null;
+            if (projectId) {
                 await fetch('/api/inclawbate/inclawbator', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'update-staking',
-                        project_id: regData.project.id,
+                        project_id: projectId,
                         staking_address: stakingPool,
                         staking_deploy_tx: txHash
                     })
                 });
             }
-        }
+        } catch (regErr) { /* Pool deployed successfully even if API registration fails */ }
 
         poolModalDeploying = false;
         closePoolModal();
@@ -2119,7 +2143,7 @@ async function handlePoolModalDeploy() {
                     if (POOLS[key]) return;
                     POOLS[key] = {
                         name: p.token_name, ticker: p.token_symbol, token: p.token_address,
-                        rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808', rewardTicker: 'CLAWS',
+                        rewardToken: CLAWS_ADDR, rewardTicker: 'CLAWS',
                         staking: p.staking_address, decimals: 18, logo: p.logo_url || '',
                         color: p.color || 'hsl(172, 32%, 48%)', colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
                         glow: p.glow || 'hsla(172, 32%, 48%, 0.18)', description: p.description || '',
@@ -2218,6 +2242,8 @@ async function init() {
     });
     var poolModalDeployBtn = document.getElementById('poolModalDeployBtn');
     if (poolModalDeployBtn) poolModalDeployBtn.addEventListener('click', handlePoolModalDeploy);
+    var poolModalTokenAddr = document.getElementById('poolModalTokenAddr');
+    if (poolModalTokenAddr) poolModalTokenAddr.addEventListener('input', onPoolModalAddrInput);
 
     // Listen for popstate
     window.addEventListener('popstate', routeApp);
