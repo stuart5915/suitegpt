@@ -3294,9 +3294,10 @@
   }
   .bal-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-top: 10px;
     justify-content: center;
+    flex-wrap: wrap;
   }
   .bal-btn {
     padding: 6px 16px;
@@ -6332,6 +6333,9 @@ function checkDepositBalance() {
 }
 
 function refreshBalance() {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first', 'info'); return; }
+  if (activeRoom === 'sandbox') { showToast('Switch to a USDC room to sync deposits', 'info'); return; }
   const btn = document.getElementById('refreshBalBtn');
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   checkDepositBalance();
