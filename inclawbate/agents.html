@@ -1040,7 +1040,7 @@ function hubConnect() {
 }
 
 // ── Workspace data ──
-var _hubData = { apps: [], agents: [], vaults: [] };
+var _hubData = { tokens: [], apps: [], agents: [], vaults: [] };
 
 async function hubLoadWorkspace(wallet) {
     var summary = document.getElementById('hubSummary');
@@ -1054,17 +1054,21 @@ async function hubLoadWorkspace(wallet) {
         if (auth.profile.wallet_address) appParams.set('creator_wallet', auth.profile.wallet_address);
         if (auth.profile.x_handle) appParams.set('creator_x_handle', auth.profile.x_handle);
     }
-    // Fallback: if no profile identifiers, use wallet directly
     if (!appParams.has('creator_wallet') && !appParams.has('creator_id')) {
         appParams.set('creator_wallet', wallet);
     }
 
     try {
-        var [appsRes, projRes, vaultRes] = await Promise.allSettled([
+        var [tokensRes, appsRes, projRes, vaultRes] = await Promise.allSettled([
+            fetch(API + '/inclawbator?wallet=' + encodeURIComponent(wallet)).then(function(r){return r.json();}),
             fetch(API + '/apps?' + appParams.toString()).then(function(r){return r.json();}),
             fetch(API + '/projects?wallet=' + encodeURIComponent(wallet)).then(function(r){return r.json();}),
             fetch('/api/basis/marketplace?manager=' + encodeURIComponent(wallet)).then(function(r){return r.json();})
         ]);
+        // Tokens from inclawbator_projects (only those with a token_address)
+        var allProjects = tokensRes.status === 'fulfilled' ? (tokensRes.value.projects || tokensRes.value || []) : [];
+        if (!Array.isArray(allProjects)) allProjects = [];
+        _hubData.tokens = allProjects.filter(function(p) { return p.token_address; });
         _hubData.apps = (appsRes.status === 'fulfilled' ? (appsRes.value.apps || []) : []);
         _hubData.agents = (projRes.status === 'fulfilled' ? (projRes.value.projects || []).filter(function(p){return p.agent_enabled;}) : []);
         _hubData.vaults = (vaultRes.status === 'fulfilled' ? (vaultRes.value.vaults || []) : []);
@@ -1075,7 +1079,10 @@ async function hubLoadWorkspace(wallet) {
 
 function hubRenderSummary() {
     var parts = [];
+    if (_hubData.tokens.length) parts.push(_hubData.tokens.length + ' Token' + (_hubData.tokens.length > 1 ? 's' : ''));
     if (_hubData.apps.length) parts.push(_hubData.apps.length + ' App' + (_hubData.apps.length > 1 ? 's' : ''));
+    var pools = _hubData.tokens.filter(function(t){ return t.staking_address; });
+    if (pools.length) parts.push(pools.length + ' Pool' + (pools.length > 1 ? 's' : ''));
     if (_hubData.agents.length) parts.push(_hubData.agents.length + ' Agent' + (_hubData.agents.length > 1 ? 's' : ''));
     if (_hubData.vaults.length) parts.push(_hubData.vaults.length + ' Vault' + (_hubData.vaults.length > 1 ? 's' : ''));
     var el = document.getElementById('hubSummary');
@@ -1084,9 +1091,8 @@ function hubRenderSummary() {
 
 function hubRenderCards() {
     var container = document.getElementById('hubCards');
-    var hasStuff = _hubData.apps.length || _hubData.agents.length || _hubData.vaults.length;
+    var hasStuff = _hubData.tokens.length || _hubData.apps.length || _hubData.agents.length || _hubData.vaults.length;
     if (!hasStuff) {
-        // Show ghost cards (default HTML)
         container.innerHTML = '<div class="hub-card-ghost" onclick="hubChatFill(\'I want to launch a new token\')"><div class="hub-card-ghost-icon">&#x1F4B0;</div><div class="hub-card-ghost-label">Launch your first token</div></div>'
             + '<div class="hub-card-ghost" onclick="hubChatFill(\'Build me an app\')"><div class="hub-card-ghost-icon">&#x1F4F1;</div><div class="hub-card-ghost-label">Build your first app</div></div>'
             + '<div class="hub-card-ghost" onclick="hubChatFill(\'Create a stake pool for my token\')"><div class="hub-card-ghost-icon">&#x1F4CA;</div><div class="hub-card-ghost-label">Create a stake pool</div></div>'
@@ -1094,6 +1100,35 @@ function hubRenderCards() {
         return;
     }
     var html = '';
+    // Token cards (first — most important)
+    for (var i = 0; i < _hubData.tokens.length; i++) {
+        var t = _hubData.tokens[i];
+        var chain = t.chain || 'base';
+        var tradeUrl = chain === 'solana'
+            ? 'https://jup.ag/swap/SOL-' + (t.solana_token_mint || '')
+            : 'https://app.uniswap.org/swap?outputCurrency=' + t.token_address + '&chain=base';
+        html += '<a href="' + tradeUrl + '" target="_blank" rel="noopener" class="hub-card" style="text-decoration:none">';
+        html += '<span class="hub-card-type token">Token</span>';
+        if (t.logo_url) {
+            html += '<div class="hub-card-icon"><img src="' + esc(t.logo_url) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.outerHTML=\'&#x1FA99;\'"></div>';
+        } else {
+            html += '<div class="hub-card-icon">&#x1FA99;</div>';
+        }
+        html += '<div class="hub-card-name">$' + esc(t.token_symbol) + '</div>';
+        html += '<div class="hub-card-metric">' + esc(t.token_name) + '</div>';
+        if (t.staking_address) html += '<div class="hub-card-metric" style="color:#4ade80">Staking live</div>';
+        if (chain !== 'base') html += '<div class="hub-card-metric" style="text-transform:capitalize">' + esc(chain) + '</div>';
+        html += '</a>';
+        // Stake pool card (if token has staking)
+        if (t.staking_address) {
+            html += '<a href="/stake" class="hub-card" style="text-decoration:none">';
+            html += '<span class="hub-card-type pool">Pool</span>';
+            html += '<div class="hub-card-icon">&#x1F4CA;</div>';
+            html += '<div class="hub-card-name">' + esc(t.token_symbol) + ' Staking</div>';
+            html += '<div class="hub-card-metric">Stake &amp; earn rewards</div>';
+            html += '</a>';
+        }
+    }
     // App cards
     for (var i = 0; i < _hubData.apps.length; i++) {
         var a = _hubData.apps[i];
