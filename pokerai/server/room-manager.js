@@ -1259,6 +1259,58 @@ class RoomManager {
       });
     }
 
+    // Auto-recover: check persistent store for agents that fell out of in-memory state
+    // (e.g. server restart timing, race conditions)
+    const seenIds = new Set(results.map(r => r.id));
+    if (this.store.getAgentsForWallet) {
+      const storedAgents = this.store.getAgentsForWallet(walletAddress);
+      for (const saved of storedAgents) {
+        if (seenIds.has(saved.id)) continue;
+        // Agent exists in DB but not in memory — restore to lobby
+        const lobbyAgent = {
+          id: saved.id,
+          name: saved.name,
+          emoji: saved.emoji,
+          style: saved.style,
+          description: saved.description,
+          raisePct: saved.raisePct,
+          bluffPct: saved.bluffPct,
+          foldPct: saved.foldPct,
+          traits: saved.traits,
+          rules: saved.rules || {},
+          prompt: saved.prompt || '',
+          walletAddress,
+          isCustom: true,
+          chipStack: saved.chipStack || 0,
+          handsWon: saved.handsWon || 0,
+          handsPlayed: saved.handsPlayed || 0,
+          biggestPot: saved.biggestPot || 0
+        };
+        if (!this.lobbyAgents.has(walletAddress)) {
+          this.lobbyAgents.set(walletAddress, []);
+        }
+        this.lobbyAgents.get(walletAddress).push(lobbyAgent);
+        console.log(`[RoomManager] Auto-recovered lost agent "${saved.name}" for ${walletAddress.slice(0,8)}...`);
+        results.push({
+          id: saved.id,
+          name: saved.name,
+          emoji: saved.emoji,
+          style: saved.style,
+          chips: saved.chipStack || 0,
+          chipStack: saved.chipStack || 0,
+          baseChips: saved.chipStack || 0,
+          handsWon: saved.handsWon || 0,
+          handsPlayed: saved.handsPlayed || 0,
+          biggestPot: saved.biggestPot || 0,
+          traits: saved.traits,
+          rules: saved.rules || {},
+          prompt: saved.prompt || '',
+          pnl: 0,
+          status: 'lobby'
+        });
+      }
+    }
+
     return results;
   }
 
