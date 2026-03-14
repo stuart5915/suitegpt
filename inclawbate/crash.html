@@ -181,6 +181,29 @@ input[type=number]{-moz-appearance:textfield}
 .modal-error{color:var(--danger);font-size:13px;font-weight:600;text-align:center;margin-top:8px}
 .modal-icon{font-size:40px;text-align:center;margin-bottom:8px}
 
+/* ── Tutorial Modal ── */
+.tutorial-modal{max-width:440px}
+.tutorial-steps{text-align:left;margin-bottom:20px}
+.tutorial-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.tutorial-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;font-family:'Outfit',sans-serif}
+.step-content{flex:1}
+.step-content strong{font-size:14px;display:block;margin-bottom:2px}
+.step-content span{font-size:12px;color:var(--text-muted);line-height:1.4}
+.tutorial-tip{background:var(--success-bg);border:1px solid rgba(89,147,104,0.2);border-radius:12px;padding:10px 14px;font-size:12px;color:var(--success);font-weight:600;text-align:center;margin-bottom:16px}
+.help-btn{width:32px;height:32px;border-radius:50%;background:var(--bg);border:1px solid var(--border);color:var(--text-muted);font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-family:'Outfit',sans-serif}
+.help-btn:hover{background:var(--surface-hover);color:var(--text)}
+
+/* ── Banner ── */
+.game-banner{position:relative;border-radius:20px;overflow:hidden;flex-shrink:0;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+@media(min-width:768px){.game-banner{border-radius:24px}}
+.game-banner img{width:100%;height:auto;display:block;max-height:140px;object-fit:cover}
+@media(min-width:768px){.game-banner img{max-height:180px}}
+@media(min-width:1024px){.game-banner img{max-height:200px}}
+.builder-credit{position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.9);display:flex;align-items:center;gap:5px;text-decoration:none;transition:background 0.15s}
+.builder-credit:hover{background:rgba(0,0,0,0.8)}
+.builder-credit svg{width:12px;height:12px;fill:currentColor}
+
 /* ── Animations ── */
 @keyframes shake{
   0%,100%{transform:translate(0,0)}
@@ -216,6 +239,7 @@ input[type=number]{-moz-appearance:textfield}
       <span style="font-weight:700" id="vaultTvl">...</span>
       <span class="token">CLAWS</span>
     </div>
+    <button class="help-btn" onclick="showTutorial()" title="How to Play">?</button>
     <div class="network-dot" title="Live"></div>
     <div id="navAuth">
       <button class="btn btn-ghost" onclick="showAuth()">Login</button>
@@ -228,6 +252,15 @@ input[type=number]{-moz-appearance:textfield}
 <div class="main">
   <!-- Left: Game Column -->
   <div class="game-col">
+    <!-- Banner -->
+    <div class="game-banner">
+      <img src="/assets/claws-crash-banner.png" alt="Claws Crash">
+      <a href="https://x.com/abhiontwt" target="_blank" rel="noopener" class="builder-credit">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Built by @abhiontwt
+      </a>
+    </div>
+
     <!-- Game Container -->
     <div class="game-container" id="gameContainer">
       <!-- History Ribbon -->
@@ -325,6 +358,55 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- ── Tutorial Modal ── -->
+<div class="modal-overlay" id="tutorialModal">
+  <div class="modal tutorial-modal" style="position:relative">
+    <button class="modal-close" onclick="closeTutorial()">&times;</button>
+    <div class="modal-icon">&#x1F3B0;</div>
+    <h2>How to Play</h2>
+    <p>Bet CLAWS, watch the multiplier climb, cash out before it crashes!</p>
+    <div class="tutorial-steps">
+      <div class="tutorial-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>Deposit CLAWS</strong>
+          <span>Connect your wallet and deposit CLAWS tokens to get started. 1 CLAWS = 1 CLAWS in-game.</span>
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>Place Your Bet</strong>
+          <span>During the countdown between rounds, enter your bet amount and hit "Place Bet".</span>
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <strong>Watch It Fly</strong>
+          <span>The multiplier starts at 1.00x and climbs. The higher it goes, the more you win!</span>
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <strong>Cash Out in Time</strong>
+          <span>Hit "Cash Out" before the round crashes. Your bet is multiplied by whatever you cashed out at.</span>
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <strong>Don't Get Greedy</strong>
+          <span>If you don't cash out before it crashes, you lose your entire bet for that round.</span>
+        </div>
+      </div>
+    </div>
+    <div class="tutorial-tip">Tip: Use Auto Cashout to automatically cash out at a target multiplier</div>
+    <button class="modal-btn primary" onclick="closeTutorial()">Got it, let's play!</button>
+  </div>
+</div>
+
 <!-- ── Auth Modal ── -->
 <div class="modal-overlay" id="authModal">
   <div class="modal" style="position:relative">
@@ -391,7 +473,7 @@ let autoEnabled = false;
 let myBet = null;
 let animFrame = 0;
 let currentTab = 'bets';
-let allBetsHistory = []; // persisted bet history across rounds
+let allBetsHistory = JSON.parse(localStorage.getItem('crash_bet_history') || '[]');
 const MAX_BET_HISTORY = 200;
 
 // ── DOM refs ────────────────────────────────────────────────────────
@@ -517,6 +599,7 @@ function updateGameState(state) {
       });
     }
     if (allBetsHistory.length > MAX_BET_HISTORY) allBetsHistory.length = MAX_BET_HISTORY;
+    try { localStorage.setItem('crash_bet_history', JSON.stringify(allBetsHistory)); } catch(e) {}
     if (currentTab === 'history') renderBetHistory();
   }
   if (state.phase === 'waiting' && prevPhase !== 'waiting') {
@@ -730,6 +813,9 @@ function updateNav() {
     `;
   }
 }
+
+function showTutorial() { $('tutorialModal').classList.add('open'); }
+function closeTutorial() { $('tutorialModal').classList.remove('open'); localStorage.setItem('crash_tutorial_seen', '1'); }
 
 function showAuth() { $('authModal').classList.add('open'); }
 function closeAuth() { $('authModal').classList.remove('open'); $('authError').textContent = ''; }
@@ -1100,6 +1186,11 @@ function init() {
   connect();
   fetchVaultTvl();
   setInterval(fetchVaultTvl, 30000); // refresh TVL every 30s
+
+  // Show tutorial on first visit
+  if (!localStorage.getItem('crash_tutorial_seen')) {
+    showTutorial();
+  }
 
   // Try to restore wallet from localStorage
   const saved = localStorage.getItem('crash_wallet');
