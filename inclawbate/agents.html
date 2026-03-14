@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agents — Inclawbate</title>
-    <meta name="description" content="The Inclawbator ecosystem agent — launch tokens, stake CLAWS, find yield vaults, and more. Plus AI marketing agents for your X account.">
-    <meta property="og:title" content="Agents — Inclawbate">
-    <meta property="og:description" content="The Inclawbator ecosystem agent — launch tokens, stake CLAWS, find yield vaults. Plus AI marketing agents for X.">
+    <title>The Inclawbator Hub — Inclawbate</title>
+    <meta name="description" content="Your personal workspace — tokens, apps, agents, vaults, and the Inclawbator chat. Build, manage, and grow from one place.">
+    <meta property="og:title" content="The Inclawbator Hub — Inclawbate">
+    <meta property="og:description" content="Your personal workspace — tokens, apps, agents, vaults, and the Inclawbator chat.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/agents">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
@@ -18,6 +18,149 @@
     <link rel="stylesheet" href="/styles/components.css">
     <style>
         body { opacity: 1; background: var(--bg-deepest); }
+        .hub-page { max-width: 860px; margin: 0 auto; padding: calc(var(--nav-height) + var(--space-lg)) var(--space-lg) var(--space-3xl); }
+
+        /* ═══ ZONE 1: PROFILE BAR ═══ */
+        .hub-profile {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 20px; padding: var(--space-lg); margin-bottom: var(--space-lg);
+            animation: fadeUp 0.5s ease both;
+        }
+        .hub-profile-inner { display: flex; align-items: center; gap: var(--space-md); }
+        .hub-avatar {
+            width: 52px; height: 52px; border-radius: 16px;
+            background: linear-gradient(135deg, hsla(9,52%,54%,0.15), hsla(270,60%,60%,0.15));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--text-dim); flex-shrink: 0;
+            border: 1px solid var(--border-subtle);
+        }
+        .hub-profile-info { flex: 1; min-width: 0; }
+        .hub-address { font-family: var(--font-mono); font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+        .hub-summary { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+        .hub-connect-btn {
+            padding: 8px 20px; background: var(--accent-gradient); border: none;
+            border-radius: var(--radius-md); color: #fff; font-family: var(--font-body);
+            font-size: 0.82rem; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s;
+        }
+        .hub-connect-btn:hover { opacity: 0.9; }
+        .hub-connect-btn.connected { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+
+        /* ═══ ZONE 2: WORKSPACE ═══ */
+        .hub-workspace { margin-bottom: var(--space-lg); animation: fadeUp 0.5s ease 0.05s both; }
+        .hub-section-title {
+            font-family: var(--font-display); font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: var(--space-md);
+        }
+        .hub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-sm); }
+        .hub-card {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-md);
+            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .hub-card:hover { border-color: var(--lobster-300); transform: translateY(-2px); }
+        .hub-card-icon { font-size: 1.4rem; margin-bottom: var(--space-xs); }
+        .hub-card-name { font-weight: 800; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hub-card-metric { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); line-height: 1.4; }
+        .hub-card-type {
+            position: absolute; top: 8px; right: 8px; font-family: var(--font-mono);
+            font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; padding: 2px 6px; border-radius: 4px;
+        }
+        .hub-card-type.token { background: hsla(40,80%,50%,0.12); color: #fbbf24; }
+        .hub-card-type.app { background: hsla(200,70%,50%,0.12); color: #38bdf8; }
+        .hub-card-type.pool { background: hsla(142,52%,48%,0.12); color: #4ade80; }
+        .hub-card-type.agent { background: hsla(270,60%,60%,0.12); color: #a78bfa; }
+        .hub-card-type.vault { background: hsla(172,32%,48%,0.12); color: var(--seafoam-400); }
+        .hub-card-ghost {
+            background: transparent; border: 2px dashed var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-lg) var(--space-md);
+            text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .hub-card-ghost:hover { border-color: var(--lobster-300); background: hsla(9,52%,54%,0.04); }
+        .hub-card-ghost-icon { font-size: 1.6rem; opacity: 0.4; margin-bottom: var(--space-xs); }
+        .hub-card-ghost-label { font-size: 0.78rem; font-weight: 600; color: var(--text-dim); }
+
+        /* ═══ ZONE 3: QUICK ACTIONS ═══ */
+        .hub-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease 0.1s both; }
+        .hub-action-btn {
+            padding: 8px 18px; background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body);
+            font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .hub-action-btn:hover { border-color: var(--lobster-300); color: var(--lobster-300); background: hsla(9,52%,54%,0.06); }
+
+        /* ═══ ZONE 4: CHAT ═══ */
+        .hub-chat-section { margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease 0.15s both; }
+        .hub-chat-label {
+            display: flex; align-items: center; gap: 8px;
+            font-family: var(--font-display); font-size: 0.92rem; font-weight: 900;
+            color: var(--text-primary); margin-bottom: var(--space-md);
+        }
+        .hub-chat-label-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 2s ease-in-out infinite; }
+        .hub-chat-container {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 20px; overflow: hidden;
+        }
+        .hub-chat-messages {
+            max-height: 320px; min-height: 80px; overflow-y: auto;
+            padding: var(--space-lg) var(--space-lg) var(--space-sm);
+            display: flex; flex-direction: column; gap: var(--space-md); scroll-behavior: smooth;
+        }
+        .hub-chat-messages::-webkit-scrollbar { width: 4px; }
+        .hub-chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .hub-chat-messages::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+        .chat-msg { display: flex; gap: var(--space-sm); align-items: flex-start; animation: msg-in 0.35s ease; }
+        @keyframes msg-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .chat-msg-user { flex-direction: row-reverse; }
+        .chat-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+        .chat-msg-user .chat-avatar { background: hsla(9,52%,54%,0.15); border-color: hsla(9,52%,54%,0.25); font-size: 0.7rem; color: var(--lobster-300); }
+        .chat-bubble { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-sm) var(--space-md); font-size: 0.86rem; line-height: 1.6; color: var(--text-primary); max-width: 85%; word-wrap: break-word; }
+        .chat-msg-user .chat-bubble { background: hsla(9,52%,54%,0.12); border-color: hsla(9,52%,54%,0.2); color: var(--lobster-200); }
+        .chat-bubble a { color: var(--lobster-300); text-decoration: underline; text-underline-offset: 2px; }
+        .chat-bubble a:hover { color: var(--lobster-200); }
+        .chat-typing { display: flex; gap: 4px; padding: var(--space-sm) var(--space-md); align-items: center; }
+        .chat-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); animation: typing-bounce 1.4s ease-in-out infinite; }
+        .chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-bounce { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-6px); opacity:1; } }
+        .chat-input-row { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-lg); border-top: 1px solid var(--border-subtle); }
+        .chat-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-family: var(--font-body); font-size: 0.88rem; padding: var(--space-sm) 0; }
+        .chat-input::placeholder { color: var(--text-dim); }
+        .chat-send { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-gradient); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+        .chat-send:hover { transform: scale(1.08); }
+        .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .hub-chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
+        .chat-prompt-chip { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 5px 14px; font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .chat-prompt-chip:hover { border-color: var(--lobster-400); color: var(--text-primary); background: hsla(9,52%,54%,0.08); }
+        .chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
+        .chat-action-btn { display: inline-flex; align-items: center; gap: 5px; background: hsla(9,52%,54%,0.1); border: 1px solid hsla(9,52%,54%,0.25); border-radius: 999px; padding: 5px 14px; font-family: var(--font-body); font-size: 0.74rem; font-weight: 700; color: var(--lobster-300); text-decoration: none; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .chat-action-btn:hover { background: hsla(9,52%,54%,0.18); border-color: var(--lobster-400); }
+
+        /* ═══ COLLAPSIBLE SECTION ═══ */
+        .hub-collapsible { margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease 0.2s both; }
+        .hub-collapsible-toggle {
+            display: flex; align-items: center; gap: var(--space-sm); width: 100%;
+            padding: var(--space-md) var(--space-lg); background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+            cursor: pointer; transition: all 0.2s; font-family: var(--font-display);
+            font-size: 0.95rem; font-weight: 800; color: var(--text-primary);
+        }
+        .hub-collapsible-toggle:hover { border-color: var(--border-bright); }
+        .hub-toggle-desc { font-size: 0.75rem; font-weight: 400; color: var(--text-dim); margin-left: 8px; }
+        .hub-toggle-arrow { margin-left: auto; color: var(--text-dim); transition: transform 0.2s; font-size: 0.7rem; }
+        .hub-collapsible.open .hub-toggle-arrow { transform: rotate(90deg); }
+        .hub-collapsible.open .hub-collapsible-toggle { border-radius: var(--radius-xl) var(--radius-xl) 0 0; border-bottom-color: transparent; }
+        .hub-collapsible-body { display: none; padding: var(--space-lg); background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-top: none; border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+        .hub-collapsible.open .hub-collapsible-body { display: block; }
+
+        @media (max-width: 640px) {
+            .hub-profile-inner { flex-wrap: wrap; }
+            .hub-cards { grid-template-columns: repeat(2, 1fr); }
+            .hub-actions { gap: 6px; }
+            .hub-action-btn { font-size: 0.72rem; padding: 6px 12px; }
+        }
+
+        /* ═══ EXISTING STYLES (preserved) ═══ */
         .agents-page { max-width: 860px; margin: 0 auto; padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl); }
 
         .agents-hero { text-align: center; margin-bottom: var(--space-xl); animation: fadeUp 0.5s ease both; }
@@ -455,14 +598,77 @@
     </div>
 </nav>
 
-<div class="agents-page">
-    <section class="agents-hero" id="heroSection">
-        <h1>Agents</h1>
-        <p>The Inclawbate ecosystem agent &mdash; plus AI marketing tools you can create yourself.</p>
+<div class="hub-page">
+    <!-- ═══ ZONE 1: PROFILE BAR ═══ -->
+    <section class="hub-profile" id="hubProfile">
+        <div class="hub-profile-inner">
+            <div class="hub-avatar" id="hubAvatar">?</div>
+            <div class="hub-profile-info">
+                <div class="hub-address" id="hubAddress">Connect wallet to see your workspace</div>
+                <div class="hub-summary" id="hubSummary"></div>
+            </div>
+            <button class="hub-connect-btn" id="hubConnectBtn" onclick="hubConnect()">Connect Wallet</button>
+        </div>
     </section>
 
-    <!-- ═══ THE INCLAWBATOR ═══ -->
-    <section class="inclaw-agent-section">
+    <!-- ═══ ZONE 2: WORKSPACE ═══ -->
+    <section class="hub-workspace" id="heroSection">
+        <div class="hub-section-title">Your Stuff</div>
+        <div class="hub-cards" id="hubCards">
+            <div class="hub-card-ghost" onclick="hubChatFill('I want to launch a new token')">
+                <div class="hub-card-ghost-icon">&#x1F4B0;</div>
+                <div class="hub-card-ghost-label">Launch your first token</div>
+            </div>
+            <div class="hub-card-ghost" onclick="hubChatFill('Build me an app')">
+                <div class="hub-card-ghost-icon">&#x1F4F1;</div>
+                <div class="hub-card-ghost-label">Build your first app</div>
+            </div>
+            <div class="hub-card-ghost" onclick="hubChatFill('Create a stake pool for my token')">
+                <div class="hub-card-ghost-icon">&#x1F4CA;</div>
+                <div class="hub-card-ghost-label">Create a stake pool</div>
+            </div>
+            <div class="hub-card-ghost" onclick="hubChatFill('Set up an AI agent for my project')">
+                <div class="hub-card-ghost-icon">&#x1F916;</div>
+                <div class="hub-card-ghost-label">Set up an agent</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ ZONE 3: QUICK ACTIONS ═══ -->
+    <section class="hub-actions">
+        <button class="hub-action-btn" onclick="hubChatFill('I want to launch a new token')">+ New Token</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Build me an app')">+ New App</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Create a stake pool for my token')">+ Stake Pool</button>
+        <button class="hub-action-btn" onclick="hubChatFill('Set up an AI agent for my project')">+ New Agent</button>
+    </section>
+
+    <!-- ═══ ZONE 4: THE INCLAWBATOR CHAT ═══ -->
+    <section class="hub-chat-section">
+        <div class="hub-chat-label">
+            <span>&#129438;</span> The Inclawbator <span class="hub-chat-label-dot"></span>
+        </div>
+        <div class="hub-chat-container">
+            <div class="hub-chat-messages" id="chatMessages">
+                <div class="chat-msg chat-msg-bot">
+                    <div class="chat-avatar">&#129438;</div>
+                    <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; your workspace assistant. I can see what you've built and help you launch tokens, build apps, manage agents, and find yield. What do you need?</div>
+                </div>
+            </div>
+            <form class="chat-input-row" id="chatForm" autocomplete="off">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Ask the Inclawbator..." maxlength="500" autocomplete="off">
+                <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
+            </form>
+        </div>
+        <div class="hub-chat-chips">
+            <button class="chat-prompt-chip" data-prompt="How do I stake CLAWS and earn rewards?">&#129438; Stake CLAWS</button>
+            <button class="chat-prompt-chip" data-prompt="Show me the best yield vaults on Basis">&#x1F4B0; Find yield</button>
+            <button class="chat-prompt-chip" data-prompt="I want to launch a token with staking">&#x1F680; Launch token</button>
+            <button class="chat-prompt-chip" data-prompt="Show me the best apps to try">&#x1F4F1; Build app</button>
+        </div>
+    </section>
+
+    <!-- ═══ THE INCLAWBATOR (hidden — replaced by hub chat) ═══ -->
+    <section class="inclaw-agent-section" style="display:none">
         <div class="inclaw-agent-card">
             <div class="inclaw-agent-header">
                 <div class="inclaw-agent-avatar">&#129438;</div>
@@ -547,7 +753,15 @@
         </div>
     </section>
 
-    <!-- ═══ MARKETING AGENTS ═══ -->
+    <!-- ═══ MARKETING AGENTS (collapsible) ═══ -->
+    <section class="hub-collapsible" id="marketingSection">
+        <button class="hub-collapsible-toggle" onclick="toggleMarketingSection()">
+            <span>&#x1F916; Marketing Agents</span>
+            <span class="hub-toggle-desc">AI auto-posting to X &mdash; free forever</span>
+            <span class="hub-toggle-arrow" id="marketingArrow">&#9654;</span>
+        </button>
+        <div class="hub-collapsible-body" id="marketingBody">
+
     <section class="marketing-agents-section">
         <div class="marketing-agents-header">
             <h2>Marketing Agents</h2>
@@ -767,7 +981,10 @@
             <a href="/ecosystem" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;background:var(--accent-gradient);border-radius:var(--radius-md);color:#fff;font-weight:700;font-size:0.88rem;text-decoration:none;">View Full Ecosystem &rarr;</a>
         </div>
     </div>
-</div>
+
+        </div><!-- close hub-collapsible-body -->
+    </section><!-- close hub-collapsible -->
+</div><!-- close hub-page -->
 
 <footer style="text-align:center;padding:var(--space-2xl) var(--space-lg);color:var(--text-dim);font-size:0.82rem;">
     <p>inclawbate &mdash; we incubate anything for anyone.</p>
@@ -787,6 +1004,292 @@
 <script>
 'use strict';
 var API = '/api/inclawbate';
+
+// ══════════════════════════════════════
+// HUB — WORKSPACE + CHAT
+// ══════════════════════════════════════
+
+// ── Profile bar ──
+function hubRenderProfile() {
+    var auth = getAuth();
+    var avatar = document.getElementById('hubAvatar');
+    var addr = document.getElementById('hubAddress');
+    var summary = document.getElementById('hubSummary');
+    var btn = document.getElementById('hubConnectBtn');
+    if (!auth || !auth.wallet) {
+        avatar.textContent = '?';
+        addr.textContent = 'Connect wallet to see your workspace';
+        summary.textContent = '';
+        btn.textContent = 'Connect Wallet';
+        btn.className = 'hub-connect-btn';
+        btn.onclick = hubConnect;
+        return;
+    }
+    var w = auth.wallet;
+    avatar.textContent = w.slice(2, 4).toUpperCase();
+    addr.textContent = w.slice(0, 6) + '\u2026' + w.slice(-4);
+    btn.textContent = 'Disconnect';
+    btn.className = 'hub-connect-btn connected';
+    btn.onclick = function() { if (typeof disconnectWallet === 'function') disconnectWallet(); };
+    hubLoadWorkspace(w);
+}
+
+function hubConnect() {
+    if (typeof navWalletConnect === 'function') navWalletConnect();
+    else if (typeof window.showWalletSelector === 'function') window.showWalletSelector();
+}
+
+// ── Workspace data ──
+var _hubData = { apps: [], agents: [], vaults: [] };
+
+async function hubLoadWorkspace(wallet) {
+    var summary = document.getElementById('hubSummary');
+    summary.textContent = 'Loading...';
+    try {
+        var [appsRes, projRes, vaultRes] = await Promise.allSettled([
+            fetch(API + '/apps?creator=' + encodeURIComponent(wallet) + '&limit=20').then(function(r){return r.json();}),
+            fetch(API + '/projects?wallet=' + encodeURIComponent(wallet)).then(function(r){return r.json();}),
+            fetch('/api/basis/marketplace?manager=' + encodeURIComponent(wallet)).then(function(r){return r.json();})
+        ]);
+        _hubData.apps = (appsRes.status === 'fulfilled' ? (appsRes.value.apps || []) : []);
+        _hubData.agents = (projRes.status === 'fulfilled' ? (projRes.value.projects || []).filter(function(p){return p.agent_enabled;}) : []);
+        _hubData.vaults = (vaultRes.status === 'fulfilled' ? (vaultRes.value.vaults || []) : []);
+    } catch(e) {}
+    hubRenderCards();
+    hubRenderSummary();
+}
+
+function hubRenderSummary() {
+    var parts = [];
+    if (_hubData.apps.length) parts.push(_hubData.apps.length + ' App' + (_hubData.apps.length > 1 ? 's' : ''));
+    if (_hubData.agents.length) parts.push(_hubData.agents.length + ' Agent' + (_hubData.agents.length > 1 ? 's' : ''));
+    if (_hubData.vaults.length) parts.push(_hubData.vaults.length + ' Vault' + (_hubData.vaults.length > 1 ? 's' : ''));
+    var el = document.getElementById('hubSummary');
+    el.textContent = parts.length ? parts.join(' \u00B7 ') : 'No projects yet \u2014 start building!';
+}
+
+function hubRenderCards() {
+    var container = document.getElementById('hubCards');
+    var hasStuff = _hubData.apps.length || _hubData.agents.length || _hubData.vaults.length;
+    if (!hasStuff) {
+        // Show ghost cards (default HTML)
+        container.innerHTML = '<div class="hub-card-ghost" onclick="hubChatFill(\'I want to launch a new token\')"><div class="hub-card-ghost-icon">&#x1F4B0;</div><div class="hub-card-ghost-label">Launch your first token</div></div>'
+            + '<div class="hub-card-ghost" onclick="hubChatFill(\'Build me an app\')"><div class="hub-card-ghost-icon">&#x1F4F1;</div><div class="hub-card-ghost-label">Build your first app</div></div>'
+            + '<div class="hub-card-ghost" onclick="hubChatFill(\'Create a stake pool for my token\')"><div class="hub-card-ghost-icon">&#x1F4CA;</div><div class="hub-card-ghost-label">Create a stake pool</div></div>'
+            + '<div class="hub-card-ghost" onclick="hubChatFill(\'Set up an AI agent for my project\')"><div class="hub-card-ghost-icon">&#x1F916;</div><div class="hub-card-ghost-label">Set up an agent</div></div>';
+        return;
+    }
+    var html = '';
+    // App cards
+    for (var i = 0; i < _hubData.apps.length; i++) {
+        var a = _hubData.apps[i];
+        html += '<a href="/apps/' + esc(a.slug) + '" class="hub-card" style="text-decoration:none">';
+        html += '<span class="hub-card-type app">App</span>';
+        html += '<div class="hub-card-icon">&#x1F4F1;</div>';
+        html += '<div class="hub-card-name">' + esc(a.name || a.title) + '</div>';
+        html += '<div class="hub-card-metric">' + (a.view_count || 0) + ' views</div>';
+        html += '</a>';
+    }
+    // Agent cards
+    for (var i = 0; i < _hubData.agents.length; i++) {
+        var ag = _hubData.agents[i];
+        html += '<div class="hub-card" onclick="hubOpenAgent(\'' + ag.id + '\')">';
+        html += '<span class="hub-card-type agent">Agent</span>';
+        html += '<div class="hub-card-icon">&#x1F916;</div>';
+        html += '<div class="hub-card-name">' + esc(ag.name) + '</div>';
+        html += '<div class="hub-card-metric">' + (ag.agent_status || 'dormant');
+        if (ag.x_handle) html += ' &middot; @' + esc(ag.x_handle);
+        html += '</div>';
+        html += '<div class="hub-card-metric">' + (ag.agent_total_posts || 0) + ' posts</div>';
+        html += '</div>';
+    }
+    // Vault cards
+    for (var i = 0; i < _hubData.vaults.length; i++) {
+        var v = _hubData.vaults[i];
+        html += '<a href="https://basisubi.com" target="_blank" rel="noopener" class="hub-card" style="text-decoration:none">';
+        html += '<span class="hub-card-type vault">Vault</span>';
+        html += '<div class="hub-card-icon">&#x1F4B0;</div>';
+        html += '<div class="hub-card-name">' + esc(v.name) + '</div>';
+        html += '<div class="hub-card-metric">APY: ' + (v.estimated_apy ? v.estimated_apy.toFixed(1) + '%' : 'N/A') + '</div>';
+        html += '<div class="hub-card-metric">TVL: ' + (v.tvl_usdc ? '$' + Number(v.tvl_usdc).toLocaleString() : '$0') + '</div>';
+        html += '</a>';
+    }
+    container.innerHTML = html;
+}
+
+async function hubOpenAgent(agentId) {
+    // Open marketing section and the agent dashboard
+    var section = document.getElementById('marketingSection');
+    if (!section.classList.contains('open')) toggleMarketingSection();
+    // Ensure marketing agents data is loaded
+    if (!_agents.length) await loadAgents();
+    setTimeout(function() { openDashboard(agentId); }, 150);
+}
+
+// ── Collapsible marketing section ──
+function toggleMarketingSection() {
+    var section = document.getElementById('marketingSection');
+    section.classList.toggle('open');
+}
+
+// ── Chat ──
+var _chatSending = false;
+var _chatSessionId = localStorage.getItem('inclawbator_session') || '';
+
+function hubChatFill(text) {
+    var input = document.getElementById('chatInput');
+    input.value = text;
+    input.focus();
+    // Scroll chat into view
+    document.getElementById('chatMessages').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function chatScrollBottom() {
+    var el = document.getElementById('chatMessages');
+    el.scrollTop = el.scrollHeight;
+}
+
+function chatLinkify(text) {
+    return text.replace(/(https?:\/\/[^\s,)]+)/g, function(url) {
+        var label = url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+        if (label.length > 40) label = label.slice(0, 37) + '...';
+        return '<a href="' + url + '" target="_blank" rel="noopener">' + label + '</a>';
+    });
+}
+
+function chatAddMessage(text, isUser, functionCalled) {
+    var messages = document.getElementById('chatMessages');
+    var wrapper = document.createElement('div');
+    wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
+    var avatar = document.createElement('div');
+    avatar.className = 'chat-avatar';
+    avatar.innerHTML = isUser ? '&#128100;' : '&#129438;';
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    if (isUser) bubble.textContent = text;
+    else bubble.innerHTML = chatLinkify(text);
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(bubble);
+
+    var ACTION_MAP = {
+        get_ecosystem_info: [{ label: 'Explore Ecosystem', href: '/ecosystem' }],
+        get_incubation_info: [{ label: 'Apply for Incubation', href: '/inclawbator#incubate' }, { label: 'DM on Telegram', href: 'https://t.me/StuartDeFi' }],
+        browse_apps: [{ label: 'Browse All Apps', href: '/apps' }],
+        get_staking_info: [{ label: 'Go to Staking', href: '/stake' }],
+        get_basis_vaults: [{ label: 'View Vaults', href: 'https://basisubi.com' }]
+    };
+    if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
+        var actions = document.createElement('div');
+        actions.className = 'chat-actions';
+        ACTION_MAP[functionCalled].forEach(function(a) {
+            var btn = document.createElement('a');
+            btn.className = 'chat-action-btn';
+            btn.href = a.href;
+            btn.target = a.href.startsWith('http') ? '_blank' : '_self';
+            btn.rel = 'noopener';
+            btn.textContent = a.label;
+            actions.appendChild(btn);
+        });
+        bubble.appendChild(actions);
+    }
+    messages.appendChild(wrapper);
+    chatScrollBottom();
+}
+
+function chatShowTyping() {
+    var messages = document.getElementById('chatMessages');
+    var wrapper = document.createElement('div');
+    wrapper.className = 'chat-msg chat-msg-bot';
+    wrapper.id = 'chatTyping';
+    var avatar = document.createElement('div');
+    avatar.className = 'chat-avatar';
+    avatar.innerHTML = '&#129438;';
+    var dots = document.createElement('div');
+    dots.className = 'chat-typing';
+    dots.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(dots);
+    messages.appendChild(wrapper);
+    chatScrollBottom();
+}
+
+function chatHideTyping() {
+    var el = document.getElementById('chatTyping');
+    if (el) el.remove();
+}
+
+async function chatSendMessage(text) {
+    if (!text.trim() || _chatSending) return;
+    _chatSending = true;
+    document.getElementById('chatSend').disabled = true;
+    document.getElementById('chatInput').value = '';
+    chatAddMessage(text, true);
+    chatShowTyping();
+
+    // Inject wallet context if connected
+    var payload = { message: text.trim(), session_id: _chatSessionId };
+    var auth = getAuth();
+    if (auth && auth.wallet && !_chatSessionId) {
+        // First message: prepend wallet context
+        payload.message = '[User wallet: ' + auth.wallet + '] ' + text.trim();
+    }
+
+    try {
+        var res = await fetch('/api/inclawbate/agent-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        chatHideTyping();
+        if (data.reply) chatAddMessage(data.reply, false, data.function_called);
+        else chatAddMessage('Sorry, something went wrong. Try again!', false);
+        if (data.session_id) {
+            _chatSessionId = data.session_id;
+            try { localStorage.setItem('inclawbator_session', _chatSessionId); } catch(e) {}
+        }
+    } catch(e) {
+        chatHideTyping();
+        chatAddMessage('Connection error \u2014 please try again in a moment.', false);
+    }
+    _chatSending = false;
+    document.getElementById('chatSend').disabled = false;
+    document.getElementById('chatInput').focus();
+}
+
+// Chat event listeners
+document.getElementById('chatForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    chatSendMessage(document.getElementById('chatInput').value);
+});
+document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+        var prompt = chip.getAttribute('data-prompt') || chip.textContent.trim();
+        if (prompt) chatSendMessage(prompt);
+    });
+});
+
+// ── Hub boot ──
+function hubBoot() {
+    hubRenderProfile();
+    // Re-check on storage changes (login/logout in another tab)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'inclawbate_token' || e.key === 'inclawbate_profile') {
+            hubRenderProfile();
+        }
+    });
+    // Re-render after nav-auth login completes
+    var origRenderWallet = window.renderWallet;
+    window.renderWallet = function() {
+        if (typeof origRenderWallet === 'function') origRenderWallet();
+        setTimeout(hubRenderProfile, 200);
+    };
+}
+setTimeout(hubBoot, 100);
+
+// ══════════════════════════════════════
+// EXISTING MARKETING AGENTS CODE
+// ══════════════════════════════════════
 var VIBES = { degen:'You are a degen crypto enthusiast. Use slang like "lfg", "gm", "wagmi". Be bullish, energetic.', hype:'You are an ultra-hype marketing agent. Build excitement and FOMO.', chill:'You are laid-back and conversational. Casual, no hype.', professional:'You are a professional communicator. Clear, data-driven, no slang.', meme:'You are a meme lord. Funny, irreverent, absurd humor.' };
 var VIBE_LABELS = { degen:'Degen', hype:'Hype', chill:'Chill', professional:'Pro', meme:'Meme', custom:'Custom' };
 var VIBE_COLORS = { degen:'#fbbf24', hype:'#f472b6', chill:'#38bdf8', professional:'#a78bfa', meme:'#4ade80', custom:'#818cf8' };

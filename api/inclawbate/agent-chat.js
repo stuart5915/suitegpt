@@ -21,8 +21,11 @@ You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help p
 
 6. INCUBATION — ONLY when someone explicitly wants the team to build something FOR them (token launch, staking, website, branding). Use get_incubation_info. Tell them to DM @StuartDeFi on Telegram or @stuman on X.
 
+7. WORKSPACE — If a wallet address is provided, use get_user_workspace to see what the user has built (apps, agents, vaults). Reference their existing stuff by name and suggest next steps.
+
 Guidelines:
 - Start by understanding what the person needs
+- If the user has a connected wallet, consider using get_user_workspace to personalize your advice
 - If an existing app or tool solves their problem, recommend it first
 - For DeFi/yield questions, check Basis vaults
 - For passive income questions, mention both CLAWS staking and Basis vaults
@@ -94,6 +97,20 @@ const TOOLS = [
       name: 'get_staking_info',
       description: 'Get CLAWS token staking info — how to stake, rewards, APY.',
       parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_user_workspace',
+      description: 'Get everything a connected wallet has built — their apps, marketing agents, and Basis vaults. Use when user has a wallet connected.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'The user wallet address (0x...)' }
+        },
+        required: ['wallet']
+      }
     }
   }
 ];
@@ -197,6 +214,50 @@ function getStakingInfo() {
   });
 }
 
+async function getUserWorkspace(args) {
+  const wallet = (args.wallet || '').toLowerCase();
+  if (!wallet) return JSON.stringify({ error: 'No wallet provided' });
+
+  const results = { apps: [], agents: [], vaults: [] };
+
+  try {
+    const appsRes = await fetch(APP_API + '/apps?creator=' + encodeURIComponent(wallet) + '&limit=20');
+    const appsData = await appsRes.json();
+    results.apps = (appsData.apps || []).map(a => ({
+      name: a.name || a.title, slug: a.slug, users: a.view_count || 0,
+      url: 'https://inclawbate.com/apps/' + a.slug
+    }));
+  } catch (e) {}
+
+  try {
+    const projRes = await fetch(APP_API + '/projects?wallet=' + encodeURIComponent(wallet));
+    const projData = await projRes.json();
+    results.agents = (projData.projects || []).filter(p => p.agent_enabled).map(p => ({
+      name: p.name, status: p.agent_status, x_handle: p.x_handle, posts: p.agent_total_posts || 0
+    }));
+  } catch (e) {}
+
+  try {
+    const vaultRes = await fetch('https://inclawbate.com/api/basis/marketplace?manager=' + encodeURIComponent(wallet));
+    const vaultData = await vaultRes.json();
+    results.vaults = (vaultData.vaults || []).map(v => ({
+      name: v.name, apy: v.estimated_apy ? v.estimated_apy.toFixed(1) + '%' : 'N/A',
+      tvl: v.tvl_usdc ? '$' + Number(v.tvl_usdc).toLocaleString() : '$0'
+    }));
+  } catch (e) {}
+
+  const summary = [];
+  if (results.apps.length) summary.push(results.apps.length + ' app' + (results.apps.length > 1 ? 's' : ''));
+  if (results.agents.length) summary.push(results.agents.length + ' agent' + (results.agents.length > 1 ? 's' : ''));
+  if (results.vaults.length) summary.push(results.vaults.length + ' vault' + (results.vaults.length > 1 ? 's' : ''));
+
+  return JSON.stringify({
+    wallet, summary: summary.length ? summary.join(', ') : 'Fresh workspace — nothing built yet!',
+    ...results,
+    suggestions: !summary.length ? ['Launch a token', 'Build an app', 'Create a marketing agent', 'Explore yield vaults'] : []
+  });
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'browse_apps': return await browseApps(args);
@@ -205,6 +266,7 @@ async function executeTool(name, args) {
     case 'get_incubation_info': return getIncubationInfo();
     case 'get_basis_vaults': return await getBasisVaults(args);
     case 'get_staking_info': return getStakingInfo();
+    case 'get_user_workspace': return await getUserWorkspace(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
