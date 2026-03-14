@@ -44,6 +44,16 @@ var EXTRA_TOKENS = [
         tier: 'partner',
         staking_address: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
         created_at: '2025-06-01T00:00:00Z'
+    },
+    {
+        id: 'pokerai',
+        token_name: 'PokerAI',
+        token_symbol: 'POKERAI',
+        token_address: '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07',
+        logo_url: '/inclawbate/assets/pokerai-logo.png',
+        status: 'active',
+        tier: 'ecosystem',
+        created_at: '2026-03-14T00:00:00Z'
     }
 ];
 
