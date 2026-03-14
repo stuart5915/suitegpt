@@ -62,26 +62,38 @@ const leaderboard = {
 };
 
 // Load user balance from Supabase, or create with 0
-async function getOrCreateUser(wallet, username) {
+async function getOrCreateUser(wallet, username, forceSync) {
   const key = wallet.toLowerCase();
-  if (users.has(key)) {
+
+  // If cached and not forcing sync, return cached (used during gameplay for speed)
+  if (!forceSync && users.has(key)) {
     const u = users.get(key);
     if (username && !u.username) u.username = username;
     return u;
   }
 
-  // Check Supabase for existing balance
+  // Always read from Supabase on auth/sync to pick up deposits credited elsewhere
   const { data } = await supabase
     .from('crash_balances')
     .select('chips, username')
     .eq('wallet', key)
     .single();
 
-  const existingChips = data && data.chips;
+  const dbChips = data && data.chips;
+
+  if (users.has(key)) {
+    // User exists in cache — use whichever balance is higher
+    // (cache may have in-flight bets deducted, DB may have new deposits)
+    const u = users.get(key);
+    if (dbChips != null && dbChips > u.balance) u.balance = dbChips;
+    if (username) u.username = username;
+    return u;
+  }
+
   const user = {
     wallet: key,
     username: username || (data && data.username) || key.slice(0, 8),
-    balance: existingChips != null ? existingChips : TEST_BALANCE,
+    balance: dbChips != null ? dbChips : TEST_BALANCE,
   };
   users.set(key, user);
   walletToUsername.set(key, user.username);
@@ -517,7 +529,7 @@ wss.on('connection', (ws) => {
 
         info.wallet = wallet;
         info.username = username;
-        const user = await getOrCreateUser(wallet, username);
+        const user = await getOrCreateUser(wallet, username, true); // force sync from DB on auth
         ws.send(JSON.stringify({
           type: 'auth_ok',
           username: user.username,
