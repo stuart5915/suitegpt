@@ -305,12 +305,16 @@ async function fetchPlatformContext() {
     }
 
     // Helper: get the most current handle for an app
+    // Skip wallet-derived placeholders (w_ + 12 hex chars)
+    const isPlaceholder = h => /^w_[0-9a-f]{12}$/.test(h);
     function currentHandle(app) {
         if (app.creator_wallet) {
             const fresh = walletToHandle[app.creator_wallet.toLowerCase()];
-            if (fresh) return fresh;
+            if (fresh && !isPlaceholder(fresh)) return fresh;
         }
-        return app.creator_x_handle;
+        const fallback = app.creator_x_handle;
+        if (fallback && !isPlaceholder(fallback)) return fallback;
+        return null;
     }
 
     if (countRes.status === 'fulfilled') results.totalApps = countRes.value.count || 0;
