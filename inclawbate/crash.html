@@ -690,9 +690,7 @@ function updateGameState(state) {
     $('gameContainer').classList.remove('shake');
     startFlySound();
   }
-  if (state.phase === 'flying') {
-    updateFlyPitch(state.multiplier);
-  }
+  // Flying pitch now handled in drawFrame via client-side interpolation
   if (state.phase === 'crashed' && prevPhase !== 'crashed') {
     stopFlySound();
     playCrashSound();
@@ -737,10 +735,7 @@ function updateGameState(state) {
     }
   }
 
-  // Add curve point during flight
-  if (state.phase === 'flying') {
-    curvePoints.push({ t: Date.now() - flyStartTime, m: state.multiplier });
-  }
+  // Curve points now added in drawFrame via client-side interpolation
 
   updateMultiplierOverlay();
   updateHistory();
@@ -1125,10 +1120,32 @@ function resizeCanvas() {
   cH = rect.height;
 }
 
+// Client-side multiplier interpolation (same formula as server)
+function getLocalMultiplier() {
+  if (gameState.phase !== 'flying' || !flyStartTime) return gameState.multiplier || 1;
+  const elapsed = (Date.now() - flyStartTime) / 1000;
+  return Math.floor(Math.pow(Math.E, 0.06 * elapsed) * 100) / 100;
+}
+
 function drawFrame() {
   ctx.clearRect(0, 0, cW, cH);
   const isFlying = gameState.phase === 'flying';
   const isCrashed = gameState.phase === 'crashed';
+
+  // Smooth client-side interpolation during flight
+  if (isFlying) {
+    const localM = getLocalMultiplier();
+    gameState.multiplier = localM;
+    const now = Date.now() - flyStartTime;
+    // Add curve point every ~50ms to keep array manageable
+    if (!curvePoints.length || now - curvePoints[curvePoints.length - 1].t >= 50) {
+      curvePoints.push({ t: now, m: localM });
+    }
+    updateFlyPitch(localM);
+    // Update multiplier display
+    const mv = $('multiplierValue');
+    mv.innerHTML = localM.toFixed(2) + '<span class="x">x</span>';
+  }
 
   drawGrid();
 
