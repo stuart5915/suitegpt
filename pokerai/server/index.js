@@ -20,6 +20,7 @@ process.on('unhandledRejection', (reason) => {
 
 // Optional: chain + supabase (graceful fallback to JSON store if not configured)
 let chain = null;
+let tokenChain = null; // POKERAI token vault + rewards
 let useSupabase = false;
 let rewardEngine = null;
 
@@ -302,7 +303,17 @@ wss.on('connection', (ws) => {
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
-            const stats = await chain.vault.playerStats(addr);
+            // Retry up to 2 times on RPC failures
+            let stats;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                stats = await chain.vaultReadOnly.playerStats(addr);
+                break;
+              } catch (rpcErr) {
+                if (attempt < 2) { await new Promise(r => setTimeout(r, 1000)); continue; }
+                throw rpcErr;
+              }
+            }
             const onChainDeposited = Math.floor((Number(stats[0]) * 10000) / 1e6);
             const alreadyCredited = await rooms.store.getTotalDepositedChips(addr);
             if (onChainDeposited > alreadyCredited) {
@@ -316,7 +327,8 @@ wss.on('connection', (ws) => {
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
             }
           } catch (e) {
-            ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: e.message } }));
+            console.error('[CheckDeposit] Failed:', e.message);
+            ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'RPC error — try again in a moment' } }));
           }
           break;
         }
@@ -513,6 +525,97 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'withdrawPokerai': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const chips = msg.chips;
+
+          if (!isValidPositiveNumber(chips)) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Invalid chip amount' } }));
+            break;
+          }
+
+          // Verify wallet signature
+          if (!msg.signature || !msg.message) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Signature required for withdrawals' } }));
+            break;
+          }
+          try {
+            const recovered = require('ethers').verifyMessage(msg.message, msg.signature);
+            if (recovered.toLowerCase() !== addr) {
+              ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Signature does not match wallet' } }));
+              break;
+            }
+          } catch (e) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Invalid signature' } }));
+            break;
+          }
+
+          if (chips < 10) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Minimum withdrawal: 10 chips (10 POKERAI)' } }));
+            break;
+          }
+
+          if (withdrawalsInProgress.has(addr)) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Withdrawal already in progress' } }));
+            break;
+          }
+
+          const wallet = rooms.getWalletBalance(addr);
+          if (wallet.balance < chips) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: `Not enough chips. You have ${wallet.balance.toLocaleString()}` } }));
+            break;
+          }
+
+          if (!tokenChain) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'POKERAI withdrawals not yet enabled' } }));
+            break;
+          }
+
+          withdrawalsInProgress.add(addr);
+          try {
+            rooms.store.deductBalance(addr, chips);
+            const txResult = await tokenChain.processWithdraw(addr, chips);
+            if (txResult.error) {
+              rooms.store.addBalance(addr, chips);
+              ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: txResult.error } }));
+            } else {
+              await rooms.store.recordTransaction(addr, 'withdraw_pokerai', 0, chips, txResult.txHash);
+              ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: txResult }));
+              sendBalance(ws, addr);
+            }
+          } finally {
+            withdrawalsInProgress.delete(addr);
+          }
+          break;
+        }
+
+        case 'checkDepositPokerai': {
+          if (!requireAuth(client, ws)) break;
+          if (!tokenChain || !tokenChain.vaultReadOnly) {
+            ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { error: 'POKERAI vault not configured' } }));
+            break;
+          }
+          try {
+            const addr = client.walletAddress;
+            const stats = await tokenChain.getPlayerDepositStats(addr);
+            const onChainDeposited = stats.deposited; // already in chips (1:1)
+            const alreadyCredited = await rooms.store.getTotalDepositedChips(addr); // TODO: filter by deposit_pokerai type
+            if (onChainDeposited > alreadyCredited) {
+              const credit = onChainDeposited - alreadyCredited;
+              await rooms.store.addBalance(addr, credit);
+              await rooms.store.recordTransaction(addr, 'deposit_pokerai', 0, credit);
+              sendBalance(ws, addr);
+              ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: credit } }));
+            } else {
+              ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: 0, message: 'Balance is correct' } }));
+            }
+          } catch (e) {
+            ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { error: e.message } }));
+          }
+          break;
+        }
+
         case 'getMyAgents': {
           const addr = getClientWallet(client);
           const result = rooms.getAgentsForWallet(addr);
@@ -610,10 +713,10 @@ wss.on('connection', (ws) => {
           }
 
           try {
-            const onChain = chain && chain.distributeReward;
+            const onChain = tokenChain && tokenChain.rewards;
             // Distribute on-chain via rewards contract (if deployed)
             if (onChain) {
-              const txResult = await chain.distributeReward(addr, claimable);
+              const txResult = await tokenChain.distributeReward(addr, claimable);
               if (txResult.error) {
                 ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: txResult.error } }));
                 break;
@@ -666,14 +769,19 @@ app.get('/wallet/:address', async (req, res) => {
 
 app.get('/health', async (req, res) => {
   const vaultStats = chain ? await chain.getVaultStats() : null;
+  const tokenVaultStats = tokenChain ? await tokenChain.getVaultStats() : null;
+  const rewardStats = tokenChain ? await tokenChain.getRewardStats().catch(() => null) : null;
   res.json({
     status: 'ok',
-    version: 9,
+    version: 10,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary(),
     vault: vaultStats,
+    tokenVault: tokenVaultStats,
+    rewardPool: rewardStats,
     chain: !!chain,
+    tokenChain: !!tokenChain,
     supabase: useSupabase
   });
 });
@@ -1034,6 +1142,44 @@ async function startServer() {
     console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
   }
 
+  // Initialize POKERAI token chain service (vault + rewards distributor)
+  if (process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL &&
+      (process.env.POKERAI_VAULT_ADDRESS || process.env.POKERAI_REWARDS_ADDRESS)) {
+    try {
+      const { TokenChainService } = require('./token-chain');
+      tokenChain = new TokenChainService({
+        rpcUrl: process.env.BASE_RPC_URL,
+        operatorKey: process.env.OPERATOR_PRIVATE_KEY,
+        tokenVaultAddress: process.env.POKERAI_VAULT_ADDRESS || null,
+        rewardsAddress: process.env.POKERAI_REWARDS_ADDRESS || null
+      });
+
+      // Listen for POKERAI deposits → credit chips 1:1
+      if (process.env.POKERAI_VAULT_ADDRESS) {
+        tokenChain.onDeposit = async (walletAddress, chips, tokenRaw) => {
+          console.log(`[TokenChain] Deposit event: ${walletAddress} → ${chips} chips (${chips} POKERAI)`);
+          try {
+            await rooms.store.addBalance(walletAddress, chips);
+            await rooms.store.recordTransaction(walletAddress, 'deposit_pokerai', tokenRaw, chips);
+            for (const [ws, cl] of clients) {
+              if (cl.walletAddress === walletAddress && ws.readyState === 1) {
+                sendBalance(ws, walletAddress);
+                ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, token: 'POKERAI' } }));
+              }
+            }
+          } catch (e) {
+            console.error('[TokenChain] Deposit credit failed:', e.message);
+          }
+        };
+        tokenChain.startListening();
+      }
+
+      console.log(`[Server] POKERAI token chain active — vault: ${!!process.env.POKERAI_VAULT_ADDRESS}, rewards: ${!!process.env.POKERAI_REWARDS_ADDRESS}`);
+    } catch (e) {
+      console.error('[Server] Token chain init failed:', e.message);
+    }
+  }
+
   // Broadcast rewards updates to connected wallets every 10s
   setInterval(() => {
     if (!rewardEngine) return;
@@ -1051,7 +1197,7 @@ async function startServer() {
   }, 10000);
 
   server.listen(PORT, () => {
-    console.log(`PokerAI server v5 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}, rewards: ${!!rewardEngine}`);
+    console.log(`PokerAI server v6 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}, tokenChain: ${!!tokenChain}, rewards: ${!!rewardEngine}`);
     rooms.start();
   });
 }
