@@ -527,11 +527,30 @@ class PokerEngine {
           }
         }
       }
-      // Custom agents with 0 chips just sit out (folded = true below if chips <= 0)
-      a.folded = a.chips <= 0; // can't play with no chips
+      a.folded = a.chips <= 0;
       a.currentBet = 0;
       a.roundBet = 0;
       a.allIn = false;
+    }
+
+    // Sandbox auto-recovery: when all house bots are dead, reset everyone
+    if (this.roomId === 'sandbox') {
+      const houseBots = this.agents.filter(a => !a.isCustom);
+      const allDead = houseBots.length > 0 && houseBots.every(a => a.chips <= 0 && a._bustCount >= 3);
+      if (allDead) {
+        this.contractPool = this.baseChips * 2;
+        for (const a of houseBots) {
+          a._bustCount = 0;
+          a.chips = this.baseChips;
+          a.folded = false;
+          this.contractPool -= this.baseChips;
+        }
+        this.broadcast('log', { html: `<span class="pool-event">♻️ Table reset</span> <span class="pool-out">— all agents refilled</span>` });
+        console.log(`[Table] Sandbox auto-recovery: reset ${houseBots.length} house bots`);
+      }
+    }
+
+    for (const a of this.agents) {
       if (!a.folded) {
         a.hand = [this.deck.pop(), this.deck.pop()];
         a.handsPlayed++;
