@@ -193,7 +193,11 @@ Real data (use ONLY these numbers):
 - Recent: ${recentAppList || 'various'}
 - Token: $CLAWS on Base, website: inclawbate.com
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. ALWAYS use @ before X handles (e.g. @abhiontwt not abhiontwt). Output ONLY the tweet.`;
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. ALWAYS use @ before X handles (e.g. @abhiontwt not abhiontwt).
+
+Output in this format:
+TWEET: [the tweet]
+IMAGE: [a short image prompt for AI image generation — vivid, specific, social-media-friendly, no text in image, 1:1 aspect ratio]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -201,22 +205,27 @@ Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-na
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
-                        max_tokens: 300,
+                        max_tokens: 400,
                         temperature: 0.95,
                         messages: [{ role: 'user', content: prompt }]
                     })
                 });
                 const data = await resp.json();
-                let tweetText = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '').replace(/^\d+[\.\)]\s*/, '');
+                const raw = (data.choices?.[0]?.message?.content || '').trim();
+                const tweetMatch = raw.match(/TWEET:\s*(.+)/i);
+                const imageMatch = raw.match(/IMAGE:\s*(.+)/i);
+                let tweetText = tweetMatch ? tweetMatch[1].replace(/^["']|["']$/g, '').trim() : raw.replace(/^["']|["']$/g, '').replace(/^\d+[\.\)]\s*/, '').trim();
+                const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
 
                 if (!tweetText || tweetText.length > 280) {
                     return res.status(500).json({ error: 'Generated tweet invalid or too long' });
                 }
 
                 const newStatus = pillar.needsImage ? 'needs_image' : 'needs_review';
+                const newOpts = { ...opts, image_prompt: imagePrompt };
                 const { data: updated, error } = await supabase
                     .from('agent_schedule')
-                    .update({ tweet_text: tweetText, status: newStatus })
+                    .update({ tweet_text: tweetText, status: newStatus, tweet_options: newOpts })
                     .eq('id', slot_id)
                     .select()
                     .single();
@@ -225,6 +234,60 @@ Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-na
                 return res.json({ ok: true, slot: updated });
             } catch(e) {
                 return res.status(500).json({ error: 'Regeneration failed: ' + e.message });
+            }
+        }
+
+        if (action === 'regen_image_prompt') {
+            const { slot_id } = req.body;
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .eq('booked_by_wallet', 'system-autofill')
+                .single();
+            if (!slot) return res.status(404).json({ error: 'Slot not found' });
+
+            const tweetText = slot.tweet_text || '';
+            const imgPrompt = `Given this tweet for @inclawbator (a Web3/crypto app builder platform called Inclawbate):
+
+"${tweetText}"
+
+Write a single image prompt for AI image generation that would make a great visual to accompany this tweet on X/Twitter.
+
+Rules:
+- Vivid, specific, visually striking
+- Social-media-friendly, eye-catching, 1:1 aspect ratio
+- No text/words in the image
+- Crypto/Web3 aesthetic (neon, dark backgrounds, futuristic) when relevant
+- Output ONLY the image prompt, nothing else.`;
+
+            try {
+                const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        max_tokens: 200,
+                        temperature: 0.95,
+                        messages: [{ role: 'user', content: imgPrompt }]
+                    })
+                });
+                const data = await resp.json();
+                const newPrompt = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '');
+                if (!newPrompt) return res.status(500).json({ error: 'Failed to generate image prompt' });
+
+                const opts = slot.tweet_options || {};
+                opts.image_prompt = newPrompt;
+                const { error } = await supabase
+                    .from('agent_schedule')
+                    .update({ tweet_options: opts })
+                    .eq('id', slot_id);
+                if (error) return res.status(500).json({ error: error.message });
+                return res.json({ ok: true, image_prompt: newPrompt });
+            } catch(e) {
+                return res.status(500).json({ error: 'Image prompt generation failed: ' + e.message });
             }
         }
 
@@ -412,10 +475,15 @@ RULES:
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
 
-Generate ${emptyHours.length} tweets, one per line. Each tweet is for a different angle:
+Generate ${emptyHours.length} tweets. For each tweet, also write a short image prompt (for AI image generation) that would make a good visual to accompany the tweet.
+
+Format each entry as:
+TWEET: [the tweet text]
+IMAGE: [image prompt — vivid, specific, social-media-friendly, no text in image, 1:1 aspect ratio]
+
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
 
-Output ONLY the tweets, one per line, numbered. Nothing else.`;
+Output ONLY the numbered entries in the TWEET/IMAGE format. Nothing else.`;
 
     try {
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -426,7 +494,7 @@ Output ONLY the tweets, one per line, numbered. Nothing else.`;
             },
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
-                max_tokens: 600,
+                max_tokens: 1200,
                 temperature: 0.9,
                 messages: [{ role: 'user', content: batchPrompt }]
             })
@@ -438,16 +506,34 @@ Output ONLY the tweets, one per line, numbered. Nothing else.`;
         }
 
         const rawText = data.choices?.[0]?.message?.content || '';
-        // Parse numbered tweets: "1. tweet text" or "1) tweet text"
-        const lines = rawText.split('\n')
-            .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '').trim())
-            .filter(l => l.length > 0 && l.length <= 280);
+        // Parse TWEET/IMAGE pairs from batch response
+        const entries = [];
+        const blocks = rawText.split(/\n*\d+[\.\)]\s*/);
+        for (const block of blocks) {
+            const tweetMatch = block.match(/TWEET:\s*(.+)/i);
+            const imageMatch = block.match(/IMAGE:\s*(.+)/i);
+            if (tweetMatch) {
+                const tweet = tweetMatch[1].replace(/^["']|["']$/g, '').trim();
+                const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
+                if (tweet.length > 0 && tweet.length <= 280) {
+                    entries.push({ tweet, imagePrompt });
+                }
+            }
+        }
+        // Fallback: if parsing failed, try line-by-line (old format)
+        if (entries.length === 0) {
+            rawText.split('\n')
+                .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '').replace(/^TWEET:\s*/i, '').trim())
+                .filter(l => l.length > 0 && l.length <= 280 && !/^IMAGE:/i.test(l))
+                .forEach(t => entries.push({ tweet: t, imagePrompt: '' }));
+        }
 
         const drafts = [];
-        for (let i = 0; i < emptyHours.length && i < lines.length; i++) {
+        for (let i = 0; i < emptyHours.length && i < entries.length; i++) {
             const hour = emptyHours[i];
             const angle = angles[i % angles.length];
-            const tweetText = lines[i];
+            const tweetText = entries[i].tweet;
+            const imagePrompt = entries[i].imagePrompt;
 
             const slotTime = new Date(date + 'T00:00:00Z');
             if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
@@ -463,7 +549,7 @@ Output ONLY the tweets, one per line, numbered. Nothing else.`;
                     tone: 'default',
                     status,
                     tweet_text: tweetText,
-                    tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage },
+                    tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage, image_prompt: imagePrompt },
                 })
                 .select()
                 .single();
