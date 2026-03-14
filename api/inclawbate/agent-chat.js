@@ -221,7 +221,7 @@ async function getUserWorkspace(args) {
   const results = { apps: [], agents: [], vaults: [] };
 
   try {
-    const appsRes = await fetch(APP_API + '/apps?creator=' + encodeURIComponent(wallet) + '&limit=20');
+    const appsRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(wallet) + '&limit=20');
     const appsData = await appsRes.json();
     results.apps = (appsData.apps || []).map(a => ({
       name: a.name || a.title, slug: a.slug, users: a.view_count || 0,

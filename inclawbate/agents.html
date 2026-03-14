@@ -1045,9 +1045,23 @@ var _hubData = { apps: [], agents: [], vaults: [] };
 async function hubLoadWorkspace(wallet) {
     var summary = document.getElementById('hubSummary');
     summary.textContent = 'Loading...';
+
+    // Build apps query using all available identifiers (like dashboard does)
+    var auth = getAuth();
+    var appParams = new URLSearchParams({ limit: '50' });
+    if (auth && auth.profile) {
+        if (auth.profile.id) appParams.set('creator_id', auth.profile.id);
+        if (auth.profile.wallet_address) appParams.set('creator_wallet', auth.profile.wallet_address);
+        if (auth.profile.x_handle) appParams.set('creator_x_handle', auth.profile.x_handle);
+    }
+    // Fallback: if no profile identifiers, use wallet directly
+    if (!appParams.has('creator_wallet') && !appParams.has('creator_id')) {
+        appParams.set('creator_wallet', wallet);
+    }
+
     try {
         var [appsRes, projRes, vaultRes] = await Promise.allSettled([
-            fetch(API + '/apps?creator=' + encodeURIComponent(wallet) + '&limit=20').then(function(r){return r.json();}),
+            fetch(API + '/apps?' + appParams.toString()).then(function(r){return r.json();}),
             fetch(API + '/projects?wallet=' + encodeURIComponent(wallet)).then(function(r){return r.json();}),
             fetch('/api/basis/marketplace?manager=' + encodeURIComponent(wallet)).then(function(r){return r.json();})
         ]);
