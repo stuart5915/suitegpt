@@ -455,6 +455,7 @@ export default async function handler(req, res) {
 
   try {
     let functionCalled = null;
+    let toolArgs = null;
     let data = await callGroq(history);
 
     // Check for Groq API error
@@ -471,7 +472,6 @@ export default async function handler(req, res) {
       // Push assistant message with tool_calls to history
       history.push({ role: 'assistant', content: choice.message.content || null, tool_calls: toolCalls });
 
-      let toolArgs = null;
       for (const tc of toolCalls) {
         functionCalled = tc.function.name;
         let args = {};
