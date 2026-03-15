@@ -36,23 +36,34 @@ const SLOT_ANGLES = {
 };
 
 // Brand archetype — injected into all image prompt generation
-const BRAND_IMAGE_CONTEXT = `INCLAWBATE VISUAL BRAND (follow this strictly):
-- Mascot: A stylized coral-red lobster character (#e5533d), confident and builder-energy, NOT cute/kawaii. Can hold tools, laptops, tokens, phones. Expressive eyes.
-- Colors: Coral red (#e5533d) primary, seafoam teal (#4db6ac) secondary, dark near-black backgrounds (#06060b to #0a0a11), warm sand/gold (#d4a574) for premium accents.
-- Style: Dark backgrounds ALWAYS. Neon coral and teal glow effects on edges. Futuristic but warm, NOT sterile corporate. Subtle grain/noise texture. Clean composition with breathing room.
-- Aesthetic: Crypto-native Web3. Floating holographic UI panels, glowing app interfaces, blockchain nodes, token coins, charts. Organic + tech fusion (lobster claws on circuit boards, coral reef meets server farm).
-- DON'T: No bright/white backgrounds. No stock photo energy. No clip art. No pure blue (use teal). No text in images. No realistic photography of people. No busy/cluttered scenes.
-- Format: 1:1 aspect ratio for social media. Single focal point.`;
+const BRAND_IMAGE_CONTEXT = `INCLAWBATE VISUAL BRAND (follow this STRICTLY):
 
-// Scene templates per pillar
+THE MASCOT (must appear in every image):
+- 3D rendered anthropomorphic coral-red lobster character with glossy segmented shell, large expressive round eyes with white catchlight highlights, big prominent claws (used as hands), and two curved antennae
+- Chunky, rounded, approachable proportions (like a Pixar/Fortnite character). Confident posture, builder energy, slightly cocky grin. NOT cute/kawaii/chibi.
+- Shell colors: coral red (#e5533d) body, darker (#c9442e, #b83c28) on segments. Glossy subsurface scattering sheen.
+
+RENDER STYLE:
+- 3D rendered, Octane render quality. NOT flat illustration, NOT 2D, NOT pixel art.
+- Polished smooth surfaces with cinematic lighting. Volumetric light, rim lighting in coral and teal.
+- Depth of field — subject sharp, background softly blurred.
+- Dark backgrounds ALWAYS (#06060b to #0d0d1a). Never white/bright.
+
+COLORS: Coral red (#e5533d) primary, seafoam teal (#4db6ac) secondary, dark void backgrounds, warm gold (#d4a574) for coins/premium. Coral + teal neon glow on edges.
+
+DON'T: No white backgrounds. No flat illustration. No stock photos. No realistic humans. No text in image. No pure blue. No cluttered compositions. No horror/scary vibes.
+
+FORMAT: 1:1 aspect ratio. Single focal point (the lobster). Clean composition.`;
+
+// Scene templates per pillar — 3D mascot focused
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'A glowing app interface floating center-frame, slightly tilted in 3D perspective. The lobster mascot peeks from behind the screen.',
-    'Builder Shoutout': 'Moody workspace scene. A stylized character or lobster at a glowing desk with holographic screens showing code. Late-night builder grinding energy.',
-    'DeFi / CLAWS Update': 'Abstract token ecosystem. A coral coin with claw marks floating center, surrounded by orbiting data streams in seafoam teal. Yield arrows pointing up.',
-    'Weekly Recap': 'Split-panel mosaic of mini app screens, token charts, and builder avatars connected by glowing coral lines. Dashboard perspective.',
-    'How-To / Tips': 'Clean dark UI mockup showing a step-by-step process. Numbered steps glow in coral. The lobster points at the current step. Futuristic instruction manual.',
-    'Community Vibes': 'Stylized characters or lobsters in a neon-lit crypto lounge. Coral and teal lighting. Some on phones, some on laptops. Web3 co-working party energy.',
-    'Incubation CTA': 'The lobster in a dramatic pose — emerging from a glowing portal or standing atop a stack of apps. Coral energy radiating outward. Confident, powerful.',
+    'App Spotlight': '3D lobster in "presenter" pose, one claw gesturing toward a large floating holographic app interface that glows coral and teal. Dark void background with hexagonal grid. Volumetric light spills from the screen onto the shell.',
+    'Builder Shoutout': '3D lobster in "builder" pose, sitting at a futuristic dark workstation typing on a glowing keyboard. Multiple holographic code screens float around. Dark moody atmosphere with volumetric fog. Late-night coding energy.',
+    'DeFi / CLAWS Update': '3D lobster in "thinker" pose (claw on chin), floating in a dark void surrounded by orbiting holographic charts, token coins, and teal yield arrows. A large coral-and-gold CLAWS coin floats center. Space-like background.',
+    'Weekly Recap': '3D lobster in "celebrator" pose, both claws raised triumphantly. Mosaic of miniature floating app screens and token charts connected by glowing coral threads behind. Coral and teal confetti particles. Festive but professional.',
+    'How-To / Tips': '3D lobster in "presenter" pose, pointing a claw at floating step-by-step instruction panels glowing coral. Dark clean background with subtle grid. Teacher energy — confident, helpful. Minimal clean composition.',
+    'Community Vibes': '3D lobster in "greeter" pose, waving warmly at entrance of a neon-lit crypto lounge with coral and teal neon on dark walls. Smaller lobster characters at glowing workstations inside. Warm inviting atmosphere with volumetric haze.',
+    'Incubation CTA': '3D lobster in "boss" pose — standing powerfully atop a glowing platform of stacked app icons and token coins, claws crossed confidently. Coral energy radiates upward creating dramatic uplighting. Dark epic background with rising teal embers.',
 };
 
 const ALLOWED_ORIGINS = [
