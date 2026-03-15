@@ -906,7 +906,7 @@
                 <!-- Vote button -->
                 <div class="alloc-vote-area">
                     <div class="alloc-vote-info">Connect wallet to cast your vote. Weight scales with your CLAWS stake.</div>
-                    <button class="alloc-vote-btn" id="alloc-vote-btn" disabled>Cast Vote</button>
+                    <button class="alloc-vote-btn" id="alloc-vote-btn">Connect Wallet</button>
                 </div>
 
                 <!-- Council note -->
@@ -1178,8 +1178,24 @@
 
     var values = buckets.map(function(b) { return b.default; });
 
-    /* Fake community synthesis (will be replaced by Supabase aggregate) */
-    var synthesis = [22, 24, 14, 16, 9, 6, 5, 4];
+    var synthesis = buckets.map(function(b) { return b.default; });
+    var totalVoters = 0;
+    var connectedWallet = null;
+    var VOTE_API = 'https://inclawbate.com/api/inclawbate/allocation-vote';
+
+    /* Fetch live synthesis from API */
+    function fetchSynthesis() {
+        fetch(VOTE_API)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success && data.synthesis) {
+                    synthesis = data.synthesis;
+                    totalVoters = data.totalVoters || 0;
+                    renderSynthBar();
+                }
+            })
+            .catch(function() { /* use defaults */ });
+    }
 
     function renderSynthBar() {
         var bar = document.getElementById('alloc-synth-bar');
@@ -1194,7 +1210,9 @@
             bar.appendChild(seg);
         });
         var count = document.getElementById('alloc-voter-count');
-        if (count) count.textContent = '0 votes cast \u2014 be the first to set the direction';
+        if (count) count.textContent = totalVoters > 0
+            ? totalVoters + ' vote' + (totalVoters !== 1 ? 's' : '') + ' cast'
+            : '0 votes cast \u2014 be the first to set the direction';
     }
 
     function renderSliders() {
@@ -1272,18 +1290,102 @@
         }
     }
 
-    /* Vote button */
+    /* Wallet connect + vote signing */
+    async function connectWallet() {
+        var btn = document.getElementById('alloc-vote-btn');
+        var info = document.querySelector('.alloc-vote-info');
+        if (!window.ethereum) {
+            if (info) info.textContent = 'No wallet detected. Install MetaMask or a Base-compatible wallet.';
+            return null;
+        }
+        try {
+            if (window._awaitProvider) await window._awaitProvider();
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            connectedWallet = accounts[0];
+            /* Switch to Base if needed */
+            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== '0x2105') {
+                try {
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+                } catch (e) { /* user rejected chain switch */ }
+            }
+            if (info) info.textContent = 'Connected: ' + connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4);
+            if (btn) { btn.disabled = false; btn.textContent = 'Sign & Cast Vote'; }
+            return connectedWallet;
+        } catch (err) {
+            if (info) info.textContent = 'Wallet connection failed. Try again.';
+            return null;
+        }
+    }
+
+    async function castVote() {
+        var btn = document.getElementById('alloc-vote-btn');
+        var info = document.querySelector('.alloc-vote-info');
+        if (!connectedWallet) {
+            var addr = await connectWallet();
+            if (!addr) return;
+        }
+        var total = values.reduce(function(a, b) { return a + b; }, 0);
+        if (total !== 100) {
+            if (info) info.textContent = 'Weights must total 100%. Currently: ' + total + '%';
+            return;
+        }
+        /* Build weights object */
+        var weights = {};
+        buckets.forEach(function(b, i) { weights[b.id] = values[i]; });
+        /* Build message to sign */
+        var ts = Math.floor(Date.now() / 1000);
+        var message = 'Inclawbate Allocation Vote\n\nWeights: ' + JSON.stringify(weights) + '\nTimestamp: ' + ts;
+        /* Sign */
+        if (btn) { btn.disabled = true; btn.textContent = 'Signing...'; }
+        try {
+            var signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, connectedWallet]
+            });
+            /* Submit to API */
+            if (btn) btn.textContent = 'Submitting...';
+            var resp = await fetch(VOTE_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: connectedWallet, signature: signature, message: message, weights: weights })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                synthesis = data.synthesis;
+                totalVoters = data.totalVoters || 0;
+                renderSynthBar();
+                if (info) info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS';
+                if (btn) { btn.textContent = 'Update Vote'; btn.disabled = false; }
+            } else {
+                if (info) info.textContent = 'Error: ' + (data.error || 'Unknown error');
+                if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+            }
+        } catch (err) {
+            if (info) info.textContent = 'Signing cancelled or failed.';
+            if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+        }
+    }
+
+    function formatBalance(raw) {
+        if (!raw || raw === '0') return '0';
+        var s = raw.toString();
+        if (s.length <= 18) return '0';
+        var whole = s.slice(0, s.length - 18);
+        return Number(whole).toLocaleString();
+    }
+
+    /* Vote button click */
     document.addEventListener('click', function(e) {
         if (e.target.id === 'alloc-vote-btn') {
-            /* TODO: save to Supabase with wallet address + CLAWS balance weight */
-            alert('Vote recorded! Distribution: ' + buckets.map(function(b, i) {
-                return b.label + ': ' + values[i] + '%';
-            }).join(', '));
+            if (!connectedWallet) { connectWallet(); }
+            else { castVote(); }
         }
     });
 
     renderSynthBar();
     renderSliders();
+    fetchSynthesis();
 })();
 </script>
 
