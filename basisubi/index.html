@@ -1482,6 +1482,43 @@
         .fade-in.delay-2 { transition-delay: 0.2s; }
         .fade-in.delay-3 { transition-delay: 0.3s; }
 
+        /* ═══ LP TRACKER ═══ */
+        .tracker-section { padding-top: 80px; }
+        .tracker-input-row { display: flex; gap: 10px; max-width: 600px; margin: 0 auto 32px; }
+        .tracker-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-family: var(--mono); font-size: 0.82rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+        .tracker-input:focus { border-color: var(--accent); }
+        .tracker-input::placeholder { color: var(--text-dim); }
+        .tracker-btn { background: linear-gradient(135deg, var(--accent), var(--cyan)); color: #fff; border: none; padding: 12px 24px; border-radius: 10px; font-family: var(--font-display); font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .tracker-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+        .tracker-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .tracker-or { display: flex; align-items: center; gap: 12px; max-width: 600px; margin: -16px auto 20px; color: var(--text-dim); font-size: 0.75rem; font-family: var(--mono); }
+        .tracker-or::before, .tracker-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .tracker-status { text-align: center; font-family: var(--mono); font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 20px; }
+        .tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+        .tracker-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; transition: all 0.2s; }
+        .tracker-card:hover { border-color: var(--border-accent); }
+        .tracker-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .tracker-card-pair { font-family: var(--font-display); font-weight: 700; font-size: 1rem; }
+        .tracker-card-id { font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); }
+        .tracker-card-badge { font-family: var(--mono); font-size: 0.68rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+        .tracker-card-badge.in-range { color: var(--green); border: 1px solid var(--green-dim); background: var(--green-dim); }
+        .tracker-card-badge.out-range { color: #ff6450; border: 1px solid rgba(255,100,80,0.2); background: rgba(255,100,80,0.06); }
+        .tracker-card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .tracker-stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+        .tracker-stat-label { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .tracker-stat-value { font-family: var(--mono); font-size: 0.88rem; font-weight: 600; color: var(--text); }
+        .tracker-stat-value.green { color: var(--green); }
+        .tracker-range-bar { position: relative; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: visible; margin-top: 4px; }
+        .tracker-range-fill { position: absolute; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--cyan)); }
+        .tracker-range-tick { position: absolute; top: -4px; width: 3px; height: 16px; background: var(--green); border-radius: 2px; transform: translateX(-50%); }
+        .tracker-range-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.64rem; color: var(--text-dim); margin-top: 6px; }
+        .tracker-empty { text-align: center; padding: 60px 20px; color: var(--text-secondary); font-size: 0.9rem; }
+        .tracker-empty-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+        @media (max-width: 600px) {
+            .tracker-input-row { flex-direction: column; }
+            .tracker-grid { grid-template-columns: 1fr; }
+        }
+
         /* ═══ VAULT MARKETPLACE ═══ */
         .marketplace-section { padding-top: 80px; }
         .mp-sort-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
@@ -1623,6 +1660,7 @@
             <ul class="nav-links">
                 <li><a href="#marketplace">Vaults</a></li>
                 <li><a href="#how">How It Works</a></li>
+                <li><a href="#tracker">Track LP</a></li>
                 <li><a href="#toolkit">Toolkit</a></li>
                 <li><a href="#simulate">Simulate</a></li>
                 <li><a href="#learn">Learn</a></li>
@@ -2308,6 +2346,30 @@
             <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:10px; text-align:center;" id="mp-c-status"></div>
         </div>
     </div>
+
+<!-- ═══ LP TRACKER ═══ -->
+    <section class="tracker-section" id="tracker">
+        <div class="container">
+            <div class="fade-in" style="text-align:center; margin-bottom:32px;">
+                <div class="section-label">LP Position Tracker</div>
+                <h2 class="section-title">Track your Aerodrome positions</h2>
+                <p class="section-desc" style="margin:0 auto;">Connect your wallet or paste any address to see Aerodrome ETH/USDC concentrated liquidity positions — value, fees earned, range status, and more.</p>
+            </div>
+
+            <div class="tracker-input-row fade-in">
+                <input type="text" class="tracker-input" id="tracker-address" placeholder="Paste any wallet address (0x...)" spellcheck="false" autocomplete="off">
+                <button class="tracker-btn" id="tracker-lookup-btn" onclick="trackerLookup()">Track</button>
+            </div>
+            <div class="tracker-or fade-in">or connect your wallet above</div>
+            <div class="tracker-status" id="tracker-status"></div>
+            <div class="tracker-grid" id="tracker-grid"></div>
+            <div class="tracker-empty" id="tracker-empty" style="display:none;">
+                <div class="tracker-empty-icon">&#x1F50D;</div>
+                <div>No Aerodrome ETH/USDC positions found for this address.</div>
+                <div style="font-size:0.78rem; margin-top:8px; color:var(--text-dim);">Positions must be in the Aerodrome CL ETH/USDC pool on Base.</div>
+            </div>
+        </div>
+    </section>
 
 <!-- ═══ TOOLKIT ═══ -->
     <section class="toolkit-section" id="toolkit">
@@ -6972,6 +7034,244 @@
 
         // Load on page init
         loadMarketplaceVaults();
+    })();
+
+    // ═══ LP POSITION TRACKER ═══
+    (function() {
+        var AERO_FACTORY = '0xeC8E5342B19977B4eF8892e02D8DAEcfa1315831';
+        var FACTORY_ABI = ['function getPool(address,address,int24) view returns (address)'];
+        var POOL_ABI = [
+            'function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 obsIdx, uint16 obsCrd, uint16 obsCrdNext, bool unlocked)',
+            'function token0() view returns (address)',
+            'function token1() view returns (address)'
+        ];
+        var TRACKER_NPM_ABI = [
+            'function balanceOf(address) view returns (uint256)',
+            'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)',
+            'function positions(uint256) view returns (uint96 nonce, address operator, address token0, address token1, int24 tickSpacing, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)'
+        ];
+
+        var BASE_RPC = 'https://mainnet.base.org';
+
+        function getReadProvider() {
+            return new ethers.JsonRpcProvider(BASE_RPC);
+        }
+
+        // TickMath — JS port of Uniswap v3 getSqrtRatioAtTick
+        function tickToPrice(tick) {
+            return Math.pow(1.0001, tick);
+        }
+
+        function sqrtPriceX96ToPrice(sqrtPriceX96, wethIsToken0) {
+            var sqrtPrice = Number(sqrtPriceX96) / (2 ** 96);
+            var price = sqrtPrice * sqrtPrice;
+            // price = token1/token0. If weth is token0, price = usdc/weth (ETH price in USDC)
+            // If weth is token1, price = weth/usdc, so invert
+            return wethIsToken0 ? price * 1e12 : (1 / price) * 1e12;
+            // 1e12 adjusts for decimals: USDC(6) vs WETH(18) → 10^(18-6)=10^12
+        }
+
+        function getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liquidity) {
+            var sqrtP = Number(sqrtPriceX96);
+            var sA = Math.min(Number(sqrtA), Number(sqrtB));
+            var sB = Math.max(Number(sqrtA), Number(sqrtB));
+            var liq = Number(liquidity);
+
+            var amount0 = 0, amount1 = 0;
+            if (sqrtP <= sA) {
+                amount0 = liq * (sB - sA) / (sA * sB / (2 ** 96)) / (2 ** 96);
+            } else if (sqrtP < sB) {
+                amount0 = liq * (sB - sqrtP) / (sqrtP * sB / (2 ** 96)) / (2 ** 96);
+                amount1 = liq * (sqrtP - sA) / (2 ** 96);
+            } else {
+                amount1 = liq * (sB - sA) / (2 ** 96);
+            }
+            return { amount0: amount0, amount1: amount1 };
+        }
+
+        function tickToSqrtPriceX96(tick) {
+            return Math.sqrt(Math.pow(1.0001, tick)) * (2 ** 96);
+        }
+
+        window.trackerLookup = async function() {
+            var input = document.getElementById('tracker-address');
+            var addr = (input.value || '').trim();
+            // If empty, try connected wallet
+            if (!addr && window._navWalletAddress) addr = window._navWalletAddress;
+            if (!addr || !addr.match(/^0x[a-fA-F0-9]{40}$/)) {
+                document.getElementById('tracker-status').textContent = 'Enter a valid wallet address or connect your wallet.';
+                return;
+            }
+            await trackerLoad(addr);
+        };
+
+        // Auto-load on wallet connect
+        var origNavConnect = window.navConnectWallet;
+        window.navConnectWallet = async function() {
+            await origNavConnect();
+            if (window._navWalletAddress) {
+                document.getElementById('tracker-address').value = '';
+                document.getElementById('tracker-address').placeholder = window._navWalletAddress;
+                trackerLoad(window._navWalletAddress);
+            }
+        };
+
+        async function trackerLoad(addr) {
+            var statusEl = document.getElementById('tracker-status');
+            var grid = document.getElementById('tracker-grid');
+            var empty = document.getElementById('tracker-empty');
+            var btn = document.getElementById('tracker-lookup-btn');
+
+            statusEl.textContent = 'Scanning positions...';
+            grid.innerHTML = '';
+            empty.style.display = 'none';
+            btn.disabled = true;
+
+            try {
+                var p = getReadProvider();
+                var npm = new ethers.Contract(AERO_NPM, TRACKER_NPM_ABI, p);
+
+                // Get ETH/USDC pool address
+                var factory = new ethers.Contract(AERO_FACTORY, FACTORY_ABI, p);
+                var poolAddr = await factory.getPool(WETH_ADDRESS, USDC_ADDRESS, TICK_SPACING);
+                if (!poolAddr || poolAddr === ethers.ZeroAddress) {
+                    statusEl.textContent = 'Could not find Aerodrome ETH/USDC pool.';
+                    btn.disabled = false;
+                    return;
+                }
+
+                var pool = new ethers.Contract(poolAddr, POOL_ABI, p);
+                var [slot0, token0Addr] = await Promise.all([pool.slot0(), pool.token0()]);
+                var sqrtPriceX96 = slot0[0];
+                var currentTick = Number(slot0[1]);
+                var wethIsToken0 = token0Addr.toLowerCase() === WETH_ADDRESS.toLowerCase();
+                var ethPriceUsd = sqrtPriceX96ToPrice(sqrtPriceX96, wethIsToken0);
+
+                // Get all position NFTs for this wallet
+                var balance = Number(await npm.balanceOf(addr));
+                statusEl.textContent = 'Found ' + balance + ' Aerodrome position' + (balance === 1 ? '' : 's') + '. Filtering ETH/USDC...';
+
+                if (balance === 0) {
+                    statusEl.textContent = '';
+                    empty.style.display = '';
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Fetch all token IDs in parallel
+                var tokenIdPromises = [];
+                for (var i = 0; i < balance; i++) {
+                    tokenIdPromises.push(npm.tokenOfOwnerByIndex(addr, i));
+                }
+                var tokenIds = await Promise.all(tokenIdPromises);
+
+                // Fetch all positions in parallel
+                var posPromises = tokenIds.map(function(id) { return npm.positions(id); });
+                var positions = await Promise.all(posPromises);
+
+                // Filter to ETH/USDC positions only
+                var ethUsdcPositions = [];
+                for (var j = 0; j < positions.length; j++) {
+                    var pos = positions[j];
+                    var t0 = pos[2].toLowerCase(), t1 = pos[3].toLowerCase();
+                    var isEthUsdc = (t0 === WETH_ADDRESS.toLowerCase() && t1 === USDC_ADDRESS.toLowerCase())
+                        || (t0 === USDC_ADDRESS.toLowerCase() && t1 === WETH_ADDRESS.toLowerCase());
+                    if (isEthUsdc && Number(pos[7]) > 0) {
+                        ethUsdcPositions.push({ tokenId: tokenIds[j], pos: pos });
+                    }
+                }
+
+                if (ethUsdcPositions.length === 0) {
+                    statusEl.textContent = '';
+                    empty.style.display = '';
+                    btn.disabled = false;
+                    return;
+                }
+
+                statusEl.textContent = ethUsdcPositions.length + ' ETH/USDC position' + (ethUsdcPositions.length === 1 ? '' : 's') + ' found. ETH: $' + ethPriceUsd.toFixed(2);
+
+                // Render each position
+                ethUsdcPositions.forEach(function(item) {
+                    var pos = item.pos;
+                    var tickLower = Number(pos[5]);
+                    var tickUpper = Number(pos[6]);
+                    var liquidity = pos[7];
+                    var tokensOwed0 = Number(pos[10]);
+                    var tokensOwed1 = Number(pos[11]);
+
+                    var sqrtA = tickToSqrtPriceX96(tickLower);
+                    var sqrtB = tickToSqrtPriceX96(tickUpper);
+                    var amounts = getAmountsForLiquidity(Number(sqrtPriceX96), sqrtA, sqrtB, liquidity);
+
+                    // Determine which is WETH and which is USDC
+                    var wethAmt, usdcAmt, wethFees, usdcFees;
+                    if (wethIsToken0) {
+                        wethAmt = amounts.amount0 / 1e18;
+                        usdcAmt = amounts.amount1 / 1e6;
+                        wethFees = tokensOwed0 / 1e18;
+                        usdcFees = tokensOwed1 / 1e6;
+                    } else {
+                        usdcAmt = amounts.amount0 / 1e6;
+                        wethAmt = amounts.amount1 / 1e18;
+                        usdcFees = tokensOwed0 / 1e6;
+                        wethFees = tokensOwed1 / 1e18;
+                    }
+
+                    var totalValueUsd = (wethAmt * ethPriceUsd) + usdcAmt;
+                    var totalFeesUsd = (wethFees * ethPriceUsd) + usdcFees;
+
+                    // Price range
+                    var lowerPrice = tickToPrice(wethIsToken0 ? tickLower : -tickUpper) * 1e12;
+                    var upperPrice = tickToPrice(wethIsToken0 ? tickUpper : -tickLower) * 1e12;
+                    var inRange = currentTick >= tickLower && currentTick < tickUpper;
+
+                    // Range bar position (current price within range)
+                    var rangePct = 0;
+                    if (inRange) {
+                        rangePct = ((ethPriceUsd - lowerPrice) / (upperPrice - lowerPrice)) * 100;
+                        rangePct = Math.max(5, Math.min(95, rangePct));
+                    }
+
+                    var card = document.createElement('div');
+                    card.className = 'tracker-card';
+                    card.innerHTML = '<div class="tracker-card-header">'
+                        + '<div><div class="tracker-card-pair">ETH / USDC</div><div class="tracker-card-id">NFT #' + item.tokenId.toString() + '</div></div>'
+                        + '<span class="tracker-card-badge ' + (inRange ? 'in-range' : 'out-range') + '">' + (inRange ? '&#x25CF; In Range' : '&#x25CF; Out of Range') + '</span>'
+                        + '</div>'
+                        + '<div class="tracker-card-stats">'
+                        + '<div class="tracker-stat"><div class="tracker-stat-label">Position Value</div><div class="tracker-stat-value">$' + fmtNum(totalValueUsd) + '</div></div>'
+                        + '<div class="tracker-stat"><div class="tracker-stat-label">Uncollected Fees</div><div class="tracker-stat-value green">$' + fmtNum(totalFeesUsd) + '</div></div>'
+                        + '<div class="tracker-stat"><div class="tracker-stat-label">ETH</div><div class="tracker-stat-value">' + wethAmt.toFixed(4) + '</div></div>'
+                        + '<div class="tracker-stat"><div class="tracker-stat-label">USDC</div><div class="tracker-stat-value">' + usdcAmt.toFixed(2) + '</div></div>'
+                        + '</div>'
+                        + '<div class="tracker-range-bar">'
+                        + '<div class="tracker-range-fill" style="left:0;right:0;background:' + (inRange ? 'linear-gradient(90deg, var(--accent), var(--cyan))' : 'rgba(255,100,80,0.2)') + '"></div>'
+                        + (inRange ? '<div class="tracker-range-tick" style="left:' + rangePct + '%"></div>' : '')
+                        + '</div>'
+                        + '<div class="tracker-range-labels"><span>$' + fmtNum(lowerPrice) + '</span><span>Current: $' + fmtNum(ethPriceUsd) + '</span><span>$' + fmtNum(upperPrice) + '</span></div>';
+
+                    grid.appendChild(card);
+                });
+
+            } catch(e) {
+                console.error('Tracker error:', e);
+                statusEl.textContent = 'Error: ' + (e.reason || e.message);
+            }
+            btn.disabled = false;
+        }
+
+        function fmtNum(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(2) + 'K';
+            if (n >= 1) return n.toFixed(2);
+            if (n >= 0.01) return n.toFixed(4);
+            return n.toFixed(6);
+        }
+
+        // Allow Enter key in input
+        document.getElementById('tracker-address').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') trackerLookup();
+        });
     })();
 
     // ═══ GLOBAL NAV WALLET ═══
