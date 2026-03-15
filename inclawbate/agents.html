@@ -387,6 +387,31 @@
         }
         .launch-deploy-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .launch-deploy-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .launch-hint {
+            font-size: 0.65rem; color: var(--text-dim); margin-top: 2px; line-height: 1.4;
+        }
+        .launch-adv-toggle {
+            padding: 8px 0; font-size: 0.78rem; font-weight: 700;
+            color: var(--text-secondary); cursor: pointer; user-select: none;
+            margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+        }
+        .launch-adv-toggle:hover { color: var(--text-primary); }
+        .launch-adv-body { padding-bottom: 4px; }
+        .launch-alloc-btns { display: flex; gap: 4px; }
+        .alloc-btn {
+            flex: 1; padding: 6px 4px; background: var(--bg-surface);
+            border: 1px solid var(--border-subtle); border-radius: 6px;
+            color: var(--text-dim); font-family: var(--font-mono);
+            font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+        }
+        .alloc-btn:hover { border-color: var(--lobster-400); color: var(--text-secondary); }
+        .alloc-btn.active { background: var(--accent-gradient); color: #fff; border-color: transparent; }
+        .launch-add-btn {
+            background: none; border: 1px dashed var(--border-subtle);
+            border-radius: 6px; padding: 5px 12px; color: var(--text-dim);
+            font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-top: 4px;
+        }
+        .launch-add-btn:hover { border-color: var(--lobster-400); color: var(--text-secondary); }
         .launch-chain-toggle {
             display: flex; gap: 4px; margin-bottom: 12px; padding: 3px;
             background: var(--bg-surface); border: 1px solid var(--border-subtle);
@@ -857,17 +882,85 @@
                         <input type="text" id="launchTG" placeholder="https://t.me/...">
                     </div>
                 </div>
-                <div class="launch-field solana-only">
-                    <label>Dev Buy (SOL)</label>
-                    <input type="number" id="launchDevBuy" placeholder="0" min="0" step="0.01">
+                <!-- ═══ BASE ADVANCED SETTINGS ═══ -->
+                <div class="base-only">
+                    <div class="launch-adv-toggle" onclick="toggleLaunchAdvanced()">
+                        <span id="launchAdvArrow">&#9654;</span> Advanced Settings
+                    </div>
+                    <div class="launch-adv-body" id="launchAdvBody" style="display:none">
+                        <!-- Dev Buy -->
+                        <div class="launch-field">
+                            <label>Dev Buy (ETH)</label>
+                            <input type="number" id="launchDevBuyEth" placeholder="0" min="0" step="0.001">
+                            <div class="launch-hint">Buy tokens at launch with ETH. Leave 0 for no dev buy.</div>
+                        </div>
+                        <!-- Dev Allocation -->
+                        <div class="launch-field">
+                            <label>Dev Allocation (%)</label>
+                            <div class="launch-alloc-btns" id="allocBtns">
+                                <button class="alloc-btn active" onclick="setAllocation(0)" data-alloc="0">0%</button>
+                                <button class="alloc-btn" onclick="setAllocation(1)" data-alloc="1">1%</button>
+                                <button class="alloc-btn" onclick="setAllocation(3)" data-alloc="3">3%</button>
+                                <button class="alloc-btn" onclick="setAllocation(5)" data-alloc="5">5%</button>
+                                <button class="alloc-btn" onclick="setAllocation(10)" data-alloc="10">10%</button>
+                            </div>
+                            <div class="launch-hint">Pre-allocate % of token supply to your wallet via airdrop.</div>
+                        </div>
+                        <!-- Lockup & Vesting (show when allocation > 0) -->
+                        <div id="allocLockupSection" style="display:none">
+                            <div class="launch-row">
+                                <div class="launch-field">
+                                    <label>Lockup (days)</label>
+                                    <input type="number" id="launchLockupDays" value="7" min="0" max="365">
+                                    <div class="launch-hint">Tokens locked before claimable.</div>
+                                </div>
+                                <div class="launch-field">
+                                    <label>Vesting (days)</label>
+                                    <input type="number" id="launchVestingDays" value="0" min="0" max="365">
+                                    <div class="launch-hint">Linear vest after lockup. 0 = instant.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sniper Protection -->
+                        <div class="launch-field">
+                            <label>Sniper Tax Duration (seconds)</label>
+                            <input type="number" id="launchSniperDuration" value="15" min="0" max="300">
+                            <div class="launch-hint">Anti-sniper MEV tax that decays over this period. Default: 15s.</div>
+                        </div>
+                        <!-- LP Reward Split -->
+                        <div class="launch-field">
+                            <label>LP Reward Split</label>
+                            <div id="rewardRecipientEntries">
+                                <div class="reward-entry" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                                    <input class="reward-addr" type="text" placeholder="Your wallet (auto-filled)" style="flex:3;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:0.75rem">
+                                    <input class="reward-pct" type="number" value="80" min="0" max="100" style="width:60px;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:0.75rem">
+                                    <span style="color:var(--text-dim);font-size:0.75rem">%</span>
+                                </div>
+                                <div class="reward-entry" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                                    <input class="reward-addr" type="text" value="0x91B5C0D07859CFeAfEB67d9694121CD741F049bd" readonly style="flex:3;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem">
+                                    <input class="reward-pct" type="number" value="20" min="0" max="100" style="width:60px;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:0.75rem">
+                                    <span style="color:var(--text-dim);font-size:0.75rem">%</span>
+                                </div>
+                            </div>
+                            <button type="button" class="launch-add-btn" onclick="addRewardRecipient()">+ Add recipient</button>
+                            <div class="launch-hint" id="rewardTotalLabel" style="margin-top:4px">Total: 100%</div>
+                        </div>
+                    </div>
+                    <div class="launch-fee-info">
+                        Clanker V4 &middot; Uniswap V4 &middot; Locked LP &middot; Anti-sniper MEV protection
+                    </div>
                 </div>
-                <div class="launch-fee-info solana-only">
-                    Trading fees split via Bags: <strong>80%</strong> to you (claimable) &middot; <strong>20%</strong> to Inclawbate treasury<br>
-                    Powered by Bags &mdash; Meteora liquidity pool created automatically.
-                </div>
-                <div class="launch-fee-info base-only">
-                    LP reward fees: <strong>80%</strong> to you &middot; <strong>20%</strong> to Inclawbate treasury<br>
-                    Launched via Clanker V4 with locked liquidity on Uniswap V4.
+
+                <!-- ═══ SOLANA SETTINGS ═══ -->
+                <div class="solana-only">
+                    <div class="launch-field">
+                        <label>Dev Buy (SOL)</label>
+                        <input type="number" id="launchDevBuy" placeholder="0" min="0" step="0.01">
+                        <div class="launch-hint">Buy tokens at launch with SOL. Leave 0 for no dev buy.</div>
+                    </div>
+                    <div class="launch-fee-info">
+                        Bags/Meteora &middot; 80% fees to you &middot; 20% to Inclawbate treasury
+                    </div>
                 </div>
                 <div class="launch-status" id="launchStatus"></div>
                 <button class="launch-deploy-btn" id="launchDeployBtn" onclick="handleChatDeploy()">&#x1F680; Deploy Token on Base</button>
@@ -1632,6 +1725,10 @@ var CLANKER_SNIPER_AUCTION = '0xebB25BB797D82CB78E1bc70406b13233c0854413';
 var WETH_BASE = '0x4200000000000000000000000000000000000006';
 var INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 var BASE_CHAIN_ID = '0x2105';
+var CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
+var CLANKER_DEV_BUY = '0x1331f0788F9c08C8F38D52c7a1152250A9dE00be';
+var DEFAULT_SUPPLY = 100000000000; // 100B tokens
+var launchAllocationPct = 0;
 
 var DEPLOY_TOKEN_ABI = [{
     name: 'deployToken', type: 'function', stateMutability: 'payable',
@@ -1772,6 +1869,83 @@ function decodeTxData(data) {
     return new Uint8Array(result.reverse());
 }
 
+// ── Advanced settings helpers ──
+function toggleLaunchAdvanced() {
+    var body = document.getElementById('launchAdvBody');
+    var arrow = document.getElementById('launchAdvArrow');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        arrow.innerHTML = '&#9660;';
+    } else {
+        body.style.display = 'none';
+        arrow.innerHTML = '&#9654;';
+    }
+}
+
+function setAllocation(pct) {
+    launchAllocationPct = pct;
+    document.querySelectorAll('.alloc-btn').forEach(function(b) {
+        b.classList.toggle('active', parseInt(b.getAttribute('data-alloc')) === pct);
+    });
+    var lockupSection = document.getElementById('allocLockupSection');
+    if (lockupSection) lockupSection.style.display = pct > 0 ? 'block' : 'none';
+}
+
+function addRewardRecipient() {
+    var container = document.getElementById('rewardRecipientEntries');
+    if (!container) return;
+    var entry = document.createElement('div');
+    entry.className = 'reward-entry';
+    entry.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px';
+    entry.innerHTML = '<input class="reward-addr" type="text" placeholder="0x... wallet" style="flex:3;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:0.75rem">' +
+        '<input class="reward-pct" type="number" min="0" max="100" placeholder="%" style="width:60px;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:0.75rem">' +
+        '<span style="color:var(--text-dim);font-size:0.75rem">%</span>' +
+        '<button type="button" onclick="this.parentElement.remove();updateRewardTotal()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:2px">&times;</button>';
+    container.appendChild(entry);
+    updateRewardTotal();
+}
+
+function updateRewardTotal() {
+    var total = 0;
+    document.querySelectorAll('#rewardRecipientEntries .reward-pct').forEach(function(el) {
+        total += parseInt(el.value) || 0;
+    });
+    var label = document.getElementById('rewardTotalLabel');
+    if (label) {
+        label.textContent = 'Total: ' + total + '%';
+        label.style.color = total === 100 ? 'var(--text-dim)' : '#ef4444';
+    }
+}
+
+function getRewardRecipients(wallet) {
+    var recipients = [];
+    document.querySelectorAll('#rewardRecipientEntries .reward-entry').forEach(function(row) {
+        var addr = row.querySelector('.reward-addr');
+        var pct = row.querySelector('.reward-pct');
+        var address = addr ? addr.value.trim() : '';
+        var percent = pct ? (parseInt(pct.value) || 0) : 0;
+        if (percent > 0) {
+            recipients.push({ address: address || wallet, bps: percent * 100 });
+        }
+    });
+    if (recipients.length === 0) {
+        recipients = [{ address: wallet, bps: 8000 }, { address: INCLAWBATE_TREASURY, bps: 2000 }];
+    }
+    return recipients;
+}
+
+function buildMerkleRoot(address, amount) {
+    var coder = ethers.AbiCoder.defaultAbiCoder();
+    var leafValue = coder.encode(['address', 'uint256'], [address, amount]);
+    var innerHash = ethers.keccak256(leafValue);
+    return ethers.keccak256(innerHash);
+}
+
+// Listen for reward % changes
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.classList.contains('reward-pct')) updateRewardTotal();
+});
+
 // Listen for manual field edits
 ['launchName','launchSymbol','launchDesc','launchImage','launchWebsite','launchX','launchTG'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -1837,11 +2011,16 @@ async function handleChatDeploy() {
 
         var wallet = auth.wallet;
         var coder = ethers.AbiCoder.defaultAbiCoder();
-        var sniperMevData = coder.encode(['uint256','uint256','uint256'], [666777, 41673, 15]);
+
+        // Read advanced config
+        var sniperDuration = parseInt((document.getElementById('launchSniperDuration') || {}).value) || 15;
+        var sniperMevData = coder.encode(['uint256','uint256','uint256'], [666777, 41673, sniperDuration]);
+        var recipientList = getRewardRecipients(wallet);
+        var rewardAdminAddr = recipientList[0].address;
 
         var deploymentConfig = {
             tokenConfig: {
-                tokenAdmin: wallet, name: name, symbol: symbol, salt: salt,
+                tokenAdmin: rewardAdminAddr, name: name, symbol: symbol, salt: salt,
                 image: imageUrl, metadata: '', context: '', originatingChainId: 8453
             },
             poolConfig: {
@@ -1850,9 +2029,9 @@ async function handleChatDeploy() {
             },
             lockerConfig: {
                 locker: CLANKER_LP_LOCKER,
-                rewardAdmins: [wallet, INCLAWBATE_TREASURY],
-                rewardRecipients: [wallet, INCLAWBATE_TREASURY],
-                rewardBps: [8000, 2000],
+                rewardAdmins: recipientList.map(function(r) { return r.address; }),
+                rewardRecipients: recipientList.map(function(r) { return r.address; }),
+                rewardBps: recipientList.map(function(r) { return r.bps; }),
                 tickLower: [-230400], tickUpper: [-120000], positionBps: [10000],
                 lockerData: '0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001'
             },
@@ -1860,14 +2039,50 @@ async function handleChatDeploy() {
             extensionConfigs: []
         };
 
+        // Dev allocation (airdrop extension)
+        if (launchAllocationPct > 0) {
+            var extensionBps = launchAllocationPct * 100;
+            var lockupDays = parseInt((document.getElementById('launchLockupDays') || {}).value) || 7;
+            var vestingDays = parseInt((document.getElementById('launchVestingDays') || {}).value) || 0;
+            var tokenAmount = BigInt(DEFAULT_SUPPLY) * BigInt(launchAllocationPct) / 100n * BigInt('1000000000000000000');
+            var merkleRoot = buildMerkleRoot(wallet, tokenAmount);
+            var extensionData = coder.encode(
+                ['address', 'bytes32', 'uint256', 'uint256'],
+                [rewardAdminAddr, merkleRoot, lockupDays * 86400, vestingDays * 86400]
+            );
+            deploymentConfig.extensionConfigs.push({
+                extension: CLANKER_AIRDROP_V2, msgValue: 0,
+                extensionBps: extensionBps, extensionData: extensionData
+            });
+        }
+
+        // Dev buy extension
+        var devBuyEth = parseFloat((document.getElementById('launchDevBuyEth') || {}).value) || 0;
+        var devBuyWei = devBuyEth > 0 ? BigInt(Math.round(devBuyEth * 1e18)) : 0n;
+        if (devBuyWei > 0n) {
+            deploymentConfig.extensionConfigs.push({
+                extension: CLANKER_DEV_BUY, msgValue: devBuyWei,
+                extensionBps: 0, extensionData: '0x'
+            });
+        }
+
         var calldata = iface.encodeFunctionData('deployToken', [deploymentConfig]);
+
+        // Calculate total ETH to send (dev buy + any other msg values)
+        var totalValue = 0n;
+        deploymentConfig.extensionConfigs.forEach(function(ext) {
+            if (ext.msgValue) totalValue += BigInt(ext.msgValue);
+        });
 
         btn.textContent = 'Confirm in wallet...';
         statusEl.textContent = 'Waiting for wallet signature...';
 
+        var txParams = { from: wallet, to: CLANKER_V4, data: calldata, gas: '0x7A1200' };
+        if (totalValue > 0n) txParams.value = '0x' + totalValue.toString(16);
+
         var txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [{ from: wallet, to: CLANKER_V4, data: calldata, gas: '0x7A1200' }]
+            params: [txParams]
         });
 
         btn.textContent = 'Deploying...';
@@ -1911,7 +2126,7 @@ async function handleChatDeploy() {
                 website_url: website, logo_url: imageUrl || null,
                 x_handle: xHandle || null, telegram_url: telegram || null,
                 fee_split_bps: 2000, tier: 'permissionless',
-                creator_wallet: wallet, allocation_pct: 0, burn_amount: 0
+                creator_wallet: wallet, allocation_pct: launchAllocationPct, burn_amount: 0
             })
         });
 
