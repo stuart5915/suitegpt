@@ -66,6 +66,59 @@ const PILLAR_SCENE_HINTS = {
     'Incubation CTA': '3D lobster in "boss" pose — standing powerfully atop a glowing platform of stacked app icons and token coins, claws crossed confidently. Coral energy radiates upward creating dramatic uplighting. Dark epic background with rising teal embers.',
 };
 
+// Narrative scenarios per pillar — drawn from NARRATIVE.md for richer, varied image prompts
+const NARRATIVE_SCENES = {
+    'App Spotlight': [
+        'The lobster at The Workshop, hunched over a holographic workbench, manipulating glowing UI components mid-air. Screens display a nearly-finished app. Crab Engineer gives thumbs-up from behind.',
+        'Shipping Day — the lobster holds up a freshly completed app like a trophy, glowing with achievement energy. The app floats up to join a constellation of other apps above The Reef.',
+        'The lobster and the shrimp newbie side by side, the lobster gently showing how to use the app on a floating screen. The shrimp\'s eyes light up. Wholesome teaching moment.',
+        'The Arena — the lobster on stage presenting an app under spotlights. Holographic scoreboards and crowds of mini lobsters watching. App showcase energy.',
+    ],
+    'Builder Shoutout': [
+        'The All-Nighter — 3 AM at The Workshop, dark except for one screen\'s glow. The lobster hunches over the keyboard, shell slightly dimmer. Empty energy cans nearby. On screen: an app coming together beautifully.',
+        'Collaboration — two lobsters at adjacent workstations, teal data streams flowing between screens. They high-claw in the middle as they merge their work. Partnership energy.',
+        'Code Review — the lobster and the Crab Engineer side by side, both looking at a holographic code review. The crab tightens a bolt on the code (literally). Bug squashing energy.',
+        'The Build Session — late night at The Workshop, multiple screens open, claws flying across keyboard. Coffee mugs piled up. Focused, determined energy.',
+    ],
+    'DeFi / CLAWS Update': [
+        'Staking Zen — the lobster meditates on a floating coral platform. Token coins orbit slowly around it like electrons. Yield arrows glow upward. Peaceful passive income energy.',
+        'Checking the Charts — the lobster at The Trading Floor, one claw holding a phone with a price chart. Other sea creatures peek over its shoulder. Tense but analytical.',
+        'Yield Farming — the lobster tends a garden where glowing token coins grow from coral stalks. Watering them with a teal data stream. Each plant is a different yield source.',
+        'Whale Watching — the lobster and mini lobsters on The Rooftop, looking up as a massive whale swims overhead leaving a trail of teal sparkles. Awe and respect.',
+    ],
+    'How-To / Tips': [
+        'Teaching a Newbie — the lobster kneels to the shrimp\'s level, gently showing it how to use the app builder on a floating screen. Patient mentoring energy.',
+        'The Workshop — holographic screens everywhere, token blueprints pinned to coral walls, glowing keyboards built into rock formations. The lobster explains step by step.',
+        'The Octopus Multitasker juggling 8 tools while the lobster watches and takes notes. Productivity content energy.',
+        'Morning Routine — the lobster wakes in its coral apartment, checks holographic notifications: "3 new apps shipped overnight." Grabs a glowing coffee mug. Cozy tutorial energy.',
+    ],
+    'Community Vibes': [
+        'The Meetup — The Lounge packed with different sea creatures. The lobster on a small stage with a holographic presentation. Everyone engaged, some on holographic tablets.',
+        'Meme War — two lobsters face off across a table, rapidly creating memes on holographic screens. Other creatures watch and vote with teal/coral light beams. Competitive but fun.',
+        'The Group Photo — all characters lined up: lobster center, mini lobsters, Crab Engineer, Octopus, Shrimp Newbie, Pufferfish. Teal and coral lighting. Team photo energy.',
+        'Lunch Break — the lobster in The Lounge with other sea creatures, eating kelp noodles. A mini lobster shows off an app on their phone. Slice-of-life energy.',
+    ],
+    'Incubation CTA': [
+        'The Incubator — a warm egg-shaped chamber with soft coral lighting. The lobster tends to glowing idea-orbs, nurturing projects from concept to launch. Cozy but powerful.',
+        'The Portal — the lobster stands before a massive swirling coral-and-teal portal. On the other side: a thriving ecosystem of apps, tokens, builders. The lobster steps forward confidently.',
+        'The Throne — the lobster sits on a throne of stacked app icons and token coins. Not arrogant — earned. Workshop visible behind, tools still out. "Built this from scratch" energy.',
+        'The Army — an army of mini lobsters marching forward, each carrying a different tool. The main lobster leads from the front. Coral banners flowing. "We\'re coming."',
+    ],
+    'Weekly Recap': [
+        'Hitting 100 Apps — The Arena packed. A massive holographic number glows above. Confetti everywhere. The lobster stands center stage, claws raised. Mini lobsters cheering.',
+        'The Vision — the lobster on The Rooftop at night, looking up at a constellation forming the Inclawbate logo. Stars connect with teal lines. Visionary epic energy.',
+        'The Origin — deep in the ocean, a glowing coral egg cracks open. A tiny lobster claw reaches out. The first light is coral-red. Origin story energy.',
+        'First Sale / First User — the lobster stares at a notification hologram: "1 new user on your app." Pure joy. Claws trembling. A single teal sparkle. Triumphant but intimate.',
+    ],
+};
+
+// Pick a random narrative scene for a pillar
+function randomNarrativeScene(pillarName) {
+    const scenes = NARRATIVE_SCENES[pillarName];
+    if (!scenes || !scenes.length) return '';
+    return scenes[Math.floor(Math.random() * scenes.length)];
+}
+
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com', 'https://www.inclawbate.com',
     'http://localhost:3000', 'http://localhost:5500',
@@ -242,11 +295,14 @@ IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 ${PILLAR_SCENE_HINTS[pillar.name] ? 'BASE SCENE (adapt to tweet content): ' + PILLAR_SCENE_HINTS[pillar.name] : ''}
 
-The image must visually match what the tweet talks about. If it mentions an app, show the lobster with that app. If it shouts out a builder, show the lobster building. Always feature the 3D lobster mascot.
+NARRATIVE INSPIRATION (use elements from this scene to make the image richer and more specific):
+${randomNarrativeScene(pillar.name) || 'Use the brand mascot in a relevant pose.'}
+
+The image must visually match what the tweet talks about. If it mentions an app, show the lobster with that app. If it shouts out a builder, show the lobster building. Always feature the 3D lobster mascot. Draw from the narrative scene above for specific locations, characters, and props.
 
 Output in this format:
 TWEET: [the tweet]
-IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal lighting, specific to the tweet content]`;
+IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal lighting, specific to the tweet content, incorporating narrative elements]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -302,6 +358,7 @@ IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal l
             const opts = slot.tweet_options || {};
             const pillarName = opts.pillar || '';
             const sceneHint = PILLAR_SCENE_HINTS[pillarName] || '';
+            const narrativeScene = randomNarrativeScene(pillarName);
             const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
 This image accompanies this specific tweet from @inclawbator:
@@ -311,7 +368,9 @@ ${BRAND_IMAGE_CONTEXT}
 
 ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
 
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point.
+${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
+
+IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point. Draw from the narrative scene for specific settings and character details.
 
 Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
 
@@ -535,17 +594,20 @@ ${BRAND_IMAGE_CONTEXT}
 BASE SCENE for today's pillar (${pillar.name}) — adapt this to each tweet's specific content:
 ${PILLAR_SCENE_HINTS[pillar.name] || 'Use the brand mascot in a relevant pose for the content.'}
 
-CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. If the tweet mentions a specific app, the image should show the lobster presenting that app. If it mentions a builder, show the lobster building. If it mentions staking, show the lobster with charts. Don't just repeat the same generic scene for every tweet.
+NARRATIVE WORLD (use these scenes as inspiration — pull locations, characters, props, and moods to make each image vivid and unique):
+${(NARRATIVE_SCENES[pillar.name] || []).join('\n- ')}
+
+CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. Draw from the narrative scenes above for specific settings, supporting characters (Crab Engineer, Shrimp Newbie, Mini Lobsters, etc.), and locations (The Workshop, The Reef, The Lounge, etc.). Don't just repeat the same generic scene for every tweet.
 
 EXAMPLE of a good pair:
 TWEET: @itsEvilDuck just shipped ClawsNet on inclawbate. social network built entirely with AI. wild.
-IMAGE: 3D rendered Inclawbate lobster mascot in presenter pose, one claw gesturing proudly toward a large floating holographic social network interface with glowing connection nodes and profile cards. Dark void background with coral (#e5533d) rim lighting on the lobster's glossy shell and teal (#4db6ac) data streams flowing between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
+IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, proudly presenting a holographic social network interface to the Crab Engineer who gives a thumbs-up. Glowing connection nodes and profile cards float around. Dark void background with coral (#e5533d) rim lighting on the glossy shell and teal (#4db6ac) data streams between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentence image prompt — must reference the 3D lobster mascot, dark background, coral+teal lighting, and visually match the tweet's content]
+IMAGE: [2-3 sentence image prompt — 3D lobster mascot in a narrative location, dark background, coral+teal lighting, supporting characters where relevant, visually matching the tweet's content]
 
 Output ONLY the numbered entries. Nothing else.`;
 
