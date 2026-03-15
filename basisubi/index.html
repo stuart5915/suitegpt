@@ -1917,34 +1917,52 @@
                         </div>
                     </div>
 
-                    <!-- Tracked position range visual -->
+                    <!-- Track a position — input any wallet -->
                     <div class="mirror-tracked" id="mv-tracked-section">
                         <div class="mirror-tracked-header">
                             <div>
-                                <div class="mirror-tracked-label">Tracked Position</div>
-                                <div class="mirror-tracked-wallet" id="mv-tracked-wallet">--</div>
-                            </div>
-                            <div class="mirror-range-synced synced" id="mv-sync-status">
-                                <span class="pulse" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span>
-                                Synced
+                                <div class="mirror-tracked-label">Track a Position</div>
+                                <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;">Paste any wallet address to preview their Aerodrome ETH/USDC LP position</div>
                             </div>
                         </div>
-                        <div class="mirror-range-visual">
-                            <div class="mirror-range-bar-outer" id="mv-range-bar">
-                                <div class="mirror-range-fill-leader" id="mv-range-leader" style="left:10%;width:80%"></div>
-                                <div class="mirror-range-fill-vault" id="mv-range-vault" style="left:10%;width:80%"></div>
-                                <div class="mirror-range-current" id="mv-range-current" style="left:50%"></div>
+
+                        <!-- Wallet input -->
+                        <div class="mirror-input-row" style="margin-top:14px;">
+                            <div class="mirror-input-wrap">
+                                <input type="text" class="mirror-input" id="mv-track-address" placeholder="0x... wallet address to mirror" spellcheck="false" autocomplete="off" style="padding-right:16px; font-size:0.82rem;">
                             </div>
-                            <div class="mirror-range-labels">
-                                <span id="mv-range-low">$--</span>
-                                <span>ETH Price: <strong id="mv-eth-price">$--</strong></span>
-                                <span id="mv-range-high">$--</span>
-                            </div>
+                            <button class="mirror-submit" id="mv-track-btn" onclick="mirrorTrackLookup()" style="background:linear-gradient(135deg,var(--accent),var(--cyan));">Find Positions</button>
                         </div>
-                        <div class="mirror-range-legend">
-                            <span><span class="mirror-range-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></span> Leader range</span>
-                            <span><span class="mirror-range-legend-dot" style="background:var(--green)"></span> Vault range</span>
-                            <span><span class="mirror-range-legend-dot" style="background:var(--text)"></span> Current price</span>
+                        <div style="text-align:center; font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin:-4px 0 8px;">or connect your wallet above to use your own address</div>
+                        <div class="mirror-status-msg" id="mv-track-status"></div>
+
+                        <!-- Position results (populated by JS) -->
+                        <div id="mv-track-results"></div>
+
+                        <!-- Range visual (shows after a position is selected) -->
+                        <div id="mv-range-section" style="display:none; margin-top:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                                <div style="font-family:var(--mono); font-size:0.72rem; color:var(--accent-bright); text-transform:uppercase; letter-spacing:0.06em;">Selected Position</div>
+                                <div class="mirror-range-synced synced" id="mv-sync-status">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span>
+                                    <span id="mv-range-status-text">In Range</span>
+                                </div>
+                            </div>
+                            <div class="mirror-range-visual">
+                                <div class="mirror-range-bar-outer" id="mv-range-bar">
+                                    <div class="mirror-range-fill-leader" id="mv-range-leader" style="left:10%;width:80%"></div>
+                                    <div class="mirror-range-current" id="mv-range-current" style="left:50%"></div>
+                                </div>
+                                <div class="mirror-range-labels">
+                                    <span id="mv-range-low">$--</span>
+                                    <span>ETH Price: <strong id="mv-eth-price">$--</strong></span>
+                                    <span id="mv-range-high">$--</span>
+                                </div>
+                            </div>
+                            <div class="mirror-range-legend">
+                                <span><span class="mirror-range-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></span> Position range</span>
+                                <span><span class="mirror-range-legend-dot" style="background:var(--text)"></span> Current ETH price</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -7645,6 +7663,229 @@
             if (n >= 1e3) return '$' + (n / 1e3).toFixed(2) + 'K';
             return '$' + n.toFixed(2);
         }
+
+        // ── Position Tracker (works without deployed contract) ──
+        var AERO_FACTORY = '0xeC8E5342B19977B4eF8892e02D8DAEcfa1315831';
+        var AERO_NPM = '0x827922686190790b37229fd06084350E74485b72';
+        var TICK_SPACING = 100;
+
+        var NPM_ABI = [
+            'function balanceOf(address) view returns (uint256)',
+            'function tokenOfOwnerByIndex(address,uint256) view returns (uint256)',
+            'function positions(uint256) view returns (uint96 nonce, address operator, address token0, address token1, int24 tickSpacing, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)'
+        ];
+        var FACTORY_ABI = ['function getPool(address,address,int24) view returns (address)'];
+
+        function getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liquidity) {
+            var liq = Number(liquidity);
+            var sqrtP = Number(sqrtPriceX96);
+            if (sqrtA > sqrtB) { var tmp = sqrtA; sqrtA = sqrtB; sqrtB = tmp; }
+            var Q96 = 2 ** 96;
+            var amount0 = 0, amount1 = 0;
+            if (sqrtP <= sqrtA) {
+                amount0 = liq * Q96 * (sqrtB - sqrtA) / (sqrtA * sqrtB);
+            } else if (sqrtP < sqrtB) {
+                amount0 = liq * Q96 * (sqrtB - sqrtP) / (sqrtP * sqrtB);
+                amount1 = liq * (sqrtP - sqrtA) / Q96;
+            } else {
+                amount1 = liq * (sqrtB - sqrtA) / Q96;
+            }
+            return { amount0: amount0, amount1: amount1 };
+        }
+
+        function tickToSqrt(tick) {
+            return Math.sqrt(Math.pow(1.0001, tick)) * (2 ** 96);
+        }
+
+        window.mirrorTrackLookup = async function() {
+            var input = document.getElementById('mv-track-address');
+            var addr = (input.value || '').trim();
+            if (!addr && window._navWalletAddress) addr = window._navWalletAddress;
+            if (!addr || !addr.match(/^0x[a-fA-F0-9]{40}$/)) {
+                document.getElementById('mv-track-status').textContent = 'Enter a valid wallet address or connect your wallet.';
+                return;
+            }
+
+            var statusEl = document.getElementById('mv-track-status');
+            var resultsEl = document.getElementById('mv-track-results');
+            var btn = document.getElementById('mv-track-btn');
+            statusEl.textContent = 'Scanning Aerodrome positions...';
+            statusEl.style.color = '';
+            resultsEl.innerHTML = '';
+            document.getElementById('mv-range-section').style.display = 'none';
+            btn.disabled = true;
+
+            try {
+                var p = readProvider();
+                var npm = new ethers.Contract(AERO_NPM, NPM_ABI, p);
+                var factory = new ethers.Contract(AERO_FACTORY, FACTORY_ABI, p);
+                var pool = new ethers.Contract(POOL_ADDR, POOL_ABI, p);
+
+                var [slot0, token0, balance] = await Promise.all([
+                    pool.slot0(), pool.token0(), npm.balanceOf(addr)
+                ]);
+
+                var sqrtPriceX96 = slot0[0];
+                var currentTick = Number(slot0[1]);
+                var wethIs0 = token0.toLowerCase() === WETH_ADDR.toLowerCase();
+                var ethPrice = sqrtPriceToEthUsd(sqrtPriceX96, wethIs0);
+                var bal = Number(balance);
+
+                if (bal === 0) {
+                    statusEl.textContent = 'No Aerodrome positions found for this wallet.';
+                    btn.disabled = false;
+                    return;
+                }
+
+                statusEl.textContent = 'Found ' + bal + ' position' + (bal === 1 ? '' : 's') + '. Filtering ETH/USDC...';
+
+                // Fetch all token IDs
+                var idPromises = [];
+                for (var i = 0; i < bal; i++) idPromises.push(npm.tokenOfOwnerByIndex(addr, i));
+                var tokenIds = await Promise.all(idPromises);
+
+                // Fetch all positions
+                var posPromises = tokenIds.map(function(id) { return npm.positions(id); });
+                var positions = await Promise.all(posPromises);
+
+                // Filter to ETH/USDC with liquidity > 0
+                var ethUsdcPos = [];
+                for (var j = 0; j < positions.length; j++) {
+                    var pos = positions[j];
+                    var t0 = pos[2].toLowerCase(), t1 = pos[3].toLowerCase();
+                    var isMatch = (t0 === WETH_ADDR.toLowerCase() && t1 === USDC_ADDR.toLowerCase())
+                        || (t0 === USDC_ADDR.toLowerCase() && t1 === WETH_ADDR.toLowerCase());
+                    if (isMatch && Number(pos[7]) > 0) {
+                        ethUsdcPos.push({ tokenId: tokenIds[j], pos: pos });
+                    }
+                }
+
+                if (ethUsdcPos.length === 0) {
+                    statusEl.textContent = 'No active ETH/USDC positions found. This wallet may have positions in other pools.';
+                    btn.disabled = false;
+                    return;
+                }
+
+                statusEl.textContent = ethUsdcPos.length + ' ETH/USDC position' + (ethUsdcPos.length === 1 ? '' : 's') + ' found. Select one to preview mirroring.';
+
+                // Render position cards
+                ethUsdcPos.forEach(function(item) {
+                    var pos = item.pos;
+                    var tickLower = Number(pos[5]);
+                    var tickUpper = Number(pos[6]);
+                    var liquidity = pos[7];
+
+                    var sqrtA = tickToSqrt(tickLower);
+                    var sqrtB = tickToSqrt(tickUpper);
+                    var amounts = getAmountsForLiquidity(Number(sqrtPriceX96), sqrtA, sqrtB, liquidity);
+
+                    var wethAmt, usdcAmt;
+                    if (wethIs0) {
+                        wethAmt = amounts.amount0 / 1e18;
+                        usdcAmt = amounts.amount1 / 1e6;
+                    } else {
+                        usdcAmt = amounts.amount0 / 1e6;
+                        wethAmt = amounts.amount1 / 1e18;
+                    }
+
+                    var totalValue = (wethAmt * ethPrice) + usdcAmt;
+                    var lowerPrice = tickToPrice(wethIs0 ? tickLower : -tickUpper, true);
+                    var upperPrice = tickToPrice(wethIs0 ? tickUpper : -tickLower, true);
+                    var inRange = currentTick >= tickLower && currentTick < tickUpper;
+
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:10px;cursor:pointer;transition:all 0.2s;';
+                    card.onmouseenter = function() { this.style.borderColor = 'var(--accent)'; this.style.transform = 'translateY(-1px)'; };
+                    card.onmouseleave = function() { this.style.borderColor = 'var(--border)'; this.style.transform = 'none'; };
+
+                    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+                        + '<div style="font-family:var(--font-display);font-weight:700;">ETH / USDC <span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-dim);margin-left:6px;">NFT #' + item.tokenId.toString() + '</span></div>'
+                        + '<span style="font-family:var(--mono);font-size:0.68rem;padding:3px 10px;border-radius:20px;font-weight:600;'
+                        + (inRange ? 'color:var(--green);border:1px solid var(--green-dim);background:var(--green-dim);' : 'color:#ff6450;border:1px solid rgba(255,100,80,0.2);background:rgba(255,100,80,0.06);')
+                        + '">' + (inRange ? '&#x25CF; In Range' : '&#x25CF; Out of Range') + '</span>'
+                        + '</div>'
+                        + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">'
+                        + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;">'
+                        + '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;">Value</div>'
+                        + '<div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;">' + fmtUsd(totalValue) + '</div>'
+                        + '</div>'
+                        + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;">'
+                        + '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;">Range</div>'
+                        + '<div style="font-family:var(--mono);font-size:0.78rem;font-weight:600;">$' + Math.round(lowerPrice).toLocaleString() + ' — $' + Math.round(upperPrice).toLocaleString() + '</div>'
+                        + '</div>'
+                        + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;">'
+                        + '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;">ETH / USDC</div>'
+                        + '<div style="font-family:var(--mono);font-size:0.78rem;font-weight:600;">' + wethAmt.toFixed(4) + ' / ' + usdcAmt.toFixed(2) + '</div>'
+                        + '</div></div>'
+                        + '<div style="text-align:center;margin-top:10px;font-family:var(--mono);font-size:0.68rem;color:var(--accent-bright);">Click to preview mirroring this position</div>';
+
+                    // Click handler — show range visualization
+                    card.onclick = (function(tl, tu, lp, up, ir, ep, tid) {
+                        return function() {
+                            selectMirrorPosition(tl, tu, lp, up, ir, ep, tid, addr);
+                        };
+                    })(tickLower, tickUpper, lowerPrice, upperPrice, inRange, ethPrice, item.tokenId);
+
+                    resultsEl.appendChild(card);
+                });
+
+            } catch(e) {
+                console.error('Mirror track error:', e);
+                statusEl.textContent = 'Error: ' + (e.reason || e.message);
+                statusEl.style.color = '#ff6450';
+            }
+            btn.disabled = false;
+        };
+
+        function selectMirrorPosition(tickLower, tickUpper, lowerPrice, upperPrice, inRange, ethPrice, tokenId, wallet) {
+            var rangeSection = document.getElementById('mv-range-section');
+            rangeSection.style.display = '';
+
+            // Status
+            var statusEl = document.getElementById('mv-sync-status');
+            var statusText = document.getElementById('mv-range-status-text');
+            if (inRange) {
+                statusEl.className = 'mirror-range-synced synced';
+                statusText.textContent = 'In Range';
+            } else {
+                statusEl.className = 'mirror-range-synced desynced';
+                statusText.textContent = 'Out of Range';
+            }
+
+            // Range bar
+            var allLow = Math.min(lowerPrice, ethPrice);
+            var allHigh = Math.max(upperPrice, ethPrice);
+            var span = allHigh - allLow;
+            var vizLow = allLow - span * 0.2;
+            var vizHigh = allHigh + span * 0.2;
+            var vizSpan = vizHigh - vizLow;
+
+            if (vizSpan > 0) {
+                var lL = ((lowerPrice - vizLow) / vizSpan) * 100;
+                var lW = ((upperPrice - lowerPrice) / vizSpan) * 100;
+                document.getElementById('mv-range-leader').style.cssText = 'left:' + lL + '%;width:' + lW + '%';
+
+                var cPos = ((ethPrice - vizLow) / vizSpan) * 100;
+                document.getElementById('mv-range-current').style.left = Math.max(2, Math.min(98, cPos)) + '%';
+            }
+
+            document.getElementById('mv-range-low').textContent = '$' + Math.round(lowerPrice).toLocaleString();
+            document.getElementById('mv-range-high').textContent = '$' + Math.round(upperPrice).toLocaleString();
+            document.getElementById('mv-eth-price').textContent = '$' + ethPrice.toFixed(2);
+
+            // Update tracked wallet display in stats
+            var shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+            document.getElementById('mv-track-status').textContent = 'Selected: NFT #' + tokenId.toString() + ' from ' + shortWallet + ' — this is the position the vault would mirror.';
+            document.getElementById('mv-track-status').style.color = 'var(--green)';
+
+            // Scroll range into view
+            rangeSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Allow Enter key
+        document.getElementById('mv-track-address').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') mirrorTrackLookup();
+        });
 
         // Tab switching
         window.mirrorSwitchTab = function(tab) {
