@@ -9,6 +9,7 @@
 
 | # | Task | Status | Why it matters |
 |---|------|--------|----------------|
+| 0 | **Inclawbator — make it PERFECT** | in-progress | 26 tools live, promo system, human directory, V3 contracts ready. Deploy V3 contracts, build fee report endpoint, test all flows end-to-end. THE core product. |
 | 1 | Coinbase Commerce integration (fiat on-ramp) | todo | Deadline March 31. Unlocks non-crypto users. Biggest growth lever. |
 | 2 | Automated ETH/USDC concentrated LP manager | in-progress | Performance fees buy back CLAWS. Passive revenue. |
 | 4 | CLAWS tokenomics article — announce 1yr LP lock, supply, revenue goal | done | Builds investor/community confidence. |

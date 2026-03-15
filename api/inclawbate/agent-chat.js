@@ -35,6 +35,14 @@ CHECK STAKING STATS — When someone asks about staking performance, TVL, APY, o
 
 PROMOTE YOUR PROJECT — When someone wants to promote their project through the @inclawbate X account, use book_promo to show tiers and pricing. Projects can pay CLAWS to get promotional posts on the Inclawbate X schedule.
 
+AIRDROP / DISTRIBUTE — When someone wants to airdrop or distribute tokens to multiple wallets, use disperse_tokens. Uses the Disperse contract for gas-efficient batch transfers.
+
+DEPLOY STAKING — When someone wants to create a staking pool for their token, use deploy_staking. Staking pools are deployed via the Staking Factory with automatic CLAWS reward funding.
+
+PROJECT HEALTH CHECK — When someone asks how their project is doing, use health_check with their token address and/or wallet. Pulls live data from DexScreener + staking + project registry.
+
+CHECK HIRE STATUS — When someone asks about a hire they made, use check_hire_status to guide them.
+
 FULL-SERVICE INCUBATION — ONLY when someone wants the team to handle everything (token + staking + branding + marketing as a package). Use get_incubation_info.
 
 WORKSPACE — If a wallet address is provided, use get_user_workspace to see what the user has built.
@@ -295,6 +303,61 @@ const TOOLS = [
         properties: {
           project_name: { type: 'string', description: 'Name of the project to promote' },
           tier: { type: 'string', enum: ['shoutout', 'campaign', 'featured'], description: 'Promo tier if already chosen' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'disperse_tokens',
+      description: 'Airdrop or distribute tokens to multiple wallets in one transaction using the Disperse contract. Use when someone wants to airdrop, distribute, or send tokens to a list of addresses.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token_address: { type: 'string', description: 'Token contract address to distribute' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'deploy_staking',
+      description: 'Deploy a staking pool for a token via the Staking Factory. The pool lets holders stake the token and earn CLAWS rewards. Use when someone wants to create a staking pool or add staking to their project.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token_address: { type: 'string', description: 'Token contract address to create staking for' },
+          project_name: { type: 'string', description: 'Project name for context' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'health_check',
+      description: 'Run a comprehensive health check on a project — token price, volume, staking stats, and actionable suggestions. Use when someone asks how their project is doing or wants an assessment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token_address: { type: 'string', description: 'Token contract address to check' },
+          wallet: { type: 'string', description: 'Creator wallet for project lookup' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_hire_status',
+      description: 'Check the status of an active hire with an Inclawbator. Use when someone asks about a hire they made or wants to follow up on work.',
+      parameters: {
+        type: 'object',
+        properties: {
+          handle: { type: 'string', description: 'X handle of the hired Inclawbator' },
+          wallet: { type: 'string', description: 'Wallet address of the person who hired' }
         }
       }
     }
@@ -738,6 +801,143 @@ function bookPromoInfo(args) {
   });
 }
 
+function disperseTokensInfo(args) {
+  return JSON.stringify({
+    action: 'open_airdrop',
+    how: 'Distribute tokens to multiple wallets in a single transaction using the Disperse contract on Base.',
+    steps: [
+      '1. Go to inclawbate.com/airdrop',
+      '2. Connect your wallet (must hold the tokens)',
+      '3. Enter the token contract address' + (args.token_address ? ' (' + args.token_address + ')' : ''),
+      '4. Paste your recipient list (address, amount — one per line)',
+      '5. Approve the token spend, then execute the batch transfer',
+      '6. All recipients receive tokens in one transaction'
+    ],
+    contract: '0xD152f549545093347A162Dce210e7293f1452150',
+    url: 'https://inclawbate.com/airdrop',
+    note: 'Disperse batches up to 200 recipients per transaction. For larger lists, it auto-splits into multiple batches.',
+    token: args.token_address || null
+  });
+}
+
+function deployStakingInfo(args) {
+  return JSON.stringify({
+    action: 'deploy_staking_pool',
+    how: 'Deploy a staking pool where holders stake your token and earn CLAWS rewards — powered by the automated reward flywheel.',
+    process: [
+      '1. Your token must be deployed on Base already',
+      '2. Contact the Inclawbate team (Telegram: @StuartDeFi) or register through the Inclawbator',
+      '3. We deploy a staking pool via the Staking Factory — linked to your token',
+      '4. inclawbate.base.eth is auto-registered as a reward depositor',
+      '5. The CLAWS flywheel activates: 20% of your token\'s LP fees auto-convert to CLAWS and fund staker rewards',
+      '6. Your staking page goes live at inclawbate.com/stake'
+    ],
+    whats_included: [
+      'Staking contract (Synthetix-style reward drip)',
+      'Dual depositor: you + inclawbate.base.eth both authorized to deposit rewards',
+      'Auto CLAWS reward pipeline from LP trading fees',
+      'Staking UI on inclawbate.com/stake',
+      'Analytics dashboard for TVL, APY, staker count'
+    ],
+    cost: 'Free — included with incubation. The 20% LP fee split funds the rewards.',
+    contact: { telegram: 'https://t.me/StuartDeFi', x: 'https://x.com/stuman' },
+    token: args.token_address || null,
+    project: args.project_name || null
+  });
+}
+
+async function healthCheck(args) {
+  const results = { token: null, staking: null, project: null, suggestions: [] };
+
+  // Token analytics from DexScreener
+  if (args.token_address) {
+    try {
+      const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + args.token_address);
+      const data = await res.json();
+      const pairs = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'solana');
+      if (pairs.length) {
+        const top = pairs[0];
+        results.token = {
+          name: top.baseToken?.name,
+          symbol: top.baseToken?.symbol,
+          price: top.priceUsd || 'N/A',
+          change_24h: top.priceChange?.h24 || 'N/A',
+          volume_24h: top.volume?.h24 || 0,
+          liquidity: top.liquidity?.usd || 0,
+          fdv: top.fdv || 0
+        };
+        // Suggestions based on data
+        if ((top.volume?.h24 || 0) < 100) results.suggestions.push('Volume is very low — consider promoting your token or adding liquidity');
+        if ((top.liquidity?.usd || 0) < 1000) results.suggestions.push('Liquidity is thin — consider adding more LP to reduce slippage');
+        if ((top.priceChange?.h24 || 0) < -20) results.suggestions.push('Price dropped significantly — engage your community and highlight upcoming developments');
+      } else {
+        results.suggestions.push('No trading pairs found on DexScreener — your token may not be listed yet');
+      }
+    } catch (e) {}
+  }
+
+  // Staking stats
+  try {
+    const stakingRes = await fetch(APP_API + '/staking');
+    const stakingData = await stakingRes.json();
+    if (stakingData.treasury) {
+      results.staking = {
+        total_stakers: stakingData.treasury.total_stakers || 0,
+        tvl_usd: stakingData.treasury.tvl_usd || 0,
+        apy: stakingData.treasury.estimated_apy || 'N/A',
+        total_distributed: stakingData.treasury.total_distributed || 0
+      };
+    }
+  } catch (e) {}
+
+  // Project info
+  if (args.wallet) {
+    try {
+      const projRes = await fetch(APP_API + '/inclawbator?wallet=' + encodeURIComponent(args.wallet));
+      const projData = await projRes.json();
+      const projects = projData.projects || projData || [];
+      if (projects.length) {
+        results.project = projects.map(p => ({
+          name: p.token_name || p.project_name,
+          status: p.status,
+          agent: p.agent_enabled ? 'Active' : 'Not set up',
+          staking: p.staking_address ? 'Live' : 'Not deployed'
+        }));
+        // Suggestions
+        const p = projects[0];
+        if (!p.agent_enabled) results.suggestions.push('Set up an X marketing agent — free automated posting');
+        if (!p.staking_address) results.suggestions.push('Deploy a staking pool to activate the CLAWS reward flywheel');
+      }
+    } catch (e) {}
+  }
+
+  if (!results.suggestions.length) results.suggestions.push('Everything looks healthy! Keep building and engaging your community.');
+
+  return JSON.stringify({
+    health_report: results,
+    overall: results.suggestions.length <= 1 ? 'Healthy' : 'Needs attention',
+    suggestion_count: results.suggestions.length
+  });
+}
+
+function checkHireStatusInfo(args) {
+  return JSON.stringify({
+    action: 'check_hire',
+    how: 'Check on the status of your hire with an Inclawbator.',
+    process: [
+      '1. Go to your Inclawbate dashboard',
+      '2. Check the "Hires" or "Conversations" section',
+      '3. You can message your Inclawbator directly through the platform',
+      '4. They\'ll respond via the platform or Telegram'
+    ],
+    handle: args.handle || null,
+    dashboard_url: 'https://inclawbate.com/dashboard',
+    note: args.handle
+      ? 'Check your conversation with @' + args.handle.replace(/^@/, '') + ' in your dashboard.'
+      : 'Go to your dashboard to see all active hires and conversations.'
+  });
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'browse_apps': return await browseApps(args);
@@ -761,6 +961,10 @@ async function executeTool(name, args) {
     case 'register_project': return registerProjectInfo(args);
     case 'get_staking_stats': return await getStakingStats(args);
     case 'book_promo': return bookPromoInfo(args);
+    case 'disperse_tokens': return disperseTokensInfo(args);
+    case 'deploy_staking': return deployStakingInfo(args);
+    case 'health_check': return await healthCheck(args);
+    case 'check_hire_status': return checkHireStatusInfo(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }

@@ -323,7 +323,7 @@ Project stakers earn CLAWS automatically
 | `openclaw-skill/inclawnch-analytics/SKILL.md` | Token analytics skill spec |
 | `openclaw-skill/inclawnch-staking/SKILL.md` | Staking skill spec |
 
-### Current Agent Functions (in agent-chat.js — 21 tools)
+### Current Agent Functions (in agent-chat.js — 26 tools, ALL LIVE)
 
 | Function | Params | Backend | Status |
 |----------|--------|---------|--------|
@@ -347,17 +347,24 @@ Project stakers earn CLAWS automatically
 | `build_landing_page` | project_name?, description? | Opens /build in new tab | Live |
 | `register_project` | project_name?, token_address?, chain? | Guides registration process | Live |
 | `get_staking_stats` | wallet? | `/api/inclawbate/staking` (live TVL, APY, wallet position) | Live |
-| `book_promo` | project_name?, tier? | Shows promo tiers + booking process | Live |
+| `book_promo` | project_name?, tier? | Shows promo tiers + booking process, `/api/inclawbate/promo` | Live |
+| `disperse_tokens` | token_address? | Opens /airdrop page (Disperse contract on Base) | Live |
+| `deploy_staking` | token_address?, project_name? | Guides staking pool deployment via factory | Live |
+| `health_check` | token_address?, wallet? | Composite: DexScreener + staking + project data | Live |
+| `check_hire_status` | handle?, wallet? | Guides to dashboard conversations | Live |
 
-### Functions Still Needed
+### Functions Remaining (future)
 
 | Function | Params | Backend |
 |----------|--------|---------|
-| `deploy_staking` | token_address, reward_token? | Needs StakingFactory v3 contract update |
-| `get_fee_report` | project_id | New endpoint needed |
-| `disperse_tokens` | token_address, recipients[] | 0x + Disperse.app |
-| `health_check` | project_id | Composite: DexScreener + staking + X metrics |
-| `check_hire_status` | conversation_id | `/api/inclawbate/messages` |
+| `get_fee_report` | project_id | New endpoint needed — show 80/20 fee revenue breakdown |
+
+### Contracts (V3 — ready to deploy)
+
+| Contract | File | What's new |
+|----------|------|------------|
+| `ClawnchRewardsV3.sol` | `inclawbate/contracts/contracts/ClawnchRewardsV3.sol` | Multi-depositor: `rewardDepositors` mapping, `grantRewardDepositor()`, `revokeRewardDepositor()`, `initializeWithDepositor()` for factory |
+| `StakingFactoryV3.sol` | `inclawbate/contracts/contracts/StakingFactoryV3.sol` | Accepts `platformDepositor` in constructor, auto-grants `inclawbate.base.eth` on every new pool via `initializeWithDepositor()` |
 
 ### Backend Actions (inclawbator.js)
 
