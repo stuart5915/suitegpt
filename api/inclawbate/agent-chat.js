@@ -25,6 +25,8 @@ FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis.
 
 EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
 
+HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees.
+
 FULL-SERVICE INCUBATION — ONLY when someone wants the team to handle everything (token + staking + branding + marketing as a package). Use get_incubation_info.
 
 WORKSPACE — If a wallet address is provided, use get_user_workspace to see what the user has built.
@@ -165,6 +167,55 @@ const TOOLS = [
           wallet: { type: 'string', description: 'The user wallet address (0x...)' }
         },
         required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_token_analytics',
+      description: 'Get real-time token price, volume, liquidity from DexScreener. Use when someone asks about a token\'s performance, price, or trading activity.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token_address: { type: 'string', description: 'Token contract address' }
+        },
+        required: ['token_address']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setup_x_agent',
+      description: 'Get info on setting up an X/Twitter marketing agent for a project. Use when someone wants automated posting, marketing, or X presence.',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_project_status',
+      description: 'Check the status of all projects launched by a wallet — tokens, staking, chain. Use when someone asks about their project status or wants to see what they\'ve launched.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Creator wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'browse_inclawbators',
+      description: 'Search for human Inclawbators available for hire — designers, developers, marketers, content writers. Use when someone needs help that requires a human (logo, branding, smart contracts, marketing strategy).',
+      parameters: {
+        type: 'object',
+        properties: {
+          skill: { type: 'string', description: 'Specialty filter: design, development, marketing, content, strategy' }
+        }
       }
     }
   }
@@ -397,6 +448,100 @@ async function getUserWorkspace(args) {
   });
 }
 
+async function getTokenAnalytics(args) {
+  const address = args.token_address || '';
+  if (!address) return JSON.stringify({ error: 'Token address required' });
+  try {
+    const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + address);
+    const data = await res.json();
+    const pairs = (data.pairs || []).filter(p => p.chainId === 'base' || p.chainId === 'solana');
+    if (!pairs.length) return JSON.stringify({ message: 'No trading pairs found for this token on DexScreener', token_address: address });
+    const top = pairs[0];
+    return JSON.stringify({
+      token: top.baseToken?.name || 'Unknown',
+      symbol: top.baseToken?.symbol || '?',
+      chain: top.chainId,
+      price_usd: top.priceUsd || 'N/A',
+      price_change_24h: top.priceChange?.h24 || 'N/A',
+      volume_24h: top.volume?.h24 || 0,
+      liquidity_usd: top.liquidity?.usd || 0,
+      fdv: top.fdv || 0,
+      pair_url: top.url || '',
+      dex: top.dexId || ''
+    });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch token analytics' });
+  }
+}
+
+function setupXAgentInfo() {
+  return JSON.stringify({
+    action: 'open_marketing_agents',
+    how: 'Create an AI agent that auto-posts to X/Twitter about your project. Free forever — up to 3 posts/day + auto-replies.',
+    steps: [
+      '1. Go to the Agents tab or say "take me to agents"',
+      '2. Click "+ Create Agent"',
+      '3. Name it, pick a vibe (degen, hype, chill, pro, meme)',
+      '4. Connect your X account via OAuth',
+      '5. Set posting schedule (1-48 posts/day)',
+      '6. Preview drafts before they go live'
+    ],
+    url: 'https://inclawbate.com/agents',
+    note: 'Agents are completely free. They post on your behalf using AI-generated content tailored to your project.'
+  });
+}
+
+async function getProjectStatus(args) {
+  const wallet = (args.wallet || '').toLowerCase();
+  if (!wallet) return JSON.stringify({ error: 'Wallet address required' });
+  try {
+    const res = await fetch(APP_API + '/inclawbator?wallet=' + encodeURIComponent(wallet));
+    const data = await res.json();
+    const projects = (data.projects || data || []);
+    if (!projects.length) return JSON.stringify({ message: 'No projects found for this wallet. Launch a token to get started!' });
+    const summary = projects.map(p => ({
+      name: p.token_name || p.project_name,
+      symbol: p.token_symbol,
+      chain: p.chain || 'base',
+      token_address: p.token_address,
+      staking: p.staking_address ? 'Live' : 'Not deployed',
+      status: p.status || 'active',
+      created: p.created_at
+    }));
+    return JSON.stringify({ project_count: summary.length, projects: summary });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch project status' });
+  }
+}
+
+async function browseInclawbators(args) {
+  try {
+    let url = APP_API + '/humans?sort=hires&limit=8';
+    if (args.skill) url += '&skill=' + encodeURIComponent(args.skill);
+    const res = await fetch(url);
+    const data = await res.json();
+    const profiles = (data.profiles || []).filter(p => p.availability !== 'unavailable').slice(0, 6).map(p => ({
+      name: p.display_name || p.x_name || p.x_handle,
+      handle: p.x_handle ? '@' + p.x_handle : null,
+      skills: (p.skills || []).slice(0, 4),
+      tagline: (p.tagline || '').slice(0, 100),
+      availability: p.availability || 'available',
+      hires: p.hire_count || 0,
+      earned: p.total_paid ? Math.round(p.total_paid) + ' CLAWS' : '0 CLAWS'
+    }));
+    if (!profiles.length) return JSON.stringify({ message: 'No Inclawbators found matching that skill. Check the full directory at inclawbate.com/inclawbator' });
+    return JSON.stringify({
+      action: 'show_inclawbators',
+      count: profiles.length,
+      inclawbators: profiles,
+      directory_url: 'https://inclawbate.com/inclawbator',
+      payment: 'CLAWS token, direct wallet-to-wallet, zero platform fee'
+    });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch Inclawbators', directory_url: 'https://inclawbate.com/inclawbator' });
+  }
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'browse_apps': return await browseApps(args);
@@ -411,6 +556,10 @@ async function executeTool(name, args) {
     case 'get_basis_vaults': return await getBasisVaults(args);
     case 'get_staking_info': return getStakingInfo();
     case 'get_user_workspace': return await getUserWorkspace(args);
+    case 'get_token_analytics': return await getTokenAnalytics(args);
+    case 'setup_x_agent': return setupXAgentInfo();
+    case 'get_project_status': return await getProjectStatus(args);
+    case 'browse_inclawbators': return await browseInclawbators(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
