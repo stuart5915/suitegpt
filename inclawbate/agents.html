@@ -1985,10 +1985,72 @@ document.getElementById('chatForm').addEventListener('submit', function(e) {
     e.preventDefault();
     chatSendMessage(document.getElementById('chatInput').value);
 });
+// Pre-loaded chip actions — no API call needed
+var CHIP_ACTIONS = {
+    'I want to launch a new token': {
+        reply: 'Let\'s launch your token! Fill out the form above — pick Base or Solana, enter your token details, and hit Deploy.',
+        action: function() { showLaunchPanel(); }
+    },
+    'I want to create a staking pool for my token': {
+        reply: 'To create a staking pool, you\'ll need a deployed token. The pool lets holders stake your token and earn CLAWS rewards automatically from LP fees.',
+        action: function() { showLaunchPanel(); }
+    },
+    'Build me a landing page for my project': {
+        reply: 'Opening the landing page builder — describe your project and AI will generate a custom page for you.',
+        action: function() { window.open('/build', '_blank'); }
+    },
+    'I want to promote my project on Inclawbate\'s X': {
+        reply: 'We offer 3 promo tiers:\n\n**Shoutout** (10K CLAWS) — 1 post on @inclawbate\n**Campaign** (40K CLAWS) — 5 posts over a week\n**Featured** (100K CLAWS) — daily posts for 2 weeks\n\nSend CLAWS to inclawbate.base.eth and share the tx hash to book your slot.',
+        action: null
+    },
+    'Set up an AI agent for my project': {
+        reply: 'AI agents auto-post on X, engage with your community, and grow your project. Launch a token first, then we\'ll set up your agent with 10 free credits.',
+        action: function() {
+            var ms = document.getElementById('marketingSection');
+            if (ms) { ms.style.display = ''; if (!ms.classList.contains('open')) ms.classList.add('open'); ms.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        }
+    },
+    'How is my project doing? Run a health check': {
+        reply: 'To run a health check I need your token address. Type it in the chat and I\'ll pull analytics from DexScreener, staking stats, and project status.',
+        action: null
+    },
+    'I need a designer for my project': {
+        reply: 'Browse the Inclawbators directory below — real humans available for branding, strategy, dev, and more. Click "Hire" on anyone to get started.',
+        action: function() {
+            var is = document.getElementById('inclawbatorsSection');
+            if (is) { is.style.display = ''; is.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        }
+    },
+    'I want to airdrop tokens to my community': {
+        reply: 'Opening the Disperse tool — swap and distribute tokens to multiple wallets in one transaction on Base.',
+        action: function() { showDispersePanel(); }
+    },
+    'Show me the best yield vaults': {
+        reply: 'Check out the [Vaults page](/vaults) for active yield opportunities. Our automated LP manager earns fees and buys back CLAWS.',
+        action: null
+    },
+    'Browse apps in the store': {
+        reply: 'Browse 98+ apps on the [Apps page](/apps) — games, tools, dashboards, all built on Inclawbate.',
+        action: null
+    },
+    'Show me staking stats and APY': {
+        reply: 'View live staking stats on the [Stake page](/stake) — TVL, APY, and your wallet position for every pool.',
+        action: null
+    }
+};
+
 document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
     chip.addEventListener('click', function() {
         var prompt = chip.getAttribute('data-prompt') || chip.textContent.trim();
-        if (prompt) chatSendMessage(prompt);
+        if (!prompt) return;
+        var preset = CHIP_ACTIONS[prompt];
+        if (preset) {
+            chatAddMessage(prompt, true);
+            chatAddMessage(preset.reply, false);
+            if (preset.action) preset.action();
+        } else {
+            chatSendMessage(prompt);
+        }
     });
 });
 
