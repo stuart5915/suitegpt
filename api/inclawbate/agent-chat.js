@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosy
 
 You are a knowledgeable guide across the ENTIRE Inclawbate ecosystem. You help people take action:
 
-LAUNCH A TOKEN — When someone wants to launch/create/deploy a token, first use launch_token_info to open the launch form. Then ask them for details: token name, symbol, and description (required). Also ask about optional fields: image URL, website, X handle, telegram. As you gather info, call configure_token_launch with whatever details you have so far — you can call it multiple times as you learn more. The form will auto-fill on their screen. When all required fields are filled, tell them to click Deploy. Do NOT send them to a different page.
+LAUNCH A TOKEN — When someone wants to launch/create/deploy a token, first use launch_token_info to open the launch form. Then ask them for details: token name, symbol, and description (required). Also ask which chain they want to launch on — Base (via Clanker, default) or Solana (via Bags/Meteora). Also ask about optional fields: image URL, website, X handle, telegram. As you gather info, call configure_token_launch with whatever details you have so far — you can call it multiple times as you learn more. Include the chain field if specified. The form will auto-fill on their screen. When all required fields are filled, tell them to click Deploy. Do NOT send them to a different page.
 
 BUILD AN APP — When someone wants to build/create an app, use build_app_info. They can use the AI app builder at inclawbate.com/build — no code needed.
 
@@ -124,7 +124,8 @@ const TOOLS = [
           image_url: { type: 'string', description: 'Token logo image URL' },
           website_url: { type: 'string', description: 'Project website URL' },
           x_handle: { type: 'string', description: 'X/Twitter handle' },
-          telegram_url: { type: 'string', description: 'Telegram group URL' }
+          telegram_url: { type: 'string', description: 'Telegram group URL' },
+          chain: { type: 'string', enum: ['base', 'solana'], description: 'Which chain to deploy on — base (Clanker) or solana (Bags/Meteora)' }
         }
       }
     }
@@ -250,6 +251,7 @@ function configureTokenLaunch(args) {
   if (args.website_url) fields.website_url = args.website_url;
   if (args.x_handle) fields.x_handle = args.x_handle.replace(/^@/, '');
   if (args.telegram_url) fields.telegram_url = args.telegram_url;
+  if (args.chain) fields.chain = args.chain;
   const filled = Object.keys(fields);
   const missing = ['token_name', 'token_symbol', 'description'].filter(f => !fields[f]);
   return JSON.stringify({

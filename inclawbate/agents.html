@@ -387,6 +387,28 @@
         }
         .launch-deploy-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .launch-deploy-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .launch-chain-toggle {
+            display: flex; gap: 4px; margin-bottom: 12px; padding: 3px;
+            background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+        .launch-chain-btn {
+            flex: 1; padding: 8px 4px; background: none; border: none;
+            border-radius: 6px; color: var(--text-dim); font-family: var(--font-body);
+            font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .launch-chain-btn:hover { color: var(--text-secondary); }
+        .launch-chain-btn.active { background: var(--accent-gradient); color: #fff; }
+        .launch-chain-btn img { width: 16px; height: 16px; border-radius: 50%; }
+        .solana-only { display: none; }
+        .launch-panel[data-chain="solana"] .solana-only { display: block; }
+        .launch-panel[data-chain="solana"] .base-only { display: none; }
+        .launch-fee-info {
+            font-size: 0.68rem; color: var(--text-dim); margin-bottom: 10px;
+            padding: 8px 10px; background: var(--bg-surface); border-radius: var(--radius-md);
+            line-height: 1.5;
+        }
 
         /* Marketing agents section */
         .marketing-agents-section { margin-bottom: var(--space-md); animation: fadeUp 0.5s ease 0.1s both; }
@@ -787,12 +809,20 @@
     <!-- ═══ THE INCLAWBATOR CHAT (hero) ═══ -->
     <section class="hub-chat-section">
         <!-- ═══ TOKEN LAUNCH PANEL ═══ -->
-        <div class="launch-panel" id="launchPanel" style="display:none">
+        <div class="launch-panel" id="launchPanel" style="display:none" data-chain="base">
             <div class="launch-panel-header">
                 <span>&#x1F680; Launch a Token</span>
                 <button class="launch-panel-close" onclick="closeLaunchPanel()">&times;</button>
             </div>
             <div class="launch-panel-body">
+                <div class="launch-chain-toggle">
+                    <button class="launch-chain-btn active" onclick="setLaunchChain('base')" data-chain="base">
+                        <img src="https://icons.llamao.fi/icons/chains/rsz_base.jpg" alt="Base"> Base
+                    </button>
+                    <button class="launch-chain-btn" onclick="setLaunchChain('solana')" data-chain="solana">
+                        <img src="https://icons.llamao.fi/icons/chains/rsz_solana.jpg" alt="Solana"> Solana
+                    </button>
+                </div>
                 <div class="launch-row">
                     <div class="launch-field">
                         <label>Token Name <span class="launch-req">*</span></label>
@@ -826,6 +856,18 @@
                         <label>Telegram</label>
                         <input type="text" id="launchTG" placeholder="https://t.me/...">
                     </div>
+                </div>
+                <div class="launch-field solana-only">
+                    <label>Dev Buy (SOL)</label>
+                    <input type="number" id="launchDevBuy" placeholder="0" min="0" step="0.01">
+                </div>
+                <div class="launch-fee-info solana-only">
+                    Trading fees split via Bags: <strong>80%</strong> to you (claimable) &middot; <strong>20%</strong> to Inclawbate treasury<br>
+                    Powered by Bags &mdash; Meteora liquidity pool created automatically.
+                </div>
+                <div class="launch-fee-info base-only">
+                    LP reward fees: <strong>80%</strong> to you &middot; <strong>20%</strong> to Inclawbate treasury<br>
+                    Launched via Clanker V4 with locked liquidity on Uniswap V4.
                 </div>
                 <div class="launch-status" id="launchStatus"></div>
                 <button class="launch-deploy-btn" id="launchDeployBtn" onclick="handleChatDeploy()">&#x1F680; Deploy Token on Base</button>
@@ -1503,54 +1545,6 @@ function chatHideTyping() {
     if (el) el.remove();
 }
 
-// ═══ Token Launch Panel ═══
-function showLaunchPanel() {
-    var p = document.getElementById('launchPanel');
-    if (p) p.style.display = '';
-}
-function closeLaunchPanel() {
-    var p = document.getElementById('launchPanel');
-    if (p) p.style.display = 'none';
-}
-function fillLaunchForm(args) {
-    if (!args) return;
-    var map = {
-        token_name: 'launchName', token_symbol: 'launchSymbol',
-        description: 'launchDesc', image_url: 'launchImage',
-        website_url: 'launchWebsite', x_handle: 'launchX', telegram_url: 'launchTG'
-    };
-    Object.keys(map).forEach(function(k) {
-        if (args[k]) {
-            var el = document.getElementById(map[k]);
-            if (el) { el.value = args[k]; el.classList.add('filled'); }
-        }
-    });
-    var missing = ['token_name','token_symbol','description'].filter(function(k) {
-        var el = document.getElementById(map[k]);
-        return !el || !el.value.trim();
-    });
-    var status = document.getElementById('launchStatus');
-    if (status) status.textContent = missing.length ? 'Still need: ' + missing.join(', ') : 'Ready to deploy!';
-    var btn = document.getElementById('launchDeployBtn');
-    if (btn) btn.disabled = missing.length > 0;
-}
-function handleChatDeploy() {
-    var name = (document.getElementById('launchName')?.value || '').trim();
-    var symbol = (document.getElementById('launchSymbol')?.value || '').trim();
-    var desc = (document.getElementById('launchDesc')?.value || '').trim();
-    if (!name || !symbol || !desc) return;
-    var msg = 'Deploy my token: ' + name + ' (' + symbol + ') — ' + desc;
-    var img = (document.getElementById('launchImage')?.value || '').trim();
-    var web = (document.getElementById('launchWebsite')?.value || '').trim();
-    var xh = (document.getElementById('launchX')?.value || '').trim();
-    var tg = (document.getElementById('launchTG')?.value || '').trim();
-    if (img) msg += '\nImage: ' + img;
-    if (web) msg += '\nWebsite: ' + web;
-    if (xh) msg += '\nX: @' + xh.replace(/^@/,'');
-    if (tg) msg += '\nTelegram: ' + tg;
-    chatSendMessage(msg);
-}
-
 async function chatSendMessage(text) {
     if (!text.trim() || _chatSending) return;
     _chatSending = true;
@@ -1683,6 +1677,10 @@ function closeLaunchPanel() {
 
 function fillLaunchForm(args) {
     showLaunchPanel();
+    // Auto-select chain if specified by AI
+    if (args.chain && (args.chain === 'solana' || args.chain === 'base')) {
+        setLaunchChain(args.chain);
+    }
     var map = {
         token_name: 'launchName', token_symbol: 'launchSymbol',
         description: 'launchDesc', image_url: 'launchImage',
@@ -1718,6 +1716,62 @@ function updateLaunchStatus() {
     }
 }
 
+// ── Chain selector toggle ──
+var selectedLaunchChain = 'base';
+
+function setLaunchChain(chain) {
+    selectedLaunchChain = chain;
+    var panel = document.getElementById('launchPanel');
+    panel.setAttribute('data-chain', chain);
+    // Update toggle buttons
+    document.querySelectorAll('.launch-chain-btn').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-chain') === chain);
+    });
+    // Update deploy button text
+    var btn = document.getElementById('launchDeployBtn');
+    btn.innerHTML = chain === 'solana'
+        ? '&#x1F680; Deploy Token on Solana'
+        : '&#x1F680; Deploy Token on Base';
+}
+
+// ── Base58 decode + tx data decoder for Solana ──
+function decodeTxData(data) {
+    if (!data) throw new Error('No transaction data');
+    if (data instanceof Uint8Array) return data;
+    if (Array.isArray(data)) return new Uint8Array(data);
+    if (typeof data === 'object' && data !== null) {
+        if (typeof data.transaction === 'string') return decodeTxData(data.transaction);
+        if (typeof data.serializedTransaction === 'string') return decodeTxData(data.serializedTransaction);
+        if (data.data && Array.isArray(data.data)) return new Uint8Array(data.data);
+        if (data.type === 'Buffer' && data.data) return new Uint8Array(data.data);
+        var keys = Object.keys(data);
+        if (keys.length > 0 && !isNaN(keys[0])) {
+            var arr = new Uint8Array(keys.length);
+            for (var oi = 0; oi < keys.length; oi++) arr[oi] = data[keys[oi]];
+            return arr;
+        }
+        throw new Error('Unknown tx object format');
+    }
+    if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
+    if (/[+\/=]/.test(data)) {
+        try { return Uint8Array.from(atob(data), function(c) { return c.charCodeAt(0); }); } catch(e) {}
+    }
+    // Base58 decode
+    var BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    var result = [0];
+    for (var i = 0; i < data.length; i++) {
+        var idx = BASE58.indexOf(data[i]);
+        if (idx < 0) throw new Error('Invalid base58 character');
+        var carry = idx;
+        for (var j = 0; j < result.length; j++) {
+            carry += result[j] * 58; result[j] = carry & 0xff; carry >>= 8;
+        }
+        while (carry > 0) { result.push(carry & 0xff); carry >>= 8; }
+    }
+    for (var k = 0; k < data.length && data[k] === '1'; k++) result.push(0);
+    return new Uint8Array(result.reverse());
+}
+
 // Listen for manual field edits
 ['launchName','launchSymbol','launchDesc','launchImage','launchWebsite','launchX','launchTG'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -1729,6 +1783,7 @@ function updateLaunchStatus() {
 });
 
 async function handleChatDeploy() {
+    if (selectedLaunchChain === 'solana') return handleSolanaDeploy();
     var name = document.getElementById('launchName').value.trim();
     var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
     var desc = document.getElementById('launchDesc').value.trim();
@@ -1872,6 +1927,160 @@ async function handleChatDeploy() {
         if (errMsg.includes('rejected') || errMsg.includes('denied')) errMsg = 'Transaction rejected by wallet';
         btn.disabled = false;
         btn.textContent = '\u{1F680} Deploy Token on Base';
+        btn.style.background = '';
+        statusEl.textContent = errMsg;
+        statusEl.style.color = '#f87171';
+        toast(errMsg, true);
+    }
+}
+
+// ── Solana (Bags/Meteora) deploy flow ──
+async function handleSolanaDeploy() {
+    var name = document.getElementById('launchName').value.trim();
+    var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var imageUrl = document.getElementById('launchImage').value.trim();
+    var website = document.getElementById('launchWebsite').value.trim();
+    var xHandle = document.getElementById('launchX').value.trim();
+    var telegram = document.getElementById('launchTG').value.trim();
+
+    if (!name) { toast('Token name is required', true); return; }
+    if (!symbol) { toast('Symbol is required', true); return; }
+    if (!desc) { toast('Description is required', true); return; }
+
+    var btn = document.getElementById('launchDeployBtn');
+    var statusEl = document.getElementById('launchStatus');
+    btn.disabled = true;
+
+    try {
+        // Step 1: Connect Solana wallet (Phantom)
+        btn.textContent = 'Connecting Solana wallet...';
+        statusEl.textContent = 'Requesting Phantom wallet...';
+        statusEl.style.color = 'var(--text-dim)';
+
+        var solPubkey = await window.connectSolanaWallet();
+        if (!solPubkey) throw new Error('Solana wallet not connected');
+
+        // Step 2: Ensure EVM wallet connected (for JWT auth)
+        var auth = getAuth();
+        if (!auth || !auth.wallet) {
+            btn.textContent = 'Connect EVM wallet...';
+            if (typeof navWalletConnect === 'function') navWalletConnect();
+            throw new Error('Connect your EVM wallet first for authentication');
+        }
+
+        // Ensure JWT exists
+        if (!localStorage.getItem('inclawbate_token') && auth.wallet) {
+            try {
+                var authResp = await fetch('/api/inclawbate/wallet-connect', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: auth.wallet })
+                });
+                var authData = await authResp.json();
+                if (authResp.ok && authData.success && authData.token) {
+                    localStorage.setItem('inclawbate_token', authData.token);
+                }
+            } catch(e) {}
+        }
+
+        var jwtToken = localStorage.getItem('inclawbate_token');
+        var apiHeaders = { 'Content-Type': 'application/json' };
+        if (jwtToken) apiHeaders['Authorization'] = 'Bearer ' + jwtToken;
+
+        async function apiPost(body) {
+            var resp = await fetch('/api/inclawbate/inclawbator', {
+                method: 'POST', headers: apiHeaders, body: JSON.stringify(body)
+            });
+            return resp.json();
+        }
+
+        // Step 3: Create token info on Bags
+        btn.textContent = 'Creating token on Solana...';
+        statusEl.textContent = 'Setting up token metadata...';
+        var createResult = await apiPost({
+            action: 'bags-create-token', name: name, symbol: symbol,
+            description: desc, image_url: imageUrl || 'https://www.inclawbate.com/inclawbate/assets/inclawbate-logo.png'
+        });
+        if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
+
+        var bagsData = createResult.response || createResult;
+        var tokenMint = bagsData.tokenMint || createResult.tokenMint;
+        var metadataUrl = bagsData.tokenMetadata || createResult.metadataUrl || '';
+        if (!tokenMint) throw new Error('No tokenMint returned from Bags');
+
+        // Step 4: Configure fee sharing (80/20)
+        btn.textContent = 'Configuring fee split...';
+        statusEl.textContent = 'Setting up 80/20 fee share...';
+        var feeResult = await apiPost({
+            action: 'bags-fee-config', token_mint: tokenMint,
+            creator_solana_wallet: solPubkey
+        });
+        if (feeResult.error) throw new Error('Fee config failed: ' + feeResult.error);
+
+        var feeData = feeResult.response || feeResult;
+        var configKey = feeData.configKey || feeData.meteoraConfigKey || feeResult.configKey || null;
+
+        // Step 5: Sign fee config transactions
+        var feeTxs = feeData.transactions || feeResult.transactions || [];
+        if (feeTxs.length > 0) {
+            btn.textContent = 'Signing fee config...';
+            statusEl.textContent = 'Sign fee config transactions in Phantom...';
+            for (var fi = 0; fi < feeTxs.length; fi++) {
+                var txBytes = decodeTxData(feeTxs[fi]);
+                await window.signAndSendSolanaTransaction(txBytes);
+            }
+        }
+
+        // Step 6: Create launch transaction
+        var devBuySol = parseFloat((document.getElementById('launchDevBuy') || {}).value) || 0;
+        var devBuyLamports = devBuySol > 0 ? Math.round(devBuySol * 1e9) : 0;
+
+        btn.textContent = 'Creating launch tx...';
+        statusEl.textContent = 'Building Meteora launch transaction...';
+        var launchResult = await apiPost({
+            action: 'bags-create-launch-tx', token_mint: tokenMint,
+            creator_solana_wallet: solPubkey, initial_buy_lamports: devBuyLamports,
+            config_key: configKey, metadata_url: metadataUrl
+        });
+        if (launchResult.error) throw new Error('Launch tx failed: ' + launchResult.error);
+
+        // Step 7: Sign + send launch transaction
+        btn.textContent = 'Sign in Phantom to launch...';
+        statusEl.textContent = 'Confirm launch in your wallet...';
+        statusEl.style.color = '#fbbf24';
+        var launchData = launchResult.response || launchResult;
+        var rawLaunchTx = launchData.transaction || launchData.serializedTransaction
+            || (launchData.transactions && launchData.transactions[0])
+            || launchResult.transaction || launchData;
+        var launchTxBytes = decodeTxData(rawLaunchTx);
+        var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
+        var solanaTxSig = sendResult.signature || sendResult;
+
+        // Step 8: Register with Inclawbate backend
+        btn.textContent = 'Registering project...';
+        statusEl.textContent = 'Token launched! Registering on Inclawbate...';
+        statusEl.style.color = '#4ade80';
+        await apiPost({
+            action: 'register', token_address: tokenMint, token_name: name,
+            token_symbol: symbol, deploy_tx_hash: typeof solanaTxSig === 'string' ? solanaTxSig : '',
+            description: desc, website_url: website, logo_url: imageUrl || null,
+            x_handle: xHandle || null, telegram_url: telegram || null,
+            fee_split_bps: 2000, tier: 'permissionless',
+            creator_wallet: auth.wallet, allocation_pct: 0, burn_amount: 0,
+            chain: 'solana', solana_wallet: solPubkey, solana_token_mint: tokenMint
+        });
+
+        btn.textContent = 'Deployed on Solana!';
+        btn.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)';
+        statusEl.innerHTML = '$' + esc(symbol) + ' live on Solana! <a href="https://solscan.io/token/' + tokenMint + '" target="_blank" style="color:#4ade80">' + tokenMint.slice(0, 8) + '...' + tokenMint.slice(-6) + '</a>';
+
+        chatAddMessage('$' + symbol + ' is live on Solana! Token: ' + tokenMint + ' \u2014 https://solscan.io/token/' + tokenMint, false);
+
+    } catch(e) {
+        var errMsg = e.message || 'Deploy failed';
+        if (errMsg.includes('rejected') || errMsg.includes('denied')) errMsg = 'Transaction rejected by wallet';
+        btn.disabled = false;
+        btn.innerHTML = '&#x1F680; Deploy Token on Solana';
         btn.style.background = '';
         statusEl.textContent = errMsg;
         statusEl.style.color = '#f87171';
