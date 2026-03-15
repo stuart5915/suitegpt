@@ -271,11 +271,8 @@ export default async function handler(req, res) {
 
             // Fetch real platform context
             const ctx = await fetchPlatformContext();
-            const topBuilders = ctx.builders.map(b => `${b.handle} (${b.apps} apps)`).join(', ');
             const topAppList = ctx.topApps.map(a => `${a.name} (${a.view_count || 0} views)`).join(', ');
-            const recentAppList = ctx.recentApps.slice(0, 8).map(a =>
-                `${a.name}${a.creator_x_handle ? ' by ' + a.creator_x_handle : ''}`
-            ).join(', ');
+            const recentAppList = ctx.recentApps.slice(0, 8).map(a => a.name).join(', ');
 
             const prompt = `You are @inclawbator. Generate ONE tweet.
 
@@ -284,12 +281,11 @@ Angle: ${angle}
 
 Real data (use ONLY these numbers):
 - ${ctx.totalApps}+ apps on inclawbate
-- Top builders: ${topBuilders || 'growing community'}
 - Popular apps: ${topAppList || 'various'}
-- Recent: ${recentAppList || 'various'}
+- Recent apps: ${recentAppList || 'various'}
 - Token: $CLAWS on Base, website: inclawbate.com
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER tag or @ mention anyone — no @handles at all. Refer to builders/apps by name only if needed.
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER mention any person's name, handle, or username. Talk about the platform, apps, and what's possible — not who built what.
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
@@ -431,8 +427,8 @@ const STYLE_EXAMPLES = [
     `someone just built a full staking dashboard on inclawbate in 10 minutes. no code. just vibes.`,
     // Question hook
     `what if you could launch a token, build an app for it, and set up marketing... all from one platform? that's inclawbate`,
-    // Builder shoutout
-    `someone just dropped ClawsNet on inclawbate. social network built entirely with AI. go try it inclawbate.com/apps/clawsnet`,
+    // Builder shoutout (no names)
+    `a full social network just went live on inclawbate. built entirely with AI. no code. this is the future.`,
     // Stats flex
     `100+ apps live on inclawbate rn. all built by regular people using AI. no devs needed.`,
     // FOMO/CTA
@@ -540,10 +536,8 @@ async function generateDrafts(req, res, targetDate) {
     const ctx = await fetchPlatformContext();
 
     const recentAppList = ctx.recentApps.map(a =>
-        `${a.name} (${a.category || 'general'})${a.creator_x_handle ? ' by ' + a.creator_x_handle : ''}`
+        `${a.name} (${a.category || 'general'})`
     ).join(', ');
-
-    const topBuilders = ctx.builders.map(b => `${b.handle} (${b.apps} apps)`).join(', ');
 
     const topAppList = ctx.topApps.map(a =>
         `${a.name} (${a.view_count || 0} views)`
@@ -558,7 +552,6 @@ async function generateDrafts(req, res, targetDate) {
 
 REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Total apps: ${ctx.totalApps}+
-- Top builders: ${topBuilders || 'growing community'}
 - Popular apps: ${topAppList || 'various'}
 - Recent apps: ${recentAppList || 'various'}
 - Token: $CLAWS on Base
@@ -580,8 +573,7 @@ RULES:
 - No quotation marks around the tweet
 - Lowercase is fine, even preferred for casual tweets
 - Mix up formats: questions, one-liners, hot takes, mini-stories, stats
-- NEVER tag or @ mention anyone — no @handles at all. Do not use @ before any name.
-- You can mention app names naturally but do NOT tag builders by handle
+- NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
@@ -600,7 +592,7 @@ ${(NARRATIVE_SCENES[pillar.name] || []).join('\n- ')}
 CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. Draw from the narrative scenes above for specific settings, supporting characters (Crab Engineer, Shrimp Newbie, Mini Lobsters, etc.), and locations (The Workshop, The Reef, The Lounge, etc.). Don't just repeat the same generic scene for every tweet.
 
 EXAMPLE of a good pair:
-TWEET: someone just shipped a full social network on inclawbate. built entirely with AI. no code. wild.
+TWEET: a full social network just went live on inclawbate. built with AI in minutes. no code needed. the future is here.
 IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, proudly presenting a holographic social network interface to the Crab Engineer who gives a thumbs-up. Glowing connection nodes and profile cards float around. Dark void background with coral (#e5533d) rim lighting on the glossy shell and teal (#4db6ac) data streams between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
