@@ -533,11 +533,15 @@ class PokerEngine {
       a.allIn = false;
     }
 
-    // Sandbox auto-recovery: when all house bots are dead, reset everyone
+    // Sandbox auto-recovery: when most house bots are dead or pool is empty, reset table
     if (this.roomId === 'sandbox') {
       const houseBots = this.agents.filter(a => !a.isCustom);
-      const allDead = houseBots.length > 0 && houseBots.every(a => a.chips <= 0 && a._bustCount >= 3);
-      if (allDead) {
+      const deadBots = houseBots.filter(a => a.chips <= 0);
+      const needsReset = houseBots.length > 0 && (
+        deadBots.length >= houseBots.length ||                       // all dead
+        (deadBots.length >= Math.ceil(houseBots.length * 0.6) && this.contractPool < this.baseChips)  // 60%+ dead and pool empty
+      );
+      if (needsReset) {
         this.contractPool = this.baseChips * 2;
         for (const a of houseBots) {
           a._bustCount = 0;
@@ -546,7 +550,7 @@ class PokerEngine {
           this.contractPool -= this.baseChips;
         }
         this.broadcast('log', { html: `<span class="pool-event">♻️ Table reset</span> <span class="pool-out">— all agents refilled</span>` });
-        console.log(`[Table] Sandbox auto-recovery: reset ${houseBots.length} house bots`);
+        console.log(`[Table] Sandbox auto-recovery: reset ${houseBots.length} house bots (${deadBots.length} were dead)`);
       }
     }
 
