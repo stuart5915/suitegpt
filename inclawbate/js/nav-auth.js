@@ -432,11 +432,27 @@
         async function disconnectWallet() {
             localStorage.removeItem('inclawbate_token');
             localStorage.removeItem('inclawbate_profile');
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('_stake_wallet');
             document.cookie = 'inclawbate_token=; path=/; max-age=0';
             // Logout from Privy if active
             if (window.PrivyAuth) {
                 try { await window.PrivyAuth.logout(); } catch(e) {}
             }
+            // Disconnect WalletKit/WalletConnect session if active
+            try {
+                if (window.WalletKit && window.WalletKit.disconnect) {
+                    window.WalletKit.disconnect();
+                }
+            } catch(e) {}
+            // Clear any WalletConnect cached sessions
+            try {
+                Object.keys(localStorage).forEach(function(key) {
+                    if (key.startsWith('wc@') || key.startsWith('walletconnect') || key.startsWith('@walletconnect')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            } catch(e) {}
             // Revoke wallet permissions so the picker shows again on next connect
             var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
             if (eth) {
@@ -500,21 +516,8 @@
                 await window._awaitProvider();
             }
 
-            var result = null;
-            var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            var providers = window._eip6963Providers || [];
-
-            // Auto-connect: mobile inside wallet browser, or desktop with 1 provider / legacy
-            if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-                result = { type: 'provider', provider: window.ethereum || window.phantom.ethereum };
-            } else if (!isMobile && providers.length === 1) {
-                result = { type: 'provider', provider: providers[0].provider };
-            } else if (!isMobile && providers.length === 0 && window.ethereum) {
-                result = { type: 'provider', provider: window.ethereum };
-            } else {
-                // Show modal for: social login, or wallet selection
-                result = await window.showWalletSelector();
-            }
+            // Always show wallet selector so user can pick the right wallet
+            var result = await window.showWalletSelector();
 
             if (!result) {
                 btn.textContent = 'Connect';
