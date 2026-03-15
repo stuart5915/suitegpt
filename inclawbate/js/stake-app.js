@@ -2262,6 +2262,23 @@ async function init() {
         }
     });
 
+    // Listen for MetaMask account switches
+    if (window.ethereum && window.ethereum.on) {
+        window.ethereum.on('accountsChanged', function(accounts) {
+            if (accounts.length > 0) {
+                walletAddr = accounts[0];
+                try {
+                    localStorage.setItem('_stake_wallet', walletAddr);
+                    localStorage.setItem('connectedWallet', walletAddr);
+                } catch(e) {}
+                if (currentPoolKey && POOLS[currentPoolKey]) {
+                    onPoolWalletConnected(walletAddr, POOLS[currentPoolKey], currentPoolKey);
+                }
+                window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: walletAddr } }));
+            }
+        });
+    }
+
     // Listen for popstate
     window.addEventListener('popstate', routeApp);
 

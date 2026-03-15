@@ -2752,6 +2752,10 @@ async function init() {
         var newWallet = e.detail && e.detail.wallet;
         if (newWallet) {
             state.wallet = newWallet.toLowerCase();
+            // Set provider from whatever is available
+            if (!state.provider) {
+                state.provider = window.ethereum || (window.phantom && window.phantom.ethereum) || null;
+            }
             state.isAdmin = state.wallet === SUPER_ADMIN;
             updateUI();
             loadClawsBalance();
@@ -2763,6 +2767,23 @@ async function init() {
             updateUI();
         }
     });
+
+    // Listen for MetaMask account switches
+    if (window.ethereum && window.ethereum.on) {
+        window.ethereum.on('accountsChanged', function(accounts) {
+            if (accounts.length > 0) {
+                state.wallet = accounts[0].toLowerCase();
+                state.isAdmin = state.wallet === SUPER_ADMIN;
+                try {
+                    localStorage.setItem('connectedWallet', state.wallet);
+                    localStorage.setItem('walletAddress', state.wallet);
+                } catch(e) {}
+                updateUI();
+                loadClawsBalance();
+                window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: state.wallet } }));
+            }
+        });
+    }
 
     // Coming Soon gate
     updateComingSoonGate();

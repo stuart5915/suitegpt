@@ -801,7 +801,25 @@ function disconnectWallet() {
     localStorage.removeItem('walletAddress');
     localStorage.removeItem('suiteWalletAddress');
     localStorage.removeItem('suiteWallet');
+    localStorage.removeItem('_stake_wallet');
     window.walletAddress = null;
+
+    // Disconnect WalletKit/WalletConnect session if active
+    try {
+        if (window.WalletKit && window.WalletKit.disconnect) {
+            window.WalletKit.disconnect();
+        }
+    } catch (e) {}
+
+    // Clear any WalletConnect cached sessions
+    try {
+        Object.keys(localStorage).forEach(function(key) {
+            if (key.startsWith('wc@') || key.startsWith('walletconnect') || key.startsWith('@walletconnect')) {
+                localStorage.removeItem(key);
+            }
+        });
+    } catch (e) {}
+
     closeNavConnectModal();
 
     // Dispatch event so other scripts can react to wallet disconnection
