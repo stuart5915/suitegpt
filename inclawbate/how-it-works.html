@@ -457,6 +457,60 @@
             .alloc-row-label { font-size: 0.7rem; }
         }
 
+        /* ── Voter Table ── */
+        .voters-table-wrap {
+            margin-top: var(--space-lg);
+            overflow-x: auto;
+        }
+        .voters-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+        }
+        .voters-table th {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .voters-table td {
+            padding: 7px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+        }
+        .voters-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+        .voter-addr {
+            color: var(--accent-primary, #6366f1);
+            font-weight: 600;
+        }
+        .voter-bar {
+            display: flex;
+            height: 10px;
+            border-radius: 3px;
+            overflow: hidden;
+            min-width: 120px;
+        }
+        .voter-bar-seg {
+            height: 100%;
+            transition: flex 0.2s;
+        }
+        .voter-balance {
+            color: var(--text-dim);
+            font-size: 0.65rem;
+        }
+        .voter-time {
+            color: var(--text-dim);
+            font-size: 0.6rem;
+            white-space: nowrap;
+        }
+
         /* ── CTA at bottom ── */
         .d-cta {
             position: relative;
@@ -912,6 +966,23 @@
                 <!-- Council note -->
                 <div class="analogy" style="margin-top: var(--space-md);"><strong>Council executes based on community synthesis.</strong> Final allocation cannot deviate more than 50% from the voted distribution.</div>
             </div>
+
+            <!-- Voter breakdown table -->
+            <div class="voters-table-wrap">
+                <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">All Votes (publicly verifiable)</div>
+                <table class="voters-table">
+                    <thead>
+                        <tr>
+                            <th>Address</th>
+                            <th>Distribution</th>
+                            <th>CLAWS Weight</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voters-tbody"></tbody>
+                </table>
+                <div id="voters-empty" style="font-size:0.7rem;color:var(--text-dim);padding:16px 0;text-align:center;">No votes yet. Be the first.</div>
+            </div>
         </div>
 
         <!-- Weekly cadence -->
@@ -1183,7 +1254,9 @@
     var connectedWallet = null;
     var VOTE_API = 'https://inclawbate.com/api/inclawbate/allocation-vote';
 
-    /* Fetch live synthesis from API */
+    var allVoters = [];
+
+    /* Fetch live synthesis + voters from API */
     function fetchSynthesis() {
         fetch(VOTE_API)
             .then(function(r) { return r.json(); })
@@ -1191,7 +1264,9 @@
                 if (data.success && data.synthesis) {
                     synthesis = data.synthesis;
                     totalVoters = data.totalVoters || 0;
+                    allVoters = data.voters || [];
                     renderSynthBar();
+                    renderVoters();
                 }
             })
             .catch(function() { /* use defaults */ });
@@ -1355,6 +1430,7 @@
                 synthesis = data.synthesis;
                 totalVoters = data.totalVoters || 0;
                 renderSynthBar();
+                fetchSynthesis(); /* refresh voter table */
                 if (info) info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS';
                 if (btn) { btn.textContent = 'Update Vote'; btn.disabled = false; }
             } else {
@@ -1373,6 +1449,60 @@
         if (s.length <= 18) return '0';
         var whole = s.slice(0, s.length - 18);
         return Number(whole).toLocaleString();
+    }
+
+    function renderVoters() {
+        var tbody = document.getElementById('voters-tbody');
+        var empty = document.getElementById('voters-empty');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (allVoters.length === 0) {
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        allVoters.forEach(function(v) {
+            var tr = document.createElement('tr');
+            /* Address */
+            var tdAddr = document.createElement('td');
+            tdAddr.className = 'voter-addr';
+            tdAddr.textContent = v.address.slice(0, 6) + '...' + v.address.slice(-4);
+            tdAddr.title = v.address;
+            /* Distribution bar */
+            var tdDist = document.createElement('td');
+            var bar = document.createElement('div');
+            bar.className = 'voter-bar';
+            buckets.forEach(function(b) {
+                var seg = document.createElement('div');
+                seg.className = 'voter-bar-seg';
+                seg.style.background = b.color;
+                seg.style.flex = v.weights[b.id] || 0;
+                seg.title = b.label + ': ' + (v.weights[b.id] || 0) + '%';
+                bar.appendChild(seg);
+            });
+            tdDist.appendChild(bar);
+            /* CLAWS balance */
+            var tdBal = document.createElement('td');
+            tdBal.className = 'voter-balance';
+            tdBal.textContent = formatBalance(v.claws_balance) + ' CLAWS';
+            /* Time */
+            var tdTime = document.createElement('td');
+            tdTime.className = 'voter-time';
+            tdTime.textContent = v.updated_at ? timeAgo(v.updated_at) : '';
+            tr.appendChild(tdAddr);
+            tr.appendChild(tdDist);
+            tr.appendChild(tdBal);
+            tr.appendChild(tdTime);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function timeAgo(iso) {
+        var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
     }
 
     /* Vote button click */

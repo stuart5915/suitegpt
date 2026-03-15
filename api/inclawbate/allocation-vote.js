@@ -109,15 +109,22 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // GET — return synthesis
+    // GET — return synthesis + individual votes
     if (req.method === 'GET') {
         try {
             const { data: votes } = await supabase
                 .from('allocation_votes')
-                .select('weights, claws_balance');
+                .select('wallet_address, weights, claws_balance, updated_at')
+                .order('claws_balance', { ascending: false });
 
             const result = computeSynthesis(votes || []);
-            return res.status(200).json({ success: true, ...result, buckets: BUCKET_IDS });
+            const voters = (votes || []).map(v => ({
+                address: v.wallet_address,
+                weights: v.weights,
+                claws_balance: v.claws_balance,
+                updated_at: v.updated_at
+            }));
+            return res.status(200).json({ success: true, ...result, voters, buckets: BUCKET_IDS });
         } catch (err) {
             console.error('Fetch synthesis error:', err);
             return res.status(500).json({ error: 'Failed to fetch synthesis' });
