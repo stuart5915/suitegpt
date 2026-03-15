@@ -744,7 +744,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="disperse" id="tool-disperse">
+        <div class="tool-row" data-embed="/airdrop" id="tool-disperse">
             <span class="launch-step-num">05</span>
             <span class="tool-row-icon">&#128184;</span>
             <div class="tool-row-body">
@@ -1106,6 +1106,17 @@
         });
     });
 
+    // Direct embed tools — load a page directly in the iframe modal
+    document.querySelectorAll('[data-embed]').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.tool-copy-link')) return;
+            iframe.src = row.getAttribute('data-embed');
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            history.replaceState(null, '', '#' + row.id.replace('tool-', ''));
+        });
+    });
+
     // AutoBuy — on mobile/wallet browsers go directly, otherwise iframe modal
     document.querySelectorAll('[data-autobuy]').forEach(function(row) {
         row.addEventListener('click', function(e) {
@@ -1207,6 +1218,12 @@
             if (row.dataset.autobuy) {
                 setTimeout(function() {
                     iframe.src = '/tools/autobuy?v=20260313b';
+                    overlay.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                }, 400);
+            } else if (row.dataset.embed) {
+                setTimeout(function() {
+                    iframe.src = row.dataset.embed;
                     overlay.classList.add('open');
                     document.body.style.overflow = 'hidden';
                 }, 400);
