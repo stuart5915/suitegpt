@@ -281,11 +281,11 @@ Angle: ${angle}
 
 Real data (use ONLY these numbers):
 - ${ctx.totalApps}+ apps on inclawbate
-- Popular apps: ${topAppList || 'various'}
-- Recent apps: ${recentAppList || 'various'}
+- Popular apps: ${topAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
+- Recent apps: ${recentAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
 - Token: $CLAWS on Base, website: inclawbate.com
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER mention any person's name, handle, or username. Talk about the platform, apps, and what's possible — not who built what.
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER mention any person's name, handle, or username. Talk about the platform, apps, and what's possible — not who built what. NEVER use vague filler like "various" or "popular ones" — either name specific apps from the data or don't mention apps at all.
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
@@ -552,8 +552,8 @@ async function generateDrafts(req, res, targetDate) {
 
 REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Total apps: ${ctx.totalApps}+
-- Popular apps: ${topAppList || 'various'}
-- Recent apps: ${recentAppList || 'various'}
+- Popular apps: ${topAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
+- Recent apps: ${recentAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
 - Token: $CLAWS on Base
 - Website: inclawbate.com
 - App builder: inclawbate.com/build (AI builds apps, no code)
@@ -574,6 +574,7 @@ RULES:
 - Lowercase is fine, even preferred for casual tweets
 - Mix up formats: questions, one-liners, hot takes, mini-stories, stats
 - NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
+- NEVER use vague filler like "various", "popular ones", "top apps" without naming them. Either use specific app names from the data above, or don't mention apps at all. Be concrete or be general about the platform — never vaguely in between.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
