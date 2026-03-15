@@ -870,8 +870,8 @@ async function loadPoolTokens() {
     if (!state.wallet) {
         loading.classList.add('hidden');
         noTokens.classList.remove('hidden');
-        noTokens.querySelector('p').textContent = 'Connect your wallet first.';
-        form.classList.add('hidden');
+        noTokens.querySelector('p').textContent = 'Connect your wallet to see your tokens, or enter any token address below.';
+        form.classList.remove('hidden');
         return;
     }
 
@@ -900,18 +900,10 @@ async function loadPoolTokens() {
 
 function showPoolTokenForm(projects, loading, noTokens, form, select) {
     loading.classList.add('hidden');
-
-    if (projects.length === 0) {
-        noTokens.classList.remove('hidden');
-        noTokens.querySelector('p').textContent = "You don't have any tokens without a staking pool. Launch a token first, or all your tokens already have pools.";
-        form.classList.add('hidden');
-        return;
-    }
-
     noTokens.classList.add('hidden');
     form.classList.remove('hidden');
 
-    // Populate select
+    // Populate select — always show with custom option
     select.innerHTML = '<option value="">Choose a token...</option>';
     projects.forEach(function(p) {
         var opt = document.createElement('option');
@@ -928,12 +920,29 @@ function showPoolTokenForm(projects, loading, noTokens, form, select) {
         }
         select.appendChild(opt);
     });
+    // Always add custom option at end
+    var customOpt = select.querySelector('option[value="custom"]');
+    if (!customOpt) {
+        customOpt = document.createElement('option');
+        customOpt.value = 'custom';
+        customOpt.textContent = 'Enter token address manually';
+        select.appendChild(customOpt);
+    }
 
-    // Wire select change to update preview
+    if (projects.length === 0) {
+        noTokens.classList.remove('hidden');
+    }
+
+    // Wire select change to update preview + custom field
     select.onchange = function() {
         var preview = document.getElementById('partnerTokenPreview');
+        var customDiv = document.getElementById('poolCustomAddr');
         var selected = select.options[select.selectedIndex];
-        if (select.value && selected.dataset.name) {
+        if (select.value === 'custom') {
+            if (customDiv) customDiv.style.display = '';
+            preview.classList.add('hidden');
+        } else if (select.value && selected.dataset.name) {
+            if (customDiv) customDiv.style.display = 'none';
             var chain = selected.dataset.chain || 'base';
             var chainBadge = chain === 'solana' ? ' (Solana)' : ' (Base)';
             document.getElementById('partnerTokenName').textContent = selected.dataset.name;
@@ -941,9 +950,19 @@ function showPoolTokenForm(projects, loading, noTokens, form, select) {
             document.getElementById('partnerTokenIcon').textContent = (selected.dataset.symbol || '?')[0];
             preview.classList.remove('hidden');
         } else {
+            if (customDiv) customDiv.style.display = 'none';
             preview.classList.add('hidden');
         }
     };
+
+    // Wire auto-stake checkbox
+    var autoStakeCb = document.getElementById('poolAutoStake');
+    var autoStakeDiv = document.getElementById('poolAutoStakeAmount');
+    if (autoStakeCb && autoStakeDiv) {
+        autoStakeCb.onchange = function() {
+            autoStakeDiv.style.display = autoStakeCb.checked ? '' : 'none';
+        };
+    }
 }
 
 // ══════════════════════════════════════
@@ -1223,8 +1242,15 @@ async function handlePoolDeploy() {
     var tokenName = document.getElementById('partnerTokenName').textContent;
     var tokenSymbol = document.getElementById('partnerTokenSymbol').textContent.replace('$', '');
 
-    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Select a token first', 'error');
-    if (!tokenName || tokenName === '--') return showToast('Select a token first', 'error');
+    // Handle custom token address
+    if (tokenAddress === 'custom') {
+        var customInput = document.getElementById('poolCustomToken');
+        tokenAddress = customInput ? customInput.value.trim() : '';
+        tokenName = 'Custom Token';
+        tokenSymbol = '';
+    }
+
+    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Enter a valid token address', 'error');
 
     if (!state.wallet) {
         await connectWallet();

@@ -2277,15 +2277,19 @@
             <h3 class="drawer-title">&#x1F4B8; Create Stake Pool</h3>
             <div id="poolTokenLoading" class="drawer-info" style="text-align:center;color:var(--text-dim);">Loading your tokens...</div>
             <div id="poolNoTokens" class="drawer-info hidden" style="text-align:center;">
-                <p style="margin-bottom:var(--space-md);color:var(--text-secondary);">You haven't launched a token yet.</p>
-                <button class="deploy-btn" style="width:auto;display:inline-flex;" onclick="openToolDrawer('launch')">Launch a Token First</button>
+                <p style="margin-bottom:var(--space-md);color:var(--text-secondary);">You haven't launched a token yet. You can enter any token address below.</p>
             </div>
-            <div id="poolTokenForm" class="hidden">
+            <div id="poolTokenForm">
                 <div class="form-group">
                     <label class="form-label" for="poolTokenSelect">Select Your Token</label>
                     <select id="poolTokenSelect" class="form-input" style="cursor:pointer;">
                         <option value="">Choose a token...</option>
+                        <option value="custom">Enter token address manually</option>
                     </select>
+                </div>
+                <div id="poolCustomAddr" class="form-group" style="display:none;">
+                    <label class="form-label" for="poolCustomToken">Token Contract Address</label>
+                    <input id="poolCustomToken" class="form-input" type="text" placeholder="0x... (any ERC-20 on Base)" maxlength="42">
                 </div>
                 <div id="partnerTokenPreview" class="partner-token-preview hidden">
                     <div class="token-icon" id="partnerTokenIcon">?</div>
@@ -2297,6 +2301,22 @@
                 <div class="form-group">
                     <label class="form-label" for="poolDesc">Description (optional)</label>
                     <textarea id="poolDesc" class="form-input" placeholder="About this staking pool..." maxlength="280"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="poolRewardAmount">Fund with CLAWS Rewards (optional)</label>
+                    <input id="poolRewardAmount" class="form-input" type="number" placeholder="0" min="0" step="any">
+                    <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">CLAWS tokens to deposit as initial staking rewards. Requires a separate approval transaction.</div>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:var(--text-secondary);">
+                        <input type="checkbox" id="poolAutoStake" style="width:16px;height:16px;accent-color:var(--lobster-400);">
+                        Auto-stake my tokens after pool deploys
+                    </label>
+                </div>
+                <div id="poolAutoStakeAmount" class="form-group" style="display:none;">
+                    <label class="form-label" for="poolStakeAmount">Amount to Stake</label>
+                    <input id="poolStakeAmount" class="form-input" type="number" placeholder="0" min="0" step="any">
+                    <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Your tokens to stake immediately. Requires token approval.</div>
                 </div>
                 <div class="deploy-fee-badge">
                     Free &mdash; just pay gas
