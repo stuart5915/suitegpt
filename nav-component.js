@@ -543,6 +543,31 @@ function closeNavConnectModal() {
 
 // Connect wallet from nav
 async function connectWalletFromNav() {
+    // Use the wallet selector if available (supports Coinbase, MetaMask, Phantom, etc.)
+    if (typeof window.showWalletSelector === 'function') {
+        try {
+            var result = await window.showWalletSelector();
+            if (!result) return; // User cancelled
+            var eth = result.provider || window.ethereum;
+            if (!eth) return;
+            var accounts = await eth.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                var address = accounts[0];
+                localStorage.setItem('connectedWallet', address);
+                localStorage.setItem('suiteWalletAddress', address);
+                localStorage.setItem('suiteWallet', address);
+                window.walletAddress = address;
+                closeNavConnectModal();
+                window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: address } }));
+                if (window.refreshNavCredits) window.refreshNavCredits();
+            }
+        } catch (error) {
+            if (error.code !== 4001) console.error('Wallet connection failed:', error);
+        }
+        return;
+    }
+
+    // Fallback: use window.ethereum directly
     if (typeof window.ethereum === 'undefined') {
         alert('Please install MetaMask or another Web3 wallet to connect!');
         window.open('https://metamask.io/download/', '_blank');
@@ -557,22 +582,12 @@ async function connectWalletFromNav() {
             localStorage.setItem('suiteWalletAddress', address);
             localStorage.setItem('suiteWallet', address);
             window.walletAddress = address;
-
-            console.log('Wallet connected:', address);
             closeNavConnectModal();
-
-            // Dispatch event so other scripts can react to wallet connection
             window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: address } }));
-
-            if (window.refreshNavCredits) {
-                window.refreshNavCredits();
-            }
+            if (window.refreshNavCredits) window.refreshNavCredits();
         }
     } catch (error) {
-        console.error('Wallet connection failed:', error);
-        if (error.code === 4001) {
-            console.log('Connection cancelled by user');
-        }
+        if (error.code !== 4001) console.error('Wallet connection failed:', error);
     }
 }
 
