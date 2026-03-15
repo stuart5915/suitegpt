@@ -1203,6 +1203,14 @@
             <iframe id="disperseIframe" src="" style="width:100%;border:none;min-height:500px;background:transparent"></iframe>
         </div>
 
+        <div class="launch-panel" id="schedulePanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#128227; X Schedule</span>
+                <button class="launch-panel-close" onclick="closeSchedulePanel()">&times;</button>
+            </div>
+            <iframe id="scheduleIframe" src="" style="width:100%;border:none;min-height:600px;background:transparent"></iframe>
+        </div>
+
         <div class="hub-chat-container">
             <div class="hub-chat-messages" id="chatMessages">
                 <div class="chat-msg chat-msg-bot">
@@ -2000,8 +2008,8 @@ var CHIP_ACTIONS = {
         action: function() { window.open('/build', '_blank'); }
     },
     'I want to promote my project on Inclawbate\'s X': {
-        reply: 'We offer 3 promo tiers on <a href="https://x.com/inclawbate" target="_blank">@inclawbate</a>:<br><br><strong>Shoutout</strong> (10K CLAWS) &mdash; 1 post<br><strong>Campaign</strong> (40K CLAWS) &mdash; 5 posts over a week<br><strong>Featured</strong> (100K CLAWS) &mdash; daily posts for 2 weeks<br><br>Send CLAWS to <code>inclawbate.base.eth</code> and share the tx hash to book your slot. Or just type your project details below and I\'ll help you get started.',
-        action: null
+        reply: 'Opening the X Schedule &mdash; create posts, set a schedule, and promote your project on autopilot.',
+        action: function() { showSchedulePanel(); }
     },
     'Set up an AI agent for my project': {
         reply: 'AI agents auto-post on X, engage with your community, and grow your project. Launch a token first, then we\'ll set up your agent with 10 free credits.',
@@ -2238,6 +2246,21 @@ function showDispersePanel() {
 function closeDispersePanel() {
     document.getElementById('dispersePanel').style.display = 'none';
     document.getElementById('disperseIframe').src = '';
+}
+
+function showSchedulePanel() {
+    var panel = document.getElementById('schedulePanel');
+    var iframe = document.getElementById('scheduleIframe');
+    if (!iframe.src || iframe.src === '' || iframe.src === location.href) {
+        iframe.src = '/schedule';
+    }
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeSchedulePanel() {
+    document.getElementById('schedulePanel').style.display = 'none';
+    document.getElementById('scheduleIframe').src = '';
 }
 
 function fillLaunchForm(args) {
