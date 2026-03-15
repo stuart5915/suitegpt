@@ -159,6 +159,7 @@
         .sched-slot--available { cursor:pointer; }
         .sched-slot--available:hover { border-color:var(--seafoam-400);background:rgba(45,212,191,0.04); }
         .sched-slot--booked { border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.05); }
+        .sched-slot--scheduled { border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.06); }
         .sched-slot--posted { border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);opacity:0.7; }
         .sched-slot--past { opacity:0.4;pointer-events:none; }
         .sched-slot--mine { border-color:var(--lobster-400);background:rgba(232,121,85,0.06); }
@@ -895,6 +896,7 @@
             var isMine = booked && booked.booked_by_wallet === _userWallet;
             var isPosted = booked && booked.status === 'posted';
             var isDraft = booked && (booked.status === 'needs_review' || booked.status === 'needs_image');
+            var isScheduled = booked && booked.status === 'scheduled';
             var isPending = booked && booked.status === 'pending_review';
             var isAutofill = booked && booked.booked_by_wallet === 'system-autofill';
 
@@ -903,6 +905,7 @@
             if (isPast && !booked) cls += ' sched-slot--past';
             else if (isPosted) cls += ' sched-slot--posted';
             else if (isPending) cls += ' sched-slot--pending';
+            else if (isScheduled && isAutofill) cls += ' sched-slot--scheduled';
             else if (isDraft) cls += ' sched-slot--draft';
             else if (isMine) cls += ' sched-slot--mine';
             else if (booked) cls += ' sched-slot--booked';
@@ -913,8 +916,8 @@
             var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             var html = '<span class="sched-time">' + timeStr + '<div class="sched-time-label">' + peak.label + '</div></span>';
 
-            if (booked && isDraft && isAutofill) {
-                // Auto-generated draft slot
+            if (booked && isAutofill) {
+                // Auto-generated slot (draft, scheduled, or posted)
                 html += '<div class="sched-content" style="flex:1;min-width:0">';
                 if (booked.content_angle) {
                     html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
@@ -924,7 +927,8 @@
                 }
 
                 var slotOpts = booked.tweet_options || {};
-                if (slotOpts.image_prompt) {
+                // Show image prompt only for drafts (not yet approved)
+                if (slotOpts.image_prompt && isDraft) {
                     html += '<div class="sched-img-prompt" onclick="event.stopPropagation()">';
                     html += '<div class="sched-img-prompt-text"><div class="sched-img-prompt-label">Image Prompt</div>' + escHtml(slotOpts.image_prompt) + '</div>';
                     html += '<div class="sched-img-prompt-actions">';
@@ -935,22 +939,34 @@
                 html += '</div>';
 
                 var hasImage = !!slotOpts.image_url;
-
                 var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
 
-                // Status badge + image area
+                // Image area — always show thumbnail if image attached
                 if (hasImage) {
                     html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
                 } else if (booked.status === 'needs_image') {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
-                } else {
-                    html += '<span class="sched-tag sched-tag--draft">ready</span>';
+                }
+
+                // Status badge
+                if (isPosted) {
+                    html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                } else if (isScheduled) {
+                    html += '<span class="sched-tag" style="color:#818cf8;border-color:rgba(99,102,241,0.4);font-size:0.68rem;padding:2px 8px;border-radius:20px;border:1px solid;font-weight:600">scheduled</span>';
+                } else if (booked.status === 'needs_image') {
+                    if (!hasImage) html += '';
+                } else if (booked.status === 'needs_review') {
+                    html += '<span class="sched-tag sched-tag--draft">review</span>';
                 }
 
                 // Admin actions
-                if (isAdmin && !isPast) {
+                if (isAdmin && !isPast && !isPosted) {
                     html += '<div class="sched-draft-actions">';
-                    html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
+                    if (isDraft) {
+                        html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
+                    } else if (isScheduled) {
+                        html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
+                    }
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')" title="Edit tweet text">\u270E;</button>';
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._regenSlot(\'' + booked.id + '\')" title="Regenerate tweet">\u21BB</button>';
                     html += '<button class="sched-draft-btn sched-draft-btn--delete" onclick="event.stopPropagation();window._deleteSlot(\'' + booked.id + '\')" title="Delete this draft">\u2715</button>';
@@ -1381,6 +1397,25 @@
 
             var slot = _schedSlots.find(function(s) { return s.id === slotId; });
             if (slot) slot.status = 'scheduled';
+            renderSlots(_selectedDay);
+        } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._unapproveDraft = async function(slotId) {
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'update_draft', slot_id: slotId, status: 'needs_review' })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+
+            var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+            if (slot) slot.status = 'needs_review';
             renderSlots(_selectedDay);
         } catch(e) { alert('Failed: ' + e.message); }
     };
