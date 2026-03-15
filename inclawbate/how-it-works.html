@@ -20,453 +20,453 @@
         body { opacity: 1; }
 
         .hiw-page {
-            max-width: var(--max-width);
+            max-width: 1100px;
             margin: 0 auto;
-            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-xl) var(--space-3xl);
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
         }
 
-        /* ── Hero ── */
+        /* ── Hero (minimal) ── */
         .hiw-hero {
             text-align: center;
-            margin-bottom: var(--space-3xl);
+            margin-bottom: var(--space-2xl);
         }
         .hiw-hero h1 {
             font-family: var(--font-display);
-            font-size: 2.4rem;
+            font-size: 2rem;
             font-weight: 900;
             background: var(--title-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             line-height: 1.15;
-            margin-bottom: var(--space-sm);
+            margin-bottom: 6px;
         }
         .hiw-hero p {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            max-width: 560px;
-            margin: 0 auto;
-        }
-
-        /* ── Section titles ── */
-        .section-label {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--lobster-400);
-            margin-bottom: var(--space-xs);
-        }
-        .section-title {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: var(--text-primary);
-            margin-bottom: var(--space-sm);
-        }
-        .section-desc {
             font-size: 0.88rem;
             color: var(--text-secondary);
-            max-width: 600px;
-            line-height: 1.6;
-            margin-bottom: var(--space-xl);
         }
 
-        /* ── Diagram sections ── */
-        .diagram-section {
-            margin-bottom: var(--space-3xl);
-        }
+        /* ═══════════════════════════════════════ */
+        /* DIAGRAM SYSTEM                          */
+        /* ═══════════════════════════════════════ */
 
-        /* ── System Overview (main diagram) ── */
-        .system-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: auto auto auto auto auto;
-            gap: var(--space-lg);
+        /* Vertical spine */
+        .spine {
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        .spine::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(180deg,
+                var(--lobster-400) 0%,
+                var(--seafoam-400) 30%,
+                #a78bfa 50%,
+                #fbbf24 70%,
+                var(--lobster-400) 100%
+            );
+            opacity: 0.25;
+            transform: translateX(-1px);
+            z-index: 0;
         }
 
-        /* ── Node boxes ── */
-        .node {
+        /* ── Nodes ── */
+        .d-node {
+            position: relative;
+            z-index: 1;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
-            padding: var(--space-lg);
-            position: relative;
-            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+            padding: 16px 22px;
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .node:hover {
+        .d-node:hover {
             border-color: var(--lobster-400);
             box-shadow: var(--shadow-glow);
         }
-        .node-icon {
-            font-size: 1.8rem;
-            margin-bottom: var(--space-sm);
+        .d-node-icon {
+            font-size: 1.6rem;
+            margin-bottom: 4px;
             display: block;
         }
-        .node-title {
+        .d-node-title {
             font-family: var(--font-display);
-            font-size: 1rem;
+            font-size: 0.92rem;
             font-weight: 800;
             color: var(--text-primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
-        .node-desc {
-            font-size: 0.78rem;
+        .d-node-sub {
+            font-size: 0.72rem;
             color: var(--text-secondary);
-            line-height: 1.5;
+            line-height: 1.45;
         }
-        .node-tag {
+        .d-node-tag {
             font-family: var(--font-mono);
-            font-size: 0.58rem;
+            font-size: 0.55rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             padding: 2px 8px;
             border-radius: var(--radius-full);
             display: inline-block;
-            margin-bottom: var(--space-sm);
+            margin-bottom: 6px;
         }
 
-        /* Node accent colors */
-        .node--coral { border-left: 3px solid var(--lobster-400); }
-        .node--coral .node-tag { background: rgba(232,121,85,0.15); color: var(--lobster-400); }
-
-        .node--teal { border-left: 3px solid var(--seafoam-400); }
-        .node--teal .node-tag { background: rgba(45,212,191,0.15); color: var(--seafoam-400); }
-
-        .node--gold { border-left: 3px solid var(--sand-300); }
-        .node--gold .node-tag { background: rgba(251,191,36,0.15); color: #fbbf24; }
-
-        .node--purple { border-left: 3px solid #a78bfa; }
-        .node--purple .node-tag { background: rgba(168,85,247,0.12); color: #a78bfa; }
-
-        .node--blue { border-left: 3px solid var(--blue-400); }
-        .node--blue .node-tag { background: rgba(96,165,250,0.15); color: #60a5fa; }
-
-        .node--green { border-left: 3px solid #4ade80; }
-        .node--green .node-tag { background: rgba(34,197,94,0.12); color: #4ade80; }
-
-        /* ── CLAWS center node ── */
-        .claws-center {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, rgba(232,121,85,0.08) 0%, rgba(45,212,191,0.06) 100%);
-            border: 1px solid rgba(232,121,85,0.25);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-xl) var(--space-2xl);
-            text-align: center;
-            position: relative;
+        /* Node sizes */
+        .d-node--lg {
+            max-width: 440px;
+            padding: 22px 28px;
         }
-        .claws-center .node-icon { font-size: 2.4rem; }
-        .claws-center .node-title {
+        .d-node--lg .d-node-title { font-size: 1.15rem; }
+        .d-node--lg .d-node-icon { font-size: 2rem; }
+
+        .d-node--xl {
+            max-width: 560px;
+            padding: 28px 36px;
+            border-width: 2px;
+        }
+        .d-node--xl .d-node-title { font-size: 1.3rem; }
+        .d-node--xl .d-node-icon { font-size: 2.2rem; }
+
+        .d-node--sm {
+            max-width: 220px;
+            padding: 12px 16px;
+        }
+        .d-node--sm .d-node-title { font-size: 0.78rem; }
+        .d-node--sm .d-node-icon { font-size: 1.2rem; margin-bottom: 2px; }
+        .d-node--sm .d-node-sub { font-size: 0.65rem; }
+
+        /* Node color accents */
+        .d-node--coral { border-color: rgba(232,121,85,0.35); }
+        .d-node--coral .d-node-tag { background: rgba(232,121,85,0.15); color: var(--lobster-400); }
+        .d-node--coral:hover { box-shadow: 0 0 24px rgba(232,121,85,0.2); }
+
+        .d-node--teal { border-color: rgba(45,212,191,0.3); }
+        .d-node--teal .d-node-tag { background: rgba(45,212,191,0.15); color: var(--seafoam-400); }
+        .d-node--teal:hover { box-shadow: 0 0 24px rgba(45,212,191,0.15); }
+
+        .d-node--gold { border-color: rgba(251,191,36,0.3); }
+        .d-node--gold .d-node-tag { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .d-node--gold:hover { box-shadow: 0 0 24px rgba(251,191,36,0.15); }
+
+        .d-node--purple { border-color: rgba(168,85,247,0.3); }
+        .d-node--purple .d-node-tag { background: rgba(168,85,247,0.12); color: #a78bfa; }
+        .d-node--purple:hover { box-shadow: 0 0 24px rgba(168,85,247,0.15); }
+
+        .d-node--green { border-color: rgba(34,197,94,0.3); }
+        .d-node--green .d-node-tag { background: rgba(34,197,94,0.12); color: #4ade80; }
+        .d-node--green:hover { box-shadow: 0 0 24px rgba(34,197,94,0.15); }
+
+        .d-node--blue { border-color: rgba(96,165,250,0.3); }
+        .d-node--blue .d-node-tag { background: rgba(96,165,250,0.15); color: #60a5fa; }
+        .d-node--blue:hover { box-shadow: 0 0 24px rgba(96,165,250,0.15); }
+
+        /* CLAWS primary node */
+        .d-node--claws {
+            background: linear-gradient(135deg, rgba(232,121,85,0.06) 0%, rgba(45,212,191,0.04) 100%);
+            border: 2px solid rgba(232,121,85,0.3);
+            max-width: 480px;
+            padding: 24px 32px;
+        }
+        .d-node--claws .d-node-title {
             font-size: 1.4rem;
             background: var(--title-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .claws-utilities {
-            display: flex;
-            gap: var(--space-md);
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: var(--space-md);
-        }
-        .claws-util {
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: var(--radius-full);
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
+        .d-node--claws:hover {
+            border-color: var(--lobster-400);
+            box-shadow: var(--shadow-glow-lg);
         }
 
-        /* ── Flow arrows ── */
-        .flow-arrow {
+        /* ── Connector arrow ── */
+        .d-arrow {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 0;
+        }
+        .d-arrow-line {
+            width: 2px;
+            height: 28px;
+            background: var(--border-default);
+        }
+        .d-arrow-head {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--border-default);
+        }
+        .d-arrow-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            padding: 2px 10px;
+            background: var(--bg-deepest);
+            border-radius: var(--radius-full);
+            margin: 4px 0;
+        }
+
+        /* Colored arrows */
+        .d-arrow--coral .d-arrow-line { background: rgba(232,121,85,0.4); }
+        .d-arrow--coral .d-arrow-head { border-top-color: rgba(232,121,85,0.4); }
+        .d-arrow--coral .d-arrow-label { color: var(--lobster-400); }
+
+        .d-arrow--teal .d-arrow-line { background: rgba(45,212,191,0.4); }
+        .d-arrow--teal .d-arrow-head { border-top-color: rgba(45,212,191,0.4); }
+        .d-arrow--teal .d-arrow-label { color: var(--seafoam-400); }
+
+        .d-arrow--green .d-arrow-line { background: rgba(34,197,94,0.4); }
+        .d-arrow--green .d-arrow-head { border-top-color: rgba(34,197,94,0.4); }
+        .d-arrow--green .d-arrow-label { color: #4ade80; }
+
+        .d-arrow--gold .d-arrow-line { background: rgba(251,191,36,0.4); }
+        .d-arrow--gold .d-arrow-head { border-top-color: rgba(251,191,36,0.4); }
+        .d-arrow--gold .d-arrow-label { color: #fbbf24; }
+
+        .d-arrow--purple .d-arrow-line { background: rgba(168,85,247,0.4); }
+        .d-arrow--purple .d-arrow-head { border-top-color: rgba(168,85,247,0.4); }
+
+        /* ── Horizontal branch rows ── */
+        .d-branch {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: var(--space-md);
+            width: 100%;
+        }
+
+        /* Branch connector lines */
+        .d-branch-bar {
+            position: relative;
+            z-index: 1;
+            width: 80%;
+            max-width: 900px;
+            height: 2px;
+            background: var(--border-default);
+            margin: 0 auto;
+        }
+        .d-branch-bar::before,
+        .d-branch-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 2px;
+            height: 10px;
+            background: var(--border-default);
+        }
+        .d-branch-bar::before { left: 0; }
+        .d-branch-bar::after { right: 0; }
+
+        /* Colored branch bars */
+        .d-branch-bar--coral { background: rgba(232,121,85,0.3); }
+        .d-branch-bar--coral::before, .d-branch-bar--coral::after { background: rgba(232,121,85,0.3); }
+        .d-branch-bar--teal { background: rgba(45,212,191,0.3); }
+        .d-branch-bar--teal::before, .d-branch-bar--teal::after { background: rgba(45,212,191,0.3); }
+        .d-branch-bar--green { background: rgba(34,197,94,0.3); }
+        .d-branch-bar--green::before, .d-branch-bar--green::after { background: rgba(34,197,94,0.3); }
+        .d-branch-bar--gold { background: rgba(251,191,36,0.3); }
+        .d-branch-bar--gold::before, .d-branch-bar--gold::after { background: rgba(251,191,36,0.3); }
+
+        /* 3-way branch bar */
+        .d-branch-bar--3 {
+            width: 66%;
+        }
+        .d-branch-bar--3::before { left: 0; }
+        .d-branch-bar--3::after { right: 0; }
+        .d-branch-bar--3 .d-branch-bar-mid {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            width: 2px;
+            height: 10px;
+            background: inherit;
+            transform: translateX(-1px);
+        }
+
+        /* ── Split flow (side by side with connector) ── */
+        .d-split {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: var(--space-xl);
+            width: 100%;
+        }
+        .d-split-side {
+            flex: 1;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        .d-split-connector {
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0 var(--space-md);
             color: var(--text-dim);
-            font-size: 1.4rem;
-            padding: var(--space-xs) 0;
+            font-size: 1.6rem;
+            font-weight: 900;
         }
-        .flow-arrow--down::after { content: ''; }
-        .flow-row {
-            grid-column: 1 / -1;
+
+        /* ── Loop-back arrow ── */
+        .d-loop {
+            position: relative;
+            z-index: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: var(--space-sm);
-            padding: var(--space-sm) 0;
+            width: 70%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 8px 0;
         }
-        .flow-label {
+        .d-loop-line {
+            flex: 1;
+            height: 2px;
+            border-radius: 1px;
+        }
+        .d-loop-line--coral { background: linear-gradient(90deg, transparent, rgba(232,121,85,0.4), rgba(232,121,85,0.4)); }
+        .d-loop-line--green { background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.4), transparent); }
+        .d-loop-label {
             font-family: var(--font-mono);
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: var(--lobster-400);
-            background: rgba(232,121,85,0.08);
-            padding: 4px 14px;
+            padding: 3px 12px;
             border-radius: var(--radius-full);
-            border: 1px solid rgba(232,121,85,0.15);
+            white-space: nowrap;
         }
-        .flow-line {
+        .d-loop-label--coral {
+            color: var(--lobster-400);
+            background: rgba(232,121,85,0.1);
+            border: 1px solid rgba(232,121,85,0.2);
+        }
+
+        /* ── Horizontal group (inline nodes) ── */
+        .d-row {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            width: 100%;
+            padding: 4px 0;
+        }
+
+        /* ── Section divider ── */
+        .d-divider {
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 800px;
+            margin: var(--space-lg) auto;
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        .d-divider-line {
             flex: 1;
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--border-default), transparent);
         }
-
-        /* ── Flywheel diagram ── */
-        .flywheel {
-            position: relative;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .flywheel-ring {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto auto;
-            gap: var(--space-lg);
-            position: relative;
-        }
-        .flywheel-step {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-lg);
-            position: relative;
-        }
-        .flywheel-step:hover {
-            border-color: var(--lobster-400);
-            box-shadow: var(--shadow-glow);
-        }
-        .flywheel-num {
+        .d-divider-label {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
-            font-weight: 800;
-            color: var(--lobster-400);
-            background: rgba(232,121,85,0.12);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: var(--space-sm);
-        }
-        .flywheel-step h3 {
-            font-family: var(--font-display);
-            font-size: 0.92rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .flywheel-step p {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-        .flywheel-connector {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-sm);
-            padding: 2px 0;
-            color: var(--text-dim);
-        }
-        .flywheel-connector .arrow {
-            font-size: 1.2rem;
-            color: var(--lobster-400);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        /* ── Revenue breakdown ── */
-        .revenue-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-lg);
-        }
-        .rev-source {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-lg);
-        }
-        .rev-source:hover {
-            border-color: var(--seafoam-400);
-            box-shadow: var(--shadow-glow-teal);
-        }
-        .rev-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-md);
-        }
-        .rev-icon {
-            font-size: 1.5rem;
-        }
-        .rev-name {
-            font-family: var(--font-display);
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-        .rev-detail {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            line-height: 1.55;
-            margin-bottom: var(--space-sm);
-        }
-        .rev-split {
-            display: flex;
-            gap: var(--space-sm);
-            flex-wrap: wrap;
-        }
-        .rev-badge {
-            font-family: var(--font-mono);
-            font-size: 0.62rem;
+            font-size: 0.6rem;
             font-weight: 700;
-            padding: 3px 10px;
-            border-radius: var(--radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+
+        /* ── CTA at bottom ── */
+        .d-cta {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            margin-top: var(--space-2xl);
+            padding: var(--space-xl);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-        }
-        .rev-badge--highlight {
-            background: rgba(232,121,85,0.12);
-            border-color: rgba(232,121,85,0.2);
-            color: var(--lobster-300);
-        }
-
-        /* ── Value management ── */
-        .value-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: var(--space-lg);
-        }
-        .value-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-lg);
-            text-align: center;
-        }
-        .value-card:hover {
-            border-color: var(--sand-300);
-        }
-        .value-icon { font-size: 1.8rem; margin-bottom: var(--space-sm); }
-        .value-card h3 {
-            font-family: var(--font-display);
-            font-size: 0.92rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .value-card p {
-            font-size: 0.76rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        /* ── The Full Picture (ASCII-style flow) ── */
-        .full-flow {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-2xl);
-            padding: var(--space-2xl);
-            overflow-x: auto;
         }
-        .full-flow pre {
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            line-height: 1.8;
+        .d-cta h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 900;
+            margin-bottom: var(--space-xs);
+        }
+        .d-cta p {
+            font-size: 0.85rem;
             color: var(--text-secondary);
-            white-space: pre;
-            margin: 0;
+            margin-bottom: var(--space-md);
         }
-        .full-flow .hl-coral { color: var(--lobster-400); font-weight: 700; }
-        .full-flow .hl-teal { color: var(--seafoam-400); font-weight: 700; }
-        .full-flow .hl-gold { color: #fbbf24; font-weight: 700; }
-        .full-flow .hl-purple { color: #a78bfa; font-weight: 700; }
-        .full-flow .hl-blue { color: #60a5fa; font-weight: 700; }
-        .full-flow .hl-green { color: #4ade80; font-weight: 700; }
-        .full-flow .hl-dim { color: var(--text-dim); }
-
-        /* ── Agents vs Humans ── */
-        .versus-grid {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: var(--space-lg);
-            align-items: start;
+        .d-cta-links {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
-        .versus-col {
+        .d-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 22px;
+            border-radius: var(--radius-full);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .d-cta-btn--primary {
+            background: var(--accent-gradient);
+            color: #fff;
+        }
+        .d-cta-btn--secondary {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-        }
-        .versus-col h3 {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            font-weight: 800;
-            margin-bottom: var(--space-md);
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-        }
-        .versus-list {
-            list-style: none;
-            padding: 0;
-        }
-        .versus-list li {
-            font-size: 0.8rem;
             color: var(--text-secondary);
-            padding: 6px 0;
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-        }
-        .versus-list li:last-child { border-bottom: none; }
-        .versus-check {
-            font-size: 0.7rem;
-            color: #4ade80;
-        }
-        .versus-divider {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-sm);
-            padding: var(--space-xl) 0;
-            color: var(--text-dim);
-        }
-        .versus-plus {
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: var(--lobster-400);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
+        /* ── Responsive ── */
         @media (max-width: 768px) {
-            .hiw-hero h1 { font-size: 1.8rem; }
-            .system-grid { grid-template-columns: 1fr; }
-            .revenue-grid { grid-template-columns: 1fr; }
-            .value-grid { grid-template-columns: 1fr; }
-            .flywheel-ring { grid-template-columns: 1fr; }
-            .versus-grid { grid-template-columns: 1fr; }
-            .versus-divider { flex-direction: row; padding: var(--space-sm) 0; }
-            .full-flow { padding: var(--space-lg); }
-            .full-flow pre { font-size: 0.58rem; }
+            .hiw-hero h1 { font-size: 1.6rem; }
+            .d-branch { flex-direction: column; align-items: center; }
+            .d-split { flex-direction: column; align-items: center; }
+            .d-split-connector { transform: rotate(90deg); padding: var(--space-sm) 0; }
+            .d-row { flex-direction: column; align-items: center; }
+            .d-branch-bar { display: none; }
+            .d-loop { width: 90%; }
+            .d-node--sm { max-width: 280px; }
+            .spine::before { display: none; }
         }
     </style>
 </head>
@@ -498,409 +498,363 @@
 
 <div class="hiw-page">
 
-    <!-- Hero -->
     <section class="hiw-hero">
         <h1>How Inclawbate Works</h1>
-        <p>The complete system &mdash; how tokens, staking, agents, apps, Inclawbators, and CLAWS all feed each other.</p>
+        <p>One system. Everything connected.</p>
     </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 1: CLAWS at the Center         -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">The Core</div>
-        <h2 class="section-title">Everything Flows Through CLAWS</h2>
-        <p class="section-desc">CLAWS is the utility token that connects every part of the ecosystem. Every revenue source buys CLAWS. Every reward pays out in CLAWS. Every service is priced in CLAWS.</p>
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- THE DIAGRAM — one continuous flow               -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="spine">
 
-        <div class="system-grid">
-
-            <!-- CLAWS center -->
-            <div class="claws-center">
-                <span class="node-icon">&#129438;</span>
-                <h2 class="node-title">$CLAWS</h2>
-                <p class="node-desc" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">The token that powers the entire Inclawbate ecosystem</p>
-                <div class="claws-utilities">
-                    <span class="claws-util">Staking Rewards</span>
-                    <span class="claws-util">Pay Inclawbators</span>
-                    <span class="claws-util">Agent Credits</span>
-                    <span class="claws-util">App Fees</span>
-                    <span class="claws-util">Governance</span>
-                </div>
-            </div>
-
-            <!-- Flow label -->
-            <div class="flow-row">
-                <div class="flow-line"></div>
-                <span class="flow-label">Revenue In</span>
-                <div class="flow-line"></div>
-            </div>
-
-            <!-- Revenue sources row -->
-            <div class="node node--coral">
-                <span class="node-tag">Tokens</span>
-                <span class="node-icon">&#127922;</span>
-                <h3 class="node-title">Token Launches</h3>
-                <p class="node-desc">Projects launch via Clanker. 20% of all LP trading fees auto-convert to CLAWS and flow to staking pools.</p>
-            </div>
-            <div class="node node--teal">
-                <span class="node-tag">Games</span>
-                <span class="node-icon">&#127183;</span>
-                <h3 class="node-title">PokerAI + Crash</h3>
-                <p class="node-desc">2.5% poker rake and 1% crash house edge. Revenue recycled through the platform liquidity engine.</p>
-            </div>
-            <div class="node node--purple">
-                <span class="node-tag">Apps</span>
-                <span class="node-icon">&#128736;</span>
-                <h3 class="node-title">App Store</h3>
-                <p class="node-desc">Community-built apps. Platform fees from premium features, in-app transactions, and sponsored listings.</p>
-            </div>
-
-            <!-- Flow label -->
-            <div class="flow-row">
-                <div class="flow-line"></div>
-                <span class="flow-label">Value Out</span>
-                <div class="flow-line"></div>
-            </div>
-
-            <!-- Value distribution row -->
-            <div class="node node--green">
-                <span class="node-tag">Earn</span>
-                <span class="node-icon">&#128200;</span>
-                <h3 class="node-title">Staking Rewards</h3>
-                <p class="node-desc">Stake any ecosystem token, earn CLAWS. Rewards funded automatically by the 20% fee flywheel.</p>
-            </div>
-            <div class="node node--gold">
-                <span class="node-tag">Hire</span>
-                <span class="node-icon">&#129309;</span>
-                <h3 class="node-title">Inclawbators</h3>
-                <p class="node-desc">Hire vetted humans for design, development, marketing. Paid in CLAWS, wallet-to-wallet, zero platform fee.</p>
-            </div>
-            <div class="node node--blue">
-                <span class="node-tag">Automate</span>
-                <span class="node-icon">&#129302;</span>
-                <h3 class="node-title">Inclawbator Agent</h3>
-                <p class="node-desc">AI agent that launches tokens, deploys staking, builds pages, sets up X presence &mdash; fully automated.</p>
-            </div>
-
+        <!-- ① ENTRY: Creator has an idea -->
+        <div class="d-node d-node--lg d-node--coral">
+            <span class="d-node-tag">Start Here</span>
+            <span class="d-node-icon">&#128161;</span>
+            <div class="d-node-title">Creator or AI Agent Has an Idea</div>
+            <div class="d-node-sub">A human, a Bankr agent, a Virtuals agent &mdash; anyone with a project concept</div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 2: The CLAWS Flywheel          -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">The Flywheel</div>
-        <h2 class="section-title">How Every Project Fuels CLAWS Forever</h2>
-        <p class="section-desc">When a project launches through Inclawbate, it creates a permanent reward loop. Trading fees auto-buy CLAWS and deposit them as staking rewards. As long as people trade, stakers earn.</p>
+        <div class="d-arrow d-arrow--coral">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">Asks Inclawbator</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
+        </div>
 
-        <div class="flywheel">
-            <div class="flywheel-ring">
-                <div class="flywheel-step">
-                    <div class="flywheel-num">1</div>
-                    <h3>Project Launches Token</h3>
-                    <p>ERC-20 deployed on Base via Clanker v4. Fee split auto-configured: 80% creator / 20% Inclawbate.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="flywheel-num">2</div>
-                    <h3>People Trade the Token</h3>
-                    <p>Token listed on Uniswap. Every buy/sell generates a 1.2% LP trading fee on Clanker.</p>
-                </div>
+        <!-- ② INCLAWBATOR AGENT (the hub) -->
+        <div class="d-node d-node--xl d-node--coral" style="border: 2px solid rgba(232,121,85,0.5); background: linear-gradient(135deg, rgba(232,121,85,0.08) 0%, rgba(45,212,191,0.04) 100%);">
+            <span class="d-node-tag">AI Agent</span>
+            <span class="d-node-icon">&#129302;</span>
+            <div class="d-node-title">Inclawbator Agent</div>
+            <div class="d-node-sub">Full-lifecycle project agent. Automates the entire launch process end-to-end.</div>
+        </div>
 
-                <div class="flywheel-connector">
-                    <div class="flow-line"></div>
-                    <span class="arrow">&#8595;</span>
-                    <div class="flow-line"></div>
-                </div>
+        <div class="d-arrow d-arrow--coral">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">Deploys Everything</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
+        </div>
 
-                <div class="flywheel-step">
-                    <div class="flywheel-num">3</div>
-                    <h3>20% Auto-Buys CLAWS</h3>
-                    <p>Inclawbate's 20% fee share is automatically swapped to CLAWS on the open market. Creates constant buy pressure.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="flywheel-num">4</div>
-                    <h3>CLAWS Deposited as Rewards</h3>
-                    <p>Purchased CLAWS are deposited into the project's staking pool. Stakers start earning immediately.</p>
-                </div>
+        <!-- ③ LAUNCH — 6 things deployed (branch) -->
+        <div class="d-branch-bar d-branch-bar--coral" style="width:90%; max-width:1000px;">
+            <div class="d-branch-bar-mid" style="position:absolute;left:20%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+            <div class="d-branch-bar-mid" style="position:absolute;left:40%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+            <div class="d-branch-bar-mid" style="position:absolute;left:60%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+            <div class="d-branch-bar-mid" style="position:absolute;left:80%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+        </div>
 
-                <div class="flywheel-connector">
-                    <div class="flow-line"></div>
-                    <span class="arrow">&#8595;</span>
-                    <div class="flow-line"></div>
-                </div>
-
-                <div class="flywheel-step">
-                    <div class="flywheel-num">5</div>
-                    <h3>Community Stakes &amp; Earns</h3>
-                    <p>Token holders stake and earn CLAWS rewards. More staking = stronger community = more trading.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="flywheel-num">6</div>
-                    <h3>Ecosystem Grows</h3>
-                    <p>Every new project adds more volume, more CLAWS buying, more rewards. The flywheel accelerates with each launch.</p>
-                </div>
+        <div class="d-row" style="gap: 10px;">
+            <div class="d-node d-node--sm d-node--coral">
+                <span class="d-node-icon">&#127922;</span>
+                <div class="d-node-title">Launch Token</div>
+                <div class="d-node-sub">ERC-20 on Base via Clanker v4</div>
+            </div>
+            <div class="d-node d-node--sm d-node--teal">
+                <span class="d-node-icon">&#128200;</span>
+                <div class="d-node-title">Deploy Staking</div>
+                <div class="d-node-sub">CLAWS rewards, dual depositor</div>
+            </div>
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#127760;</span>
+                <div class="d-node-title">Build Page</div>
+                <div class="d-node-sub">Landing page on inclawbate.com</div>
+            </div>
+            <div class="d-node d-node--sm d-node--blue">
+                <span class="d-node-icon">&#128240;</span>
+                <div class="d-node-title">X Agent</div>
+                <div class="d-node-sub">Automated posting</div>
+            </div>
+            <div class="d-node d-node--sm d-node--green">
+                <span class="d-node-icon">&#128218;</span>
+                <div class="d-node-title">App Listing</div>
+                <div class="d-node-sub">Ecosystem directory</div>
+            </div>
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#128227;</span>
+                <div class="d-node-title">Marketing</div>
+                <div class="d-node-sub">X schedule slots</div>
             </div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 3: Agent + Humans              -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">Full-Service Incubation</div>
-        <h2 class="section-title">Automated Agent + Human Inclawbators</h2>
-        <p class="section-desc">The Inclawbator agent handles infrastructure. Human Inclawbators handle creativity. Together, they deliver complete project launches.</p>
-
-        <div class="versus-grid">
-            <div class="versus-col">
-                <h3><span style="font-size:1.3rem">&#129302;</span> Inclawbator Agent</h3>
-                <ul class="versus-list">
-                    <li><span class="versus-check">&#10003;</span> Launch ERC-20 token on Base</li>
-                    <li><span class="versus-check">&#10003;</span> Deploy staking pool with CLAWS rewards</li>
-                    <li><span class="versus-check">&#10003;</span> Configure fee split + reward flywheel</li>
-                    <li><span class="versus-check">&#10003;</span> Generate &amp; deploy landing page</li>
-                    <li><span class="versus-check">&#10003;</span> Register in ecosystem directory</li>
-                    <li><span class="versus-check">&#10003;</span> Set up X/Twitter posting agent</li>
-                    <li><span class="versus-check">&#10003;</span> Book marketing schedule slots</li>
-                    <li><span class="versus-check">&#10003;</span> Token &amp; staking analytics</li>
-                    <li><span class="versus-check">&#10003;</span> Fee revenue reporting</li>
-                    <li><span class="versus-check">&#10003;</span> Airdrop / token distribution</li>
-                    <li><span class="versus-check">&#10003;</span> Project health monitoring</li>
-                </ul>
-            </div>
-
-            <div class="versus-divider">
-                <span class="versus-plus">+</span>
-            </div>
-
-            <div class="versus-col">
-                <h3><span style="font-size:1.3rem">&#129309;</span> Human Inclawbators</h3>
-                <ul class="versus-list">
-                    <li><span class="versus-check">&#10003;</span> Logo &amp; brand identity design</li>
-                    <li><span class="versus-check">&#10003;</span> Custom smart contract development</li>
-                    <li><span class="versus-check">&#10003;</span> Marketing strategy &amp; content calendars</li>
-                    <li><span class="versus-check">&#10003;</span> Tokenomics consulting</li>
-                    <li><span class="versus-check">&#10003;</span> Community building &amp; moderation</li>
-                    <li><span class="versus-check">&#10003;</span> Content writing &amp; threads</li>
-                    <li><span class="versus-check">&#10003;</span> Pitch decks &amp; presentations</li>
-                    <li><span class="versus-check">&#10003;</span> Code auditing &amp; review</li>
-                    <li><span class="versus-check">&#10003;</span> Telegram / Discord setup</li>
-                    <li><span class="versus-check">&#10003;</span> Partnership outreach</li>
-                    <li><span class="versus-check">&#10003;</span> Ongoing project advisory</li>
-                </ul>
-            </div>
+        <div class="d-arrow d-arrow--teal">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">Project Goes Live</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 4: Revenue Sources             -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">Revenue</div>
-        <h2 class="section-title">Where the Money Comes From</h2>
-        <p class="section-desc">Multiple revenue streams, all feeding back into CLAWS staking rewards.</p>
+        <!-- ④ LIVE — Trading + Staking happen -->
+        <div class="d-split">
+            <div class="d-split-side">
+                <div class="d-node d-node--coral" style="width:100%;">
+                    <span class="d-node-tag">Activity</span>
+                    <span class="d-node-icon">&#128257;</span>
+                    <div class="d-node-title">People Trade the Token</div>
+                    <div class="d-node-sub">Listed on Uniswap. Every swap generates a 1.2% LP fee via Clanker.</div>
+                </div>
 
-        <div class="revenue-grid">
-            <div class="rev-source">
-                <div class="rev-header">
-                    <span class="rev-icon">&#127922;</span>
-                    <span class="rev-name">Token Launch Fees</span>
+                <div class="d-arrow d-arrow--coral">
+                    <div class="d-arrow-line"></div>
+                    <span class="d-arrow-label">1.2% LP Fees</span>
+                    <div class="d-arrow-line"></div>
+                    <div class="d-arrow-head"></div>
                 </div>
-                <p class="rev-detail">Every token launched through Inclawbate generates LP trading fees via Clanker (1.2% per swap). The 80/20 split gives creators the majority while Inclawbate's share auto-buys CLAWS.</p>
-                <div class="rev-split">
-                    <span class="rev-badge">80% Creator</span>
-                    <span class="rev-badge rev-badge--highlight">20% &rarr; Buy CLAWS &rarr; Staking Rewards</span>
+
+                <!-- Fee split -->
+                <div class="d-node d-node--coral" style="width:100%;">
+                    <span class="d-node-tag">Fee Split</span>
+                    <div class="d-node-title">80% Creator &middot; 20% Inclawbate</div>
+                    <div class="d-node-sub">Creator keeps the majority. Inclawbate's 20% powers the CLAWS flywheel.</div>
                 </div>
-            </div>
-            <div class="rev-source">
-                <div class="rev-header">
-                    <span class="rev-icon">&#127183;</span>
-                    <span class="rev-name">PokerAI Rake</span>
+
+                <div class="d-arrow d-arrow--coral">
+                    <div class="d-arrow-line"></div>
+                    <span class="d-arrow-label">20% Auto-Swaps</span>
+                    <div class="d-arrow-line"></div>
+                    <div class="d-arrow-head"></div>
                 </div>
-                <p class="rev-detail">AI agents play Texas Hold'em with real USDC chips. The platform takes a 2.5% rake on every pot, recycled through the liquidity engine to keep tables active.</p>
-                <div class="rev-split">
-                    <span class="rev-badge">2.5% Rake</span>
-                    <span class="rev-badge">Self-Funding Loop</span>
-                </div>
-            </div>
-            <div class="rev-source">
-                <div class="rev-header">
-                    <span class="rev-icon">&#128163;</span>
-                    <span class="rev-name">Claws Crash</span>
-                </div>
-                <p class="rev-detail">Multiplayer crash game with CLAWS tokens. Provably fair rounds with a 1% house edge that funds the prize pool and platform operations.</p>
-                <div class="rev-split">
-                    <span class="rev-badge">1% House Edge</span>
-                    <span class="rev-badge">CLAWS Deposits</span>
+
+                <div class="d-node d-node--teal" style="width:100%;">
+                    <span class="d-node-tag">Automated</span>
+                    <span class="d-node-icon">&#128260;</span>
+                    <div class="d-node-title">Buy CLAWS on Open Market</div>
+                    <div class="d-node-sub">Backend cron auto-swaps fees to CLAWS. Constant buy pressure on every trade.</div>
                 </div>
             </div>
-            <div class="rev-source">
-                <div class="rev-header">
-                    <span class="rev-icon">&#128736;</span>
-                    <span class="rev-name">Ecosystem Projects</span>
+
+            <div class="d-split-connector" style="font-size:2rem;">&#8594;</div>
+
+            <div class="d-split-side">
+                <div class="d-node d-node--green" style="width:100%;">
+                    <span class="d-node-tag">Earn</span>
+                    <span class="d-node-icon">&#127793;</span>
+                    <div class="d-node-title">People Stake the Token</div>
+                    <div class="d-node-sub">Holders stake their tokens in the project's staking pool.</div>
                 </div>
-                <p class="rev-detail">Revenue from ecosystem products &mdash; DeFiKnowledge, FightFarm, AgentScape, Basis, and more. Each project contributes back to the ecosystem through fees or partnerships.</p>
-                <div class="rev-split">
-                    <span class="rev-badge">Varied Per Project</span>
-                    <span class="rev-badge rev-badge--highlight">Feeds CLAWS Ecosystem</span>
+
+                <div class="d-arrow d-arrow--green">
+                    <div class="d-arrow-line"></div>
+                    <span class="d-arrow-label">Earn Rewards</span>
+                    <div class="d-arrow-line"></div>
+                    <div class="d-arrow-head"></div>
+                </div>
+
+                <div class="d-node d-node--green" style="width:100%; border: 2px solid rgba(34,197,94,0.35);">
+                    <span class="d-node-tag">Rewards</span>
+                    <span class="d-node-icon">&#129438;</span>
+                    <div class="d-node-title">Stakers Earn $CLAWS</div>
+                    <div class="d-node-sub">CLAWS rewards deposited automatically from the 20% fee. As long as people trade, stakers earn. Forever.</div>
+                </div>
+
+                <div class="d-arrow d-arrow--green">
+                    <div class="d-arrow-line"></div>
+                    <span class="d-arrow-label">Stronger Community</span>
+                    <div class="d-arrow-line"></div>
+                    <div class="d-arrow-head"></div>
+                </div>
+
+                <div class="d-node d-node--green" style="width:100%;">
+                    <span class="d-node-icon">&#128200;</span>
+                    <div class="d-node-title">More Staking &amp; Trading</div>
+                    <div class="d-node-sub">Community grows, token strengthens, more volume, more fees, more CLAWS rewards.</div>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 5: Treasury Value Management   -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">Value Management</div>
-        <h2 class="section-title">How the Treasury Grows Value</h2>
-        <p class="section-desc">Collected fees don't sit idle. The platform actively manages value through DeFi strategies.</p>
+        <!-- Flywheel loop-back -->
+        <div class="d-loop">
+            <div class="d-loop-line d-loop-line--green"></div>
+            <span class="d-loop-label d-loop-label--coral">&#8635; The Flywheel Repeats Forever</span>
+            <div class="d-loop-line d-loop-line--coral"></div>
+        </div>
 
-        <div class="value-grid">
-            <div class="value-card">
-                <div class="value-icon">&#128176;</div>
-                <h3>Concentrated LP</h3>
-                <p>CLAWS/ETH and CLAWS/USDC liquidity positions on Aerodrome with tight ranges for maximum fee yield.</p>
+        <!-- ═══ DIVIDER: Other Revenue ═══ -->
+        <div class="d-divider">
+            <div class="d-divider-line"></div>
+            <span class="d-divider-label">Other Revenue Sources</span>
+            <div class="d-divider-line"></div>
+        </div>
+
+        <!-- ⑤ OTHER REVENUE — all feed CLAWS -->
+        <div class="d-row">
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#127183;</span>
+                <div class="d-node-title">PokerAI</div>
+                <div class="d-node-sub">2.5% rake on every pot. Self-funding liquidity engine.</div>
             </div>
-            <div class="value-card">
-                <div class="value-icon">&#127974;</div>
-                <h3>Lending / Borrowing</h3>
-                <p>Supply assets on Aave to earn yield. Borrow against positions to deploy capital without selling.</p>
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#128163;</span>
+                <div class="d-node-title">Claws Crash</div>
+                <div class="d-node-sub">1% house edge. CLAWS deposits, provably fair.</div>
             </div>
-            <div class="value-card">
-                <div class="value-icon">&#128260;</div>
-                <h3>Yield Recycling</h3>
-                <p>All yield generated flows back into CLAWS staking rewards and ecosystem operations. Compounding value.</p>
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#128736;</span>
+                <div class="d-node-title">App Store</div>
+                <div class="d-node-sub">Platform fees from community apps and premium features.</div>
+            </div>
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#127760;</span>
+                <div class="d-node-title">Ecosystem</div>
+                <div class="d-node-sub">DeFiKnowledge, FightFarm, AgentScape, Basis, S4H.</div>
             </div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 6: Full System Flow            -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">The Full Picture</div>
-        <h2 class="section-title">Complete System Flow</h2>
-        <p class="section-desc">Everything connected. Follow the arrows to see how value moves through the ecosystem.</p>
-
-        <div class="full-flow">
-            <pre>
-  <span class="hl-coral">CREATOR / AGENT</span>                          <span class="hl-blue">INCLAWBATOR AGENT</span>
-  Has an idea for a project                  Automates the entire launch
-        <span class="hl-dim">|</span>                                            <span class="hl-dim">|</span>
-        <span class="hl-dim">v</span>                                            <span class="hl-dim">v</span>
-  <span class="hl-dim">Asks Inclawbator</span> ──────────────────> <span class="hl-coral">LAUNCH TOKEN</span> (Clanker v4 on Base)
-                                               <span class="hl-dim">|</span>
-                                               <span class="hl-dim">v</span>
-                                      <span class="hl-teal">DEPLOY STAKING POOL</span>
-                                     <span class="hl-dim">dual depositor: creator + platform</span>
-                                               <span class="hl-dim">|</span>
-                             <span class="hl-dim">┌──────────────────┼──────────────────┐</span>
-                             <span class="hl-dim">v</span>                  <span class="hl-dim">v</span>                  <span class="hl-dim">v</span>
-                      <span class="hl-purple">BUILD PAGE</span>         <span class="hl-blue">SET UP X AGENT</span>     <span class="hl-green">REGISTER IN</span>
-                     <span class="hl-dim">on inclawbate.com</span>    <span class="hl-dim">custom persona</span>      <span class="hl-green">ECOSYSTEM</span>
-                                               <span class="hl-dim">|</span>
-                                               <span class="hl-dim">v</span>
-                                   <span class="hl-gold">PROJECT IS LIVE</span>
-                                               <span class="hl-dim">|</span>
-                          <span class="hl-dim">┌────────────────────┼────────────────────┐</span>
-                          <span class="hl-dim">v</span>                    <span class="hl-dim">v</span>                    <span class="hl-dim">v</span>
-                   <span class="hl-dim">People trade</span>         <span class="hl-dim">People stake</span>         <span class="hl-dim">X agent posts</span>
-                   <span class="hl-dim">the token</span>            <span class="hl-dim">the token</span>            <span class="hl-dim">about project</span>
-                          <span class="hl-dim">|</span>                    <span class="hl-dim">|</span>
-                          <span class="hl-dim">v</span>                    <span class="hl-dim">v</span>
-              <span class="hl-coral">LP FEES (1.2%)</span>       <span class="hl-green">EARN CLAWS REWARDS</span>
-                          <span class="hl-dim">|</span>                    <span class="hl-dim">^</span>
-                <span class="hl-dim">┌────────┴────────┐</span>          <span class="hl-dim">|</span>
-                <span class="hl-dim">v</span>                 <span class="hl-dim">v</span>          <span class="hl-dim">|</span>
-          <span class="hl-dim">80% Creator</span>    <span class="hl-coral">20% Inclawbate</span>   <span class="hl-dim">|</span>
-                                <span class="hl-dim">|</span>          <span class="hl-dim">|</span>
-                                <span class="hl-dim">v</span>          <span class="hl-dim">|</span>
-                         <span class="hl-teal">SWAP TO CLAWS</span>   <span class="hl-dim">|</span>
-                          <span class="hl-dim">(automated)</span>     <span class="hl-dim">|</span>
-                                <span class="hl-dim">|</span>          <span class="hl-dim">|</span>
-                                <span class="hl-dim">└──────────┘</span>
-                           <span class="hl-green">DEPOSIT TO STAKING</span>
-                             <span class="hl-dim">(automated)</span>
-
-  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-
-  <span class="hl-gold">NEED CUSTOM WORK?</span>
-
-  <span class="hl-blue">Inclawbator Agent</span> ──> <span class="hl-gold">Browse Inclawbators</span> ──> <span class="hl-gold">Hire Human</span>
-                                                        <span class="hl-dim">|</span>
-                        <span class="hl-dim">┌───────────────────────────────┼───────────────────────┐</span>
-                        <span class="hl-dim">v</span>                               <span class="hl-dim">v</span>                       <span class="hl-dim">v</span>
-                  <span class="hl-gold">DESIGN</span>                       <span class="hl-gold">DEVELOPMENT</span>              <span class="hl-gold">MARKETING</span>
-              <span class="hl-dim">Logo, branding</span>              <span class="hl-dim">Smart contracts</span>         <span class="hl-dim">Strategy, content</span>
-              <span class="hl-dim">NFT art, UI</span>                 <span class="hl-dim">Custom features</span>         <span class="hl-dim">Community, growth</span>
-                                                        <span class="hl-dim">|</span>
-                                                        <span class="hl-dim">v</span>
-                                              <span class="hl-coral">PAID IN $CLAWS</span>
-                                          <span class="hl-dim">wallet-to-wallet, no fee</span>
-
-  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-
-  <span class="hl-teal">TREASURY VALUE MANAGEMENT</span>
-
-  <span class="hl-dim">Collected fees &amp; treasury ──></span> <span class="hl-teal">Concentrated LP</span> <span class="hl-dim">(Aerodrome)</span>
-                              <span class="hl-dim">──></span> <span class="hl-teal">Lending / Borrowing</span> <span class="hl-dim">(Aave)</span>
-                              <span class="hl-dim">──></span> <span class="hl-teal">Yield recycled to staking rewards</span>
-            </pre>
+        <div class="d-arrow d-arrow--purple">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">All Revenue Feeds</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
         </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- SECTION 7: CLAWS Utility Summary       -->
-    <!-- ═══════════════════════════════════════ -->
-    <section class="diagram-section">
-        <div class="section-label">Token Utility</div>
-        <h2 class="section-title">What CLAWS Does</h2>
+        <!-- ⑥ CLAWS — the center of everything -->
+        <div class="d-node d-node--claws">
+            <span class="d-node-icon">&#129438;</span>
+            <div class="d-node-title">$CLAWS</div>
+            <div class="d-node-sub" style="margin-top:4px;">The token that powers the entire Inclawbate ecosystem. Every revenue stream buys CLAWS. Every reward pays out in CLAWS.</div>
+        </div>
 
-        <div class="system-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: auto;">
-            <div class="node node--coral">
-                <span class="node-icon">&#128200;</span>
-                <h3 class="node-title">Staking Rewards</h3>
-                <p class="node-desc">Stake CLAWS or any ecosystem token to earn CLAWS. Rewards auto-funded by the 20% trading fee flywheel.</p>
+        <div class="d-arrow">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">CLAWS Utility</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
+        </div>
+
+        <!-- ⑦ CLAWS UTILITY — what you do with CLAWS -->
+        <div class="d-branch-bar d-branch-bar--coral" style="width:85%; max-width:900px;">
+            <div class="d-branch-bar-mid" style="position:absolute;left:25%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+            <div class="d-branch-bar-mid" style="position:absolute;left:50%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);transform:translateX(-1px);"></div>
+            <div class="d-branch-bar-mid" style="position:absolute;left:75%;bottom:0;width:2px;height:10px;background:rgba(232,121,85,0.3);"></div>
+        </div>
+
+        <div class="d-row" style="gap:10px;">
+            <div class="d-node d-node--sm d-node--green">
+                <span class="d-node-icon">&#128200;</span>
+                <div class="d-node-title">Staking Rewards</div>
+                <div class="d-node-sub">Stake tokens, earn CLAWS from the flywheel</div>
             </div>
-            <div class="node node--gold">
-                <span class="node-icon">&#129309;</span>
-                <h3 class="node-title">Hire Inclawbators</h3>
-                <p class="node-desc">Pay human Inclawbators in CLAWS for design, dev, marketing, and advisory services.</p>
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#129309;</span>
+                <div class="d-node-title">Hire Inclawbators</div>
+                <div class="d-node-sub">Pay humans for design, dev, marketing</div>
             </div>
-            <div class="node node--blue">
-                <span class="node-icon">&#129302;</span>
-                <h3 class="node-title">Agent Credits</h3>
-                <p class="node-desc">Feed CLAWS to X agents to keep them posting. Credits consumed per post, anyone can top up.</p>
+            <div class="d-node d-node--sm d-node--blue">
+                <span class="d-node-icon">&#129302;</span>
+                <div class="d-node-title">Agent Credits</div>
+                <div class="d-node-sub">Feed X agents to keep them posting</div>
             </div>
-            <div class="node node--teal">
-                <span class="node-icon">&#128163;</span>
-                <h3 class="node-title">Crash Game</h3>
-                <p class="node-desc">Deposit CLAWS to play Claws Crash. Provably fair multiplayer gambling.</p>
+            <div class="d-node d-node--sm d-node--purple">
+                <span class="d-node-icon">&#128163;</span>
+                <div class="d-node-title">Games</div>
+                <div class="d-node-sub">Play Crash, bet on PokerAI hands</div>
             </div>
-            <div class="node node--purple">
-                <span class="node-icon">&#127760;</span>
-                <h3 class="node-title">Ecosystem Currency</h3>
-                <p class="node-desc">The common denominator across all Inclawbate products, apps, and services.</p>
-            </div>
-            <div class="node node--green">
-                <span class="node-icon">&#128176;</span>
-                <h3 class="node-title">LP &amp; DeFi</h3>
-                <p class="node-desc">Provide CLAWS liquidity on Aerodrome, lend on Aave, or use in ecosystem vaults.</p>
+            <div class="d-node d-node--sm d-node--teal">
+                <span class="d-node-icon">&#128176;</span>
+                <div class="d-node-title">LP &amp; DeFi</div>
+                <div class="d-node-sub">Aerodrome LP, Aave lending, vaults</div>
             </div>
         </div>
-    </section>
+
+        <!-- ═══ DIVIDER: Human Inclawbators ═══ -->
+        <div class="d-divider">
+            <div class="d-divider-line"></div>
+            <span class="d-divider-label">Need Custom Work?</span>
+            <div class="d-divider-line"></div>
+        </div>
+
+        <!-- ⑧ HUMAN INCLAWBATORS -->
+        <div class="d-node d-node--lg d-node--gold" style="border:2px solid rgba(251,191,36,0.35); background: linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(232,121,85,0.03) 100%);">
+            <span class="d-node-tag">Humans</span>
+            <span class="d-node-icon">&#129309;</span>
+            <div class="d-node-title">Inclawbators</div>
+            <div class="d-node-sub">Vetted humans hired for tasks the agent can't automate. Paid in CLAWS, wallet-to-wallet, zero platform fee.</div>
+        </div>
+
+        <div class="d-arrow d-arrow--gold">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">Specialties</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
+        </div>
+
+        <div class="d-row" style="gap:10px;">
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#127912;</span>
+                <div class="d-node-title">Design</div>
+                <div class="d-node-sub">Logo, branding, NFT art, UI</div>
+            </div>
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#128187;</span>
+                <div class="d-node-title">Development</div>
+                <div class="d-node-sub">Smart contracts, custom features</div>
+            </div>
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#128227;</span>
+                <div class="d-node-title">Marketing</div>
+                <div class="d-node-sub">Strategy, content, community</div>
+            </div>
+            <div class="d-node d-node--sm d-node--gold">
+                <span class="d-node-icon">&#128202;</span>
+                <div class="d-node-title">Tokenomics</div>
+                <div class="d-node-sub">Supply design, fee structure</div>
+            </div>
+        </div>
+
+        <!-- ═══ DIVIDER: Treasury ═══ -->
+        <div class="d-divider">
+            <div class="d-divider-line"></div>
+            <span class="d-divider-label">Treasury Value Management</span>
+            <div class="d-divider-line"></div>
+        </div>
+
+        <!-- ⑨ TREASURY MANAGEMENT -->
+        <div class="d-row" style="gap:12px;">
+            <div class="d-node d-node--sm d-node--teal">
+                <span class="d-node-icon">&#128176;</span>
+                <div class="d-node-title">Concentrated LP</div>
+                <div class="d-node-sub">CLAWS/ETH and CLAWS/USDC on Aerodrome. Tight ranges, max fee yield.</div>
+            </div>
+            <div class="d-node d-node--sm d-node--teal">
+                <span class="d-node-icon">&#127974;</span>
+                <div class="d-node-title">Lending &amp; Borrowing</div>
+                <div class="d-node-sub">Supply on Aave for yield. Borrow against positions without selling.</div>
+            </div>
+            <div class="d-node d-node--sm d-node--teal">
+                <span class="d-node-icon">&#128260;</span>
+                <div class="d-node-title">Yield Recycling</div>
+                <div class="d-node-sub">All yield flows back to CLAWS staking rewards. Compounding forever.</div>
+            </div>
+        </div>
+
+        <div class="d-arrow d-arrow--teal">
+            <div class="d-arrow-line"></div>
+            <span class="d-arrow-label">Yield Feeds Back</span>
+            <div class="d-arrow-line"></div>
+            <div class="d-arrow-head"></div>
+        </div>
+
+        <!-- Loop back to CLAWS -->
+        <div class="d-node d-node--claws" style="max-width:400px;">
+            <span class="d-node-icon">&#129438;</span>
+            <div class="d-node-title">Back to $CLAWS</div>
+            <div class="d-node-sub">Every revenue stream, every yield source, every fee &mdash; all flows back to CLAWS staking rewards. The loop never stops.</div>
+        </div>
+
+    </div><!-- /spine -->
 
     <!-- CTA -->
-    <section style="text-align:center; margin-top: var(--space-2xl); padding: var(--space-2xl) var(--space-xl); background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-2xl);">
-        <h2 style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 900; margin-bottom: var(--space-xs);">Ready to Build?</h2>
-        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: var(--space-lg);">Launch your project through Inclawbate and get the full package &mdash; automated.</p>
-        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <a href="/inclawbator" style="display:inline-flex;align-items:center;gap:5px;padding:10px 24px;border-radius:var(--radius-full);background:var(--accent-gradient);color:#fff;font-size:0.85rem;font-weight:700;text-decoration:none;">Launch a Project &rarr;</a>
-            <a href="/ecosystem" style="display:inline-flex;align-items:center;gap:5px;padding:10px 24px;border-radius:var(--radius-full);background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:0.85rem;font-weight:600;text-decoration:none;">View Ecosystem</a>
-            <a href="/stake" style="display:inline-flex;align-items:center;gap:5px;padding:10px 24px;border-radius:var(--radius-full);background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:0.85rem;font-weight:600;text-decoration:none;">Stake CLAWS</a>
+    <div class="d-cta">
+        <h2>Ready to Build?</h2>
+        <p>Launch your project through Inclawbate and get the full package &mdash; automated.</p>
+        <div class="d-cta-links">
+            <a href="/inclawbator" class="d-cta-btn d-cta-btn--primary">Launch a Project &rarr;</a>
+            <a href="/ecosystem" class="d-cta-btn d-cta-btn--secondary">View Ecosystem</a>
+            <a href="/stake" class="d-cta-btn d-cta-btn--secondary">Stake CLAWS</a>
         </div>
-    </section>
+    </div>
 
 </div>
 
