@@ -107,6 +107,7 @@ var SEL = {
     periodEnd:        '0x506ec095',
     rewardPoolBalance:'0x7a5c08ae',
     earned:           '0x008cc262',
+    stake:            '0xa694fc3a', // stake(uint256)
 };
 
 // ══════════════════════════════════════
@@ -1306,12 +1307,46 @@ async function handlePoolDeploy() {
             }
         }
 
+        // ── Post-deploy: Fund with CLAWS rewards ──
+        var rewardInput = document.getElementById('poolRewardAmount');
+        var rewardAmount = rewardInput ? parseFloat(rewardInput.value) : 0;
+        if (rewardAmount > 0) {
+            var rewardWei = BigInt(Math.round(rewardAmount * 1e18));
+            var rewardHex = '0x' + rewardWei.toString(16);
+            var duration30d = '0x' + (2592000).toString(16); // 30 days
+
+            setBtnState(btn, 'Approving CLAWS for rewards...', true);
+            var approveData = SEL.approve + pad32(stakingPool) + pad32(MAX_UINT256);
+            await sendTxAndWait(state.provider, state.wallet, CLAWS, approveData);
+
+            setBtnState(btn, 'Depositing CLAWS rewards...', true);
+            var depositData = SEL.depositRewards + pad32(rewardHex) + pad32(duration30d);
+            await sendTxAndWait(state.provider, state.wallet, stakingPool, depositData);
+        }
+
+        // ── Post-deploy: Auto-stake user's tokens ──
+        var autoStakeCb = document.getElementById('poolAutoStake');
+        var stakeInput = document.getElementById('poolStakeAmount');
+        var stakeAmount = (autoStakeCb && autoStakeCb.checked && stakeInput) ? parseFloat(stakeInput.value) : 0;
+        if (stakeAmount > 0) {
+            var stakeWei = BigInt(Math.round(stakeAmount * 1e18));
+            var stakeHex = '0x' + stakeWei.toString(16);
+
+            setBtnState(btn, 'Approving tokens for staking...', true);
+            var stakeApprove = SEL.approve + pad32(stakingPool) + pad32(MAX_UINT256);
+            await sendTxAndWait(state.provider, state.wallet, tokenAddress, stakeApprove);
+
+            setBtnState(btn, 'Staking your tokens...', true);
+            var stakeData = SEL.stake + pad32(stakeHex);
+            await sendTxAndWait(state.provider, state.wallet, stakingPool, stakeData);
+        }
+
         state.step = 7; // partner success
         state.deploying = false;
-        poolTokensCache = null; // Invalidate cache so it refreshes
+        poolTokensCache = null;
         closeToolDrawer();
         updateUI();
-        showToast('Staking deployed!', 'success');
+        showToast('Staking pool deployed!' + (rewardAmount > 0 ? ' CLAWS rewards funded.' : '') + (stakeAmount > 0 ? ' Tokens staked.' : ''), 'success');
 
     } catch (e) {
         state.deploying = false;
