@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basis — 0% Fee Automated LP Vault on Aerodrome</title>
-    <meta name="description" content="Deposit USDC into the Basis vault. Earn yield from concentrated ETH/USDC liquidity on Aerodrome. 0% fees. Pure public good.">
-    <meta property="og:title" content="Basis — 0% Fee Automated LP Vault">
-    <meta property="og:description" content="Deposit USDC. Earn yield. 0% management fee. 0% performance fee. Pure public good.">
+    <title>Basis — Mirror the Best LPs on Aerodrome</title>
+    <meta name="description" content="Deposit USDC and automatically mirror top Aerodrome LP positions. Same range, same yield — zero management. Built on Base.">
+    <meta property="og:title" content="Basis — Mirror the Best LPs on Aerodrome">
+    <meta property="og:description" content="Deposit USDC. Mirror a pro LP's range automatically. Earn concentrated liquidity yield without managing a position.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://basisubi.com">
     <meta name="twitter:card" content="summary_large_image">
@@ -1519,6 +1519,163 @@
             .tracker-grid { grid-template-columns: 1fr; }
         }
 
+        /* ═══ MIRROR VAULT ═══ */
+        .mirror-section { padding-top: 80px; padding-bottom: 60px; }
+        .mirror-hero-card {
+            background: var(--surface);
+            border: 1px solid var(--border-accent);
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .mirror-hero-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--cyan), var(--green));
+        }
+        .mirror-top { padding: 32px 32px 0; }
+        .mirror-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
+        .mirror-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--text); }
+        .mirror-badges { display: flex; gap: 8px; align-items: center; }
+        .mirror-badge {
+            font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+            padding: 4px 12px; border-radius: 100px; letter-spacing: 0.04em;
+        }
+        .mirror-badge.live { color: var(--green); border: 1px solid var(--green-dim); background: var(--green-dim); }
+        .mirror-badge.erc4626 { color: var(--cyan); border: 1px solid var(--cyan-dim); background: var(--cyan-dim); }
+        .mirror-badge.mirror-needed { color: #ff6450; border: 1px solid rgba(255,100,80,0.2); background: rgba(255,100,80,0.06); }
+        .mirror-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; max-width: 620px; }
+
+        .mirror-stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+            background: var(--border); border-radius: 14px; overflow: hidden;
+            border: 1px solid var(--border); margin-bottom: 24px;
+        }
+        .mirror-stat {
+            background: var(--surface-2); padding: 18px 16px; text-align: center;
+        }
+        .mirror-stat-label { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+        .mirror-stat-value { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; color: var(--text); }
+        .mirror-stat-value.green { color: var(--green); }
+        .mirror-stat-value.cyan { color: var(--cyan); }
+        .mirror-stat-sub { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; }
+
+        /* Tracked position visual */
+        .mirror-tracked {
+            background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px; margin-bottom: 24px;
+        }
+        .mirror-tracked-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+        .mirror-tracked-label { font-family: var(--mono); font-size: 0.68rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: 0.06em; }
+        .mirror-tracked-wallet { font-family: var(--mono); font-size: 0.72rem; color: var(--text-secondary); }
+        .mirror-range-visual { margin-bottom: 10px; }
+        .mirror-range-bar-outer { position: relative; height: 28px; background: var(--surface-2); border-radius: 8px; overflow: visible; margin-bottom: 4px; }
+        .mirror-range-fill-leader {
+            position: absolute; top: 2px; height: 11px; border-radius: 6px;
+            background: linear-gradient(90deg, var(--accent), var(--cyan));
+            opacity: 0.4;
+        }
+        .mirror-range-fill-vault {
+            position: absolute; bottom: 2px; height: 11px; border-radius: 6px;
+            background: linear-gradient(90deg, var(--green), hsl(170, 70%, 45%));
+        }
+        .mirror-range-current {
+            position: absolute; top: -2px; width: 3px; height: 32px;
+            background: var(--text); border-radius: 2px; z-index: 2;
+        }
+        .mirror-range-legend { display: flex; gap: 20px; font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); }
+        .mirror-range-legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+        .mirror-range-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); margin-top: 4px; }
+        .mirror-range-synced { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.72rem; font-weight: 600; }
+        .mirror-range-synced.synced { color: var(--green); }
+        .mirror-range-synced.desynced { color: #ff6450; }
+
+        /* Deposit / Withdraw tabs */
+        .mirror-actions { border-top: 1px solid var(--border); }
+        .mirror-tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .mirror-tab {
+            flex: 1; padding: 14px; text-align: center; font-family: var(--mono);
+            font-size: 0.78rem; font-weight: 600; color: var(--text-dim);
+            cursor: pointer; transition: all 0.2s; border: none; background: none;
+        }
+        .mirror-tab.active { color: var(--accent-bright); box-shadow: inset 0 -2px 0 var(--accent); background: var(--accent-dim); }
+        .mirror-tab:hover:not(.active) { color: var(--text-secondary); background: rgba(255,255,255,0.02); }
+        .mirror-tab-content { padding: 24px 32px; display: none; }
+        .mirror-tab-content.active { display: block; }
+
+        .mirror-input-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: stretch; }
+        .mirror-input-wrap { flex: 1; position: relative; }
+        .mirror-input {
+            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 16px; padding-right: 64px;
+            font-family: var(--mono); font-size: 1rem; color: var(--text); outline: none;
+        }
+        .mirror-input:focus { border-color: var(--accent); }
+        .mirror-input-max {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: var(--accent-dim); border: 1px solid var(--border-accent);
+            color: var(--accent-bright); font-family: var(--mono); font-size: 0.65rem;
+            padding: 4px 10px; border-radius: 6px; cursor: pointer;
+        }
+        .mirror-input-max:hover { background: var(--accent-glow); }
+        .mirror-submit {
+            background: linear-gradient(135deg, var(--green), hsl(170, 70%, 45%));
+            color: #fff; border: none; padding: 14px 32px; border-radius: 10px;
+            font-family: var(--font-display); font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .mirror-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--green-glow); }
+        .mirror-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .mirror-submit.withdraw-btn { background: linear-gradient(135deg, var(--accent), var(--cyan)); }
+        .mirror-info-row { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.72rem; color: var(--text-secondary); padding: 6px 0; }
+        .mirror-info-row + .mirror-info-row { border-top: 1px solid var(--border); }
+        .mirror-status-msg { text-align: center; font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); margin-top: 12px; min-height: 18px; }
+
+        /* Your position card */
+        .mirror-your-pos {
+            background: linear-gradient(135deg, var(--green-dim), var(--cyan-dim));
+            border: 1px solid var(--green); border-radius: 12px;
+            padding: 16px 20px; margin-bottom: 16px;
+        }
+        .mirror-your-pos-label { font-family: var(--mono); font-size: 0.62rem; color: var(--green); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+        .mirror-your-pos-val { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; color: var(--text); }
+        .mirror-your-pos-shares { font-family: var(--mono); font-size: 0.7rem; color: var(--text-secondary); }
+
+        /* How Mirror Works mini-steps */
+        .mirror-how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+        .mirror-how-step {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 24px 20px; text-align: center; transition: all 0.2s;
+        }
+        .mirror-how-step:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+        .mirror-how-num { font-family: var(--mono); font-size: 0.62rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+        .mirror-how-icon { font-size: 2rem; margin-bottom: 10px; }
+        .mirror-how-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+        .mirror-how-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+
+        /* Not connected overlay */
+        .mirror-connect-overlay {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px; text-align: center;
+        }
+        .mirror-connect-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.3; }
+        .mirror-connect-text { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px; }
+
+        @media (max-width: 768px) {
+            .mirror-stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .mirror-how { grid-template-columns: 1fr; }
+            .mirror-top { padding: 24px 20px 0; }
+            .mirror-tab-content { padding: 20px; }
+            .mirror-input-row { flex-direction: column; }
+        }
+        @media (max-width: 480px) {
+            .mirror-title { font-size: 1.3rem; }
+            .mirror-stat-value { font-size: 1rem; }
+        }
+
         /* ═══ VAULT MARKETPLACE ═══ */
         .marketplace-section { padding-top: 80px; }
         .mp-sort-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
@@ -1658,11 +1815,10 @@
         <div class="nav-inner">
             <a href="#" class="nav-brand">Basis <span style="font-size:0.65em; font-weight:400; color:var(--text-dim); margin-left:6px;">by <span style="color:var(--accent-bright)">Inclawbate</span></span></a>
             <ul class="nav-links">
-                <li><a href="#marketplace">Vaults</a></li>
+                <li><a href="#mirror" style="color:var(--green);">Mirror Vault</a></li>
                 <li><a href="#how">How It Works</a></li>
                 <li><a href="#tracker">Track LP</a></li>
-                <li><a href="#toolkit">Toolkit</a></li>
-                <li><a href="#simulate">Simulate</a></li>
+                <li><a href="#marketplace">All Vaults</a></li>
                 <li><a href="#learn">Learn</a></li>
                 <li><a href="/dashboard" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
             </ul>
@@ -1682,15 +1838,15 @@
                 Live on Base &mdash; Withdraw Anytime
             </div>
             <h1>Basis</h1>
-            <div class="hero-subtitle">Earn Yield on Your USDC</div>
+            <div class="hero-subtitle">Mirror the Best LPs on Aerodrome</div>
             <div class="hero-apy">
                 <span class="apy-dot"></span>
-                <span>Automated DeFi Vaults</span>
-                <span class="apy-label">Deposit &middot; Earn &middot; Withdraw</span>
+                <span>Automated Mirror Vault</span>
+                <span class="apy-label">Deposit &middot; Mirror &middot; Earn</span>
             </div>
-            <p>Pick a vault. Deposit USDC. Professional managers handle concentrated liquidity, leveraged positions, and rebalancing &mdash; so you don&rsquo;t have to.</p>
+            <p>Deposit USDC. The vault automatically copies a top LP&rsquo;s concentrated liquidity range on Aerodrome &mdash; same ticks, same yield, zero management.</p>
             <div class="hero-actions">
-                <a href="#marketplace" class="btn btn-green">Browse Vaults</a>
+                <a href="#mirror" class="btn btn-green">Open Mirror Vault</a>
                 <a href="#how" class="btn btn-outline">How It Works</a>
             </div>
         </div>
@@ -1719,6 +1875,163 @@
             </div>
         </div>
     </div>
+
+    <!-- ═══ MIRROR VAULT ═══ -->
+    <section class="mirror-section" id="mirror">
+        <div class="container">
+            <div class="fade-in" style="text-align:center; margin-bottom:32px;">
+                <div class="section-label">The Mirror Vault</div>
+                <h2 class="section-title">Copy a pro LP. Earn the same yield.</h2>
+                <p class="section-desc" style="margin:0 auto;">Deposit USDC. The vault reads a tracked Aerodrome LP position and automatically mirrors its tick range. When the leader rebalances, the vault follows. Same concentrated liquidity exposure &mdash; no manual management.</p>
+            </div>
+
+            <div class="mirror-hero-card fade-in">
+                <div class="mirror-top">
+                    <div class="mirror-title-row">
+                        <div class="mirror-title">ETH / USDC Mirror Vault</div>
+                        <div class="mirror-badges">
+                            <span class="mirror-badge erc4626">ERC-4626</span>
+                            <span class="mirror-badge live" id="mv-badge-status">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="mirror-desc">Deposit USDC and automatically mirror the tick range of a tracked Aerodrome LP position. The vault holds your capital in the same concentrated range as the leader &mdash; when they move, the vault follows.</div>
+
+                    <!-- Stats grid -->
+                    <div class="mirror-stats-grid" id="mv-stats-grid">
+                        <div class="mirror-stat">
+                            <div class="mirror-stat-label">Total Assets</div>
+                            <div class="mirror-stat-value" id="mv-total-assets">$--</div>
+                        </div>
+                        <div class="mirror-stat">
+                            <div class="mirror-stat-label">Share Price</div>
+                            <div class="mirror-stat-value cyan" id="mv-share-price">--</div>
+                        </div>
+                        <div class="mirror-stat">
+                            <div class="mirror-stat-label">Deposit Cap</div>
+                            <div class="mirror-stat-value" id="mv-deposit-cap">$--</div>
+                        </div>
+                        <div class="mirror-stat">
+                            <div class="mirror-stat-label">Mirror Count</div>
+                            <div class="mirror-stat-value green" id="mv-mirror-count">--</div>
+                            <div class="mirror-stat-sub" id="mv-perf-fee"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tracked position range visual -->
+                    <div class="mirror-tracked" id="mv-tracked-section">
+                        <div class="mirror-tracked-header">
+                            <div>
+                                <div class="mirror-tracked-label">Tracked Position</div>
+                                <div class="mirror-tracked-wallet" id="mv-tracked-wallet">--</div>
+                            </div>
+                            <div class="mirror-range-synced synced" id="mv-sync-status">
+                                <span class="pulse" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span>
+                                Synced
+                            </div>
+                        </div>
+                        <div class="mirror-range-visual">
+                            <div class="mirror-range-bar-outer" id="mv-range-bar">
+                                <div class="mirror-range-fill-leader" id="mv-range-leader" style="left:10%;width:80%"></div>
+                                <div class="mirror-range-fill-vault" id="mv-range-vault" style="left:10%;width:80%"></div>
+                                <div class="mirror-range-current" id="mv-range-current" style="left:50%"></div>
+                            </div>
+                            <div class="mirror-range-labels">
+                                <span id="mv-range-low">$--</span>
+                                <span>ETH Price: <strong id="mv-eth-price">$--</strong></span>
+                                <span id="mv-range-high">$--</span>
+                            </div>
+                        </div>
+                        <div class="mirror-range-legend">
+                            <span><span class="mirror-range-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></span> Leader range</span>
+                            <span><span class="mirror-range-legend-dot" style="background:var(--green)"></span> Vault range</span>
+                            <span><span class="mirror-range-legend-dot" style="background:var(--text)"></span> Current price</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deposit / Withdraw action tabs -->
+                <div class="mirror-actions" id="mv-actions">
+                    <!-- Your position (if connected + has shares) -->
+                    <div class="mirror-your-pos" id="mv-your-pos" style="display:none; margin:24px 32px 0;">
+                        <div class="mirror-your-pos-label">Your Position</div>
+                        <div class="mirror-your-pos-val" id="mv-your-value">$0.00</div>
+                        <div class="mirror-your-pos-shares" id="mv-your-shares">0 bmUSDC shares</div>
+                    </div>
+
+                    <div class="mirror-tabs">
+                        <button class="mirror-tab active" onclick="mirrorSwitchTab('deposit')" id="mv-tab-deposit">Deposit</button>
+                        <button class="mirror-tab" onclick="mirrorSwitchTab('withdraw')" id="mv-tab-withdraw">Withdraw</button>
+                    </div>
+
+                    <!-- Deposit tab -->
+                    <div class="mirror-tab-content active" id="mv-content-deposit">
+                        <div class="mirror-input-row">
+                            <div class="mirror-input-wrap">
+                                <input type="number" class="mirror-input" id="mv-deposit-amt" placeholder="0.00" min="0" step="any">
+                                <button class="mirror-input-max" id="mv-deposit-max" onclick="mirrorMaxDeposit()">MAX</button>
+                            </div>
+                            <button class="mirror-submit" id="mv-deposit-btn" onclick="mirrorDeposit()">Deposit USDC</button>
+                        </div>
+                        <div class="mirror-info-row">
+                            <span>USDC Balance</span>
+                            <span id="mv-usdc-bal">Connect wallet</span>
+                        </div>
+                        <div class="mirror-info-row">
+                            <span>You Receive</span>
+                            <span id="mv-deposit-receive">-- bmUSDC</span>
+                        </div>
+                        <div class="mirror-info-row">
+                            <span>Max Deposit</span>
+                            <span id="mv-max-deposit">--</span>
+                        </div>
+                        <div class="mirror-status-msg" id="mv-deposit-status"></div>
+                    </div>
+
+                    <!-- Withdraw tab -->
+                    <div class="mirror-tab-content" id="mv-content-withdraw">
+                        <div class="mirror-input-row">
+                            <div class="mirror-input-wrap">
+                                <input type="number" class="mirror-input" id="mv-withdraw-amt" placeholder="0.00" min="0" step="any">
+                                <button class="mirror-input-max" id="mv-withdraw-max" onclick="mirrorMaxWithdraw()">MAX</button>
+                            </div>
+                            <button class="mirror-submit withdraw-btn" id="mv-withdraw-btn" onclick="mirrorWithdraw()">Withdraw USDC</button>
+                        </div>
+                        <div class="mirror-info-row">
+                            <span>Your Shares</span>
+                            <span id="mv-shares-bal">Connect wallet</span>
+                        </div>
+                        <div class="mirror-info-row">
+                            <span>You Receive</span>
+                            <span id="mv-withdraw-receive">-- USDC</span>
+                        </div>
+                        <div class="mirror-status-msg" id="mv-withdraw-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How Mirror Works mini-steps -->
+            <div class="mirror-how fade-in">
+                <div class="mirror-how-step">
+                    <div class="mirror-how-num">Step 1</div>
+                    <div class="mirror-how-icon">&#x1F4B0;</div>
+                    <div class="mirror-how-title">Deposit USDC</div>
+                    <div class="mirror-how-desc">Deposit any amount of USDC into the Mirror Vault. You receive bmUSDC shares representing your stake.</div>
+                </div>
+                <div class="mirror-how-step">
+                    <div class="mirror-how-num">Step 2</div>
+                    <div class="mirror-how-icon">&#x1F50D;</div>
+                    <div class="mirror-how-title">Vault Mirrors a Pro LP</div>
+                    <div class="mirror-how-desc">The vault reads a tracked LP&rsquo;s tick range on Aerodrome and places liquidity at the exact same range. When they move, the vault follows.</div>
+                </div>
+                <div class="mirror-how-step">
+                    <div class="mirror-how-num">Step 3</div>
+                    <div class="mirror-how-icon">&#x1F4C8;</div>
+                    <div class="mirror-how-title">Earn &amp; Withdraw</div>
+                    <div class="mirror-how-desc">Earn concentrated liquidity yield proportional to your deposit. Withdraw anytime &mdash; your bmUSDC redeems for USDC plus earned fees.</div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- ═══ HOW IT WORKS ═══ -->
     <section class="how-it-works" id="how">
@@ -7272,6 +7585,363 @@
         document.getElementById('tracker-address').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') trackerLookup();
         });
+    })();
+
+    // ═══ MIRROR VAULT JS ═══
+    (function() {
+        var BASE_RPC = 'https://mainnet.base.org';
+        var USDC_ADDR = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        var WETH_ADDR = '0x4200000000000000000000000000000000000006';
+        var POOL_ADDR = '0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59';
+        // Set this after deployment:
+        var MIRROR_VAULT_ADDR = window.MIRROR_VAULT_ADDRESS || '';
+
+        var VAULT_ABI = [
+            'function totalAssets() view returns (uint256)',
+            'function totalSupply() view returns (uint256)',
+            'function balanceOf(address) view returns (uint256)',
+            'function convertToShares(uint256 assets) view returns (uint256)',
+            'function convertToAssets(uint256 shares) view returns (uint256)',
+            'function maxDeposit(address) view returns (uint256)',
+            'function maxWithdraw(address) view returns (uint256)',
+            'function deposit(uint256 assets, address receiver) returns (uint256)',
+            'function withdraw(uint256 assets, address receiver, address owner) returns (uint256)',
+            'function getVaultInfo() view returns (uint256,uint256,int24,int24,int24,int24,bool,bool,address,uint256,uint256,uint256,uint256,bool)',
+            'function getUserPosition(address) view returns (uint256 shares, uint256 value)',
+            'function depositCap() view returns (uint256)',
+            'function performanceFeeBps() view returns (uint256)',
+            'function needsMirror() view returns (bool)'
+        ];
+
+        var ERC20_ABI = [
+            'function balanceOf(address) view returns (uint256)',
+            'function allowance(address,address) view returns (uint256)',
+            'function approve(address,uint256) returns (bool)'
+        ];
+
+        var POOL_ABI = [
+            'function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)',
+            'function token0() view returns (address)'
+        ];
+
+        function readProvider() { return new ethers.JsonRpcProvider(BASE_RPC); }
+
+        function tickToPrice(tick, wethIs0) {
+            // tick → ETH price in USD
+            var raw = Math.pow(1.0001, tick);
+            if (wethIs0) return (1 / raw) * 1e12;
+            return raw * 1e12;
+        }
+
+        function sqrtPriceToEthUsd(sqrtPriceX96, wethIs0) {
+            var sqrtPrice = Number(sqrtPriceX96) / (2 ** 96);
+            var ratio = sqrtPrice * sqrtPrice;
+            if (wethIs0) return (1 / ratio) * 1e12;
+            return ratio * 1e12;
+        }
+
+        function fmtUsd(n) {
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return '$' + (n / 1e3).toFixed(2) + 'K';
+            return '$' + n.toFixed(2);
+        }
+
+        // Tab switching
+        window.mirrorSwitchTab = function(tab) {
+            document.getElementById('mv-tab-deposit').classList.toggle('active', tab === 'deposit');
+            document.getElementById('mv-tab-withdraw').classList.toggle('active', tab === 'withdraw');
+            document.getElementById('mv-content-deposit').classList.toggle('active', tab === 'deposit');
+            document.getElementById('mv-content-withdraw').classList.toggle('active', tab === 'withdraw');
+        };
+
+        // Load vault data (read-only, no wallet needed)
+        async function loadMirrorVault() {
+            if (!MIRROR_VAULT_ADDR) {
+                document.getElementById('mv-badge-status').textContent = 'Not Deployed';
+                document.getElementById('mv-badge-status').className = 'mirror-badge';
+                document.getElementById('mv-badge-status').style.cssText = 'color:var(--text-dim);border:1px solid var(--border);';
+                return;
+            }
+
+            try {
+                var p = readProvider();
+                var vault = new ethers.Contract(MIRROR_VAULT_ADDR, VAULT_ABI, p);
+                var pool = new ethers.Contract(POOL_ADDR, POOL_ABI, p);
+
+                var [info, slot0, token0] = await Promise.all([
+                    vault.getVaultInfo(),
+                    pool.slot0(),
+                    pool.token0()
+                ]);
+
+                var totalAssets = Number(info[0]) / 1e6;
+                var totalSupply = Number(info[1]) / 1e6;
+                var vaultTickLower = Number(info[2]);
+                var vaultTickUpper = Number(info[3]);
+                var leaderTickLower = Number(info[4]);
+                var leaderTickUpper = Number(info[5]);
+                var inRange = info[6];
+                var needsMirror = info[7];
+                var trackedWallet = info[8];
+                var trackedTokenId = Number(info[9]);
+                var mirrorCount = Number(info[10]);
+                var depositCap = Number(info[11]) / 1e6;
+                var perfFeeBps = Number(info[12]);
+                var paused = info[13];
+
+                var wethIs0 = token0.toLowerCase() === WETH_ADDR.toLowerCase();
+                var currentTick = Number(slot0[1]);
+                var ethPrice = sqrtPriceToEthUsd(slot0[0], wethIs0);
+                var sharePrice = totalSupply > 0 ? totalAssets / totalSupply : 1;
+
+                // Badge
+                var badge = document.getElementById('mv-badge-status');
+                if (paused) {
+                    badge.textContent = 'Paused'; badge.className = 'mirror-badge mirror-needed';
+                } else {
+                    badge.textContent = 'Live'; badge.className = 'mirror-badge live';
+                }
+
+                // Stats
+                document.getElementById('mv-total-assets').textContent = fmtUsd(totalAssets);
+                document.getElementById('mv-share-price').textContent = sharePrice.toFixed(4) + ' USDC';
+                document.getElementById('mv-deposit-cap').textContent = fmtUsd(depositCap);
+                document.getElementById('mv-mirror-count').textContent = mirrorCount.toString();
+                document.getElementById('mv-perf-fee').textContent = perfFeeBps > 0 ? (perfFeeBps / 100) + '% perf fee' : 'No fees';
+
+                // Tracked position
+                if (trackedWallet && trackedWallet !== ethers.ZeroAddress) {
+                    var shortWallet = trackedWallet.slice(0, 6) + '...' + trackedWallet.slice(-4);
+                    document.getElementById('mv-tracked-wallet').textContent = shortWallet + ' · NFT #' + trackedTokenId;
+                } else {
+                    document.getElementById('mv-tracked-wallet').textContent = 'No position tracked yet';
+                }
+
+                // Sync status
+                var syncEl = document.getElementById('mv-sync-status');
+                if (needsMirror) {
+                    syncEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#ff6450;display:inline-block;animation:pulse 2s infinite;"></span> Mirror Needed';
+                    syncEl.className = 'mirror-range-synced desynced';
+                } else {
+                    syncEl.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;"></span> Synced';
+                    syncEl.className = 'mirror-range-synced synced';
+                }
+
+                // Range visualization
+                var leaderLow = tickToPrice(wethIs0 ? leaderTickLower : -leaderTickUpper, true);
+                var leaderHigh = tickToPrice(wethIs0 ? leaderTickUpper : -leaderTickLower, true);
+                var vaultLow = tickToPrice(wethIs0 ? vaultTickLower : -vaultTickUpper, true);
+                var vaultHigh = tickToPrice(wethIs0 ? vaultTickUpper : -vaultTickLower, true);
+
+                // Use wide range for visualization context (25% wider than the ranges)
+                var allLow = Math.min(leaderLow, vaultLow, ethPrice);
+                var allHigh = Math.max(leaderHigh, vaultHigh, ethPrice);
+                var rangeSpan = allHigh - allLow;
+                var vizLow = allLow - rangeSpan * 0.15;
+                var vizHigh = allHigh + rangeSpan * 0.15;
+                var vizSpan = vizHigh - vizLow;
+
+                if (vizSpan > 0 && leaderTickLower !== 0) {
+                    var lL = ((leaderLow - vizLow) / vizSpan) * 100;
+                    var lW = ((leaderHigh - leaderLow) / vizSpan) * 100;
+                    document.getElementById('mv-range-leader').style.cssText = 'left:' + lL + '%;width:' + lW + '%';
+
+                    var vL = ((vaultLow - vizLow) / vizSpan) * 100;
+                    var vW = ((vaultHigh - vaultLow) / vizSpan) * 100;
+                    document.getElementById('mv-range-vault').style.cssText = 'left:' + vL + '%;width:' + vW + '%';
+
+                    var cPos = ((ethPrice - vizLow) / vizSpan) * 100;
+                    document.getElementById('mv-range-current').style.left = Math.max(2, Math.min(98, cPos)) + '%';
+
+                    document.getElementById('mv-range-low').textContent = '$' + Math.round(allLow).toLocaleString();
+                    document.getElementById('mv-range-high').textContent = '$' + Math.round(allHigh).toLocaleString();
+                }
+
+                document.getElementById('mv-eth-price').textContent = '$' + ethPrice.toFixed(2);
+                document.getElementById('mv-max-deposit').textContent = fmtUsd(depositCap - totalAssets);
+
+                // Load user position if wallet connected
+                if (window._navWalletAddress) {
+                    await loadMirrorUserPosition(vault, p);
+                }
+
+            } catch(e) {
+                console.error('MirrorVault load error:', e);
+                document.getElementById('mv-badge-status').textContent = 'Error';
+                document.getElementById('mv-badge-status').className = 'mirror-badge mirror-needed';
+            }
+        }
+
+        async function loadMirrorUserPosition(vault, provider) {
+            try {
+                var addr = window._navWalletAddress;
+                var usdc = new ethers.Contract(USDC_ADDR, ERC20_ABI, provider);
+
+                var [userPos, usdcBal] = await Promise.all([
+                    vault.getUserPosition(addr),
+                    usdc.balanceOf(addr)
+                ]);
+
+                var shares = Number(userPos[0]) / 1e6;
+                var value = Number(userPos[1]) / 1e6;
+                var balance = Number(usdcBal) / 1e6;
+
+                document.getElementById('mv-usdc-bal').textContent = balance.toFixed(2) + ' USDC';
+                document.getElementById('mv-shares-bal').textContent = shares.toFixed(4) + ' bmUSDC';
+
+                if (shares > 0) {
+                    document.getElementById('mv-your-pos').style.display = '';
+                    document.getElementById('mv-your-value').textContent = fmtUsd(value);
+                    document.getElementById('mv-your-shares').textContent = shares.toFixed(4) + ' bmUSDC shares';
+                } else {
+                    document.getElementById('mv-your-pos').style.display = 'none';
+                }
+            } catch(e) {
+                console.error('User position error:', e);
+            }
+        }
+
+        // Preview calculations
+        var depositInput = document.getElementById('mv-deposit-amt');
+        var withdrawInput = document.getElementById('mv-withdraw-amt');
+
+        if (depositInput) {
+            depositInput.addEventListener('input', function() {
+                var amt = parseFloat(this.value) || 0;
+                // Approximate: sharePrice ~= totalAssets / totalSupply
+                var sp = parseFloat(document.getElementById('mv-share-price').textContent) || 1;
+                var shares = sp > 0 ? amt / sp : amt;
+                document.getElementById('mv-deposit-receive').textContent = shares.toFixed(4) + ' bmUSDC';
+            });
+        }
+        if (withdrawInput) {
+            withdrawInput.addEventListener('input', function() {
+                var amt = parseFloat(this.value) || 0;
+                document.getElementById('mv-withdraw-receive').textContent = amt.toFixed(2) + ' USDC';
+            });
+        }
+
+        window.mirrorMaxDeposit = function() {
+            var balText = document.getElementById('mv-usdc-bal').textContent;
+            var bal = parseFloat(balText) || 0;
+            var maxText = document.getElementById('mv-max-deposit').textContent.replace(/[$,KM]/g, '');
+            var max = parseFloat(maxText) || Infinity;
+            if (maxText.includes('K')) max *= 1000;
+            if (maxText.includes('M')) max *= 1000000;
+            depositInput.value = Math.min(bal, max).toFixed(2);
+            depositInput.dispatchEvent(new Event('input'));
+        };
+
+        window.mirrorMaxWithdraw = function() {
+            var sharesText = document.getElementById('mv-shares-bal').textContent;
+            var shares = parseFloat(sharesText) || 0;
+            // Convert shares to USDC value
+            var sp = parseFloat(document.getElementById('mv-share-price').textContent) || 1;
+            var value = shares * sp;
+            withdrawInput.value = value.toFixed(2);
+            withdrawInput.dispatchEvent(new Event('input'));
+        };
+
+        // Deposit
+        window.mirrorDeposit = async function() {
+            if (!MIRROR_VAULT_ADDR) { alert('Mirror Vault not deployed yet'); return; }
+            if (!window._navWalletAddress) { alert('Connect your wallet first'); return; }
+
+            var amt = parseFloat(depositInput.value);
+            if (!amt || amt <= 0) { alert('Enter an amount'); return; }
+
+            var statusEl = document.getElementById('mv-deposit-status');
+            var btn = document.getElementById('mv-deposit-btn');
+            btn.disabled = true; statusEl.textContent = 'Preparing deposit...';
+
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var addr = await signer.getAddress();
+                var usdc = new ethers.Contract(USDC_ADDR, ERC20_ABI, signer);
+                var vault = new ethers.Contract(MIRROR_VAULT_ADDR, VAULT_ABI, signer);
+
+                var amount = ethers.parseUnits(amt.toFixed(6), 6);
+
+                // Check allowance
+                var allowance = await usdc.allowance(addr, MIRROR_VAULT_ADDR);
+                if (allowance < amount) {
+                    statusEl.textContent = 'Approving USDC...';
+                    var approveTx = await usdc.approve(MIRROR_VAULT_ADDR, ethers.MaxUint256);
+                    await approveTx.wait();
+                }
+
+                statusEl.textContent = 'Depositing ' + amt.toFixed(2) + ' USDC...';
+                var tx = await vault.deposit(amount, addr);
+                statusEl.textContent = 'Confirming transaction...';
+                await tx.wait();
+
+                statusEl.textContent = 'Deposit successful!';
+                statusEl.style.color = 'var(--green)';
+                depositInput.value = '';
+
+                // Refresh data
+                setTimeout(function() { loadMirrorVault(); statusEl.textContent = ''; statusEl.style.color = ''; }, 2000);
+            } catch(e) {
+                statusEl.textContent = 'Error: ' + (e.reason || e.message);
+                statusEl.style.color = '#ff6450';
+            }
+            btn.disabled = false;
+        };
+
+        // Withdraw
+        window.mirrorWithdraw = async function() {
+            if (!MIRROR_VAULT_ADDR) { alert('Mirror Vault not deployed yet'); return; }
+            if (!window._navWalletAddress) { alert('Connect your wallet first'); return; }
+
+            var amt = parseFloat(withdrawInput.value);
+            if (!amt || amt <= 0) { alert('Enter an amount'); return; }
+
+            var statusEl = document.getElementById('mv-withdraw-status');
+            var btn = document.getElementById('mv-withdraw-btn');
+            btn.disabled = true; statusEl.textContent = 'Preparing withdrawal...';
+
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var addr = await signer.getAddress();
+                var vault = new ethers.Contract(MIRROR_VAULT_ADDR, VAULT_ABI, signer);
+
+                var amount = ethers.parseUnits(amt.toFixed(6), 6);
+
+                statusEl.textContent = 'Withdrawing ' + amt.toFixed(2) + ' USDC...';
+                var tx = await vault.withdraw(amount, addr, addr);
+                statusEl.textContent = 'Confirming transaction...';
+                await tx.wait();
+
+                statusEl.textContent = 'Withdrawal successful!';
+                statusEl.style.color = 'var(--green)';
+                withdrawInput.value = '';
+
+                setTimeout(function() { loadMirrorVault(); statusEl.textContent = ''; statusEl.style.color = ''; }, 2000);
+            } catch(e) {
+                statusEl.textContent = 'Error: ' + (e.reason || e.message);
+                statusEl.style.color = '#ff6450';
+            }
+            btn.disabled = false;
+        };
+
+        // Auto-load on page load
+        loadMirrorVault();
+
+        // Refresh when wallet connects — hook into the global wallet connect
+        var _origMirrorWatch = setInterval(function() {
+            if (window._navWalletAddress && !window._mirrorUserLoaded) {
+                window._mirrorUserLoaded = true;
+                loadMirrorVault();
+            }
+            if (!window._navWalletAddress) {
+                window._mirrorUserLoaded = false;
+            }
+        }, 1000);
+
+        // Store the load function globally for manual refresh
+        window.refreshMirrorVault = loadMirrorVault;
     })();
 
     // ═══ GLOBAL NAV WALLET ═══
