@@ -17,7 +17,7 @@ const VALID_HOURS = [1, 13, 16, 19, 22];
 const PILLARS = [
     { name: 'Weekly Recap',       emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next' },
     { name: 'App Spotlight',      emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one specific app — what it does, why it\'s cool, link to try it' },
-    { name: 'Builder Shoutout',   emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member — what they made, tag them' },
+    { name: 'Builder Shoutout',   emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member — what they made, celebrate the work' },
     { name: 'DeFi / CLAWS Update',emoji: '\u{26D3}',  needsImage: true,  desc: 'CLAWS price, staking stats, LP news, ecosystem numbers' },
     { name: 'How-To / Tips',      emoji: '\u{1F4A1}', needsImage: false, desc: 'Tutorial or tip — "Did you know you can..." educational content' },
     { name: 'Community Vibes',    emoji: '\u{1F525}', needsImage: true,  desc: 'Poll, hot take, meme, engagement bait — get people talking' },
@@ -271,10 +271,10 @@ export default async function handler(req, res) {
 
             // Fetch real platform context
             const ctx = await fetchPlatformContext();
-            const topBuilders = ctx.builders.map(b => `@${b.handle} (${b.apps} apps)`).join(', ');
+            const topBuilders = ctx.builders.map(b => `${b.handle} (${b.apps} apps)`).join(', ');
             const topAppList = ctx.topApps.map(a => `${a.name} (${a.view_count || 0} views)`).join(', ');
             const recentAppList = ctx.recentApps.slice(0, 8).map(a =>
-                `${a.name}${a.creator_x_handle ? ' by @' + a.creator_x_handle : ''}`
+                `${a.name}${a.creator_x_handle ? ' by ' + a.creator_x_handle : ''}`
             ).join(', ');
 
             const prompt = `You are @inclawbator. Generate ONE tweet.
@@ -289,7 +289,7 @@ Real data (use ONLY these numbers):
 - Recent: ${recentAppList || 'various'}
 - Token: $CLAWS on Base, website: inclawbate.com
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. ALWAYS use @ before X handles (e.g. @abhiontwt not abhiontwt).
+Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER tag or @ mention anyone — no @handles at all. Refer to builders/apps by name only if needed.
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
@@ -432,7 +432,7 @@ const STYLE_EXAMPLES = [
     // Question hook
     `what if you could launch a token, build an app for it, and set up marketing... all from one platform? that's inclawbate`,
     // Builder shoutout
-    `@itsEvilDuck just dropped ClawsNet on inclawbate. social network built entirely with AI. go try it inclawbate.com/apps/clawsnet`,
+    `someone just dropped ClawsNet on inclawbate. social network built entirely with AI. go try it inclawbate.com/apps/clawsnet`,
     // Stats flex
     `100+ apps live on inclawbate rn. all built by regular people using AI. no devs needed.`,
     // FOMO/CTA
@@ -540,10 +540,10 @@ async function generateDrafts(req, res, targetDate) {
     const ctx = await fetchPlatformContext();
 
     const recentAppList = ctx.recentApps.map(a =>
-        `${a.name} (${a.category || 'general'})${a.creator_x_handle ? ' by @' + a.creator_x_handle : ''}`
+        `${a.name} (${a.category || 'general'})${a.creator_x_handle ? ' by ' + a.creator_x_handle : ''}`
     ).join(', ');
 
-    const topBuilders = ctx.builders.map(b => `@${b.handle} (${b.apps} apps)`).join(', ');
+    const topBuilders = ctx.builders.map(b => `${b.handle} (${b.apps} apps)`).join(', ');
 
     const topAppList = ctx.topApps.map(a =>
         `${a.name} (${a.view_count || 0} views)`
@@ -579,9 +579,9 @@ RULES:
 - No em dashes (—)
 - No quotation marks around the tweet
 - Lowercase is fine, even preferred for casual tweets
-- Mix up formats: questions, one-liners, hot takes, mini-stories, shoutouts, stats
-- When mentioning builders, ALWAYS use @ before their handle (e.g. @abhiontwt not abhiontwt)
-- When mentioning builders or apps, use REAL names from the data above
+- Mix up formats: questions, one-liners, hot takes, mini-stories, stats
+- NEVER tag or @ mention anyone — no @handles at all. Do not use @ before any name.
+- You can mention app names naturally but do NOT tag builders by handle
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
@@ -600,7 +600,7 @@ ${(NARRATIVE_SCENES[pillar.name] || []).join('\n- ')}
 CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. Draw from the narrative scenes above for specific settings, supporting characters (Crab Engineer, Shrimp Newbie, Mini Lobsters, etc.), and locations (The Workshop, The Reef, The Lounge, etc.). Don't just repeat the same generic scene for every tweet.
 
 EXAMPLE of a good pair:
-TWEET: @itsEvilDuck just shipped ClawsNet on inclawbate. social network built entirely with AI. wild.
+TWEET: someone just shipped a full social network on inclawbate. built entirely with AI. no code. wild.
 IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, proudly presenting a holographic social network interface to the Crab Engineer who gives a thumbs-up. Glowing connection nodes and profile cards float around. Dark void background with coral (#e5533d) rim lighting on the glossy shell and teal (#4db6ac) data streams between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
