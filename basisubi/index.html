@@ -7462,15 +7462,8 @@
                 var p = getReadProvider();
                 var npm = new ethers.Contract(AERO_NPM, TRACKER_NPM_ABI, p);
 
-                // Get ETH/USDC pool address
-                var factory = new ethers.Contract(AERO_FACTORY, FACTORY_ABI, p);
-                var poolAddr = await factory.getPool(WETH_ADDRESS, USDC_ADDRESS, TICK_SPACING);
-                if (!poolAddr || poolAddr === ethers.ZeroAddress) {
-                    statusEl.textContent = 'Could not find Aerodrome ETH/USDC pool.';
-                    btn.disabled = false;
-                    return;
-                }
-
+                // Known ETH/USDC CL pool on Aerodrome
+                var poolAddr = '0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59';
                 var pool = new ethers.Contract(poolAddr, POOL_ABI, p);
                 var [slot0, token0Addr] = await Promise.all([pool.slot0(), pool.token0()]);
                 var sqrtPriceX96 = slot0[0];
@@ -7478,26 +7471,43 @@
                 var wethIsToken0 = token0Addr.toLowerCase() === WETH_ADDRESS.toLowerCase();
                 var ethPriceUsd = sqrtPriceX96ToPrice(sqrtPriceX96, wethIsToken0);
 
-                // Get all position NFTs for this wallet
+                // Get position NFTs from wallet + gauge
                 var balance = Number(await npm.balanceOf(addr));
-                statusEl.textContent = 'Found ' + balance + ' Aerodrome position' + (balance === 1 ? '' : 's') + '. Filtering ETH/USDC...';
+                statusEl.textContent = 'Scanning wallet & gauge...';
 
-                if (balance === 0) {
+                var allTokenIds = [];
+                var stakedIds = [];
+
+                // 1. Unstaked NFTs in wallet
+                if (balance > 0) {
+                    var tokenIdPromises = [];
+                    for (var i = 0; i < balance; i++) tokenIdPromises.push(npm.tokenOfOwnerByIndex(addr, i));
+                    var walletIds = await Promise.all(tokenIdPromises);
+                    allTokenIds = allTokenIds.concat(walletIds);
+                }
+
+                // 2. NFTs staked in ETH/USDC gauge
+                try {
+                    var GAUGE_ADDR = '0xF33a96b5932D9E9B9A0eDA447AbD8C9d48d2e0c8';
+                    var gauge = new ethers.Contract(GAUGE_ADDR, ['function stakedValues(address) view returns (uint256[])'], p);
+                    var gaugeStaked = await gauge.stakedValues(addr);
+                    if (gaugeStaked.length > 0) {
+                        stakedIds = gaugeStaked.map(function(id) { return id; });
+                        allTokenIds = allTokenIds.concat(stakedIds);
+                    }
+                } catch(e) {}
+
+                if (allTokenIds.length === 0) {
                     statusEl.textContent = '';
                     empty.style.display = '';
                     btn.disabled = false;
                     return;
                 }
 
-                // Fetch all token IDs in parallel
-                var tokenIdPromises = [];
-                for (var i = 0; i < balance; i++) {
-                    tokenIdPromises.push(npm.tokenOfOwnerByIndex(addr, i));
-                }
-                var tokenIds = await Promise.all(tokenIdPromises);
+                statusEl.textContent = 'Found ' + allTokenIds.length + ' position' + (allTokenIds.length === 1 ? '' : 's') + (stakedIds.length ? ' (' + stakedIds.length + ' staked)' : '') + '. Filtering...';
 
                 // Fetch all positions in parallel
-                var posPromises = tokenIds.map(function(id) { return npm.positions(id); });
+                var posPromises = allTokenIds.map(function(id) { return npm.positions(id); });
                 var positions = await Promise.all(posPromises);
 
                 // Filter to ETH/USDC positions only
@@ -7508,7 +7518,8 @@
                     var isEthUsdc = (t0 === WETH_ADDRESS.toLowerCase() && t1 === USDC_ADDRESS.toLowerCase())
                         || (t0 === USDC_ADDRESS.toLowerCase() && t1 === WETH_ADDRESS.toLowerCase());
                     if (isEthUsdc && Number(pos[7]) > 0) {
-                        ethUsdcPositions.push({ tokenId: tokenIds[j], pos: pos });
+                        var isStaked = stakedIds.some(function(sid) { return sid.toString() === allTokenIds[j].toString(); });
+                        ethUsdcPositions.push({ tokenId: allTokenIds[j], pos: pos, staked: isStaked });
                     }
                 }
 
@@ -7566,7 +7577,7 @@
                     var card = document.createElement('div');
                     card.className = 'tracker-card';
                     card.innerHTML = '<div class="tracker-card-header">'
-                        + '<div><div class="tracker-card-pair">ETH / USDC</div><div class="tracker-card-id">NFT #' + item.tokenId.toString() + '</div></div>'
+                        + '<div><div class="tracker-card-pair">ETH / USDC' + (item.staked ? ' <span style="font-family:var(--mono);font-size:0.58rem;color:var(--cyan);background:var(--cyan-dim);border:1px solid var(--cyan-dim);padding:1px 6px;border-radius:8px;margin-left:6px;">Staked</span>' : '') + '</div><div class="tracker-card-id">NFT #' + item.tokenId.toString() + '</div></div>'
                         + '<span class="tracker-card-badge ' + (inRange ? 'in-range' : 'out-range') + '">' + (inRange ? '&#x25CF; In Range' : '&#x25CF; Out of Range') + '</span>'
                         + '</div>'
                         + '<div class="tracker-card-stats">'
@@ -7718,8 +7729,12 @@
             try {
                 var p = readProvider();
                 var npm = new ethers.Contract(AERO_NPM, NPM_ABI, p);
-                var factory = new ethers.Contract(AERO_FACTORY, FACTORY_ABI, p);
                 var pool = new ethers.Contract(POOL_ADDR, POOL_ABI, p);
+
+                // ETH/USDC CL gauge — staked NFTs live here
+                var GAUGE_ADDR = '0xF33a96b5932D9E9B9A0eDA447AbD8C9d48d2e0c8';
+                var GAUGE_ABI = ['function stakedValues(address) view returns (uint256[])'];
+                var gauge = new ethers.Contract(GAUGE_ADDR, GAUGE_ABI, p);
 
                 var [slot0, token0, balance] = await Promise.all([
                     pool.slot0(), pool.token0(), npm.balanceOf(addr)
@@ -7729,23 +7744,43 @@
                 var currentTick = Number(slot0[1]);
                 var wethIs0 = token0.toLowerCase() === WETH_ADDR.toLowerCase();
                 var ethPrice = sqrtPriceToEthUsd(sqrtPriceX96, wethIs0);
+
+                // Collect token IDs from wallet + gauge-staked
+                var allTokenIds = [];
+                var stakedIds = [];
                 var bal = Number(balance);
 
-                if (bal === 0) {
-                    statusEl.textContent = 'No Aerodrome positions found for this wallet.';
+                statusEl.textContent = 'Scanning wallet & gauge for positions...';
+
+                // 1. Unstaked NFTs held directly by wallet
+                if (bal > 0) {
+                    var idPromises = [];
+                    for (var i = 0; i < bal; i++) idPromises.push(npm.tokenOfOwnerByIndex(addr, i));
+                    var walletIds = await Promise.all(idPromises);
+                    allTokenIds = allTokenIds.concat(walletIds);
+                }
+
+                // 2. NFTs staked in the ETH/USDC gauge
+                try {
+                    var gaugeStaked = await gauge.stakedValues(addr);
+                    if (gaugeStaked.length > 0) {
+                        stakedIds = gaugeStaked.map(function(id) { return id; });
+                        allTokenIds = allTokenIds.concat(stakedIds);
+                    }
+                } catch(e) {
+                    // Gauge call failed — skip silently
+                }
+
+                if (allTokenIds.length === 0) {
+                    statusEl.textContent = 'No Aerodrome positions found (checked wallet + ETH/USDC gauge).';
                     btn.disabled = false;
                     return;
                 }
 
-                statusEl.textContent = 'Found ' + bal + ' position' + (bal === 1 ? '' : 's') + '. Filtering ETH/USDC...';
-
-                // Fetch all token IDs
-                var idPromises = [];
-                for (var i = 0; i < bal; i++) idPromises.push(npm.tokenOfOwnerByIndex(addr, i));
-                var tokenIds = await Promise.all(idPromises);
+                statusEl.textContent = 'Found ' + allTokenIds.length + ' position' + (allTokenIds.length === 1 ? '' : 's') + (stakedIds.length > 0 ? ' (' + stakedIds.length + ' staked in gauge)' : '') + '. Filtering ETH/USDC...';
 
                 // Fetch all positions
-                var posPromises = tokenIds.map(function(id) { return npm.positions(id); });
+                var posPromises = allTokenIds.map(function(id) { return npm.positions(id); });
                 var positions = await Promise.all(posPromises);
 
                 // Filter to ETH/USDC with liquidity > 0
@@ -7756,12 +7791,13 @@
                     var isMatch = (t0 === WETH_ADDR.toLowerCase() && t1 === USDC_ADDR.toLowerCase())
                         || (t0 === USDC_ADDR.toLowerCase() && t1 === WETH_ADDR.toLowerCase());
                     if (isMatch && Number(pos[7]) > 0) {
-                        ethUsdcPos.push({ tokenId: tokenIds[j], pos: pos });
+                        var isStaked = stakedIds.some(function(sid) { return sid.toString() === allTokenIds[j].toString(); });
+                        ethUsdcPos.push({ tokenId: allTokenIds[j], pos: pos, staked: isStaked });
                     }
                 }
 
                 if (ethUsdcPos.length === 0) {
-                    statusEl.textContent = 'No active ETH/USDC positions found. This wallet may have positions in other pools.';
+                    statusEl.textContent = 'No active ETH/USDC positions found. Positions may be in other pools.';
                     btn.disabled = false;
                     return;
                 }
@@ -7798,8 +7834,9 @@
                     card.onmouseenter = function() { this.style.borderColor = 'var(--accent)'; this.style.transform = 'translateY(-1px)'; };
                     card.onmouseleave = function() { this.style.borderColor = 'var(--border)'; this.style.transform = 'none'; };
 
-                    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-                        + '<div style="font-family:var(--font-display);font-weight:700;">ETH / USDC <span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-dim);margin-left:6px;">NFT #' + item.tokenId.toString() + '</span></div>'
+                    var stakedBadge = item.staked ? ' <span style="font-family:var(--mono);font-size:0.6rem;color:var(--cyan);background:var(--cyan-dim);border:1px solid var(--cyan-dim);padding:2px 8px;border-radius:12px;margin-left:6px;">Staked in Gauge</span>' : '';
+                    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">'
+                        + '<div style="font-family:var(--font-display);font-weight:700;">ETH / USDC <span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-dim);margin-left:6px;">NFT #' + item.tokenId.toString() + '</span>' + stakedBadge + '</div>'
                         + '<span style="font-family:var(--mono);font-size:0.68rem;padding:3px 10px;border-radius:20px;font-weight:600;'
                         + (inRange ? 'color:var(--green);border:1px solid var(--green-dim);background:var(--green-dim);' : 'color:#ff6450;border:1px solid rgba(255,100,80,0.2);background:rgba(255,100,80,0.06);')
                         + '">' + (inRange ? '&#x25CF; In Range' : '&#x25CF; Out of Range') + '</span>'
