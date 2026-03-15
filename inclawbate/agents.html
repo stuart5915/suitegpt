@@ -2000,50 +2000,52 @@ var CHIP_ACTIONS = {
         action: function() { showLaunchPanel(); }
     },
     'I want to create a staking pool for my token': {
-        reply: 'To create a staking pool, you\'ll need a deployed token. The pool lets holders stake your token and earn CLAWS rewards automatically from LP fees.',
-        action: function() { showLaunchPanel(); }
+        reply: 'Opening the staking pool creator &mdash; select your token and deploy a staking contract linked to it.',
+        action: function() { showEmbedPanel('pool', 'Create Stake Pool'); }
     },
     'Build me a landing page for my project': {
-        reply: 'Opening the landing page builder — describe your project and AI will generate a custom page for you.',
-        action: function() { window.open('/build', '_blank'); }
+        reply: 'Opening the landing page builder &mdash; describe your project and AI will generate a custom page for you.',
+        action: function() { closeAllPanels(); window.open('/build', '_blank'); }
     },
     'I want to promote my project on Inclawbate\'s X': {
         reply: 'Opening the X Schedule &mdash; create posts, set a schedule, and promote your project on autopilot.',
         action: function() { showSchedulePanel(); }
     },
     'Set up an AI agent for my project': {
-        reply: 'AI agents auto-post on X, engage with your community, and grow your project. Launch a token first, then we\'ll set up your agent with 10 free credits.',
+        reply: 'Scroll down to create your AI agent &mdash; it auto-posts on X, engages your community, and grows your project.',
         action: function() {
+            closeAllPanels();
             var ms = document.getElementById('marketingSection');
             if (ms) { ms.style.display = ''; if (!ms.classList.contains('open')) ms.classList.add('open'); ms.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         }
     },
     'How is my project doing? Run a health check': {
         reply: 'To run a health check I need your token address. Type it in the chat and I\'ll pull analytics from DexScreener, staking stats, and project status.',
-        action: null
+        action: function() { closeAllPanels(); }
     },
     'I need a designer for my project': {
-        reply: 'Browse the Inclawbators directory below — real humans available for branding, strategy, dev, and more. Click "Hire" on anyone to get started.',
+        reply: 'Browse the Inclawbators directory below &mdash; real humans available for branding, strategy, dev, and more. Click "Hire" on anyone to get started.',
         action: function() {
+            closeAllPanels();
             var is = document.getElementById('inclawbatorsSection');
             if (is) { is.style.display = ''; is.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         }
     },
     'I want to airdrop tokens to my community': {
-        reply: 'Opening the Disperse tool — swap and distribute tokens to multiple wallets in one transaction on Base.',
+        reply: 'Opening the Disperse tool &mdash; swap and distribute tokens to multiple wallets in one transaction on Base.',
         action: function() { showDispersePanel(); }
     },
     'Show me the best yield vaults': {
         reply: 'Check out the <a href="/vaults">Vaults page</a> for active yield opportunities. Our automated LP manager earns fees and buys back CLAWS.',
-        action: null
+        action: function() { closeAllPanels(); }
     },
     'Browse apps in the store': {
         reply: 'Browse 98+ apps on the <a href="/apps">Apps page</a> &mdash; games, tools, dashboards, all built on Inclawbate.',
-        action: null
+        action: function() { closeAllPanels(); }
     },
     'Show me staking stats and APY': {
         reply: 'View live staking stats on the <a href="/stake">Stake page</a> &mdash; TVL, APY, and your wallet position for every pool.',
-        action: null
+        action: function() { closeAllPanels(); }
     }
 };
 
@@ -2260,6 +2262,16 @@ function showSchedulePanel() {
 }
 
 function closeSchedulePanel() { closeAllPanels(); }
+
+function showEmbedPanel(tool, title) {
+    closeAllPanels();
+    var panel = document.getElementById('dispersePanel');
+    var iframe = document.getElementById('disperseIframe');
+    panel.querySelector('.launch-panel-header span').innerHTML = '&#128184; ' + (title || tool);
+    iframe.src = '/inclawbate/inclawbator.html?embed=1&tool=' + tool;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function fillLaunchForm(args) {
     showLaunchPanel();
