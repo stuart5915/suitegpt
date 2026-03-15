@@ -25,7 +25,15 @@ FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis.
 
 EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
 
-HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees.
+HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. For actually initiating a hire, use hire_inclawbator. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees.
+
+BUILD A LANDING PAGE — When someone wants a branded page for their project, use build_landing_page. The AI builder creates full pages with no code needed.
+
+REGISTER AN EXISTING PROJECT — When someone already has a token deployed elsewhere and wants to join the Inclawbate ecosystem, use register_project to explain how to register and get access to staking, agents, and the CLAWS flywheel.
+
+CHECK STAKING STATS — When someone asks about staking performance, TVL, APY, or their staking position, use get_staking_stats to pull live data.
+
+PROMOTE YOUR PROJECT — When someone wants to promote their project through the @inclawbate X account, use book_promo to show tiers and pricing. Projects can pay CLAWS to get promotional posts on the Inclawbate X schedule.
 
 FULL-SERVICE INCUBATION — ONLY when someone wants the team to handle everything (token + staking + branding + marketing as a package). Use get_incubation_info.
 
@@ -215,6 +223,78 @@ const TOOLS = [
         type: 'object',
         properties: {
           skill: { type: 'string', description: 'Specialty filter: design, development, marketing, content, strategy' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'hire_inclawbator',
+      description: 'Initiate hiring a specific human Inclawbator. Use after browse_inclawbators when user has chosen someone. Explains the payment + hiring process.',
+      parameters: {
+        type: 'object',
+        properties: {
+          handle: { type: 'string', description: 'X handle of the Inclawbator to hire' },
+          task_description: { type: 'string', description: 'What the user needs done' },
+          skill: { type: 'string', description: 'Required skill: design, development, marketing, content' }
+        },
+        required: ['handle']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'build_landing_page',
+      description: 'Help user create a branded landing page for their project. Opens the AI app builder with project context. Use when someone needs a website, landing page, or project page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_name: { type: 'string', description: 'Name of the project' },
+          description: { type: 'string', description: 'What the project does' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'register_project',
+      description: 'Register an existing token/project in the Inclawbate ecosystem. Use when someone already launched a token elsewhere and wants to join for staking, agents, and the CLAWS reward flywheel.',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_name: { type: 'string', description: 'Project or token name' },
+          token_address: { type: 'string', description: 'Deployed token contract address' },
+          chain: { type: 'string', enum: ['base', 'solana'], description: 'Chain the token is on' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_staking_stats',
+      description: 'Get live staking stats — TVL, APY, total stakers, distribution info. Optionally check a specific wallet position. Use when someone asks about staking performance or their staking status.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Optional wallet address to check their specific position' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'book_promo',
+      description: 'Get info on promoting a project through the @inclawbate X account. Shows promo tiers, pricing in CLAWS, and booking process. Use when someone wants marketing, promotion, or exposure for their project.',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_name: { type: 'string', description: 'Name of the project to promote' },
+          tier: { type: 'string', enum: ['shoutout', 'campaign', 'featured'], description: 'Promo tier if already chosen' }
         }
       }
     }
@@ -542,6 +622,122 @@ async function browseInclawbators(args) {
   }
 }
 
+function hireInclawbatorInfo(args) {
+  const handle = args.handle || '';
+  return JSON.stringify({
+    action: 'initiate_hire',
+    who: handle ? '@' + handle.replace(/^@/, '') : 'an Inclawbator',
+    task: args.task_description || null,
+    process: [
+      '1. Send CLAWS payment directly to the Inclawbator\'s wallet',
+      '2. Share the transaction hash here or on the platform',
+      '3. The Inclawbator gets notified via Telegram',
+      '4. They\'ll reach out to discuss details and deliver the work',
+      '5. All communication happens through the Inclawbate platform'
+    ],
+    payment: 'CLAWS token on Base, direct wallet-to-wallet, zero platform fee',
+    directory_url: 'https://inclawbate.com/inclawbator',
+    note: handle
+      ? 'Ready to hire @' + handle.replace(/^@/, '') + '! Send CLAWS to their wallet and share the tx hash to get started.'
+      : 'Browse the Inclawbators directory to find the right person first.'
+  });
+}
+
+function buildLandingPageInfo(args) {
+  return JSON.stringify({
+    action: 'open_builder',
+    how: 'Build a branded landing page for your project using the AI app builder — no code needed.',
+    steps: [
+      '1. Go to inclawbate.com/build',
+      '2. Describe your project — the AI generates a full branded page',
+      '3. Preview and iterate until you\'re happy',
+      '4. Publish — your page goes live at inclawbate.com/apps/your-slug'
+    ],
+    url: 'https://inclawbate.com/build',
+    note: 'The builder supports custom branding, token integrations, social links, and interactive elements.',
+    project_context: args.project_name ? { name: args.project_name, description: args.description } : null
+  });
+}
+
+function registerProjectInfo(args) {
+  return JSON.stringify({
+    action: 'open_register',
+    how: 'Register your existing project in the Inclawbate ecosystem to unlock staking, agents, and the CLAWS reward flywheel.',
+    steps: [
+      '1. Connect your wallet on inclawbate.com',
+      '2. Come back here to the Inclawbator chat',
+      '3. Launch your token through us, or tell us your existing token address',
+      '4. We\'ll register it in the ecosystem and set up your staking pool',
+      '5. The CLAWS reward flywheel activates automatically — 20% of LP fees fund staker rewards forever'
+    ],
+    benefits: [
+      'Staking pool with auto-funded CLAWS rewards',
+      'X/Twitter marketing agent (free)',
+      'App store listing in ecosystem directory',
+      'Ecosystem co-promotion with other projects',
+      'Analytics dashboard for your project'
+    ],
+    url: 'https://inclawbate.com/inclawbator',
+    project_info: args.project_name ? { name: args.project_name, token_address: args.token_address, chain: args.chain } : null
+  });
+}
+
+async function getStakingStats(args) {
+  try {
+    let url = APP_API + '/staking';
+    if (args.wallet) url += '?wallet=' + encodeURIComponent(args.wallet);
+    const res = await fetch(url);
+    const data = await res.json();
+    const result = {
+      total_stakers: data.treasury?.total_stakers || 0,
+      total_staked: data.treasury?.total_staked || '0',
+      tvl_usd: data.treasury?.tvl_usd ? '$' + Number(data.treasury.tvl_usd).toLocaleString() : '$0',
+      estimated_apy: data.treasury?.estimated_apy ? data.treasury.estimated_apy + '%' : 'N/A',
+      total_distributed: data.treasury?.total_distributed || '0',
+      total_distributed_usd: data.treasury?.total_distributed_usd ? '$' + Number(data.treasury.total_distributed_usd).toLocaleString() : '$0',
+      last_distribution: data.treasury?.last_distribution_at || null,
+      token: data.token?.symbol || 'INCLAWNCH',
+      staking_url: 'https://inclawbate.com/stake'
+    };
+    if (args.wallet && data.wallet_position) {
+      result.wallet_position = {
+        staked: data.wallet_position.total_staked || '0',
+        staked_usd: data.wallet_position.staked_usd ? '$' + Number(data.wallet_position.staked_usd).toLocaleString() : '$0',
+        share: data.wallet_position.share_pct ? data.wallet_position.share_pct + '%' : '0%',
+        daily_reward: data.wallet_position.estimated_daily_reward || '0',
+        weekly_reward: data.wallet_position.estimated_weekly_reward || '0'
+      };
+    }
+    return JSON.stringify(result);
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch staking stats', staking_url: 'https://inclawbate.com/stake' });
+  }
+}
+
+function bookPromoInfo(args) {
+  const PROMO_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+  return JSON.stringify({
+    action: 'show_promo_tiers',
+    what: 'Get your project promoted on the @inclawbate X account — reach the entire ecosystem audience.',
+    tiers: [
+      { name: 'Shoutout', posts: 1, price: '10,000 CLAWS', description: 'Single promotional post about your project' },
+      { name: 'Campaign', posts: 5, price: '40,000 CLAWS', description: '5 posts over a week — varied angles, hashtags, engagement hooks' },
+      { name: 'Featured', posts: 'Daily for 2 weeks', price: '100,000 CLAWS', description: 'Daily posts + featured in ecosystem page + co-promotion with other projects' }
+    ],
+    selected_tier: args.tier || null,
+    project: args.project_name || null,
+    how_to_book: [
+      '1. Choose a tier (Shoutout, Campaign, or Featured)',
+      '2. Send CLAWS to inclawbate.base.eth (' + PROMO_WALLET + ')',
+      '3. Share the tx hash + your project name and description here',
+      '4. Posts are created by AI, reviewed, and scheduled within 24 hours'
+    ],
+    payment_wallet: PROMO_WALLET,
+    payment_token: 'CLAWS (0x7ca47B141639B893C6782823C0b219f872056379)',
+    note: 'All promo content is AI-generated based on your project info and tailored to the Inclawbate audience. You can review drafts before they go live.'
+  });
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'browse_apps': return await browseApps(args);
@@ -560,6 +756,11 @@ async function executeTool(name, args) {
     case 'setup_x_agent': return setupXAgentInfo();
     case 'get_project_status': return await getProjectStatus(args);
     case 'browse_inclawbators': return await browseInclawbators(args);
+    case 'hire_inclawbator': return hireInclawbatorInfo(args);
+    case 'build_landing_page': return buildLandingPageInfo(args);
+    case 'register_project': return registerProjectInfo(args);
+    case 'get_staking_stats': return await getStakingStats(args);
+    case 'book_promo': return bookPromoInfo(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }

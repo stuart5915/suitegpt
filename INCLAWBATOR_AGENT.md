@@ -81,21 +81,22 @@ LP trading fees generated (1.2% via Clanker)
 
 | Service | Description | Status |
 |---------|-------------|--------|
-| **Launch Token** | Deploy ERC-20 on Base via Clanker v4. Configurable supply, dev buy, fee recipients, creator vault, airdrop allocation. Fee split auto-configured: 80% creator / 20% Inclawbate (→ CLAWS rewards) | Live (API exists, not wired to agent) |
+| **Launch Token** | Deploy ERC-20 on Base via Clanker v4 or Solana via Bags/Meteora. Configurable supply, dev buy, fee recipients, creator vault, airdrop allocation, lockup/vesting, sniper tax. Fee split auto-configured: 80% creator / 20% Inclawbate (→ CLAWS rewards) | **Live** (full UI + chat wired via `launch_token_info` + `configure_token_launch`) |
 | **Deploy Staking Pool** | Create staking contract via Staking Factory v3. Dual-depositor: creator + inclawbate.base.eth both authorized. CLAWS as reward token. Automated reward flow from day one | Needs contract update |
-| **Build Landing Page** | Generate and deploy a branded project page on inclawbate.com via publish-site API | Live (API exists, not wired to agent) |
-| **Register in Ecosystem** | List in the Inclawbate app store and ecosystem directory with metadata, links, and tags | Live (API exists, not wired to agent) |
-| **Set Up X Agent** | Configure automated X/Twitter posting with custom persona and frequency (1-48 posts/day) | Live (API exists, not wired to agent) |
-| **Marketing Pipeline** | Book slots in the Inclawbate X schedule rotation for coordinated promotion | Live (API exists, not wired to agent) |
+| **Build Landing Page** | Generate and deploy a branded project page on inclawbate.com via publish-site API | **Live** (agent guides to /build via `build_landing_page`) |
+| **Register in Ecosystem** | List in the Inclawbate app store and ecosystem directory with metadata, links, and tags | **Live** (agent guides registration via `register_project`) |
+| **Set Up X Agent** | Configure automated X/Twitter posting with custom persona and frequency (1-48 posts/day) | **Live** (agent wired via `setup_x_agent`, scrolls to agents section) |
+| **Marketing Pipeline** | Book paid promo slots on @inclawbate X. 3 tiers: Shoutout/Campaign/Featured, pay in CLAWS | **Live** (API at `/api/inclawbate/promo`, agent wired via `book_promo`) |
 
 ### Phase 3: Post-Launch (Grow)
 
 | Service | Description | Status |
 |---------|-------------|--------|
-| **Token Analytics** | Report on token price, volume, liquidity, holder count via DexScreener + on-chain data | Partial (analytics API exists) |
-| **Staking Analytics** | TVL, APY, total stakers, reward distribution rate, CLAWS earned to date | Partial (staking API exists) |
+| **Token Analytics** | Report on token price, volume, liquidity, holder count via DexScreener + on-chain data | **Live** (wired to agent via `get_token_analytics`) |
+| **Staking Analytics** | TVL, APY, total stakers, reward distribution rate, CLAWS earned to date | **Live** (wired to agent via `get_staking_stats`) |
 | **Airdrop / Disperse** | Distribute tokens to a list of wallets. Swap + multi-send via 0x and Disperse.app | Live (tool exists on /inclawbator, not wired to agent) |
 | **Fee Revenue Report** | Show creator their 80% LP fee earnings, total volume, and how much CLAWS has been bought + deposited from the 20% | Not built |
+| **Promo Booking** | Pay CLAWS to get promotional posts on the @inclawbate X account. 3 tiers: Shoutout (1 post, 10K CLAWS), Campaign (5 posts, 40K CLAWS), Featured (daily for 2 weeks, 100K CLAWS) | **Live** (API + agent wired via `book_promo`) |
 
 ### Phase 4: Ongoing Management (Sustain)
 
@@ -105,7 +106,7 @@ LP trading fees generated (1.2% via Clanker)
 | **Agent Refuel** | Monitor X agent credit balance. Alert when low. Auto-refill or prompt creator to top up | Not built |
 | **Staking Rewards Monitor** | Track the automated CLAWS reward deposits. Alert if trading volume drops and rewards slow down. Suggest creator top-up if needed | Not built |
 | **Cross-Promotion** | Connect projects in the ecosystem for co-marketing. Match complementary communities | Not built |
-| **Hire an Inclawbator** | Connect creators with vetted human Inclawbators for tasks the agent can't automate — logo design, smart contract work, marketing strategy, content writing. Pay in CLAWS, direct wallet-to-wallet | Partial (hiring API exists, /inclawbators page not built) |
+| **Hire an Inclawbator** | Connect creators with vetted human Inclawbators for tasks the agent can't automate — logo design, smart contract work, marketing strategy, content writing. Pay in CLAWS, direct wallet-to-wallet | **Live** (directory on /inclawbator, browse + hire wired to agent) |
 
 ---
 
@@ -259,6 +260,7 @@ These are packaged capabilities that the Inclawbator agent exposes. Other agents
 - **The 20% Inclawbate fee is used to purchase CLAWS on the open market and deposit it as staking rewards into the project's staking pool.** This creates a self-reinforcing loop: trading activity → fees → CLAWS buy pressure → staking rewards for the project's community. Every project launched through Inclawbate directly strengthens the CLAWS ecosystem.
 - Agent credits: 10 free on launch, then funded by anyone depositing CLAWS via feed-agent endpoint
 - Human Inclawbators: zero platform fee, direct wallet-to-wallet payment in CLAWS (rates set by each Inclawbator)
+- **Promo slots (Marketing-as-a-Service):** Projects pay CLAWS to get promoted on the @inclawbate X account. 3 tiers: Shoutout (1 post, 10K CLAWS), Campaign (5 posts/week, 40K CLAWS), Featured (daily for 2 weeks, 100K CLAWS). CLAWS payments go to `inclawbate.base.eth`. API: `/api/inclawbate/promo`. Table: `promo_queue`.
 
 ---
 
@@ -321,33 +323,40 @@ Project stakers earn CLAWS automatically
 | `openclaw-skill/inclawnch-analytics/SKILL.md` | Token analytics skill spec |
 | `openclaw-skill/inclawnch-staking/SKILL.md` | Staking skill spec |
 
-### Current Agent Functions (in agent.js)
+### Current Agent Functions (in agent-chat.js — 21 tools)
 
-| Function | Params | Wired to backend? |
-|----------|--------|--------------------|
-| `browse_apps` | search?, category? | Yes — `/api/inclawbate/apps` |
-| `suggest_app_ideas` | interest? | No — hardcoded ideas |
-| `get_ecosystem_info` | none | No — hardcoded |
-| `get_incubation_info` | none | No — hardcoded |
-| `request_incubation` | project_name, token_symbol, description, agent_wallet, token_address?, website_url?, x_handle?, telegram_url? | Yes — `/api/inclawbate/inclawbator` |
-| `check_application_status` | wallet | Yes — `/api/inclawbate/inclawbator` |
+| Function | Params | Backend | Status |
+|----------|--------|---------|--------|
+| `browse_apps` | search?, category? | `/api/inclawbate/apps` | Live |
+| `suggest_app_ideas` | interest? | Hardcoded | Live |
+| `get_ecosystem_info` | none | Hardcoded | Live |
+| `get_incubation_info` | none | Hardcoded | Live |
+| `get_basis_vaults` | sort? | `/api/basis/marketplace` | Live |
+| `get_staking_info` | none | Hardcoded (CLAWS staking overview) | Live |
+| `launch_token_info` | none | Opens launch panel | Live |
+| `configure_token_launch` | token_name, symbol, description, image_url, website_url, x_handle, telegram_url, chain | Fills launch form (Base/Solana) | Live |
+| `build_app_info` | none | Hardcoded (guides to /build) | Live |
+| `create_agent_info` | none | Hardcoded (guides to dashboard) | Live |
+| `create_staking_info` | none | Hardcoded (staking pool info) | Live |
+| `get_user_workspace` | wallet | `/api/inclawbate/apps`, `/api/inclawbate/projects`, `/api/basis/marketplace` | Live |
+| `get_token_analytics` | token_address | DexScreener API | Live |
+| `setup_x_agent` | none | Scrolls to marketing agents section | Live |
+| `get_project_status` | wallet | `/api/inclawbate/inclawbator` | Live |
+| `browse_inclawbators` | skill? | `/api/inclawbate/humans` | Live |
+| `hire_inclawbator` | handle, task_description?, skill? | Guides hiring process (CLAWS payment) | Live |
+| `build_landing_page` | project_name?, description? | Opens /build in new tab | Live |
+| `register_project` | project_name?, token_address?, chain? | Guides registration process | Live |
+| `get_staking_stats` | wallet? | `/api/inclawbate/staking` (live TVL, APY, wallet position) | Live |
+| `book_promo` | project_name?, tier? | Shows promo tiers + booking process | Live |
 
-### Functions Needed (not yet in agent.js)
+### Functions Still Needed
 
 | Function | Params | Backend |
 |----------|--------|---------|
-| `launch_token` | name, symbol, supply, dev_buy?, fee_recipients?, vault_pct?, airdrop? | `/api/inclawbate/inclawbator` action:launch-token |
-| `deploy_staking` | token_address, reward_token? | `/api/inclawbate/inclawbator` action:deploy-staking |
-| `build_landing_page` | project_name, description, links, branding? | `/api/publish-site` |
-| `register_project` | name, symbol, description, website?, x_handle?, telegram? | `/api/inclawbate/inclawbator` action:register |
-| `setup_x_agent` | app_id, persona?, posts_per_day? | `/api/inclawbate/inclawbator` action:launch-agent |
-| `get_token_analytics` | token_address | DexScreener API + `/api/inclawbate/analytics` |
-| `get_staking_stats` | staking_address or token_address | `/api/inclawbate/staking` |
+| `deploy_staking` | token_address, reward_token? | Needs StakingFactory v3 contract update |
 | `get_fee_report` | project_id | New endpoint needed |
 | `disperse_tokens` | token_address, recipients[] | 0x + Disperse.app |
 | `health_check` | project_id | Composite: DexScreener + staking + X metrics |
-| `browse_inclawbators` | specialty?, availability? | `/api/inclawbate/humans` |
-| `hire_inclawbator` | inclawbator_handle, task_description, budget? | `/api/inclawbate/conversations` |
 | `check_hire_status` | conversation_id | `/api/inclawbate/messages` |
 
 ### Backend Actions (inclawbator.js)
