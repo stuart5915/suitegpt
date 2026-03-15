@@ -1195,6 +1195,14 @@
             </div>
         </div>
 
+        <div class="launch-panel" id="dispersePanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#128184; Disperse / Airdrop</span>
+                <button class="launch-panel-close" onclick="closeDispersePanel()">&times;</button>
+            </div>
+            <iframe id="disperseIframe" src="" style="width:100%;border:none;min-height:500px;background:transparent"></iframe>
+        </div>
+
         <div class="hub-chat-container">
             <div class="hub-chat-messages" id="chatMessages">
                 <div class="chat-msg chat-msg-bot">
@@ -1957,7 +1965,7 @@ async function chatSendMessage(text) {
             window.open('https://inclawbate.com/build', '_blank');
         }
         if (data.function_called === 'disperse_tokens') {
-            window.open('https://inclawbate.com/tools#disperse', '_blank');
+            showDispersePanel();
         }
         if (data.session_id) {
             _chatSessionId = data.session_id;
@@ -2147,6 +2155,27 @@ function showLaunchPanel() {
 
 function closeLaunchPanel() {
     document.getElementById('launchPanel').style.display = 'none';
+}
+
+function showDispersePanel() {
+    var panel = document.getElementById('dispersePanel');
+    var iframe = document.getElementById('disperseIframe');
+    if (!iframe.src || iframe.src === '' || iframe.src === location.href) {
+        iframe.src = '/inclawbator?embed=1&tool=disperse';
+    }
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Auto-resize iframe from embed messages
+    window.addEventListener('message', function handler(e) {
+        if (e.data && e.data.type === 'embed-height' && typeof e.data.height === 'number') {
+            iframe.style.height = Math.min(e.data.height, window.innerHeight * 0.85) + 'px';
+        }
+    });
+}
+
+function closeDispersePanel() {
+    document.getElementById('dispersePanel').style.display = 'none';
+    document.getElementById('disperseIframe').src = '';
 }
 
 function fillLaunchForm(args) {
