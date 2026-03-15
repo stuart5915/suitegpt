@@ -806,7 +806,7 @@ function disperseTokensInfo(args) {
     action: 'open_airdrop',
     how: 'Distribute tokens to multiple wallets in a single transaction using the Disperse contract on Base.',
     steps: [
-      '1. Go to inclawbate.com/airdrop',
+      '1. Go to inclawbate.com/tools#disperse',
       '2. Connect your wallet (must hold the tokens)',
       '3. Enter the token contract address' + (args.token_address ? ' (' + args.token_address + ')' : ''),
       '4. Paste your recipient list (address, amount — one per line)',
@@ -814,7 +814,7 @@ function disperseTokensInfo(args) {
       '6. All recipients receive tokens in one transaction'
     ],
     contract: '0xD152f549545093347A162Dce210e7293f1452150',
-    url: 'https://inclawbate.com/airdrop',
+    url: 'https://inclawbate.com/tools#disperse',
     note: 'Disperse batches up to 200 recipients per transaction. For larger lists, it auto-splits into multiple batches.',
     token: args.token_address || null
   });
