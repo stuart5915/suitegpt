@@ -238,13 +238,15 @@ Real data (use ONLY these numbers):
 
 Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. ALWAYS use @ before X handles (e.g. @abhiontwt not abhiontwt).
 
+IMAGE PROMPT RULES:
+${BRAND_IMAGE_CONTEXT}
+${PILLAR_SCENE_HINTS[pillar.name] ? 'BASE SCENE (adapt to tweet content): ' + PILLAR_SCENE_HINTS[pillar.name] : ''}
+
+The image must visually match what the tweet talks about. If it mentions an app, show the lobster with that app. If it shouts out a builder, show the lobster building. Always feature the 3D lobster mascot.
+
 Output in this format:
 TWEET: [the tweet]
-IMAGE: [a detailed image prompt for AI image generation, 2-3 sentences]
-
-${BRAND_IMAGE_CONTEXT}
-
-${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT: ' + PILLAR_SCENE_HINTS[pillar.name] : ''}`;
+IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal lighting, specific to the tweet content]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -300,16 +302,18 @@ ${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT: ' + PILLAR_SCENE_HINTS[pillar.n
             const opts = slot.tweet_options || {};
             const pillarName = opts.pillar || '';
             const sceneHint = PILLAR_SCENE_HINTS[pillarName] || '';
-            const imgPrompt = `You are generating an image prompt for an AI image generator (like Midjourney, DALL-E, or Flux).
+            const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
-The image accompanies this tweet from @inclawbator:
+This image accompanies this specific tweet from @inclawbator:
 "${tweetText}"
 
 ${BRAND_IMAGE_CONTEXT}
 
-${sceneHint ? 'SCENE SUGGESTION for this content type (' + pillarName + '): ' + sceneHint : ''}
+${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
 
-Write ONE detailed image prompt (2-3 sentences) that would produce a stunning, on-brand visual for this tweet. Be specific about composition, lighting, colors, and subject. Output ONLY the prompt, nothing else.`;
+IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point.
+
+Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -523,19 +527,27 @@ RULES:
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary length, tone, structure
 
-Generate ${emptyHours.length} tweets. For each tweet, also write a detailed image prompt (2-3 sentences) for AI image generation that follows the brand guide below.
+Generate ${emptyHours.length} tweets. For EACH tweet, write a matching image prompt that visually represents THAT SPECIFIC tweet's content.
 
+IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 
-${PILLAR_SCENE_HINTS[pillar.name] ? 'SCENE HINT for today (' + pillar.name + '): ' + PILLAR_SCENE_HINTS[pillar.name] : ''}
+BASE SCENE for today's pillar (${pillar.name}) — adapt this to each tweet's specific content:
+${PILLAR_SCENE_HINTS[pillar.name] || 'Use the brand mascot in a relevant pose for the content.'}
 
-Format each entry as:
-TWEET: [the tweet text]
-IMAGE: [detailed image prompt following the brand guide above]
+CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. If the tweet mentions a specific app, the image should show the lobster presenting that app. If it mentions a builder, show the lobster building. If it mentions staking, show the lobster with charts. Don't just repeat the same generic scene for every tweet.
+
+EXAMPLE of a good pair:
+TWEET: @itsEvilDuck just shipped ClawsNet on inclawbate. social network built entirely with AI. wild.
+IMAGE: 3D rendered Inclawbate lobster mascot in presenter pose, one claw gesturing proudly toward a large floating holographic social network interface with glowing connection nodes and profile cards. Dark void background with coral (#e5533d) rim lighting on the lobster's glossy shell and teal (#4db6ac) data streams flowing between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
 
-Output ONLY the numbered entries in the TWEET/IMAGE format. Nothing else.`;
+Format each entry as:
+TWEET: [the tweet text]
+IMAGE: [2-3 sentence image prompt — must reference the 3D lobster mascot, dark background, coral+teal lighting, and visually match the tweet's content]
+
+Output ONLY the numbered entries. Nothing else.`;
 
     try {
         const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
