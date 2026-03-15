@@ -313,6 +313,150 @@
             }
         }
 
+        /* ── Allocation Vote ── */
+        .alloc-section {
+            margin-top: var(--space-lg);
+        }
+        .alloc-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+        }
+
+        /* Synthesis bar (stacked horizontal) */
+        .alloc-synth-bar {
+            display: flex;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            height: 32px;
+            margin-bottom: 6px;
+        }
+        .alloc-synth-seg {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #fff;
+            transition: flex 0.3s ease;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* Allocation rows */
+        .alloc-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: var(--space-lg);
+        }
+        .alloc-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 50px;
+            align-items: center;
+            gap: 12px;
+        }
+        .alloc-row-label {
+            font-family: var(--font-display);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .alloc-row-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .alloc-row-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-elevated);
+            outline: none;
+            cursor: pointer;
+        }
+        .alloc-row-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 2px solid var(--bg-card);
+            cursor: pointer;
+        }
+        .alloc-row-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 2px solid var(--bg-card);
+            cursor: pointer;
+        }
+        .alloc-row-pct {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        /* Vote button */
+        .alloc-vote-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: var(--space-lg);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .alloc-vote-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+            background: var(--accent-gradient);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .alloc-vote-btn:hover { opacity: 0.85; }
+        .alloc-vote-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .alloc-vote-info {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .alloc-voter-count {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .alloc-row {
+                grid-template-columns: 100px 1fr 40px;
+                gap: 8px;
+            }
+            .alloc-row-label { font-size: 0.7rem; }
+        }
+
         /* ── CTA at bottom ── */
         .d-cta {
             position: relative;
@@ -739,6 +883,37 @@
             <div class="rev-subtitle">On-chain wallet requiring multiple council signatures to move funds. Every transaction is auditable and anyone can verify the balance.</div>
         </div>
 
+        <!-- Allocation Vote -->
+        <div class="alloc-section">
+            <div class="rev-label">Value Distribution</div>
+            <div class="rev-title" style="font-size: 1.1rem;">Where Should Value Flow?</div>
+            <div class="rev-subtitle">Set your preferred allocation. Every CLAWS staker and council member gets a voice. The synthesis drives the council&rsquo;s final decision.</div>
+
+            <div class="alloc-card">
+                <!-- Synthesis bar -->
+                <div style="margin-bottom: 4px;">
+                    <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">Community Synthesis</div>
+                    <div class="alloc-synth-bar" id="alloc-synth-bar"></div>
+                    <div class="alloc-voter-count" id="alloc-voter-count"></div>
+                </div>
+
+                <!-- Your vote sliders -->
+                <div style="margin-top: var(--space-lg);">
+                    <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Your Allocation</div>
+                    <div class="alloc-rows" id="alloc-sliders"></div>
+                </div>
+
+                <!-- Vote button -->
+                <div class="alloc-vote-area">
+                    <div class="alloc-vote-info">Connect wallet to cast your vote. Weight scales with your CLAWS stake.</div>
+                    <button class="alloc-vote-btn" id="alloc-vote-btn" disabled>Cast Vote</button>
+                </div>
+
+                <!-- Council note -->
+                <div class="analogy" style="margin-top: var(--space-md);"><strong>Council executes based on community synthesis.</strong> Final allocation cannot deviate more than 50% from the voted distribution.</div>
+            </div>
+        </div>
+
         <!-- Weekly cadence -->
         <div style="margin-top: var(--space-lg);">
             <div class="rev-label">Cadence</div>
@@ -986,6 +1161,131 @@
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/privy-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
+
+<script>
+/* ── Allocation Vote System ── */
+(function() {
+    var buckets = [
+        { id: 'reinvest',    label: 'Reinvest Treasury',  color: '#fbbf24', default: 20 },
+        { id: 'buy-claws',   label: 'Buy CLAWS',          color: '#e87955', default: 25 },
+        { id: 'claws-lp',    label: 'CLAWS/ETH LP',       color: '#2dd4bf', default: 15 },
+        { id: 'staking',     label: 'Staking Rewards',    color: '#4ade80', default: 15 },
+        { id: 'ecosystem',   label: 'Ecosystem Projects', color: '#a78bfa', default: 10 },
+        { id: 'grants',      label: 'Builder Grants',     color: '#60a5fa', default: 5 },
+        { id: 'philanthropy',label: 'Philanthropy',        color: '#f472b6', default: 5 },
+        { id: 'council-comp',label: 'Council Comp',        color: '#94a3b8', default: 5 },
+    ];
+
+    var values = buckets.map(function(b) { return b.default; });
+
+    /* Fake community synthesis (will be replaced by Supabase aggregate) */
+    var synthesis = [22, 24, 14, 16, 9, 6, 5, 4];
+
+    function renderSynthBar() {
+        var bar = document.getElementById('alloc-synth-bar');
+        if (!bar) return;
+        bar.innerHTML = '';
+        buckets.forEach(function(b, i) {
+            var seg = document.createElement('div');
+            seg.className = 'alloc-synth-seg';
+            seg.style.background = b.color;
+            seg.style.flex = synthesis[i];
+            seg.textContent = synthesis[i] > 4 ? b.label.split(' ')[0] + ' ' + synthesis[i] + '%' : '';
+            bar.appendChild(seg);
+        });
+        var count = document.getElementById('alloc-voter-count');
+        if (count) count.textContent = '0 votes cast \u2014 be the first to set the direction';
+    }
+
+    function renderSliders() {
+        var container = document.getElementById('alloc-sliders');
+        if (!container) return;
+        container.innerHTML = '';
+        buckets.forEach(function(b, i) {
+            var row = document.createElement('div');
+            row.className = 'alloc-row';
+
+            var label = document.createElement('div');
+            label.className = 'alloc-row-label';
+            label.innerHTML = '<span class="alloc-row-dot" style="background:' + b.color + '"></span>' + b.label;
+
+            var slider = document.createElement('input');
+            slider.type = 'range';
+            slider.className = 'alloc-row-slider';
+            slider.min = '0';
+            slider.max = '100';
+            slider.value = values[i];
+            slider.dataset.idx = i;
+            slider.style.accentColor = b.color;
+
+            var pct = document.createElement('div');
+            pct.className = 'alloc-row-pct';
+            pct.id = 'alloc-pct-' + i;
+            pct.textContent = values[i] + '%';
+
+            slider.addEventListener('input', function() {
+                var idx = parseInt(this.dataset.idx);
+                values[idx] = parseInt(this.value);
+                normalize(idx);
+                updatePcts();
+            });
+
+            row.appendChild(label);
+            row.appendChild(slider);
+            row.appendChild(pct);
+            container.appendChild(row);
+        });
+    }
+
+    function normalize(changedIdx) {
+        var total = values.reduce(function(a, b) { return a + b; }, 0);
+        if (total === 100) return;
+        var diff = total - 100;
+        var others = [];
+        for (var i = 0; i < values.length; i++) {
+            if (i !== changedIdx && values[i] > 0) others.push(i);
+        }
+        if (others.length === 0) { values[changedIdx] = 100; return; }
+        var perOther = Math.floor(diff / others.length);
+        var remainder = diff - perOther * others.length;
+        others.forEach(function(idx, j) {
+            var sub = perOther + (j < remainder ? 1 : 0);
+            values[idx] = Math.max(0, values[idx] - sub);
+        });
+        /* Fix rounding */
+        var newTotal = values.reduce(function(a, b) { return a + b; }, 0);
+        if (newTotal !== 100) values[changedIdx] += (100 - newTotal);
+    }
+
+    function updatePcts() {
+        buckets.forEach(function(b, i) {
+            var pctEl = document.getElementById('alloc-pct-' + i);
+            if (pctEl) pctEl.textContent = values[i] + '%';
+            var slider = document.querySelector('[data-idx="' + i + '"]');
+            if (slider) slider.value = values[i];
+        });
+        /* Update vote button state */
+        var btn = document.getElementById('alloc-vote-btn');
+        if (btn) {
+            var total = values.reduce(function(a, b) { return a + b; }, 0);
+            btn.disabled = total !== 100;
+        }
+    }
+
+    /* Vote button */
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'alloc-vote-btn') {
+            /* TODO: save to Supabase with wallet address + CLAWS balance weight */
+            alert('Vote recorded! Distribution: ' + buckets.map(function(b, i) {
+                return b.label + ': ' + values[i] + '%';
+            }).join(', '));
+        }
+    });
+
+    renderSynthBar();
+    renderSliders();
+})();
+</script>
 
 <script>
 (function() {
