@@ -275,6 +275,11 @@ async function connectWallet() {
             state.wallet = accounts[0].toLowerCase();
             state.provider = eth;
             state.isAdmin = state.wallet === SUPER_ADMIN;
+            // Sync with nav component
+            try {
+                localStorage.setItem('connectedWallet', state.wallet);
+                localStorage.setItem('walletAddress', state.wallet);
+            } catch(e) {}
             try {
                 await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
             } catch (e) {
@@ -2731,11 +2736,33 @@ async function init() {
                 state.provider = autoProvider;
                 if (!window.ethereum) window.ethereum = autoProvider;
                 state.isAdmin = state.wallet === SUPER_ADMIN;
+                // Sync with nav
+                try {
+                    localStorage.setItem('connectedWallet', state.wallet);
+                    localStorage.setItem('walletAddress', state.wallet);
+                } catch(e) {}
                 updateUI();
                 loadClawsBalance();
-                }
+            }
         } catch (e) {}
     }
+
+    // Listen for nav wallet changes (disconnect/reconnect via nav)
+    window.addEventListener('navAuthChanged', function(e) {
+        var newWallet = e.detail && e.detail.wallet;
+        if (newWallet) {
+            state.wallet = newWallet.toLowerCase();
+            state.isAdmin = state.wallet === SUPER_ADMIN;
+            updateUI();
+            loadClawsBalance();
+        } else {
+            state.wallet = null;
+            state.provider = null;
+            state.isAdmin = false;
+            state.clawsBalance = 0;
+            updateUI();
+        }
+    });
 
     // Coming Soon gate
     updateComingSoonGate();

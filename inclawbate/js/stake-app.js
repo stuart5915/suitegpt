@@ -2245,6 +2245,23 @@ async function init() {
     var poolModalTokenAddr = document.getElementById('poolModalTokenAddr');
     if (poolModalTokenAddr) poolModalTokenAddr.addEventListener('input', onPoolModalAddrInput);
 
+    // Listen for nav wallet changes (disconnect/reconnect via nav)
+    window.addEventListener('navAuthChanged', function(e) {
+        var newWallet = e.detail && e.detail.wallet;
+        if (newWallet) {
+            walletAddr = newWallet;
+            try {
+                localStorage.setItem('_stake_wallet', newWallet);
+                localStorage.setItem('connectedWallet', newWallet);
+            } catch (err) {}
+            if (currentPoolKey && POOLS[currentPoolKey]) {
+                onPoolWalletConnected(newWallet, POOLS[currentPoolKey], currentPoolKey);
+            }
+        } else {
+            disconnectPoolWallet();
+        }
+    });
+
     // Listen for popstate
     window.addEventListener('popstate', routeApp);
 
