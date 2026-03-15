@@ -1970,6 +1970,13 @@ async function handleChatDeploy() {
     if (!symbol) { toast('Symbol is required', true); return; }
     if (!desc) { toast('Description is required', true); return; }
 
+    // Validate reward split totals 100%
+    var rewardTotal = 0;
+    document.querySelectorAll('#rewardRecipientEntries .reward-pct').forEach(function(el) {
+        rewardTotal += parseInt(el.value) || 0;
+    });
+    if (rewardTotal !== 100) { toast('LP reward split must total 100% (currently ' + rewardTotal + '%)', true); return; }
+
     var auth = getAuth();
     if (!auth || !auth.wallet) {
         toast('Connect your wallet first', true);
@@ -2057,8 +2064,9 @@ async function handleChatDeploy() {
         }
 
         // Dev buy extension
-        var devBuyEth = parseFloat((document.getElementById('launchDevBuyEth') || {}).value) || 0;
-        var devBuyWei = devBuyEth > 0 ? BigInt(Math.round(devBuyEth * 1e18)) : 0n;
+        var devBuyStr = (document.getElementById('launchDevBuyEth') || {}).value || '0';
+        var devBuyWei = 0n;
+        try { devBuyWei = ethers.parseEther(devBuyStr); } catch(e) {}
         if (devBuyWei > 0n) {
             deploymentConfig.extensionConfigs.push({
                 extension: CLANKER_DEV_BUY, msgValue: devBuyWei,
@@ -2125,7 +2133,7 @@ async function handleChatDeploy() {
                 token_symbol: symbol, deploy_tx_hash: txHash, description: desc,
                 website_url: website, logo_url: imageUrl || null,
                 x_handle: xHandle || null, telegram_url: telegram || null,
-                fee_split_bps: 2000, tier: 'permissionless',
+                fee_split_bps: 2000, tier: 'permissionless', chain: 'base',
                 creator_wallet: wallet, allocation_pct: launchAllocationPct, burn_amount: 0
             })
         });
@@ -2135,7 +2143,12 @@ async function handleChatDeploy() {
         statusEl.innerHTML = '$' + esc(symbol) + ' deployed at <a href="https://basescan.org/address/' + tokenAddress + '" target="_blank" style="color:#4ade80">' + tokenAddress.slice(0, 8) + '...' + tokenAddress.slice(-6) + '</a>';
 
         chatAddMessage('$' + symbol + ' is live! Token: ' + tokenAddress + ' \u2014 https://basescan.org/address/' + tokenAddress, false);
-        setTimeout(function() { hubLoadWorkspace(wallet); }, 2000);
+        setTimeout(function() {
+            btn.disabled = false;
+            btn.innerHTML = '&#x1F680; Deploy Token on Base';
+            btn.style.background = '';
+            hubLoadWorkspace(wallet);
+        }, 3000);
 
     } catch(e) {
         var errMsg = e.message || 'Deploy failed';
@@ -2290,6 +2303,11 @@ async function handleSolanaDeploy() {
         statusEl.innerHTML = '$' + esc(symbol) + ' live on Solana! <a href="https://solscan.io/token/' + tokenMint + '" target="_blank" style="color:#4ade80">' + tokenMint.slice(0, 8) + '...' + tokenMint.slice(-6) + '</a>';
 
         chatAddMessage('$' + symbol + ' is live on Solana! Token: ' + tokenMint + ' \u2014 https://solscan.io/token/' + tokenMint, false);
+        setTimeout(function() {
+            btn.disabled = false;
+            btn.innerHTML = '&#x1F680; Deploy Token on Solana';
+            btn.style.background = '';
+        }, 3000);
 
     } catch(e) {
         var errMsg = e.message || 'Deploy failed';
