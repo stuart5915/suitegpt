@@ -2218,50 +2218,48 @@ var DEPLOY_TOKEN_ABI = [{
 
 var DYNAMIC_FEE_POOL_DATA = '0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000c350000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000007800000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000001dcd65000000000000000000000000000000000000000000000000000000001dcd65000000000000000000000000000000000000000000000000000000000000001d4c';
 
+function closeAllPanels() {
+    document.getElementById('launchPanel').style.display = 'none';
+    document.getElementById('dispersePanel').style.display = 'none';
+    document.getElementById('disperseIframe').src = '';
+    document.getElementById('schedulePanel').style.display = 'none';
+    document.getElementById('scheduleIframe').src = '';
+}
+
 function showLaunchPanel() {
+    closeAllPanels();
     document.getElementById('launchPanel').style.display = 'block';
     document.getElementById('launchPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function closeLaunchPanel() {
-    document.getElementById('launchPanel').style.display = 'none';
-}
+function closeLaunchPanel() { closeAllPanels(); }
 
 function showDispersePanel() {
+    closeAllPanels();
     var panel = document.getElementById('dispersePanel');
     var iframe = document.getElementById('disperseIframe');
-    if (!iframe.src || iframe.src === '' || iframe.src === location.href) {
-        iframe.src = '/inclawbate/inclawbator.html?embed=1&tool=disperse';
-    }
+    iframe.src = '/inclawbate/inclawbator.html?embed=1&tool=disperse';
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Auto-resize iframe from embed messages
-    window.addEventListener('message', function handler(e) {
+    window.addEventListener('message', function(e) {
         if (e.data && e.data.type === 'embed-height' && typeof e.data.height === 'number') {
             iframe.style.height = Math.min(e.data.height, window.innerHeight * 0.85) + 'px';
         }
     });
 }
 
-function closeDispersePanel() {
-    document.getElementById('dispersePanel').style.display = 'none';
-    document.getElementById('disperseIframe').src = '';
-}
+function closeDispersePanel() { closeAllPanels(); }
 
 function showSchedulePanel() {
+    closeAllPanels();
     var panel = document.getElementById('schedulePanel');
     var iframe = document.getElementById('scheduleIframe');
-    if (!iframe.src || iframe.src === '' || iframe.src === location.href) {
-        iframe.src = '/schedule';
-    }
+    iframe.src = '/schedule';
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function closeSchedulePanel() {
-    document.getElementById('schedulePanel').style.display = 'none';
-    document.getElementById('scheduleIframe').src = '';
-}
+function closeSchedulePanel() { closeAllPanels(); }
 
 function fillLaunchForm(args) {
     showLaunchPanel();
