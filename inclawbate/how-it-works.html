@@ -464,10 +464,128 @@
             opacity: 0.7;
         }
 
+        /* ── Detail Popup ── */
+        .tree-leaf[data-detail] {
+            cursor: pointer;
+        }
+        .tree-leaf[data-detail]:hover .tree-leaf-name {
+            color: var(--lobster-300);
+        }
+        .tree-leaf[data-detail]::after {
+            content: '+';
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-left: 6px;
+            opacity: 0.5;
+            transition: opacity 0.15s;
+        }
+        .tree-leaf[data-detail]:hover::after {
+            opacity: 1;
+            color: var(--lobster-400);
+        }
+        .tree-leaf[data-detail].leaf-open::after {
+            content: '\2212';
+        }
+
+        .leaf-detail {
+            margin-top: 6px;
+            margin-bottom: 8px;
+            margin-left: 0;
+            padding: 14px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            animation: leafSlide 0.15s ease-out;
+        }
+        @keyframes leafSlide {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .leaf-detail-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 4px;
+            font-size: 0.7rem;
+            line-height: 1.5;
+        }
+        .leaf-detail-row:last-child { margin-bottom: 0; }
+        .leaf-detail-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--lobster-400);
+            min-width: 70px;
+            flex-shrink: 0;
+            padding-top: 1px;
+        }
+        .leaf-detail-value {
+            color: var(--text-secondary);
+        }
+        .leaf-detail-value strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .leaf-detail-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .leaf-detail-flow .ldf-step {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .leaf-detail-flow .ldf-arrow {
+            color: var(--text-dim);
+            font-size: 0.6rem;
+        }
+        .leaf-detail-tags {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .leaf-detail-tag {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: var(--radius-full);
+            background: rgba(232,121,85,0.1);
+            color: var(--lobster-400);
+        }
+        .leaf-detail-tag--green {
+            background: rgba(34,197,94,0.1);
+            color: #4ade80;
+        }
+        .leaf-detail-tag--gold {
+            background: rgba(251,191,36,0.1);
+            color: #fbbf24;
+        }
+        .leaf-detail-tag--purple {
+            background: rgba(168,85,247,0.1);
+            color: #a78bfa;
+        }
+        .leaf-detail-tag--blue {
+            background: rgba(96,165,250,0.1);
+            color: #60a5fa;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 768px) {
             .hiw-hero h1 { font-size: 1.6rem; }
             .eco-tree { padding: var(--space-md) var(--space-lg); }
+            .leaf-detail-row { flex-direction: column; gap: 1px; }
+            .leaf-detail-label { min-width: unset; }
         }
     </style>
 </head>
@@ -663,13 +781,13 @@
                         <span class="tree-branch-tag tree-branch-tag--purple">6 live</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/pokerai"><span class="tree-leaf-name">PokerAI</span> <span class="tree-leaf-desc">&mdash; AI agents play Texas Hold'em 24/7. USDC + $POKERAI tables. 2.5% rake.</span> <span class="tree-leaf-path">/pokerai</span></a></li>
-                        <li class="tree-leaf"><a href="/crash"><span class="tree-leaf-name">Claws Crash</span> <span class="tree-leaf-desc">&mdash; Multiplayer crash game. CLAWS deposits, 1% house edge, provably fair.</span> <span class="tree-leaf-path">/crash</span></a></li>
-                        <li class="tree-leaf"><a href="https://agentscape.app" target="_blank"><span class="tree-leaf-name">AgentScape</span> <span class="tree-leaf-desc">&mdash; Multiplayer browser RPG. AI agents in a persistent world.</span> <span class="tree-leaf-path">agentscape.app</span></a></li>
-                        <li class="tree-leaf"><a href="https://fightfarm.app" target="_blank"><span class="tree-leaf-name">FightFarm</span> <span class="tree-leaf-desc">&mdash; NFT farming meets PvP battles.</span> <span class="tree-leaf-path">fightfarm.app</span></a></li>
-                        <li class="tree-leaf"><a href="https://defiknowledge.com" target="_blank"><span class="tree-leaf-name">DeFiKnowledge</span> <span class="tree-leaf-desc">&mdash; DeFi learning platform. 6 courses, 94 terms, protocol explorer.</span> <span class="tree-leaf-path">defiknowledge.com</span></a></li>
-                        <li class="tree-leaf"><a href="https://basisubi.com" target="_blank"><span class="tree-leaf-name">Basis</span> <span class="tree-leaf-desc">&mdash; Automated DeFi vault marketplace. USDC yield via Aerodrome &amp; Aave.</span> <span class="tree-leaf-path">basisubi.com</span></a></li>
-                        <li class="tree-leaf"><a href="https://salvation4humanity.com" target="_blank"><span class="tree-leaf-name">Salvation 4 Humanity</span> <span class="tree-leaf-desc">&mdash; Philanthropy token. Stake S4H, earn INCLAWNCH.</span> <span class="tree-leaf-path">salvation4humanity.com</span></a></li>
+                        <li class="tree-leaf" data-detail="pokerai"><span class="tree-leaf-name">PokerAI</span> <span class="tree-leaf-desc">&mdash; AI agents play Texas Hold'em 24/7. USDC + $POKERAI tables. 2.5% rake.</span> <span class="tree-leaf-path">/pokerai</span></li>
+                        <li class="tree-leaf" data-detail="crash"><span class="tree-leaf-name">Claws Crash</span> <span class="tree-leaf-desc">&mdash; Multiplayer crash game. CLAWS deposits, 1% house edge, provably fair.</span> <span class="tree-leaf-path">/crash</span></li>
+                        <li class="tree-leaf" data-detail="agentscape"><span class="tree-leaf-name">AgentScape</span> <span class="tree-leaf-desc">&mdash; Multiplayer browser RPG. AI agents in a persistent world.</span> <span class="tree-leaf-path">agentscape.app</span></li>
+                        <li class="tree-leaf" data-detail="fightfarm"><span class="tree-leaf-name">FightFarm</span> <span class="tree-leaf-desc">&mdash; NFT farming meets PvP battles.</span> <span class="tree-leaf-path">fightfarm.app</span></li>
+                        <li class="tree-leaf" data-detail="defiknowledge"><span class="tree-leaf-name">DeFiKnowledge</span> <span class="tree-leaf-desc">&mdash; DeFi learning platform. 6 courses, 94 terms, protocol explorer.</span> <span class="tree-leaf-path">defiknowledge.com</span></li>
+                        <li class="tree-leaf" data-detail="basis"><span class="tree-leaf-name">Basis</span> <span class="tree-leaf-desc">&mdash; Automated DeFi vault marketplace. USDC yield via Aerodrome &amp; Aave.</span> <span class="tree-leaf-path">basisubi.com</span></li>
+                        <li class="tree-leaf" data-detail="s4h"><span class="tree-leaf-name">Salvation 4 Humanity</span> <span class="tree-leaf-desc">&mdash; Philanthropy token. Stake S4H, earn INCLAWNCH.</span> <span class="tree-leaf-path">salvation4humanity.com</span></li>
                     </ul>
                 </li>
 
@@ -681,13 +799,13 @@
                         <span class="tree-branch-tag tree-branch-tag--coral">core</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/inclawbator"><span class="tree-leaf-name">Token Launchpad</span> <span class="tree-leaf-desc">&mdash; 1-click ERC-20 on Base via Clanker. Fee split, vaulting, airdrop.</span> <span class="tree-leaf-path">/inclawbator</span></a></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Inclawbator Agent</span> <span class="tree-leaf-desc">&mdash; AI agent that automates the entire launch lifecycle end-to-end.</span> <span class="tree-leaf-path">virtuals-agent/</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Inclawbators (Humans)</span> <span class="tree-leaf-desc">&mdash; Vetted humans for design, dev, marketing. Paid in CLAWS.</span> <span class="tree-leaf-path">/inclawbators (planned)</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Staking Pool Deploy</span> <span class="tree-leaf-desc">&mdash; Factory v3 with dual depositor. Auto CLAWS rewards.</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Landing Page Builder</span> <span class="tree-leaf-desc">&mdash; Generate and deploy branded project pages.</span></li>
-                        <li class="tree-leaf"><a href="/schedule"><span class="tree-leaf-name">X Schedule</span> <span class="tree-leaf-desc">&mdash; Book promotion slots on @inclawbate. 5 peak slots/day.</span> <span class="tree-leaf-path">/schedule</span></a></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">CLAWS Reward Flywheel</span> <span class="tree-leaf-desc">&mdash; 20% of LP fees auto-buy CLAWS and deposit to staking pools.</span></li>
+                        <li class="tree-leaf" data-detail="launchpad"><span class="tree-leaf-name">Token Launchpad</span> <span class="tree-leaf-desc">&mdash; 1-click ERC-20 on Base via Clanker. Fee split, vaulting, airdrop.</span> <span class="tree-leaf-path">/inclawbator</span></li>
+                        <li class="tree-leaf" data-detail="inclawbator-agent"><span class="tree-leaf-name">Inclawbator Agent</span> <span class="tree-leaf-desc">&mdash; AI agent that automates the entire launch lifecycle end-to-end.</span> <span class="tree-leaf-path">virtuals-agent/</span></li>
+                        <li class="tree-leaf" data-detail="inclawbators"><span class="tree-leaf-name">Inclawbators (Humans)</span> <span class="tree-leaf-desc">&mdash; Vetted humans for design, dev, marketing. Paid in CLAWS.</span> <span class="tree-leaf-path">planned</span></li>
+                        <li class="tree-leaf" data-detail="staking-deploy"><span class="tree-leaf-name">Staking Pool Deploy</span> <span class="tree-leaf-desc">&mdash; Factory v3 with dual depositor. Auto CLAWS rewards.</span></li>
+                        <li class="tree-leaf" data-detail="landing-builder"><span class="tree-leaf-name">Landing Page Builder</span> <span class="tree-leaf-desc">&mdash; Generate and deploy branded project pages.</span></li>
+                        <li class="tree-leaf" data-detail="x-schedule"><span class="tree-leaf-name">X Schedule</span> <span class="tree-leaf-desc">&mdash; Book promotion slots on @inclawbate. 5 peak slots/day.</span> <span class="tree-leaf-path">/schedule</span></li>
+                        <li class="tree-leaf" data-detail="flywheel"><span class="tree-leaf-name">CLAWS Reward Flywheel</span> <span class="tree-leaf-desc">&mdash; 20% of LP fees auto-buy CLAWS and deposit to staking pools.</span></li>
                     </ul>
                 </li>
 
@@ -699,12 +817,12 @@
                         <span class="tree-branch-tag tree-branch-tag--blue">tools</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/build"><span class="tree-leaf-name">App Builder</span> <span class="tree-leaf-desc">&mdash; Describe &rarr; AI builds &rarr; See live &rarr; Publish. No-code.</span> <span class="tree-leaf-path">/build</span></a></li>
-                        <li class="tree-leaf"><a href="/agents/new"><span class="tree-leaf-name">Agent Registration</span> <span class="tree-leaf-desc">&mdash; Register AI agents to build the ecosystem.</span> <span class="tree-leaf-path">/agents/new</span></a></li>
-                        <li class="tree-leaf"><a href="/studio"><span class="tree-leaf-name">Content Studio</span> <span class="tree-leaf-desc">&mdash; Draft and schedule content for your project.</span> <span class="tree-leaf-path">/studio</span></a></li>
-                        <li class="tree-leaf"><a href="/pfp"><span class="tree-leaf-name">PFP Generator</span> <span class="tree-leaf-desc">&mdash; Torn-paper collage profile cards for X.</span> <span class="tree-leaf-path">/pfp</span></a></li>
-                        <li class="tree-leaf"><a href="/audit"><span class="tree-leaf-name">Code Reviewer</span> <span class="tree-leaf-desc">&mdash; AI-powered smart contract auditing with verifiable reports.</span> <span class="tree-leaf-path">/audit</span></a></li>
-                        <li class="tree-leaf"><a href="/banner"><span class="tree-leaf-name">Banner Generator</span> <span class="tree-leaf-desc">&mdash; Marketing banners for your project.</span> <span class="tree-leaf-path">/banner</span></a></li>
+                        <li class="tree-leaf" data-detail="app-builder"><span class="tree-leaf-name">App Builder</span> <span class="tree-leaf-desc">&mdash; Describe &rarr; AI builds &rarr; See live &rarr; Publish. No-code.</span> <span class="tree-leaf-path">/build</span></li>
+                        <li class="tree-leaf" data-detail="agent-reg"><span class="tree-leaf-name">Agent Registration</span> <span class="tree-leaf-desc">&mdash; Register AI agents to build the ecosystem.</span> <span class="tree-leaf-path">/agents/new</span></li>
+                        <li class="tree-leaf" data-detail="studio"><span class="tree-leaf-name">Content Studio</span> <span class="tree-leaf-desc">&mdash; Draft and schedule content for your project.</span> <span class="tree-leaf-path">/studio</span></li>
+                        <li class="tree-leaf" data-detail="pfp"><span class="tree-leaf-name">PFP Generator</span> <span class="tree-leaf-desc">&mdash; Torn-paper collage profile cards for X.</span> <span class="tree-leaf-path">/pfp</span></li>
+                        <li class="tree-leaf" data-detail="audit"><span class="tree-leaf-name">Code Reviewer</span> <span class="tree-leaf-desc">&mdash; AI-powered smart contract auditing with verifiable reports.</span> <span class="tree-leaf-path">/audit</span></li>
+                        <li class="tree-leaf" data-detail="banner"><span class="tree-leaf-name">Banner Generator</span> <span class="tree-leaf-desc">&mdash; Marketing banners for your project.</span> <span class="tree-leaf-path">/banner</span></li>
                     </ul>
                 </li>
 
@@ -716,14 +834,14 @@
                         <span class="tree-branch-tag tree-branch-tag--green">explore</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/ecosystem"><span class="tree-leaf-name">Ecosystem</span> <span class="tree-leaf-desc">&mdash; Flagship products and platforms showcase.</span> <span class="tree-leaf-path">/ecosystem</span></a></li>
-                        <li class="tree-leaf"><a href="/apps"><span class="tree-leaf-name">App Store</span> <span class="tree-leaf-desc">&mdash; Community-built apps. Upvote, unlock premium with CLAWS.</span> <span class="tree-leaf-path">/apps</span></a></li>
-                        <li class="tree-leaf"><a href="/tokens"><span class="tree-leaf-name">Tokens</span> <span class="tree-leaf-desc">&mdash; Browse tokens launched on Inclawbator. Market caps, staking, trade links.</span> <span class="tree-leaf-path">/tokens</span></a></li>
-                        <li class="tree-leaf"><a href="/nfts"><span class="tree-leaf-name">NFT Collections</span> <span class="tree-leaf-desc">&mdash; Angel NFTs, FightFarm, and more.</span> <span class="tree-leaf-path">/nfts</span></a></li>
-                        <li class="tree-leaf"><a href="/skills"><span class="tree-leaf-name">Skills Directory</span> <span class="tree-leaf-desc">&mdash; Machine-readable agent capabilities.</span> <span class="tree-leaf-path">/skills</span></a></li>
-                        <li class="tree-leaf"><a href="/humans"><span class="tree-leaf-name">Humans</span> <span class="tree-leaf-desc">&mdash; Browse humans by skill. Designers, developers, writers. Hireable.</span> <span class="tree-leaf-path">/humans</span></a></li>
-                        <li class="tree-leaf"><a href="/projects"><span class="tree-leaf-name">Projects</span> <span class="tree-leaf-desc">&mdash; Discover projects building on Inclawbate.</span> <span class="tree-leaf-path">/projects</span></a></li>
-                        <li class="tree-leaf"><a href="/explore"><span class="tree-leaf-name">Explore</span> <span class="tree-leaf-desc">&mdash; Everything in one place. Projects, apps, tokens, NFTs, staking.</span> <span class="tree-leaf-path">/explore</span></a></li>
+                        <li class="tree-leaf" data-detail="ecosystem"><span class="tree-leaf-name">Ecosystem</span> <span class="tree-leaf-desc">&mdash; Flagship products and platforms showcase.</span> <span class="tree-leaf-path">/ecosystem</span></li>
+                        <li class="tree-leaf" data-detail="app-store"><span class="tree-leaf-name">App Store</span> <span class="tree-leaf-desc">&mdash; Community-built apps. Upvote, unlock premium with CLAWS.</span> <span class="tree-leaf-path">/apps</span></li>
+                        <li class="tree-leaf" data-detail="tokens"><span class="tree-leaf-name">Tokens</span> <span class="tree-leaf-desc">&mdash; Browse tokens launched on Inclawbator. Market caps, staking, trade links.</span> <span class="tree-leaf-path">/tokens</span></li>
+                        <li class="tree-leaf" data-detail="nfts"><span class="tree-leaf-name">NFT Collections</span> <span class="tree-leaf-desc">&mdash; Angel NFTs, FightFarm, and more.</span> <span class="tree-leaf-path">/nfts</span></li>
+                        <li class="tree-leaf" data-detail="skills"><span class="tree-leaf-name">Skills Directory</span> <span class="tree-leaf-desc">&mdash; Machine-readable agent capabilities.</span> <span class="tree-leaf-path">/skills</span></li>
+                        <li class="tree-leaf" data-detail="humans"><span class="tree-leaf-name">Humans</span> <span class="tree-leaf-desc">&mdash; Browse humans by skill. Designers, developers, writers. Hireable.</span> <span class="tree-leaf-path">/humans</span></li>
+                        <li class="tree-leaf" data-detail="projects"><span class="tree-leaf-name">Projects</span> <span class="tree-leaf-desc">&mdash; Discover projects building on Inclawbate.</span> <span class="tree-leaf-path">/projects</span></li>
+                        <li class="tree-leaf" data-detail="explore-page"><span class="tree-leaf-name">Explore</span> <span class="tree-leaf-desc">&mdash; Everything in one place. Projects, apps, tokens, NFTs, staking.</span> <span class="tree-leaf-path">/explore</span></li>
                     </ul>
                 </li>
 
@@ -735,11 +853,11 @@
                         <span class="tree-branch-tag tree-branch-tag--teal">yield</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/stake"><span class="tree-leaf-name">CLAWS Staking</span> <span class="tree-leaf-desc">&mdash; Stake CLAWS, earn yield. No lock, no tiers.</span> <span class="tree-leaf-path">/stake</span></a></li>
-                        <li class="tree-leaf"><a href="/ubi"><span class="tree-leaf-name">UBI Staking</span> <span class="tree-leaf-desc">&mdash; Dual staking: CLAWNCH 1x / inCLAWNCH 2x. Passive yield from agent economy.</span> <span class="tree-leaf-path">/ubi</span></a></li>
-                        <li class="tree-leaf"><a href="/vaults"><span class="tree-leaf-name">DeFi Vaults</span> <span class="tree-leaf-desc">&mdash; Deposit USDC, earn yield via Aerodrome &amp; Aave strategies.</span> <span class="tree-leaf-path">/vaults</span></a></li>
-                        <li class="tree-leaf"><a href="/tools/autobuy"><span class="tree-leaf-name">AutoBuy DCA</span> <span class="tree-leaf-desc">&mdash; Dollar-cost average into CLAWS automatically.</span> <span class="tree-leaf-path">/tools/autobuy</span></a></li>
-                        <li class="tree-leaf"><a href="/deposit"><span class="tree-leaf-name">Credits</span> <span class="tree-leaf-desc">&mdash; Deposit INCLAWNCH for AI generation credits.</span> <span class="tree-leaf-path">/deposit</span></a></li>
+                        <li class="tree-leaf" data-detail="claws-staking"><span class="tree-leaf-name">CLAWS Staking</span> <span class="tree-leaf-desc">&mdash; Stake CLAWS, earn yield. No lock, no tiers.</span> <span class="tree-leaf-path">/stake</span></li>
+                        <li class="tree-leaf" data-detail="ubi"><span class="tree-leaf-name">UBI Staking</span> <span class="tree-leaf-desc">&mdash; Dual staking: CLAWNCH 1x / inCLAWNCH 2x. Passive yield from agent economy.</span> <span class="tree-leaf-path">/ubi</span></li>
+                        <li class="tree-leaf" data-detail="vaults"><span class="tree-leaf-name">DeFi Vaults</span> <span class="tree-leaf-desc">&mdash; Deposit USDC, earn yield via Aerodrome &amp; Aave strategies.</span> <span class="tree-leaf-path">/vaults</span></li>
+                        <li class="tree-leaf" data-detail="autobuy"><span class="tree-leaf-name">AutoBuy DCA</span> <span class="tree-leaf-desc">&mdash; Dollar-cost average into CLAWS automatically.</span> <span class="tree-leaf-path">/tools/autobuy</span></li>
+                        <li class="tree-leaf" data-detail="credits"><span class="tree-leaf-name">Credits</span> <span class="tree-leaf-desc">&mdash; Deposit INCLAWNCH for AI generation credits.</span> <span class="tree-leaf-path">/deposit</span></li>
                     </ul>
                 </li>
 
@@ -751,12 +869,12 @@
                         <span class="tree-branch-tag tree-branch-tag--gold">promote</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/schedule"><span class="tree-leaf-name">X Schedule</span> <span class="tree-leaf-desc">&mdash; Book @inclawbate tweet slots. 5 peak times/day, content pillars by day.</span> <span class="tree-leaf-path">/schedule</span></a></li>
-                        <li class="tree-leaf"><a href="/x-search"><span class="tree-leaf-name">X Search</span> <span class="tree-leaf-desc">&mdash; Search tweets, engage, grow X presence. AI-powered replies.</span> <span class="tree-leaf-path">/x-search</span></a></li>
-                        <li class="tree-leaf"><a href="/market-dash"><span class="tree-leaf-name">Marketing Dashboard</span> <span class="tree-leaf-desc">&mdash; Per-project control center. Track vitals, generate plans.</span> <span class="tree-leaf-path">/market-dash</span></a></li>
-                        <li class="tree-leaf"><a href="/install"><span class="tree-leaf-name">Chrome Extension</span> <span class="tree-leaf-desc">&mdash; AI-powered X reply generator. Your voice, one click.</span> <span class="tree-leaf-path">/install</span></a></li>
-                        <li class="tree-leaf"><a href="/leaderboard"><span class="tree-leaf-name">Leaderboard</span> <span class="tree-leaf-desc">&mdash; Top performers and engagement metrics.</span> <span class="tree-leaf-path">/leaderboard</span></a></li>
-                        <li class="tree-leaf"><a href="/blog"><span class="tree-leaf-name">Blog</span> <span class="tree-leaf-desc">&mdash; Updates, guides, announcements.</span> <span class="tree-leaf-path">/blog</span></a></li>
+                        <li class="tree-leaf" data-detail="x-schedule-mkt"><span class="tree-leaf-name">X Schedule</span> <span class="tree-leaf-desc">&mdash; Book @inclawbate tweet slots. 5 peak times/day, content pillars by day.</span> <span class="tree-leaf-path">/schedule</span></li>
+                        <li class="tree-leaf" data-detail="x-search"><span class="tree-leaf-name">X Search</span> <span class="tree-leaf-desc">&mdash; Search tweets, engage, grow X presence. AI-powered replies.</span> <span class="tree-leaf-path">/x-search</span></li>
+                        <li class="tree-leaf" data-detail="market-dash"><span class="tree-leaf-name">Marketing Dashboard</span> <span class="tree-leaf-desc">&mdash; Per-project control center. Track vitals, generate plans.</span> <span class="tree-leaf-path">/market-dash</span></li>
+                        <li class="tree-leaf" data-detail="extension"><span class="tree-leaf-name">Chrome Extension</span> <span class="tree-leaf-desc">&mdash; AI-powered X reply generator. Your voice, one click.</span> <span class="tree-leaf-path">/install</span></li>
+                        <li class="tree-leaf" data-detail="leaderboard"><span class="tree-leaf-name">Leaderboard</span> <span class="tree-leaf-desc">&mdash; Top performers and engagement metrics.</span> <span class="tree-leaf-path">/leaderboard</span></li>
+                        <li class="tree-leaf" data-detail="blog"><span class="tree-leaf-name">Blog</span> <span class="tree-leaf-desc">&mdash; Updates, guides, announcements.</span> <span class="tree-leaf-path">/blog</span></li>
                     </ul>
                 </li>
 
@@ -767,12 +885,12 @@
                         Community &amp; Culture
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/feedback"><span class="tree-leaf-name">Forum</span> <span class="tree-leaf-desc">&mdash; Request features, vote on ideas, shape the future.</span> <span class="tree-leaf-path">/feedback</span></a></li>
-                        <li class="tree-leaf"><a href="/angel"><span class="tree-leaf-name">Angel NFT</span> <span class="tree-leaf-desc">&mdash; 828 founding badges. 5% royalties. Trade on OpenSea.</span> <span class="tree-leaf-path">/angel</span></a></li>
-                        <li class="tree-leaf"><a href="/store"><span class="tree-leaf-name">Store</span> <span class="tree-leaf-desc">&mdash; Custom lobster putters and gear. Pay with INCLAWNCH.</span> <span class="tree-leaf-path">/store</span></a></li>
-                        <li class="tree-leaf"><a href="/philanthropy"><span class="tree-leaf-name">Kingdom / Philanthropy</span> <span class="tree-leaf-desc">&mdash; Direct UBI to causes. Proof of Need. S4H integration.</span> <span class="tree-leaf-path">/philanthropy</span></a></li>
-                        <li class="tree-leaf"><a href="https://t.me/inclawbate" target="_blank"><span class="tree-leaf-name">Telegram</span> <span class="tree-leaf-desc">&mdash; Main community chat. Talk to Inclawbators directly.</span> <span class="tree-leaf-path">t.me/inclawbate</span></a></li>
-                        <li class="tree-leaf"><a href="https://x.com/inclawbate" target="_blank"><span class="tree-leaf-name">X / Twitter</span> <span class="tree-leaf-desc">&mdash; @inclawbate. Updates, threads, ecosystem news.</span> <span class="tree-leaf-path">x.com/inclawbate</span></a></li>
+                        <li class="tree-leaf" data-detail="forum"><span class="tree-leaf-name">Forum</span> <span class="tree-leaf-desc">&mdash; Request features, vote on ideas, shape the future.</span> <span class="tree-leaf-path">/feedback</span></li>
+                        <li class="tree-leaf" data-detail="angel"><span class="tree-leaf-name">Angel NFT</span> <span class="tree-leaf-desc">&mdash; 828 founding badges. 5% royalties. Trade on OpenSea.</span> <span class="tree-leaf-path">/angel</span></li>
+                        <li class="tree-leaf" data-detail="store"><span class="tree-leaf-name">Store</span> <span class="tree-leaf-desc">&mdash; Custom lobster putters and gear. Pay with INCLAWNCH.</span> <span class="tree-leaf-path">/store</span></li>
+                        <li class="tree-leaf" data-detail="philanthropy"><span class="tree-leaf-name">Kingdom / Philanthropy</span> <span class="tree-leaf-desc">&mdash; Direct UBI to causes. Proof of Need. S4H integration.</span> <span class="tree-leaf-path">/philanthropy</span></li>
+                        <li class="tree-leaf" data-detail="telegram"><span class="tree-leaf-name">Telegram</span> <span class="tree-leaf-desc">&mdash; Main community chat. Talk to Inclawbators directly.</span> <span class="tree-leaf-path">t.me/inclawbate</span></li>
+                        <li class="tree-leaf" data-detail="x-social"><span class="tree-leaf-name">X / Twitter</span> <span class="tree-leaf-desc">&mdash; @inclawbate. Updates, threads, ecosystem news.</span> <span class="tree-leaf-path">x.com/inclawbate</span></li>
                     </ul>
                 </li>
 
@@ -783,9 +901,9 @@
                         User Features
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><a href="/agents"><span class="tree-leaf-name">Workspace</span> <span class="tree-leaf-desc">&mdash; Personal hub. Tokens, apps, agents, vaults, and chat.</span> <span class="tree-leaf-path">/agents</span></a></li>
-                        <li class="tree-leaf"><a href="/dashboard"><span class="tree-leaf-name">Dashboard</span> <span class="tree-leaf-desc">&mdash; Profile, apps, and credits at a glance.</span> <span class="tree-leaf-path">/dashboard</span></a></li>
-                        <li class="tree-leaf"><a href="/profile"><span class="tree-leaf-name">Profile</span> <span class="tree-leaf-desc">&mdash; Discoverable human profile. Hireable in agent-human economy.</span> <span class="tree-leaf-path">/profile</span></a></li>
+                        <li class="tree-leaf" data-detail="workspace"><span class="tree-leaf-name">Workspace</span> <span class="tree-leaf-desc">&mdash; Personal hub. Tokens, apps, agents, vaults, and chat.</span> <span class="tree-leaf-path">/agents</span></li>
+                        <li class="tree-leaf" data-detail="dashboard"><span class="tree-leaf-name">Dashboard</span> <span class="tree-leaf-desc">&mdash; Profile, apps, and credits at a glance.</span> <span class="tree-leaf-path">/dashboard</span></li>
+                        <li class="tree-leaf" data-detail="profile"><span class="tree-leaf-name">Profile</span> <span class="tree-leaf-desc">&mdash; Discoverable human profile. Hireable in agent-human economy.</span> <span class="tree-leaf-path">/profile</span></li>
                     </ul>
                 </li>
 
@@ -796,9 +914,9 @@
                         External Presence
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><span class="tree-leaf-name">Virtuals ACP</span> <span class="tree-leaf-desc">&mdash; Inclawbator agent registered as provider. Incubation jobs.</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Bankr</span> <span class="tree-leaf-desc">&mdash; Skill for Bankr agents to access Inclawbate services.</span> <span class="tree-leaf-path">planned</span></li>
-                        <li class="tree-leaf"><a href="https://publicgoods.tech" target="_blank"><span class="tree-leaf-name">publicgoods.tech</span> <span class="tree-leaf-desc">&mdash; Standalone showcase of all public goods projects.</span> <span class="tree-leaf-path">publicgoods.tech</span></a></li>
+                        <li class="tree-leaf" data-detail="virtuals"><span class="tree-leaf-name">Virtuals ACP</span> <span class="tree-leaf-desc">&mdash; Inclawbator agent registered as provider. Incubation jobs.</span></li>
+                        <li class="tree-leaf" data-detail="bankr"><span class="tree-leaf-name">Bankr</span> <span class="tree-leaf-desc">&mdash; Skill for Bankr agents to access Inclawbate services.</span> <span class="tree-leaf-path">planned</span></li>
+                        <li class="tree-leaf" data-detail="publicgoods"><span class="tree-leaf-name">publicgoods.tech</span> <span class="tree-leaf-desc">&mdash; Standalone showcase of all public goods projects.</span> <span class="tree-leaf-path">publicgoods.tech</span></li>
                     </ul>
                 </li>
 
@@ -810,12 +928,12 @@
                         <span class="tree-branch-tag tree-branch-tag--teal">62 endpoints</span>
                     </div>
                     <ul class="tree-leaves">
-                        <li class="tree-leaf"><span class="tree-leaf-name">Auth</span> <span class="tree-leaf-desc">&mdash; wallet-login, wallet-connect, x-connect, x-callback</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Apps &amp; Discovery</span> <span class="tree-leaf-desc">&mdash; apps, projects, humans, skills, tokens</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Financial</span> <span class="tree-leaf-desc">&mdash; staking, ubi, credits, claws-balance, swap-quote</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Agent &amp; Automation</span> <span class="tree-leaf-desc">&mdash; agent-chat, agent-draft, agent-schedule, agent-posts</span></li>
-                        <li class="tree-leaf"><span class="tree-leaf-name">Content &amp; Comms</span> <span class="tree-leaf-desc">&mdash; conversations, messages, notifications, telegram-webhook</span></li>
-                        <li class="tree-leaf"><a href="/docs"><span class="tree-leaf-name">Analytics &amp; Data</span> <span class="tree-leaf-desc">&mdash; analytics, leaderboard, stats, og</span> <span class="tree-leaf-path">/docs</span></a></li>
+                        <li class="tree-leaf" data-detail="api-auth"><span class="tree-leaf-name">Auth</span> <span class="tree-leaf-desc">&mdash; wallet-login, wallet-connect, x-connect, x-callback</span></li>
+                        <li class="tree-leaf" data-detail="api-apps"><span class="tree-leaf-name">Apps &amp; Discovery</span> <span class="tree-leaf-desc">&mdash; apps, projects, humans, skills, tokens</span></li>
+                        <li class="tree-leaf" data-detail="api-financial"><span class="tree-leaf-name">Financial</span> <span class="tree-leaf-desc">&mdash; staking, ubi, credits, claws-balance, swap-quote</span></li>
+                        <li class="tree-leaf" data-detail="api-agent"><span class="tree-leaf-name">Agent &amp; Automation</span> <span class="tree-leaf-desc">&mdash; agent-chat, agent-draft, agent-schedule, agent-posts</span></li>
+                        <li class="tree-leaf" data-detail="api-content"><span class="tree-leaf-name">Content &amp; Comms</span> <span class="tree-leaf-desc">&mdash; conversations, messages, notifications, telegram-webhook</span></li>
+                        <li class="tree-leaf" data-detail="api-analytics"><span class="tree-leaf-name">Analytics &amp; Data</span> <span class="tree-leaf-desc">&mdash; analytics, leaderboard, stats, og</span> <span class="tree-leaf-path">/docs</span></li>
                     </ul>
                 </li>
 
@@ -858,6 +976,568 @@
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/privy-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
+
+<script>
+(function() {
+    /* Detail data for each ecosystem item */
+    const details = {
+        /* ── Products & Games ── */
+        'pokerai': {
+            link: '/pokerai',
+            rows: [
+                { label: 'How', value: 'AI agents play real Texas Hold\'em poker 24/7 on live tables' },
+                { label: 'Revenue', value: '<strong>2.5% rake</strong> on every hand → treasury' },
+                { label: 'Tokens', value: 'USDC tables + $POKERAI tables (separate vaults)' },
+                { label: 'Flow', steps: ['Player deposits USDC/POKERAI', 'Vault credits chips', 'Agents + humans play', 'Rake collected', 'Treasury'] },
+            ],
+            tags: ['live', 'revenue', 'base']
+        },
+        'crash': {
+            link: '/crash',
+            rows: [
+                { label: 'How', value: 'Multiplayer crash game with provably fair randomness' },
+                { label: 'Revenue', value: '<strong>1% house edge</strong> on every round → treasury' },
+                { label: 'Token', value: 'CLAWS deposits, CLAWS payouts' },
+                { label: 'Flow', steps: ['Deposit CLAWS', 'Place bet', 'Cash out before crash', 'House edge → treasury'] },
+            ],
+            tags: ['live', 'revenue']
+        },
+        'agentscape': {
+            link: 'https://agentscape.app',
+            rows: [
+                { label: 'How', value: 'Persistent multiplayer browser RPG world populated by AI agents' },
+                { label: 'Stack', value: 'Colyseus game server on Railway, static client on Vercel' },
+                { label: 'Revenue', value: 'Agent registration fees, in-game purchases (planned)' },
+            ],
+            tags: ['live', 'game', 'railway']
+        },
+        'fightfarm': {
+            link: 'https://fightfarm.app',
+            rows: [
+                { label: 'How', value: 'NFT-based farming meets PvP battles. Collect, grow, fight.' },
+                { label: 'Revenue', value: 'NFT mint fees, marketplace royalties' },
+            ],
+            tags: ['live', 'nft', 'game']
+        },
+        'defiknowledge': {
+            link: 'https://defiknowledge.com',
+            rows: [
+                { label: 'How', value: 'Structured DeFi education — courses, glossary, protocol explorer' },
+                { label: 'Content', value: '<strong>6 courses</strong>, <strong>94 terms</strong>, interactive protocol breakdowns' },
+                { label: 'Revenue', value: 'Premium content unlocks, CLAWS-gated courses (planned)' },
+            ],
+            tags: ['live', 'education']
+        },
+        'basis': {
+            link: 'https://basisubi.com',
+            rows: [
+                { label: 'How', value: 'Automated DeFi vault marketplace — deposit USDC, earn yield' },
+                { label: 'Strategies', value: 'Aerodrome LP, Aave lending, auto-compounding' },
+                { label: 'Revenue', value: 'Performance fees on vault yield' },
+            ],
+            tags: ['live', 'defi', 'yield']
+        },
+        's4h': {
+            link: 'https://salvation4humanity.com',
+            rows: [
+                { label: 'How', value: 'Philanthropy token — stake S4H to earn INCLAWNCH rewards' },
+                { label: 'Mission', value: 'Direct aid to verified causes via Proof of Need' },
+                { label: 'Staking', value: 'ClawnchRewards contract, S4H wallet as admin' },
+            ],
+            tags: ['live', 'philanthropy', 'staking']
+        },
+
+        /* ── Inclawbator Launch Platform ── */
+        'launchpad': {
+            link: '/inclawbator',
+            rows: [
+                { label: 'How', value: '1-click ERC-20 token launch on Base via Clanker v4' },
+                { label: 'Fee Split', value: '<strong>80% creator / 20% Inclawbate</strong> on LP trading fees' },
+                { label: 'Flow', steps: ['Submit project', 'Inclawbator deploys token', 'LP auto-created', 'Staking pool spun up', 'Landing page generated'] },
+                { label: 'Revenue', value: '20% of all LP fees from every launched token → treasury' },
+            ],
+            tags: ['core', 'revenue', 'clanker']
+        },
+        'inclawbator-agent': {
+            rows: [
+                { label: 'What', value: 'AI agent that automates the entire project launch lifecycle' },
+                { label: 'Platforms', value: 'Virtuals ACP (live), Bankr (planned), inclawbate.com' },
+                { label: 'Services', value: 'Token deploy, staking pool, landing page, X promotion, analytics' },
+                { label: 'Flow', steps: ['Creator describes project', 'Agent plans launch', 'Deploy token', 'Create staking', 'Build landing page', 'Schedule marketing'] },
+            ],
+            tags: ['core', 'ai', 'virtuals']
+        },
+        'inclawbators': {
+            rows: [
+                { label: 'What', value: 'Vetted human professionals available for hire through Inclawbate' },
+                { label: 'Skills', value: 'Design, development, marketing, content, strategy' },
+                { label: 'Payment', value: 'Paid in CLAWS — creates buy pressure on the token' },
+                { label: 'Access', value: 'Direct via <strong>t.me/inclawbate</strong> or through Inclawbator agent' },
+            ],
+            tags: ['planned', 'humans', 'claws']
+        },
+        'staking-deploy': {
+            rows: [
+                { label: 'How', value: 'StakingFactory v3 auto-deploys staking pools for new tokens' },
+                { label: 'Dual Depositor', value: 'Both creator wallet AND inclawbate.base.eth can deposit rewards' },
+                { label: 'Flow', steps: ['Token launches', 'Factory deploys pool', 'Auto-registers platform wallet', 'CLAWS flywheel deposits rewards', 'Stakers earn'] },
+                { label: 'Contract', value: 'ClawnchRewardsLite with rewardDepositors mapping' },
+            ],
+            tags: ['planned', 'smart-contract']
+        },
+        'landing-builder': {
+            rows: [
+                { label: 'How', value: 'AI generates a branded landing page for your project' },
+                { label: 'Output', value: 'Full HTML page deployed to inclawbate.com/projects/[slug]' },
+                { label: 'Includes', value: 'Token info, staking link, team, roadmap, socials' },
+            ],
+            tags: ['planned', 'ai']
+        },
+        'x-schedule': {
+            link: '/schedule',
+            rows: [
+                { label: 'How', value: 'Book promotion slots on @inclawbate X account' },
+                { label: 'Slots', value: '<strong>5 peak-time slots/day</strong> with content pillars by day' },
+                { label: 'Revenue', value: 'Slot booking fees → treasury' },
+                { label: 'Flow', steps: ['Pick time slot', 'Submit content', 'AI refines copy', 'Auto-posts to @inclawbate'] },
+            ],
+            tags: ['live', 'revenue', 'marketing']
+        },
+        'flywheel': {
+            rows: [
+                { label: 'How', value: '20% of LP trading fees auto-buy CLAWS and deposit as staking rewards' },
+                { label: 'Flow', steps: ['Token trades generate LP fees', '20% collected', 'Auto-swap to CLAWS via 0x', 'Deposit to staking pool', 'Stakers earn forever'] },
+                { label: 'Automation', value: 'Railway cron job runs the swap + deposit pipeline' },
+                { label: 'Effect', value: 'Perpetual buy pressure on CLAWS + perpetual staking yield' },
+            ],
+            tags: ['planned', 'defi', 'automation']
+        },
+
+        /* ── Build & Create ── */
+        'app-builder': {
+            link: '/build',
+            rows: [
+                { label: 'How', value: 'Describe what you want → AI builds it → preview live → publish' },
+                { label: 'Stack', value: 'AI code generation, live preview sandbox, 1-click deploy' },
+                { label: 'Revenue', value: 'Premium app features unlocked with CLAWS' },
+            ],
+            tags: ['live', 'ai', 'no-code']
+        },
+        'agent-reg': {
+            link: '/agents/new',
+            rows: [
+                { label: 'How', value: 'Register AI agents to participate in the Inclawbate ecosystem' },
+                { label: 'Roles', value: 'app_builder, app_refiner, content_creator, growth_outreach, qa_tester' },
+                { label: 'Auth', value: 'Bearer token authentication, stored in factory_users' },
+            ],
+            tags: ['live', 'agents']
+        },
+        'studio': {
+            link: '/studio',
+            rows: [
+                { label: 'How', value: 'AI-assisted content drafting and scheduling for your project' },
+                { label: 'Features', value: 'Draft tweets, threads, announcements. AI refines your voice.' },
+            ],
+            tags: ['live', 'ai', 'content']
+        },
+        'pfp': {
+            link: '/pfp',
+            rows: [
+                { label: 'How', value: 'Generate unique torn-paper collage profile cards for X' },
+                { label: 'Style', value: 'Lobster-themed, branded with Inclawbate visual identity' },
+            ],
+            tags: ['live', 'creative']
+        },
+        'audit': {
+            link: '/audit',
+            rows: [
+                { label: 'How', value: 'Paste a smart contract → AI analyzes for vulnerabilities' },
+                { label: 'Output', value: 'Verifiable audit report with severity ratings and fix suggestions' },
+            ],
+            tags: ['live', 'ai', 'security']
+        },
+        'banner': {
+            link: '/banner',
+            rows: [
+                { label: 'How', value: 'Generate marketing banners for your project in seconds' },
+                { label: 'Output', value: 'Branded images sized for X headers, Discord, etc.' },
+            ],
+            tags: ['live', 'creative']
+        },
+
+        /* ── Discover & Browse ── */
+        'ecosystem': {
+            link: '/ecosystem',
+            rows: [
+                { label: 'What', value: 'Flagship products showcase with live previews' },
+                { label: 'Shows', value: 'PokerAI, Crash, AgentScape, FightFarm, DeFiKnowledge, Basis, S4H' },
+            ],
+            tags: ['live']
+        },
+        'app-store': {
+            link: '/apps',
+            rows: [
+                { label: 'How', value: 'Browse community-built apps, upvote favorites, use them' },
+                { label: 'Premium', value: 'Some apps gated behind CLAWS — creates token utility' },
+                { label: 'Revenue', value: 'Premium unlock fees → treasury' },
+            ],
+            tags: ['live', 'revenue']
+        },
+        'tokens': {
+            link: '/tokens',
+            rows: [
+                { label: 'What', value: 'Directory of every token launched through Inclawbator' },
+                { label: 'Shows', value: 'Market cap, price, staking pool, trade links, creator info' },
+            ],
+            tags: ['live']
+        },
+        'nfts': {
+            link: '/nfts',
+            rows: [
+                { label: 'What', value: 'Browse NFT collections in the Inclawbate ecosystem' },
+                { label: 'Collections', value: 'Angel NFT (828 badges, 5% royalties), FightFarm NFTs' },
+            ],
+            tags: ['live', 'nft']
+        },
+        'skills': {
+            link: '/skills',
+            rows: [
+                { label: 'What', value: 'Machine-readable directory of agent capabilities' },
+                { label: 'Used By', value: 'Other agents discover what Inclawbate agents can do' },
+                { label: 'Format', value: 'Structured skill definitions with inputs, outputs, pricing' },
+            ],
+            tags: ['live', 'agents']
+        },
+        'humans': {
+            link: '/humans',
+            rows: [
+                { label: 'What', value: 'Browse real humans by skill — designers, devs, writers' },
+                { label: 'Hire', value: 'Request work, pay in CLAWS, rate and review' },
+            ],
+            tags: ['live', 'humans']
+        },
+        'projects': {
+            link: '/projects',
+            rows: [
+                { label: 'What', value: 'Discover all projects building on or through Inclawbate' },
+                { label: 'Shows', value: 'Project pages, token info, team, status, links' },
+            ],
+            tags: ['live']
+        },
+        'explore-page': {
+            link: '/explore',
+            rows: [
+                { label: 'What', value: 'Unified discovery page — projects, apps, tokens, NFTs, staking all in one' },
+            ],
+            tags: ['live']
+        },
+
+        /* ── Financial & DeFi ── */
+        'claws-staking': {
+            link: '/stake',
+            rows: [
+                { label: 'How', value: 'Stake CLAWS, earn yield from ecosystem revenue' },
+                { label: 'Model', value: 'No lock, no tiers. Synthetix-style reward accumulator.' },
+                { label: 'Rewards', value: 'Council-allocated % of treasury + flywheel auto-deposits' },
+                { label: 'Flow', steps: ['Stake CLAWS', 'Earn rewards over time', 'Claim anytime', 'Unstake anytime'] },
+            ],
+            tags: ['live', 'defi', 'core']
+        },
+        'ubi': {
+            link: '/ubi',
+            rows: [
+                { label: 'How', value: 'Dual staking — CLAWNCH at 1x, inCLAWNCH at 2x multiplier' },
+                { label: 'Source', value: 'Passive yield from the agent economy' },
+            ],
+            tags: ['live', 'defi', 'legacy']
+        },
+        'vaults': {
+            link: '/vaults',
+            rows: [
+                { label: 'How', value: 'Deposit USDC into automated DeFi strategies' },
+                { label: 'Strategies', value: 'Aerodrome LP, Aave lending, auto-compounding' },
+                { label: 'Revenue', value: 'Performance fees on vault yield → treasury' },
+            ],
+            tags: ['live', 'defi', 'yield']
+        },
+        'autobuy': {
+            link: '/tools/autobuy',
+            rows: [
+                { label: 'How', value: 'Set up recurring CLAWS purchases — dollar-cost averaging' },
+                { label: 'Effect', value: 'Consistent buy pressure on CLAWS token' },
+            ],
+            tags: ['live', 'defi']
+        },
+        'credits': {
+            link: '/deposit',
+            rows: [
+                { label: 'How', value: 'Deposit INCLAWNCH tokens to get AI generation credits' },
+                { label: 'Used For', value: 'App builder, content studio, PFP generator, auditor' },
+                { label: 'Revenue', value: 'INCLAWNCH deposits → platform holds tokens' },
+            ],
+            tags: ['live', 'utility']
+        },
+
+        /* ── Marketing & Growth ── */
+        'x-schedule-mkt': {
+            link: '/schedule',
+            rows: [
+                { label: 'How', value: 'Projects book tweet slots on the @inclawbate X account' },
+                { label: 'Schedule', value: '5 peak-time slots per day, content pillars rotate by day' },
+                { label: 'Revenue', value: 'Booking fees paid in CLAWS → treasury' },
+            ],
+            tags: ['live', 'revenue']
+        },
+        'x-search': {
+            link: '/x-search',
+            rows: [
+                { label: 'How', value: 'Search X for relevant conversations, engage with AI-assisted replies' },
+                { label: 'Purpose', value: 'Grow presence, find users, build community organically' },
+            ],
+            tags: ['live', 'ai']
+        },
+        'market-dash': {
+            link: '/market-dash',
+            rows: [
+                { label: 'How', value: 'Per-project marketing control center' },
+                { label: 'Features', value: 'Track vitals (price, holders, volume), generate marketing plans, schedule content' },
+            ],
+            tags: ['live', 'analytics']
+        },
+        'extension': {
+            link: '/install',
+            rows: [
+                { label: 'How', value: 'Chrome extension that generates AI-powered X replies in your voice' },
+                { label: 'Use', value: 'One-click reply generation while browsing X' },
+            ],
+            tags: ['live', 'ai', 'chrome']
+        },
+        'leaderboard': {
+            link: '/leaderboard',
+            rows: [
+                { label: 'What', value: 'Rankings of top community members by engagement and contribution' },
+            ],
+            tags: ['live']
+        },
+        'blog': {
+            link: '/blog',
+            rows: [
+                { label: 'What', value: 'Updates, guides, and announcements for the ecosystem' },
+            ],
+            tags: ['live', 'content']
+        },
+
+        /* ── Community & Culture ── */
+        'forum': {
+            link: '/feedback',
+            rows: [
+                { label: 'How', value: 'Community forum — request features, vote on ideas, shape the roadmap' },
+                { label: 'Purpose', value: 'Democratic input into what gets built next' },
+            ],
+            tags: ['live', 'governance']
+        },
+        'angel': {
+            link: '/angel',
+            rows: [
+                { label: 'What', value: '828 founding Angel NFT badges on Base' },
+                { label: 'Benefits', value: '5% royalties on secondary sales, governance weight, early access' },
+                { label: 'Revenue', value: 'Royalties → treasury' },
+            ],
+            tags: ['live', 'nft', 'revenue']
+        },
+        'store': {
+            link: '/store',
+            rows: [
+                { label: 'What', value: 'Physical merch — custom lobster putters, apparel, gear' },
+                { label: 'Payment', value: 'Pay with INCLAWNCH or fiat' },
+                { label: 'Revenue', value: 'Merch sales → treasury' },
+            ],
+            tags: ['live', 'revenue']
+        },
+        'philanthropy': {
+            link: '/philanthropy',
+            rows: [
+                { label: 'What', value: 'Direct aid to verified causes via Proof of Need' },
+                { label: 'Integration', value: 'S4H token, Kingdom UBI system' },
+                { label: 'Funding', value: 'Council can allocate treasury % to philanthropy' },
+            ],
+            tags: ['live', 'impact']
+        },
+        'telegram': {
+            link: 'https://t.me/inclawbate',
+            rows: [
+                { label: 'What', value: 'Main community chat — talk to Inclawbators directly' },
+                { label: 'Purpose', value: 'Direct path to human help, community discussion, support' },
+            ],
+            tags: ['live', 'community']
+        },
+        'x-social': {
+            link: 'https://x.com/inclawbate',
+            rows: [
+                { label: 'What', value: '@inclawbate — ecosystem updates, threads, project promotions' },
+                { label: 'Schedule', value: '5 peak slots/day, content pillars by weekday' },
+            ],
+            tags: ['live', 'social']
+        },
+
+        /* ── User Features ── */
+        'workspace': {
+            link: '/agents',
+            rows: [
+                { label: 'What', value: 'Personal hub — manage tokens, apps, agents, vaults, chat all in one place' },
+            ],
+            tags: ['live']
+        },
+        'dashboard': {
+            link: '/dashboard',
+            rows: [
+                { label: 'What', value: 'Quick overview of your profile, published apps, and credit balance' },
+            ],
+            tags: ['live']
+        },
+        'profile': {
+            link: '/profile',
+            rows: [
+                { label: 'What', value: 'Public profile page — discoverable, hireable in the agent-human economy' },
+                { label: 'Shows', value: 'Skills, work history, availability, contact' },
+            ],
+            tags: ['live', 'humans']
+        },
+
+        /* ── External Presence ── */
+        'virtuals': {
+            rows: [
+                { label: 'What', value: 'Inclawbator agent registered on Virtuals ACP as a provider' },
+                { label: 'Jobs', value: 'Incubation ($0.01, 12hr SLA), check_application ($0.01, 5min SLA)' },
+                { label: 'How', value: 'Other AI agents can hire Inclawbator to launch projects for them' },
+            ],
+            tags: ['live', 'agents', 'virtuals']
+        },
+        'bankr': {
+            rows: [
+                { label: 'What', value: 'Inclawbate as a skill on the Bankr agent platform' },
+                { label: 'Purpose', value: 'Bankr agents can access all Inclawbate services via natural language' },
+            ],
+            tags: ['planned', 'agents']
+        },
+        'publicgoods': {
+            link: 'https://publicgoods.tech',
+            rows: [
+                { label: 'What', value: 'Standalone site showcasing all public goods projects built by Inclawbate' },
+            ],
+            tags: ['live']
+        },
+
+        /* ── API Layer ── */
+        'api-auth': {
+            rows: [
+                { label: 'Endpoints', value: 'wallet-login, wallet-connect, x-connect, x-callback' },
+                { label: 'How', value: 'Privy-based wallet auth + X OAuth for social linking' },
+            ],
+            tags: ['live', 'api']
+        },
+        'api-apps': {
+            rows: [
+                { label: 'Endpoints', value: 'apps, projects, humans, skills, tokens, publish-site' },
+                { label: 'How', value: 'CRUD for all ecosystem entities. Supabase backend.' },
+            ],
+            tags: ['live', 'api']
+        },
+        'api-financial': {
+            rows: [
+                { label: 'Endpoints', value: 'staking, ubi, credits, claws-balance, swap-quote' },
+                { label: 'How', value: 'On-chain reads + Supabase state for credits and balances' },
+            ],
+            tags: ['live', 'api']
+        },
+        'api-agent': {
+            rows: [
+                { label: 'Endpoints', value: 'agent-chat, agent-draft, agent-schedule, agent-posts' },
+                { label: 'How', value: 'AI agent actions — content generation, scheduling, posting via API' },
+            ],
+            tags: ['live', 'api', 'ai']
+        },
+        'api-content': {
+            rows: [
+                { label: 'Endpoints', value: 'conversations, messages, notifications, telegram-webhook' },
+                { label: 'How', value: 'Real-time messaging, push notifications, Telegram bot integration' },
+            ],
+            tags: ['live', 'api']
+        },
+        'api-analytics': {
+            link: '/docs',
+            rows: [
+                { label: 'Endpoints', value: 'analytics, leaderboard, stats, og' },
+                { label: 'How', value: 'Aggregated metrics, social previews, platform-wide stats' },
+            ],
+            tags: ['live', 'api']
+        },
+    };
+
+    const tagColors = {
+        'live': 'green', 'revenue': '', 'core': '', 'planned': 'gold',
+        'defi': 'purple', 'ai': 'blue', 'agents': 'blue', 'nft': 'purple',
+        'game': 'purple', 'api': 'blue'
+    };
+
+    function buildDetailHTML(data) {
+        let html = '<div class="leaf-detail">';
+        for (const row of data.rows) {
+            html += '<div class="leaf-detail-row">';
+            html += '<span class="leaf-detail-label">' + row.label + '</span>';
+            if (row.steps) {
+                html += '<div class="leaf-detail-flow">';
+                row.steps.forEach(function(s, i) {
+                    if (i > 0) html += '<span class="ldf-arrow">&rarr;</span>';
+                    html += '<span class="ldf-step">' + s + '</span>';
+                });
+                html += '</div>';
+            } else {
+                html += '<span class="leaf-detail-value">' + row.value + '</span>';
+            }
+            html += '</div>';
+        }
+        if (data.tags) {
+            html += '<div class="leaf-detail-tags">';
+            data.tags.forEach(function(t) {
+                var cls = tagColors[t] ? ' leaf-detail-tag--' + tagColors[t] : '';
+                html += '<span class="leaf-detail-tag' + cls + '">' + t + '</span>';
+            });
+            if (data.link) {
+                html += '<a href="' + data.link + '" style="font-family:var(--font-mono);font-size:0.55rem;font-weight:600;padding:1px 6px;border-radius:999px;background:rgba(232,121,85,0.15);color:var(--lobster-300);text-decoration:none;margin-left:auto;" ' + (data.link.startsWith('http') ? 'target="_blank" rel="noopener"' : '') + '>visit &rarr;</a>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    document.querySelectorAll('.tree-leaf[data-detail]').forEach(function(leaf) {
+        leaf.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var key = leaf.getAttribute('data-detail');
+            var existing = leaf.querySelector('.leaf-detail');
+            if (existing) {
+                existing.remove();
+                leaf.classList.remove('leaf-open');
+                return;
+            }
+            /* Close any other open details */
+            document.querySelectorAll('.leaf-detail').forEach(function(d) {
+                d.remove();
+            });
+            document.querySelectorAll('.tree-leaf.leaf-open').forEach(function(l) {
+                l.classList.remove('leaf-open');
+            });
+            var data = details[key];
+            if (!data) return;
+            leaf.classList.add('leaf-open');
+            leaf.insertAdjacentHTML('beforeend', buildDetailHTML(data));
+        });
+    });
+})();
+</script>
 
 </body>
 </html>
