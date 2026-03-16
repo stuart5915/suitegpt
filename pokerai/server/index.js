@@ -1219,7 +1219,34 @@ async function startServer() {
     }
   };
 
-  // Initialize chain service if configured
+  // Broadcast rewards updates to connected wallets every 10s
+  setInterval(() => {
+    if (!rewardEngine) return;
+    for (const [ws, client] of clients) {
+      if (ws.readyState === 1 && client.walletAddress && !client.walletAddress.startsWith('sandbox_')) {
+        try {
+          // Recalculate wallet value (balance + chips in play) before reading rewards
+          updateRewardsForWallet(client.walletAddress);
+          const rewards = rewardEngine.getWalletRewards(client.walletAddress);
+          const stats = rewardEngine.getStats();
+          ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
+        } catch (e) { /* ignore */ }
+      }
+    }
+  }, 10000);
+
+  server.listen(PORT, () => {
+    console.log(`PokerAI server running on port ${PORT} — ${useSupabase ? 'Supabase' : 'JSON'} store, rewards: ${!!rewardEngine}`);
+    rooms.start();
+
+    // Initialize chain services AFTER server is listening (non-blocking)
+    // This ensures health check passes even if RPC is slow/rate-limited
+    initChainServices().catch(e => console.error('[Server] Chain init error:', e.message));
+  });
+}
+
+async function initChainServices() {
+  // USDC chain service
   if (process.env.VAULT_CONTRACT_ADDRESS && process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL) {
     try {
       const { ChainService } = require('./chain');
@@ -1229,14 +1256,12 @@ async function startServer() {
         operatorKey: process.env.OPERATOR_PRIVATE_KEY
       });
 
-      // Listen for on-chain deposits → credit exact chip amount from event
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
         console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (${usdcRaw / 1e6} USDC)`);
         try {
           await rooms.store.addBalance(walletAddress, chips);
           await rooms.store.recordTransaction(walletAddress, 'deposit', usdcRaw, chips);
           console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
-          // Notify connected client
           for (const [ws, client] of clients) {
             if (client.walletAddress === walletAddress && ws.readyState === 1) {
               sendBalance(ws, walletAddress);
@@ -1245,29 +1270,23 @@ async function startServer() {
           }
         } catch (e) {
           console.error('[Chain] Deposit credit failed:', e.message);
-          // Fallback: notify client to trigger re-check via setWallet
-          for (const [ws, client] of clients) {
-            if (client.walletAddress === walletAddress && ws.readyState === 1) {
-              ws.send(JSON.stringify({ type: 'depositDetected', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
-            }
-          }
         }
       };
 
       chain.startListening();
       rooms.chainService = chain;
-      console.log('[Server] Chain service active — rake recording enabled');
+      console.log('[Server] USDC chain service active');
     } catch (e) {
-      console.error('[Server] Chain init failed:', e.message);
+      console.error('[Server] USDC chain init failed:', e.message);
     }
-  } else {
-    console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
   }
 
-  // Stagger POKERAI chain init to avoid RPC rate limiting (free RPCs throttle concurrent requests)
+  // Stagger to avoid RPC rate limiting
+  await new Promise(r => setTimeout(r, 3000));
+
+  // POKERAI token chain service
   if (process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL &&
       (process.env.POKERAI_VAULT_ADDRESS || process.env.POKERAI_REWARDS_ADDRESS)) {
-    await new Promise(r => setTimeout(r, 3000));
     try {
       const { TokenChainService } = require('./token-chain');
       tokenChain = new TokenChainService({
@@ -1277,7 +1296,6 @@ async function startServer() {
         rewardsAddress: process.env.POKERAI_REWARDS_ADDRESS || null
       });
 
-      // Listen for POKERAI deposits → credit chips 1:1
       if (process.env.POKERAI_VAULT_ADDRESS) {
         tokenChain.onDeposit = async (walletAddress, chips, tokenRaw) => {
           console.log(`[TokenChain] Deposit event: ${walletAddress} → ${chips} chips (${chips} POKERAI)`);
@@ -1297,32 +1315,11 @@ async function startServer() {
         tokenChain.startListening();
       }
 
-      console.log(`[Server] POKERAI token chain active — vault: ${!!process.env.POKERAI_VAULT_ADDRESS}, rewards: ${!!process.env.POKERAI_REWARDS_ADDRESS}`);
+      console.log(`[Server] POKERAI chain service active — vault: ${!!process.env.POKERAI_VAULT_ADDRESS}, rewards: ${!!process.env.POKERAI_REWARDS_ADDRESS}`);
     } catch (e) {
-      console.error('[Server] Token chain init failed:', e.message);
+      console.error('[Server] POKERAI chain init failed:', e.message);
     }
   }
-
-  // Broadcast rewards updates to connected wallets every 10s
-  setInterval(() => {
-    if (!rewardEngine) return;
-    for (const [ws, client] of clients) {
-      if (ws.readyState === 1 && client.walletAddress && !client.walletAddress.startsWith('sandbox_')) {
-        try {
-          // Recalculate wallet value (balance + chips in play) before reading rewards
-          updateRewardsForWallet(client.walletAddress);
-          const rewards = rewardEngine.getWalletRewards(client.walletAddress);
-          const stats = rewardEngine.getStats();
-          ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
-        } catch (e) { /* ignore */ }
-      }
-    }
-  }, 10000);
-
-  server.listen(PORT, () => {
-    console.log(`PokerAI server v6 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}, tokenChain: ${!!tokenChain}, rewards: ${!!rewardEngine}`);
-    rooms.start();
-  });
 }
 
 function broadcastToClients(type, data) {
