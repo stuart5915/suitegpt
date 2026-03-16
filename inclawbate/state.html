@@ -401,6 +401,10 @@
             min-width: 55px;
             text-align: right;
         }
+        .dist-row .dist-amount-left {
+            text-align: left;
+            opacity: 0.4;
+        }
         @media (max-width: 768px) {
             .dist-row .dist-name { min-width: 90px; font-size: 0.7rem; }
             .daily-dist-header .amount { font-size: 1.4rem; }
@@ -660,16 +664,18 @@ fetch('/api/inclawbate/team-state')
         buckets.forEach(function(b, i) {
             var councilPct = councilWeights ? (councilWeights[b.id] || 0) : b.default;
             var communityPct = synthesis[i] || 0;
-            var dollars = (DAILY_FUNDING * councilPct / 100).toFixed(2);
+            var councilDollars = (DAILY_FUNDING * councilPct / 100).toFixed(2);
+            var communityDollars = (DAILY_FUNDING * communityPct / 100).toFixed(2);
             var row = document.createElement('div');
             row.className = 'dist-row';
             row.innerHTML = '<span class="dist-dot" style="background:' + b.color + '"></span>' +
+                '<span class="dist-amount dist-amount-left">$' + communityDollars + '</span>' +
                 '<span class="dist-name">' + b.label + '</span>' +
                 '<div class="dist-bar-wrap">' +
                     '<div class="dist-bar-community" style="width:' + communityPct + '%;background:' + b.color + '"></div>' +
                     '<div class="dist-bar-council" style="width:' + councilPct + '%;background:' + b.color + '"></div>' +
                 '</div>' +
-                '<span class="dist-amount">$' + dollars + '</span>';
+                '<span class="dist-amount">$' + councilDollars + '</span>';
             container.appendChild(row);
         });
         var count = document.getElementById('alloc-voter-count');
