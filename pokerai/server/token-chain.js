@@ -28,7 +28,7 @@ class TokenChainService {
     this._operatorKey = config.operatorKey;
     this._tokenVaultAddress = config.tokenVaultAddress;
     this._rewardsAddress = config.rewardsAddress;
-    this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    this.provider = new ethers.JsonRpcProvider(config.rpcUrl, 8453, { staticNetwork: true });
     this.operatorWallet = new ethers.Wallet(config.operatorKey, this.provider);
 
     // Token vault (deposits/withdrawals)
@@ -81,7 +81,7 @@ class TokenChainService {
   _reconnect() {
     try {
       if (this.vaultReadOnly) this.vaultReadOnly.removeAllListeners();
-      this.provider = new ethers.JsonRpcProvider(this._rpcUrl);
+      this.provider = new ethers.JsonRpcProvider(this._rpcUrl, 8453, { staticNetwork: true });
       this.operatorWallet = new ethers.Wallet(this._operatorKey, this.provider);
       if (this._tokenVaultAddress) {
         this.vault = new ethers.Contract(this._tokenVaultAddress, TOKEN_VAULT_ABI, this.operatorWallet);

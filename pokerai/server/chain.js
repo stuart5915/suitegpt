@@ -40,7 +40,8 @@ class ChainService {
     this.operatorKey = config.operatorKey;
 
     // Primary provider + operator wallet (for write txs)
-    this.provider = new ethers.JsonRpcProvider(this.rpcUrl);
+    // staticNetwork avoids network detection RPC call on startup (prevents rate limiting)
+    this.provider = new ethers.JsonRpcProvider(this.rpcUrl, 8453, { staticNetwork: true });
     this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
     this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
 
@@ -59,7 +60,7 @@ class ChainService {
   async _resilientCall(fn, timeoutMs = 8000) {
     for (const rpcUrl of this.rpcList) {
       try {
-        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const provider = new ethers.JsonRpcProvider(rpcUrl, 8453, { staticNetwork: true });
         const contract = new ethers.Contract(this.vaultAddress, VAULT_ABI, provider);
         const result = await withTimeout(fn(contract), timeoutMs);
         provider.destroy();
@@ -115,7 +116,7 @@ class ChainService {
     const nextRpc = this.rpcList[nextIdx];
 
     console.log(`[Chain] Switching provider to: ${nextRpc}`);
-    this.provider = new ethers.JsonRpcProvider(nextRpc);
+    this.provider = new ethers.JsonRpcProvider(nextRpc, 8453, { staticNetwork: true });
     this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
     this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
     this.rpcUrl = nextRpc;
