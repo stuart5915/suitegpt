@@ -2053,6 +2053,13 @@
     font-weight: 700;
     color: var(--text-primary);
   }
+  .admin-dash-emission {
+    padding: 10px 12px;
+    background: rgba(99,102,241,0.06);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
   .admin-dash-rooms {
     display: flex;
     gap: 8px;
@@ -4932,6 +4939,11 @@ function handleMessage(msg) {
       if (msg.data && !msg.data.error) renderAdminDashboard(msg.data);
       break;
 
+    case 'setEmissionResult':
+      if (msg.data && msg.data.error) showToast(msg.data.error, 'error');
+      else if (msg.data && msg.data.success) requestAdminDashboard();
+      break;
+
     case 'pong':
       break;
   }
@@ -6769,23 +6781,58 @@ function startDripCounter() {
 
 function claimPokerai() {
   if (pokeraiClaimable <= 0) { showToast('Nothing to claim yet', 'info'); return; }
+  if (!window.ethereum) { showToast('Connect wallet to claim', 'error'); return; }
   const btn = document.getElementById('claimPokeraiBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing...'; }
+  // Step 1: Ask server for signed authorization
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'claimPokerai' }));
   }
 }
 
-function handleClaimResult(data) {
+const REWARDS_CLAIM_ABI = ['function claim(uint256 amount, uint256 nonce, bytes signature) external'];
+
+async function handleClaimResult(data) {
   const btn = document.getElementById('claimPokeraiBtn');
-  if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
   if (data.error) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
     showToast(data.error, 'error');
-  } else {
+    return;
+  }
+  if (data.testMode) {
+    // Test mode — no on-chain tx needed
+    if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
+    showToast(`Claimed ${formatCompact(data.claimed)} $POKERAI (test)`, 'gold');
+    pokeraiClaimed += data.claimed;
+    pokeraiClaimable = Math.max(0, pokeraiClaimable - data.claimed);
+    updatePokeraiUI();
+    return;
+  }
+
+  // Step 2: Submit tx from user's wallet (user pays gas)
+  if (!data.signature || !data.rewardsAddress) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
+    showToast('Missing claim data', 'error');
+    return;
+  }
+  if (btn) btn.textContent = 'Confirm tx...';
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(data.rewardsAddress, REWARDS_CLAIM_ABI, signer);
+    const tx = await contract.claim(data.amount, data.nonce, data.signature);
+    if (btn) btn.textContent = 'Confirming...';
+    await tx.wait();
     showToast(`Claimed ${formatCompact(data.claimed)} $POKERAI!`, 'gold');
     pokeraiClaimed += data.claimed;
     pokeraiClaimable = Math.max(0, pokeraiClaimable - data.claimed);
     updatePokeraiUI();
+  } catch (e) {
+    console.error('Claim tx failed:', e);
+    const reason = e.reason || e.message || 'Transaction rejected';
+    showToast(reason.length > 60 ? reason.slice(0, 60) + '...' : reason, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
   }
 }
 
@@ -6926,6 +6973,27 @@ function renderAdminDashboard(d) {
     html += '</div>';
   }
 
+  // Emission config
+  const em = d.emission;
+  if (em) {
+    const emPerDay = em.totalPerDay || 0;
+    html += `<div class="admin-dash-emission">
+      <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:8px">$POKERAI Emission</div>
+      <div class="admin-dash-metrics" style="margin-bottom:8px">
+        <div class="admin-dash-metric"><div class="admin-dash-metric-label">Total Rewards</div><div class="admin-dash-metric-value">${formatCompact(em.totalRewards)}</div></div>
+        <div class="admin-dash-metric"><div class="admin-dash-metric-label">Duration</div><div class="admin-dash-metric-value">${em.durationDays}d</div></div>
+        <div class="admin-dash-metric"><div class="admin-dash-metric-label">Per Day</div><div class="admin-dash-metric-value">${formatCompact(emPerDay)}</div></div>
+        <div class="admin-dash-metric"><div class="admin-dash-metric-label">Status</div><div class="admin-dash-metric-value" style="color:${em.active ? 'var(--accent-green)' : '#ef4444'}">${em.active ? 'ACTIVE' : 'OFF'}</div></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="number" id="emissionRewards" placeholder="Total rewards" value="${em.totalRewards || ''}" style="width:120px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px">
+        <input type="number" id="emissionDays" placeholder="Days" value="${em.durationDays || ''}" style="width:70px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px">
+        <button onclick="setEmission()" style="padding:4px 10px;border-radius:6px;border:none;background:var(--accent-primary);color:#fff;font-size:11px;font-weight:700;cursor:pointer">Set</button>
+        <button onclick="setEmission(true)" style="padding:4px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;font-size:11px;font-weight:700;cursor:pointer">Stop</button>
+      </div>
+    </div>`;
+  }
+
   // Agent table
   const agents = d.agents || [];
   if (agents.length) {
@@ -6957,6 +7025,28 @@ function renderAdminDashboard(d) {
   }
 
   el.innerHTML = html;
+}
+
+// === Emission Config ===
+
+function setEmission(stop) {
+  if (stop) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'setEmission', totalRewards: 0, durationDays: 1 }));
+      showToast('Emission stopped', 'info');
+    }
+    return;
+  }
+  const totalRewards = parseFloat(document.getElementById('emissionRewards').value) || 0;
+  const durationDays = parseInt(document.getElementById('emissionDays').value) || 0;
+  if (totalRewards <= 0 || durationDays <= 0) {
+    showToast('Enter valid rewards amount and duration', 'error');
+    return;
+  }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'setEmission', totalRewards, durationDays }));
+    showToast(`Emission set: ${formatCompact(totalRewards)} over ${durationDays} days`, 'gold');
+  }
 }
 
 // === Auto Top-Up ===

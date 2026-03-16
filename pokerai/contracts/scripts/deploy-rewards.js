@@ -9,18 +9,18 @@ async function main() {
     throw new Error('Set POKERAI_TOKEN_ADDRESS in .env (the POKERAI token contract on Base)');
   }
 
-  const operatorAddress = process.env.OPERATOR_ADDRESS;
-  if (!operatorAddress) {
-    throw new Error('Set OPERATOR_ADDRESS in .env (server wallet that will distribute rewards)');
+  const signerAddress = process.env.OPERATOR_ADDRESS;
+  if (!signerAddress) {
+    throw new Error('Set OPERATOR_ADDRESS in .env (server wallet that signs claim authorizations)');
   }
 
   console.log(`Deploying PokerAIRewards on ${network}...`);
   console.log(`  Deployer (admin): ${deployer.address}`);
-  console.log(`  Operator (server): ${operatorAddress}`);
+  console.log(`  Signer (server): ${signerAddress}`);
   console.log(`  POKERAI token: ${pokeraiTokenAddress}`);
 
   const Rewards = await hre.ethers.getContractFactory('PokerAIRewards');
-  const rewards = await Rewards.deploy(pokeraiTokenAddress, operatorAddress);
+  const rewards = await Rewards.deploy(pokeraiTokenAddress, signerAddress);
   await rewards.waitForDeployment();
 
   const address = await rewards.getAddress();
@@ -29,8 +29,9 @@ async function main() {
   console.log(`  1. Approve POKERAI spending: pokeraiToken.approve("${address}", amount)`);
   console.log(`  2. Deposit rewards: rewards.depositRewards(amount)`);
   console.log(`  3. Set POKERAI_REWARDS_ADDRESS=${address} in server .env`);
+  console.log(`\nClaim flow: Server signs → user calls claim() → user pays gas`);
   console.log(`\nVerify on Basescan:`);
-  console.log(`  npx hardhat verify --network ${network} ${address} ${pokeraiTokenAddress} ${operatorAddress}`);
+  console.log(`  npx hardhat verify --network ${network} ${address} ${pokeraiTokenAddress} ${signerAddress}`);
 }
 
 main().catch((error) => {

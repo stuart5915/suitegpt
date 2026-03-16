@@ -377,6 +377,39 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'setEmission': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          if (!PLATFORM_WALLETS.has(addr)) {
+            ws.send(JSON.stringify({ type: 'setEmissionResult', data: { error: 'Not a platform wallet' } }));
+            break;
+          }
+          if (!rewardEngine) {
+            ws.send(JSON.stringify({ type: 'setEmissionResult', data: { error: 'Reward engine not initialized' } }));
+            break;
+          }
+          const tr = msg.totalRewards;
+          const dd = msg.durationDays;
+          if (tr === undefined || !dd || dd <= 0) {
+            ws.send(JSON.stringify({ type: 'setEmissionResult', data: { error: 'Need totalRewards and durationDays' } }));
+            break;
+          }
+          rewardEngine.setEmission(tr, dd, msg.usdcSplit, msg.pokeraiSplit);
+          ws.send(JSON.stringify({ type: 'setEmissionResult', data: { success: true, config: rewardEngine.getEmissionConfig() } }));
+          console.log(`[Admin] Emission updated by ${addr.slice(0,8)}: ${tr.toLocaleString()} over ${dd} days`);
+          break;
+        }
+
+        case 'getEmission': {
+          if (!requireAuth(client, ws)) break;
+          if (!rewardEngine) {
+            ws.send(JSON.stringify({ type: 'emissionConfig', data: { totalRewards: 0, durationDays: 0, active: false } }));
+            break;
+          }
+          ws.send(JSON.stringify({ type: 'emissionConfig', data: rewardEngine.getEmissionConfig() }));
+          break;
+        }
+
         case 'getAdminDashboard': {
           if (!requireAuth(client, ws)) break;
           const addr = client.walletAddress;
@@ -421,6 +454,7 @@ wss.on('connection', (ws) => {
               agents,
               rooms: roomBreakdown,
               viewers: clients.size,
+              emission: rewardEngine ? rewardEngine.getEmissionConfig() : null,
               timestamp: Date.now()
             }
           }));
@@ -762,20 +796,31 @@ wss.on('connection', (ws) => {
           }
 
           try {
-            const onChain = tokenChain && tokenChain.rewards;
-            // Distribute on-chain FIRST — only record claim if tx succeeds
+            const onChain = tokenChain && tokenChain.rewardsReadOnly;
+            // Server signs authorization → client submits tx and pays gas
             if (onChain) {
-              const txResult = await tokenChain.distributeReward(addr, claimable);
-              if (txResult.error) {
-                ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: txResult.error } }));
+              const signResult = await tokenChain.signClaimAuthorization(addr, claimable);
+              if (signResult.error) {
+                ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: signResult.error } }));
                 break;
               }
-              // On-chain succeeded → safe to record claim
+              // Record claim immediately — nonce prevents double-claim on-chain
               rewardEngine.recordClaim(addr, claimable);
-              ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, txHash: txResult.txHash } }));
-              console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI (tx: ${txResult.txHash})`);
+              ws.send(JSON.stringify({
+                type: 'claimPokeraiResult',
+                data: {
+                  success: true,
+                  claimed: claimable,
+                  // Client needs these to call contract.claim() from their wallet
+                  signature: signResult.signature,
+                  amount: signResult.amount,
+                  nonce: signResult.nonce,
+                  rewardsAddress: signResult.rewardsAddress
+                }
+              }));
+              console.log(`[Rewards] ${addr} signed claim for ${claimable.toFixed(2)} POKERAI (nonce: ${signResult.nonce})`);
             } else {
-              // Test mode — no on-chain tx, record claim directly
+              // Test mode — no on-chain contract, record claim directly
               rewardEngine.recordClaim(addr, claimable);
               ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, testMode: true } }));
               console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI (TEST MODE — no on-chain tx)`);
@@ -1067,6 +1112,25 @@ app.post('/admin/credit-wallet', async (req, res) => {
   res.json({ success: true, newBalance: wallet ? wallet.balance : 0 });
 });
 
+// Admin: get current emission config
+app.get('/admin/emission', (req, res) => {
+  if (!requireApiKey(req, res)) return;
+  if (!rewardEngine) return res.json({ error: 'Reward engine not initialized' });
+  res.json(rewardEngine.getEmissionConfig());
+});
+
+// Admin: set emission dynamically
+app.post('/admin/set-emission', (req, res) => {
+  if (!requireApiKey(req, res)) return;
+  if (!rewardEngine) return res.json({ error: 'Reward engine not initialized' });
+  const { totalRewards, durationDays, usdcSplit, pokeraiSplit } = req.body;
+  if (totalRewards === undefined || !durationDays || durationDays <= 0) {
+    return res.json({ error: 'Required: totalRewards (number), durationDays (positive number)' });
+  }
+  rewardEngine.setEmission(totalRewards, durationDays, usdcSplit, pokeraiSplit);
+  res.json({ success: true, config: rewardEngine.getEmissionConfig() });
+});
+
 // =========== Server startup ===========
 
 async function startServer() {
@@ -1090,13 +1154,13 @@ async function startServer() {
     rooms = new RoomManager((type, data) => broadcastToClients(type, data));
   }
 
-  // Initialize reward engine — Round 1: 2.5B tokens (2.5% of 100B supply) over 90 days
-  // ~0.028%/day sell pressure. Total rewards allocation = 25B (25% of supply).
-  // Starting small and ramping up as platform matures + token price appreciates.
-  // Round 1: 2.5B → Round 2: ramp to 10B (10%) → future rounds with remaining 12.5B
+  // Initialize reward engine — starts with 0 emission (admin sets it dynamically)
+  // Emission config is persisted in snapshot and restored on restart.
+  // Platform wallets excluded from earning rewards (they get rake auto-fed back).
   rewardEngine = new RewardEngine({
-    totalRewards: 2_500_000_000,
-    durationDays: 90
+    totalRewards: 0,
+    durationDays: 90,
+    excludedWallets: [...PLATFORM_WALLETS]
   });
   rooms.rewardEngine = rewardEngine;
 
@@ -1116,7 +1180,7 @@ async function startServer() {
     catch (e) { console.error('[Server] Reward snapshot write failed:', e.message); }
   }, 300000);
 
-  console.log('[Server] Reward engine initialized — Round 1: 2.5B POKERAI over 90 days (2.5% of supply)');
+  console.log(`[Server] Reward engine initialized — emission starts at 0, admin sets via /admin/set-emission. Excluded wallets: ${PLATFORM_WALLETS.size}`);
 
   // Helper: update reward engine — ONLY count chips actively in play at tables
   // Idle wallet balance does NOT earn rewards (prevents deposit-and-farm abuse)

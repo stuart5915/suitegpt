@@ -5,9 +5,8 @@
  * Uses Synthetix-style per-second accumulator math for fair, continuous distribution.
  * Only chips actively at tables count — idle wallet balance earns nothing.
  *
- * Round 1: 2.5B tokens (2.5% of 100B supply) over 90 days (~0.028%/day sell pressure)
- * Total allocation: 25B (25%). Starting small, ramping up as platform matures.
- * Two pools:
+ * Emission is fully dynamic — admin can set any totalRewards and durationDays at will.
+ * Two pools (configurable split):
  *   - USDC pool:    15% of rewards → drips to USDC table players
  *   - POKERAI pool: 85% of rewards → drips to POKERAI table players
  *
@@ -24,12 +23,20 @@ class RewardEngine {
    * @param {object} store - persistence store (supabase or agent-store)
    */
   constructor(opts = {}) {
-    // Default: 25B over 90 days, 15/85 split
-    const totalPerDay = (opts.totalRewards || 25_000_000_000) / (opts.durationDays || 90);
-    this.usdcEmissionPerDay = opts.usdcEmissionPerDay || totalPerDay * 0.15;
-    this.pokeraiEmissionPerDay = opts.pokeraiEmissionPerDay || totalPerDay * 0.85;
+    // Dynamic emission config — can be changed at any time via setEmission()
+    this.totalRewards = opts.totalRewards || 0;
+    this.durationDays = opts.durationDays || 90;
+    this.usdcSplit = opts.usdcSplit || 0.15;
+    this.pokeraiSplit = opts.pokeraiSplit || 0.85;
+
+    const totalPerDay = this.totalRewards / this.durationDays;
+    this.usdcEmissionPerDay = totalPerDay * this.usdcSplit;
+    this.pokeraiEmissionPerDay = totalPerDay * this.pokeraiSplit;
 
     this.store = opts.store || null;
+
+    // Excluded wallets (platform wallets that shouldn't earn rewards)
+    this.excludedWallets = new Set((opts.excludedWallets || []).map(w => w.toLowerCase()));
 
     // Synthetix accumulator state — separate for USDC and POKERAI pools
     this.pools = {
@@ -88,6 +95,54 @@ class RewardEngine {
   // =========== Public API ===========
 
   /**
+   * Dynamically change emission rate. Settles all existing rewards at the old rate
+   * before switching, so nothing is lost.
+   *
+   * @param {number} totalRewards - total POKERAI tokens to distribute
+   * @param {number} durationDays - over how many days
+   * @param {number} [usdcSplit=0.15] - fraction of rewards for USDC pool
+   * @param {number} [pokeraiSplit=0.85] - fraction of rewards for POKERAI pool
+   */
+  setEmission(totalRewards, durationDays, usdcSplit, pokeraiSplit) {
+    // Settle all wallets at current rate before changing
+    for (const [, pool] of Object.entries(this.pools)) {
+      for (const [wallet] of pool.wallets) {
+        this._updateReward(pool, wallet);
+      }
+    }
+
+    this.totalRewards = totalRewards;
+    this.durationDays = durationDays;
+    if (usdcSplit !== undefined) this.usdcSplit = usdcSplit;
+    if (pokeraiSplit !== undefined) this.pokeraiSplit = pokeraiSplit;
+
+    const totalPerDay = this.totalRewards / this.durationDays;
+    this.usdcEmissionPerDay = totalPerDay * this.usdcSplit;
+    this.pokeraiEmissionPerDay = totalPerDay * this.pokeraiSplit;
+
+    this.pools.usdc.emissionPerSecond = this.usdcEmissionPerDay / SECONDS_PER_DAY;
+    this.pools.pokerai.emissionPerSecond = this.pokeraiEmissionPerDay / SECONDS_PER_DAY;
+
+    console.log(`[RewardEngine] Emission updated: ${totalRewards.toLocaleString()} POKERAI over ${durationDays} days (${(totalPerDay).toLocaleString()}/day, split ${this.usdcSplit * 100}/${this.pokeraiSplit * 100})`);
+  }
+
+  /**
+   * Get current emission config
+   */
+  getEmissionConfig() {
+    return {
+      totalRewards: this.totalRewards,
+      durationDays: this.durationDays,
+      usdcSplit: this.usdcSplit,
+      pokeraiSplit: this.pokeraiSplit,
+      usdcPerDay: this.usdcEmissionPerDay,
+      pokeraiPerDay: this.pokeraiEmissionPerDay,
+      totalPerDay: this.usdcEmissionPerDay + this.pokeraiEmissionPerDay,
+      active: this.totalRewards > 0
+    };
+  }
+
+  /**
    * Update a wallet's value in a pool. Called whenever balance changes
    * (deposit, withdrawal, hand completion, backing update, etc.)
    *
@@ -100,6 +155,10 @@ class RewardEngine {
     if (!pool) return;
 
     wallet = wallet.toLowerCase();
+
+    // Platform wallets are excluded — they earn nothing
+    if (this.excludedWallets.has(wallet)) return;
+
     this._updateReward(pool, wallet);
 
     let w = pool.wallets.get(wallet);
@@ -173,11 +232,14 @@ class RewardEngine {
         total: usdcPool.totalValue + pokeraiPool.totalValue
       },
       emission: {
+        totalRewards: this.totalRewards,
+        durationDays: this.durationDays,
         usdcPerDay: this.usdcEmissionPerDay,
         pokeraiPerDay: this.pokeraiEmissionPerDay,
         usdcPerSecond: usdcPool.emissionPerSecond,
         pokeraiPerSecond: pokeraiPool.emissionPerSecond,
-        totalPerSecond: usdcPool.emissionPerSecond + pokeraiPool.emissionPerSecond
+        totalPerSecond: usdcPool.emissionPerSecond + pokeraiPool.emissionPerSecond,
+        active: this.totalRewards > 0
       },
       wallets: {
         usdc: usdcPool.wallets.size,
@@ -210,7 +272,16 @@ class RewardEngine {
    * Get snapshot for persistence (save to Supabase periodically)
    */
   getSnapshot() {
-    const snapshot = { pools: {}, claimed: {} };
+    const snapshot = {
+      pools: {},
+      claimed: {},
+      config: {
+        totalRewards: this.totalRewards,
+        durationDays: this.durationDays,
+        usdcSplit: this.usdcSplit,
+        pokeraiSplit: this.pokeraiSplit
+      }
+    };
 
     for (const [poolType, pool] of Object.entries(this.pools)) {
       snapshot.pools[poolType] = {
@@ -241,6 +312,18 @@ class RewardEngine {
   loadSnapshot(snapshot) {
     if (!snapshot) return;
 
+    // Restore emission config if saved (preserves dynamic settings across restarts)
+    if (snapshot.config) {
+      this.totalRewards = snapshot.config.totalRewards || 0;
+      this.durationDays = snapshot.config.durationDays || 90;
+      this.usdcSplit = snapshot.config.usdcSplit || 0.15;
+      this.pokeraiSplit = snapshot.config.pokeraiSplit || 0.85;
+
+      const totalPerDay = this.totalRewards / this.durationDays;
+      this.usdcEmissionPerDay = totalPerDay * this.usdcSplit;
+      this.pokeraiEmissionPerDay = totalPerDay * this.pokeraiSplit;
+    }
+
     for (const [poolType, poolData] of Object.entries(snapshot.pools || {})) {
       const pool = this.pools[poolType];
       if (!pool) continue;
@@ -248,6 +331,9 @@ class RewardEngine {
       pool.rewardPerTokenStored = poolData.rewardPerTokenStored || 0;
       pool.lastUpdateTime = poolData.lastUpdateTime || Date.now() / 1000;
       pool.totalValue = poolData.totalValue || 0;
+      // Apply restored emission rates
+      if (poolType === 'usdc') pool.emissionPerSecond = this.usdcEmissionPerDay / SECONDS_PER_DAY;
+      if (poolType === 'pokerai') pool.emissionPerSecond = this.pokeraiEmissionPerDay / SECONDS_PER_DAY;
 
       for (const [wallet, wData] of Object.entries(poolData.wallets || {})) {
         pool.wallets.set(wallet, {
@@ -262,7 +348,7 @@ class RewardEngine {
       this.claimed.set(wallet, amount);
     }
 
-    console.log(`[RewardEngine] Loaded snapshot: ${this.pools.usdc.wallets.size} USDC wallets, ${this.pools.pokerai.wallets.size} POKERAI wallets`);
+    console.log(`[RewardEngine] Loaded snapshot: ${this.pools.usdc.wallets.size} USDC wallets, ${this.pools.pokerai.wallets.size} POKERAI wallets, emission: ${this.totalRewards.toLocaleString()} over ${this.durationDays} days`);
   }
 
   /**
