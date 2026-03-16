@@ -27,34 +27,39 @@ const BASE_RPC = 'https://base.llamarpc.com';
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
 
 async function rpcCall(to, data) {
-    const res = await fetch(BASE_RPC, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] })
-    });
-    const json = await res.json();
-    if (json.error || !json.result) return BigInt(0);
-    return BigInt(json.result);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const json = await res.json();
+        if (json.error || !json.result || json.result === '0x') return BigInt(0);
+        return BigInt(json.result);
+    } catch (err) {
+        clearTimeout(timeout);
+        console.error('RPC error for', to, err.message);
+        return BigInt(0);
+    }
 }
 
 async function getClawsBalance(address) {
-    try {
-        const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
-        const balanceOfData = '0x70a08231' + paddedAddr;
+    const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
+    const balanceOfData = '0x70a08231' + paddedAddr;
 
-        // Parallel: wallet balance + staked in each contract
-        const results = await Promise.all([
-            rpcCall(CLAWS_ADDRESS, balanceOfData).catch(() => BigInt(0)),
-            ...STAKING_CONTRACTS.map(c => rpcCall(c, balanceOfData).catch(() => BigInt(0)))
-        ]);
+    // Parallel: wallet balance + staked in each contract
+    const [wallet, ...staked] = await Promise.all([
+        rpcCall(CLAWS_ADDRESS, balanceOfData),
+        ...STAKING_CONTRACTS.map(c => rpcCall(c, balanceOfData))
+    ]);
 
-        let total = BigInt(0);
-        for (const r of results) total += r;
-        return total.toString();
-    } catch (err) {
-        console.error('Failed to fetch CLAWS balance for', address, err);
-        return '0';
-    }
+    const total = wallet + staked.reduce((a, b) => a + b, BigInt(0));
+    console.log('Balance for', address, ':', total.toString(), '(wallet:', wallet.toString(), 'staked:', staked.map(s => s.toString()));
+    return total.toString();
 }
 
 function computeSynthesis(votes) {
