@@ -181,15 +181,17 @@ async function fetchTreasury(clawsPrice) {
 // Treasury = LP TVL + staked CLAWS value + earned rewards value
 
 async function fetchTasks() {
-    const [doneRes, currentRes, todoRes] = await Promise.all([
+    const [doneRes, focusRes, activeRes, todoRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content').eq('category', 'active').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
-        current: (currentRes.data || []).map(r => r.content),
-        todo: (todoRes.data || []).map(r => r.content)
+        focus: (focusRes.data || []).map(r => r.content),
+        active: (activeRes.data || []).map(r => r.content),
+        backlog: (todoRes.data || []).map(r => r.content)
     };
 }
 
@@ -433,25 +435,22 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `<i>Vote: inclawbate.com/how-it-works</i>\n`;
     }
 
-    // Past / Present / Future + full backlog
+    // Focus / Active / Backlog
     if (tasks.done.length) {
-        msg += `\n<b>✅ Past</b>\n`;
+        msg += `\n<b>✅ Done</b>\n`;
         tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
-    if (tasks.current.length) {
-        msg += `\n<b>🔥 Present</b>\n`;
-        tasks.current.forEach(t => { msg += `→ ${esc(t)}\n`; });
+    if (tasks.focus.length) {
+        msg += `\n<b>🔥 Focus</b>\n`;
+        tasks.focus.forEach(t => { msg += `→ ${esc(t)}\n`; });
     }
 
-    if (tasks.todo.length) {
-        msg += `\n<b>📋 Backlog</b> (${tasks.todo.length})\n`;
-        tasks.todo.forEach((t, i) => { msg += `${i + 1}. ${esc(t)}\n`; });
+    if (tasks.active.length || tasks.backlog.length) {
+        msg += `\n📂 ${tasks.active.length} active projects · ${tasks.backlog.length} in backlog\n`;
     }
 
-    if (!tasks.done.length && !tasks.current.length && !tasks.todo.length) {
-        msg += `\n<i>No tasks logged.</i>\n`;
-    }
+    msg += `<i>Full list: inclawbate.com/state</i>\n`;
 
     msg += `\n🔗 inclawbate.com`;
 
@@ -490,14 +489,14 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
 
     tweet += `\n`;
 
-    if (tasks.current.length) {
-        tweet += `Now: ${tasks.current[0]}\n`;
+    if (tasks.focus.length) {
+        tweet += `🔥 ${tasks.focus[0]}\n`;
     }
-    if (tasks.todo.length) {
-        tweet += `Next: ${tasks.todo[0]}\n`;
+    if (tasks.active.length || tasks.backlog.length) {
+        tweet += `📂 ${tasks.active.length} active · ${tasks.backlog.length} backlog\n`;
     }
 
-    tweet += `\ninclawbate.com`;
+    tweet += `\ninclawbate.com/state`;
 
     return tweet;
 }

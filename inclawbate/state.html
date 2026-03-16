@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State — Inclawbate</title>
+    <meta name="description" content="Live state of Inclawbate — what we're building, treasury status, governance, and how to participate.">
+    <meta property="og:title" content="State — Inclawbate">
+    <meta property="og:description" content="Live view of what Inclawbate is building and how treasury funds are allocated.">
+    <meta property="og:url" content="https://inclawbate.com/state">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; }
+
+        .state-page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        .state-hero {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+        .state-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: var(--space-xs);
+        }
+        .state-hero p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        /* Sections */
+        .state-section {
+            margin-bottom: var(--space-2xl);
+        }
+        .state-section h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        .state-section h2 .count {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.06);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .state-item {
+            padding: var(--space-sm) var(--space-md);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            margin-bottom: var(--space-xs);
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+        }
+        .state-item.focus-item {
+            border-color: rgba(255, 140, 50, 0.3);
+            background: rgba(255, 140, 50, 0.05);
+        }
+        .state-item.done-item {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+        .state-item .item-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            color: var(--text-dim);
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: var(--space-md);
+        }
+
+        /* Divider */
+        .state-divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin: var(--space-2xl) 0;
+        }
+
+        /* Governance section */
+        .governance-info {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .governance-info h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+        }
+        .governance-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: var(--space-sm);
+        }
+        .governance-info p:last-child { margin-bottom: 0; }
+
+        /* Allocation bars */
+        .alloc-section {
+            margin-bottom: var(--space-lg);
+        }
+        .alloc-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+            color: var(--text-primary);
+        }
+        .alloc-sublabel {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-sm);
+        }
+        .alloc-bar {
+            display: flex;
+            height: 28px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.04);
+            margin-bottom: var(--space-xs);
+        }
+        .alloc-bar .seg {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #fff;
+            min-width: 0;
+            transition: width 0.3s;
+        }
+        .alloc-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs) var(--space-md);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .alloc-legend span { display: flex; align-items: center; gap: 4px; }
+        .alloc-legend .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Vote CTA */
+        .vote-cta {
+            text-align: center;
+            padding: var(--space-lg);
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            margin-top: var(--space-lg);
+        }
+        .vote-cta p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-sm);
+        }
+        .vote-cta a {
+            color: var(--lobster-300);
+            font-weight: 700;
+        }
+
+        .loading { color: var(--text-dim); font-style: italic; }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/ecosystem">Ecosystem</a>
+                <a href="/how-it-works">How It Works</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/vaults">Vaults</a>
+                <a href="/schedule">X Schedule</a>
+                <a href="/agents">Agents</a>
+                <a href="/tools">Tools</a>
+                <a href="/inclawbators">Inclawbators</a>
+            </div>
+        </div>
+        <a href="/state" class="nav-link" style="font-weight:700">State</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<div class="state-page">
+    <div class="state-hero">
+        <h1>Inclawbate State</h1>
+        <p>Live view of what we're building and where treasury funds go</p>
+    </div>
+
+    <!-- Focus -->
+    <div class="state-section" id="focus-section">
+        <h2>🔥 Focus</h2>
+        <div id="focus-list" class="loading">Loading...</div>
+    </div>
+
+    <!-- Active Projects -->
+    <div class="state-section" id="active-section">
+        <h2>📂 Active Projects <span class="count" id="active-count"></span></h2>
+        <div id="active-list" class="loading">Loading...</div>
+    </div>
+
+    <!-- Recently Done -->
+    <div class="state-section" id="done-section" style="display:none">
+        <h2>✅ Recently Done</h2>
+        <div id="done-list"></div>
+    </div>
+
+    <!-- Backlog -->
+    <div class="state-section">
+        <h2>📋 Backlog <span class="count" id="backlog-count"></span></h2>
+        <div id="backlog-list" class="loading">Loading...</div>
+    </div>
+
+    <hr class="state-divider">
+
+    <!-- Governance -->
+    <div class="state-section">
+        <h2>⚖️ Governance</h2>
+
+        <div class="governance-info">
+            <h3>How It Works</h3>
+            <p>The <strong>CLAWS Council</strong> — a group of active contributors — governs how treasury revenue is allocated. The council sets the active allocation that determines where funds flow.</p>
+            <p>All <strong>CLAWS token holders</strong> can vote on allocation priorities. Community votes serve as an advisory signal to the council. Your vote weight is based on your CLAWS balance (wallet + staked + earned rewards).</p>
+            <p>Treasury receives <strong>$100/day</strong> in funding, distributed across buckets like reinvestment, CLAWS buybacks, LP, staking rewards, ecosystem development, grants, giving, and council compensation.</p>
+        </div>
+
+        <!-- Council Allocation -->
+        <div class="alloc-section">
+            <div class="alloc-label">Council Allocation <span style="font-weight:400;color:var(--text-dim);font-size:0.8rem">(active)</span></div>
+            <div class="alloc-sublabel">Set by the council multisig wallet</div>
+            <div class="alloc-bar" id="council-bar"></div>
+            <div class="alloc-legend" id="council-legend"></div>
+        </div>
+
+        <!-- Community Synthesis -->
+        <div class="alloc-section">
+            <div class="alloc-label">Community Synthesis <span style="font-weight:400;color:var(--text-dim);font-size:0.8rem" id="voter-count"></span></div>
+            <div class="alloc-sublabel">Token-weighted advisory vote from all CLAWS holders</div>
+            <div class="alloc-bar" id="community-bar"></div>
+            <div class="alloc-legend" id="community-legend"></div>
+        </div>
+
+        <div class="vote-cta">
+            <p>Hold CLAWS? Your vote shapes how treasury funds are allocated.</p>
+            <a href="/how-it-works">Cast your vote →</a>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; The Agent-Human Economy</p>
+        <div class="footer-links">
+            <a href="/how-it-works" class="footer-link">How It Works</a>
+            <a href="/about" class="footer-link">About</a>
+            <a href="/privacy-policy" class="footer-link">Privacy</a>
+            <a href="/terms" class="footer-link">Terms</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/privy-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+<script>
+var BUCKET_IDS = ['reinvest','buy-claws','claws-lp','staking','ecosystem','grants','philanthropy','council-comp'];
+var BUCKET_LABELS = {reinvest:'Reinvest','buy-claws':'Buy CLAWS','claws-lp':'LP',staking:'Staking',ecosystem:'Ecosystem',grants:'Grants',philanthropy:'Giving','council-comp':'Council'};
+var COLORS = ['#6366f1','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+
+function renderItems(container, items, cls) {
+    if (!items || items.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nothing here yet</div>';
+        return;
+    }
+    container.innerHTML = items.map(function(item) {
+        return '<div class="state-item ' + (cls || '') + '">' + escHtml(item.content) + '</div>';
+    }).join('');
+}
+
+function escHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function renderBar(barId, legendId, weights) {
+    var bar = document.getElementById(barId);
+    var legend = document.getElementById(legendId);
+    if (!weights) {
+        bar.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:0.8rem">No data</div>';
+        legend.innerHTML = '';
+        return;
+    }
+    bar.innerHTML = BUCKET_IDS.map(function(id, i) {
+        var pct = typeof weights === 'object' && !Array.isArray(weights) ? (weights[id] || 0) : (weights[i] || 0);
+        if (pct === 0) return '';
+        return '<div class="seg" style="width:' + pct + '%;background:' + COLORS[i] + '">' + (pct >= 8 ? pct + '%' : '') + '</div>';
+    }).join('');
+    legend.innerHTML = BUCKET_IDS.map(function(id, i) {
+        var pct = typeof weights === 'object' && !Array.isArray(weights) ? (weights[id] || 0) : (weights[i] || 0);
+        if (pct === 0) return '';
+        return '<span><span class="dot" style="background:' + COLORS[i] + '"></span>' + BUCKET_LABELS[id] + ' ' + pct + '%</span>';
+    }).join('');
+}
+
+// Load team state
+fetch('/api/inclawbate/team-state')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        renderItems(document.getElementById('focus-list'), data.focus, 'focus-item');
+        renderItems(document.getElementById('active-list'), data.active);
+        document.getElementById('active-count').textContent = data.active.length;
+        renderItems(document.getElementById('backlog-list'), data.backlog);
+        document.getElementById('backlog-count').textContent = data.backlog.length;
+        if (data.done && data.done.length) {
+            document.getElementById('done-section').style.display = '';
+            renderItems(document.getElementById('done-list'), data.done, 'done-item');
+        }
+    })
+    .catch(function() {
+        document.getElementById('focus-list').innerHTML = '<div class="empty-state">Failed to load</div>';
+    });
+
+// Load allocation
+fetch('/api/inclawbate/allocation-vote')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        renderBar('council-bar', 'council-legend', data.council);
+        renderBar('community-bar', 'community-legend', data.synthesis ? BUCKET_IDS.reduce(function(obj, id, i) { obj[id] = data.synthesis[i]; return obj; }, {}) : null);
+        if (data.totalVoters) {
+            document.getElementById('voter-count').textContent = '(' + data.totalVoters + ' voter' + (data.totalVoters !== 1 ? 's' : '') + ')';
+        }
+    })
+    .catch(function() {});
+</script>
+</body>
+</html>
