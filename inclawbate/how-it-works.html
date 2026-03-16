@@ -1092,9 +1092,16 @@
             <div class="rev-subtitle">Set your preferred allocation. Every CLAWS staker and council member gets a voice. The synthesis drives the council&rsquo;s final decision.</div>
 
             <div class="alloc-card">
-                <!-- Synthesis bar -->
+                <!-- Council allocation bar -->
+                <div style="margin-bottom: var(--space-md);">
+                    <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">&mdash; Council Allocation <span style="font-weight:400;color:var(--text-dim);opacity:0.6;">(active)</span></div>
+                    <div class="alloc-synth-bar" id="alloc-council-bar"></div>
+                    <div id="alloc-council-info" style="font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);margin-top:4px;"></div>
+                </div>
+
+                <!-- Community synthesis bar -->
                 <div style="margin-bottom: 4px;">
-                    <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">Community Synthesis</div>
+                    <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">&mdash; Community Synthesis <span style="font-weight:400;color:var(--text-dim);opacity:0.6;">(advisory)</span></div>
                     <div class="alloc-synth-bar" id="alloc-synth-bar"></div>
                     <div class="alloc-voter-count" id="alloc-voter-count"></div>
                 </div>
@@ -1501,9 +1508,11 @@
         { id: 'council-comp',label: 'Council Comp',        color: '#94a3b8', default: 5 },
     ];
 
+    var COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
     var values = buckets.map(function(b) { return b.default; });
 
     var synthesis = buckets.map(function(b) { return b.default; });
+    var councilWeights = null; // council's own vote
     var totalVoters = 0;
     var connectedWallet = null;
     var VOTE_API = 'https://inclawbate.com/api/inclawbate/allocation-vote';
@@ -1519,6 +1528,10 @@
                     synthesis = data.synthesis;
                     totalVoters = data.totalVoters || 0;
                     allVoters = data.voters || [];
+                    /* Extract council vote (inclawbate.base.eth) */
+                    var councilVoter = allVoters.find(function(v) { return v.address.toLowerCase() === COUNCIL_WALLET; });
+                    councilWeights = councilVoter ? councilVoter.weights : null;
+                    renderCouncilBar();
                     renderSynthBar();
                     renderVoters();
                 }
@@ -1542,6 +1555,37 @@
         if (count) count.textContent = totalVoters > 0
             ? totalVoters + ' vote' + (totalVoters !== 1 ? 's' : '') + ' cast'
             : '0 votes cast \u2014 be the first to set the direction';
+    }
+
+    function renderCouncilBar() {
+        var bar = document.getElementById('alloc-council-bar');
+        var info = document.getElementById('alloc-council-info');
+        if (!bar) return;
+        bar.innerHTML = '';
+        if (!councilWeights) {
+            /* No council vote yet — show defaults with dimmed style */
+            buckets.forEach(function(b) {
+                var seg = document.createElement('div');
+                seg.className = 'alloc-synth-seg';
+                seg.style.background = b.color;
+                seg.style.opacity = '0.35';
+                seg.style.flex = b.default;
+                seg.textContent = b.default > 4 ? b.label.split(' ')[0] + ' ' + b.default + '%' : '';
+                bar.appendChild(seg);
+            });
+            if (info) info.textContent = 'Defaults shown — council has not voted yet';
+            return;
+        }
+        buckets.forEach(function(b) {
+            var pct = councilWeights[b.id] || 0;
+            var seg = document.createElement('div');
+            seg.className = 'alloc-synth-seg';
+            seg.style.background = b.color;
+            seg.style.flex = pct;
+            seg.textContent = pct > 4 ? b.label.split(' ')[0] + ' ' + pct + '%' : '';
+            bar.appendChild(seg);
+        });
+        if (info) info.textContent = 'Set by inclawbate.base.eth — this is the active distribution';
     }
 
     function renderSliders() {
@@ -1783,6 +1827,7 @@
         } catch (e) {}
     }
 
+    renderCouncilBar();
     renderSynthBar();
     renderSliders();
     fetchSynthesis();
