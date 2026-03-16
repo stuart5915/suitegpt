@@ -502,59 +502,28 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let tweet = `🦞 CLAWS Daily | ${date}\n\n`;
 
-    // Price + market
+    // Price + key stats on one tight block
     if (claws) {
         tweet += `💰 ${formatPrice(claws.price)} (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
-        tweet += `MCap: ${formatUsd(claws.mcap)} | Liq: ${formatUsd(claws.liquidity)}\n`;
     }
-
-    // Supply
     if (supply) {
-        tweet += `🔒 ${supply.lockedPct}% locked (${supply.stakedPct}% staked + ${supply.lpPct}% LP)`;
-        if (supply.apy > 0) tweet += ` | ${supply.apy.toFixed(0)}% APY`;
-        tweet += `\n`;
+        tweet += `🔒 ${supply.lockedPct}% locked | ${supply.apy > 0 ? supply.apy.toFixed(0) + '% APY' : ''}\n`;
     }
-
-    // Treasury
     if (treasury?.total) {
-        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-        tweet += `\n🏦 Treasury: ${formatUsd(treasury.total)}${treasuryChange ? ' (' + (treasuryChange.diff >= 0 ? '+' : '') + formatUsd(treasuryChange.diff) + ')' : ''}\n`;
-        if (treasury.totalClaws > 0) {
-            tweet += `CLAWS held: ${formatNum(treasury.totalClaws)} (${formatUsd(treasury.totalClawsValue)})\n`;
-        }
-        tweet += `Funding: $${TREASURY_FUNDING_RATE}/day\n`;
+        tweet += `🏦 ${formatUsd(treasury.total)} treasury | $${TREASURY_FUNDING_RATE}/day funding\n`;
     }
-
-    // Allocation
-    if (allocation) {
-        if (allocation.council) {
-            const active = BUCKET_IDS.map((id, i) => ({ label: BUCKET_LABELS[id], pct: allocation.council[i] }))
-                .filter(r => r.pct > 0).sort((a, b) => b.pct - a.pct);
-            tweet += `\n⚖️ Council allocation:\n`;
-            active.forEach(r => {
-                const dollars = (TREASURY_FUNDING_RATE * r.pct / 100).toFixed(0);
-                tweet += `${r.label} ${r.pct}% ($${dollars}) `;
-            });
-            tweet += `\n`;
-        }
+    if (allocation?.voterCount) {
         tweet += `🗳 ${allocation.voterCount} community votes\n`;
     }
 
-    // Incubations
+    // Incubations — just names, keeps it punchy
     if (tasks.incubations.length) {
-        tweet += `\n🦞 Incubations (${tasks.incubations.length}):\n`;
-        tasks.incubations.forEach(t => { tweet += `- ${t}\n`; });
-    }
-
-    // Responsibilities
-    if (tasks.responsibilities.length) {
-        tweet += `\n👥 Duties:\n`;
-        tasks.responsibilities.forEach(t => { tweet += `- ${t}\n`; });
-    }
-
-    // Focus
-    if (tasks.focus.length) {
-        tweet += `\n🔥 Focus: ${tasks.focus.join(', ')}\n`;
+        tweet += `\n🦞 ${tasks.incubations.length} incubations:\n`;
+        tasks.incubations.forEach(t => {
+            // Extract just the domain/name part before the dash
+            const name = t.split(' - ')[0].trim();
+            tweet += `${name}\n`;
+        });
     }
 
     tweet += `\ninclawbate.com/state`;
