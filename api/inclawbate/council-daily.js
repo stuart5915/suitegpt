@@ -78,6 +78,7 @@ async function fetchClawsPrice() {
 
 const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
+const TREASURY_FUNDING_RATE = 100; // $/day — update when funding changes
 
 async function rpcRead(to, data) {
     try {
@@ -400,6 +401,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         if (treasury.staked > 0) msg += ` | Staked: ${formatUsd(treasury.staked)}`;
         if (treasury.earned > 0) msg += ` | Earned: ${formatUsd(treasury.earned)}`;
         msg += `\n`;
+        msg += `Funding Rate: $${TREASURY_FUNDING_RATE}/day\n`;
     }
 
     // Allocation — council vs community
