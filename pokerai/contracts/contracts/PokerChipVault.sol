@@ -42,6 +42,7 @@ contract PokerChipVault is ReentrancyGuard {
     event RakeRecorded(uint256 usdcAmount, uint256 share1, uint256 share2);
     event RakeClaimed(address indexed recipient, uint256 usdcAmount);
     event RakeSplitUpdated(uint8 pct1, uint8 pct2);
+    event RakeRecipient1Updated(address indexed recipient);
     event RakeRecipient2Updated(address indexed recipient);
     event OperatorUpdated(address indexed oldOperator, address indexed newOperator);
     event AdminTransferred(address indexed oldAdmin, address indexed newAdmin);
@@ -174,6 +175,7 @@ contract PokerChipVault is ReentrancyGuard {
     function setRakeRecipient1(address _recipient) external onlyAdmin {
         require(_recipient != address(0), "Invalid recipient");
         rakeRecipient1 = _recipient;
+        emit RakeRecipient1Updated(_recipient);
     }
 
     /// @notice Set the second rake recipient (partner wallet)

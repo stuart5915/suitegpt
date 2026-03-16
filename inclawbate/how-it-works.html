@@ -957,6 +957,7 @@
                 <div style="margin-top: var(--space-lg);">
                     <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Your Allocation</div>
                     <div class="alloc-rows" id="alloc-sliders"></div>
+                    <div id="alloc-total" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
                 </div>
 
                 <!-- Vote button -->
@@ -1321,7 +1322,6 @@
             slider.addEventListener('input', function() {
                 var idx = parseInt(this.dataset.idx);
                 values[idx] = parseInt(this.value);
-                normalize(idx);
                 updatePcts();
             });
 
@@ -1332,38 +1332,19 @@
         });
     }
 
-    function normalize(changedIdx) {
-        var total = values.reduce(function(a, b) { return a + b; }, 0);
-        if (total === 100) return;
-        var diff = total - 100;
-        var others = [];
-        for (var i = 0; i < values.length; i++) {
-            if (i !== changedIdx && values[i] > 0) others.push(i);
-        }
-        if (others.length === 0) { values[changedIdx] = 100; return; }
-        var perOther = Math.floor(diff / others.length);
-        var remainder = diff - perOther * others.length;
-        others.forEach(function(idx, j) {
-            var sub = perOther + (j < remainder ? 1 : 0);
-            values[idx] = Math.max(0, values[idx] - sub);
-        });
-        /* Fix rounding */
-        var newTotal = values.reduce(function(a, b) { return a + b; }, 0);
-        if (newTotal !== 100) values[changedIdx] += (100 - newTotal);
-    }
-
     function updatePcts() {
+        var total = values.reduce(function(a, b) { return a + b; }, 0);
         buckets.forEach(function(b, i) {
             var pctEl = document.getElementById('alloc-pct-' + i);
             if (pctEl) pctEl.textContent = values[i] + '%';
             var slider = document.querySelector('[data-idx="' + i + '"]');
             if (slider) slider.value = values[i];
         });
-        /* Update vote button state */
-        var btn = document.getElementById('alloc-vote-btn');
-        if (btn) {
-            var total = values.reduce(function(a, b) { return a + b; }, 0);
-            btn.disabled = total !== 100;
+        /* Show running total */
+        var totalEl = document.getElementById('alloc-total');
+        if (totalEl) {
+            totalEl.textContent = 'Total: ' + total + '%';
+            totalEl.style.color = total === 100 ? '#4ade80' : total > 100 ? '#ef4444' : '#fbbf24';
         }
     }
 
@@ -1404,22 +1385,39 @@
         }
         var total = values.reduce(function(a, b) { return a + b; }, 0);
         if (total !== 100) {
-            if (info) info.textContent = 'Weights must total 100%. Currently: ' + total + '%';
+            if (info) info.textContent = 'Your sliders add up to ' + total + '%. Adjust them to total exactly 100% before voting.';
+            if (info) info.style.color = '#ef4444';
             return;
         }
+        if (info) info.style.color = '';
         /* Build weights object */
         var weights = {};
         buckets.forEach(function(b, i) { weights[b.id] = values[i]; });
         /* Build message to sign */
         var ts = Math.floor(Date.now() / 1000);
         var message = 'Inclawbate Allocation Vote\n\nWeights: ' + JSON.stringify(weights) + '\nTimestamp: ' + ts;
-        /* Sign */
+        /* Sign — try personal_sign, fall back to eth_sign for wallets that don't support it */
         if (btn) { btn.disabled = true; btn.textContent = 'Signing...'; }
         try {
-            var signature = await window.ethereum.request({
-                method: 'personal_sign',
-                params: [message, connectedWallet]
-            });
+            var signature;
+            try {
+                signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, connectedWallet]
+                });
+            } catch (signErr) {
+                if (signErr.code === 4001 || signErr.message?.includes('reject') || signErr.message?.includes('denied') || signErr.message?.includes('cancel')) {
+                    if (info) info.textContent = 'Signing cancelled. Click the button to try again.';
+                    if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+                    return;
+                }
+                /* Retry with hex-encoded message for wallets that require it */
+                var hexMsg = '0x' + Array.from(new TextEncoder().encode(message)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+                signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [hexMsg, connectedWallet]
+                });
+            }
             /* Submit to API */
             if (btn) btn.textContent = 'Submitting...';
             var resp = await fetch(VOTE_API, {
@@ -1433,14 +1431,15 @@
                 totalVoters = data.totalVoters || 0;
                 renderSynthBar();
                 fetchSynthesis(); /* refresh voter table */
-                if (info) info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS';
+                if (info) { info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS'; info.style.color = '#4ade80'; }
                 if (btn) { btn.textContent = 'Update Vote'; btn.disabled = false; }
             } else {
-                if (info) info.textContent = 'Error: ' + (data.error || 'Unknown error');
+                if (info) { info.textContent = 'Error: ' + (data.error || 'Unknown error'); info.style.color = '#ef4444'; }
                 if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
             }
         } catch (err) {
-            if (info) info.textContent = 'Signing cancelled or failed.';
+            var msg = err.code === 4001 ? 'Signing cancelled.' : 'Signing failed: ' + (err.message || 'Unknown error').slice(0, 100);
+            if (info) { info.textContent = msg + ' Try again.'; info.style.color = '#ef4444'; }
             if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
         }
     }
@@ -1507,11 +1506,10 @@
         return Math.floor(diff / 86400) + 'd ago';
     }
 
-    /* Vote button click */
+    /* Vote button click — castVote handles connect if needed */
     document.addEventListener('click', function(e) {
         if (e.target.id === 'alloc-vote-btn') {
-            if (!connectedWallet) { connectWallet(); }
-            else { castVote(); }
+            castVote();
         }
     });
 

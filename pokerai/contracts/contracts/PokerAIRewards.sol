@@ -25,6 +25,7 @@ contract PokerAIRewards is ReentrancyGuard {
 
     event RewardsDeposited(address indexed from, uint256 amount);
     event RewardsClaimed(address indexed player, uint256 amount, uint256 nonce);
+    event AdminWithdraw(address indexed to, uint256 amount);
     event OperatorUpdated(address indexed oldOperator, address indexed newOperator);
     event AdminTransferred(address indexed oldAdmin, address indexed newAdmin);
     event Paused(bool isPaused);
@@ -55,7 +56,7 @@ contract PokerAIRewards is ReentrancyGuard {
     // =========== Admin Functions ===========
 
     /// @notice Deposit POKERAI tokens into the reward pool (can be called multiple times)
-    function depositRewards(uint256 amount) external nonReentrant {
+    function depositRewards(uint256 amount) external onlyAdmin nonReentrant {
         require(amount > 0, "Zero amount");
         pokeraiToken.safeTransferFrom(msg.sender, address(this), amount);
         totalDeposited += amount;
@@ -67,6 +68,7 @@ contract PokerAIRewards is ReentrancyGuard {
         require(amount > 0, "Zero amount");
         require(pokeraiToken.balanceOf(address(this)) >= amount, "Insufficient balance");
         pokeraiToken.safeTransfer(admin, amount);
+        emit AdminWithdraw(admin, amount);
     }
 
     function setOperator(address _operator) external onlyAdmin {
