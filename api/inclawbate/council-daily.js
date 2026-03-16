@@ -99,27 +99,41 @@ async function fetchTreasuryValue(clawsPrice) {
         ]);
 
         // ETH value
-        const ethBal = parseInt(addrRes.coin_balance || '0', 10) / 1e18;
+        const ethBal = Number(addrRes.coin_balance || '0') / 1e18;
         const ethPrice = parseFloat(addrRes.exchange_rate) || 0;
         let total = ethBal * ethPrice;
 
-        // Token values — sum everything Blockscout already priced
+        // Also fetch POKERAI price from DexScreener
+        let pokeraiPrice = 0;
+        try {
+            const pr = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07');
+            const pd = await pr.json();
+            pokeraiPrice = parseFloat(pd?.pairs?.[0]?.priceUsd) || 0;
+        } catch (e) {}
+
+        // Token values
         const tokens = Array.isArray(tokensRes) ? tokensRes : [];
         for (const t of tokens) {
-            // Use Blockscout's USD value if available
-            if (t.value && t.token) {
-                const bal = parseInt(t.value, 10) / Math.pow(10, parseInt(t.token.decimals) || 18);
-                const usd = parseFloat(t.token.exchange_rate);
-                if (usd > 0) {
-                    total += bal * usd;
-                } else if (t.token.address?.toLowerCase() === CLAWS_ADDRESS.toLowerCase() && clawsPrice > 0) {
-                    // Use DexScreener price for CLAWS
-                    total += bal * clawsPrice;
-                }
-                // USDC — 1:1
-                if (t.token.symbol === 'USDC' || t.token.symbol === 'USDbC') {
-                    total += bal;
-                }
+            const token = t.token;
+            if (!t.value || !token) continue;
+
+            const decimals = parseInt(token.decimals) || 18;
+            const bal = Number(BigInt(t.value) / BigInt(10 ** Math.min(decimals, 18))) / (decimals > 18 ? Math.pow(10, decimals - 18) : 1);
+            const symbol = (token.symbol || '').toUpperCase();
+            const addr = (token.address_hash || '').toLowerCase();
+
+            // Blockscout has a price
+            const rate = parseFloat(token.exchange_rate);
+            if (rate > 0) {
+                total += bal * rate;
+            }
+            // CLAWS — use DexScreener price
+            else if (addr === CLAWS_ADDRESS.toLowerCase() && clawsPrice > 0) {
+                total += bal * clawsPrice;
+            }
+            // POKERAI — use DexScreener price
+            else if (symbol === 'POKERAI' && pokeraiPrice > 0) {
+                total += bal * pokeraiPrice;
             }
         }
 
