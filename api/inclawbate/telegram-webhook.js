@@ -385,6 +385,49 @@ async function handleMarketingPovs(chatId, args) {
     await sendMsg(chatId, msg);
 }
 
+// ── /telos — mission, tokens, and how they relate ──
+
+async function handleTelos(chatId) {
+    let msg = '🦞 <b>INCLAWBATE TELOS</b>\n\n';
+
+    msg += '<b>Mission</b>\n';
+    msg += 'A self-sustaining, decentralized engine that generates, manages, and distributes value to the right places — forever.\n\n';
+
+    msg += '<b>🪙 Tokens</b>\n\n';
+
+    msg += '<b>$CLAWS</b> — THE Inclawbate token\n';
+    msg += '• 100B fixed supply, no mint function\n';
+    msg += '• ~68B committed to staking (staked + reward pool)\n';
+    msg += '• Governance: holders vote on treasury allocation\n';
+    msg += '• Staking rewards drain over 722 days (until 2028)\n';
+    msg += '• CA: <code>0x7ca47B141639B893C6782823C0b219f872056379</code>\n\n';
+
+    msg += '<b>$INCLAWNCH</b> — Legacy token (predecessor)\n';
+    msg += '• CLAWS replaced INCLAWNCH as the main token\n';
+    msg += '• INCLAWNCH still exists but is not the primary token\n';
+    msg += '• CA: <code>0xB0b6e0E9da530f68D713cC03a813B506205aC808</code>\n\n';
+
+    msg += '<b>$S4H</b> — Salvation 4 Humanity\n';
+    msg += '• Incubation project — its own token, its own mission\n';
+    msg += '• Stake S4H to earn INCLAWNCH (powered by Inclawbate)\n';
+    msg += '• Not replacing CLAWS — S4H is a separate community\n';
+    msg += '• CA: <code>0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07</code>\n\n';
+
+    msg += '<b>How they relate</b>\n';
+    msg += '• INCLAWNCH → CLAWS (replaced as main token)\n';
+    msg += '• CLAWS = Inclawbate governance + staking + treasury\n';
+    msg += '• S4H = independent incubation, connected via staking rewards\n';
+    msg += '• Both can coexist — CLAWS governs Inclawbate, S4H serves its own community\n\n';
+
+    msg += '<b>The Engine</b>\n';
+    msg += 'Telos → Memory → Code → Value → Council → repeat forever\n';
+    msg += 'Revenue from products funds treasury, council allocates, builders build more. The flywheel.\n\n';
+
+    msg += '🔗 inclawbate.com/state';
+
+    await sendMsg(chatId, msg);
+}
+
 // ── /treasury — treasury + allocation overview ──
 
 const BASE_RPC = 'https://mainnet.base.org';
@@ -658,6 +701,8 @@ export default async function handler(req, res) {
             await handleMarketingPovs(chatId, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
+        } else if (cmd === 'telos') {
+            await handleTelos(chatId);
         } else if (cmd === 'treasury') {
             await handleTreasury(chatId);
         } else if (cmd === 'daily') {
@@ -692,7 +737,8 @@ export default async function handler(req, res) {
                 '/marketingpovs 4 — View one in detail\n' +
                 '/research — Daily research prompt\n\n' +
                 '<b>Treasury</b>\n' +
-                '/treasury — Treasury status + allocation\n\n' +
+                '/treasury — Treasury status + allocation\n' +
+                '/telos — Mission, tokens, how they relate\n\n' +
                 '<b>Council</b>\n' +
                 '/daily — Post daily CLAWS update (admin)\n\n' +
                 '<b>Other</b>\n' +
