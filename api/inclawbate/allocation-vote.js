@@ -129,14 +129,18 @@ export default async function handler(req, res) {
                     try {
                         const freshBalance = await getClawsBalance(v.wallet_address);
                         if (freshBalance !== '0') {
-                            await supabase.from('allocation_votes')
+                            const { error: updateErr } = await supabase.from('allocation_votes')
                                 .update({ claws_balance: freshBalance })
                                 .eq('wallet_address', v.wallet_address);
+                            if (updateErr) {
+                                console.error('DB update failed for', v.wallet_address, updateErr);
+                            }
                             refreshed.push({ ...v, claws_balance: freshBalance });
                         } else {
                             refreshed.push(v);
                         }
-                    } catch {
+                    } catch (e) {
+                        console.error('Refresh error for', v.wallet_address, e);
                         refreshed.push(v);
                     }
                 }
