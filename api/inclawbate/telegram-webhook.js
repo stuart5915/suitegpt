@@ -385,6 +385,167 @@ async function handleMarketingPovs(chatId, args) {
     await sendMsg(chatId, msg);
 }
 
+// ── /treasury — treasury + allocation overview ──
+
+const BASE_RPC = 'https://mainnet.base.org';
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+const STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
+const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
+const TREASURY_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+const TOTAL_SUPPLY = 100e9;
+const DAILY_FUNDING = 100;
+const BUCKET_LABELS = {
+    'reinvest': 'Reinvest', 'buy-claws': 'Buy CLAWS', 'claws-lp': 'LP',
+    'staking': 'Staking', 'ecosystem': 'Ecosystem', 'grants': 'Grants',
+    'philanthropy': 'Giving', 'council-comp': 'Council'
+};
+
+const tDelay = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function rpc(to, data) {
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
+        });
+        const result = await res.json();
+        if (result.error || !result.result) return 0;
+        return Number(BigInt(result.result)) / 1e18;
+    } catch (e) { return 0; }
+}
+
+async function storageSlot(contract, slot) {
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getStorageAt', params: [contract, slot, 'latest'], id: 1 })
+        });
+        const result = await res.json();
+        if (result.error || !result.result) return 0;
+        return Number(BigInt(result.result)) / 1e18;
+    } catch (e) { return 0; }
+}
+
+function balData(addr) {
+    return '0x70a08231000000000000000000000000' + addr.replace('0x', '').toLowerCase();
+}
+
+function fmtB(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
+}
+
+function fmtUsd(n) {
+    if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+    return '$' + n.toFixed(2);
+}
+
+async function handleTreasury(chatId) {
+    try {
+        // 1. CLAWS price
+        let price = 0, mcap = 0, liquidity = 0;
+        try {
+            const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+            const data = await res.json();
+            const pair = data?.pairs?.[0];
+            if (pair) {
+                price = parseFloat(pair.priceUsd) || 0;
+                mcap = pair.marketCap || 0;
+                liquidity = pair.liquidity?.usd || 0;
+            }
+        } catch (e) {}
+
+        // 2. Staking data (sequential to avoid rate limit)
+        const contractTotal = await rpc(CLAWS_ADDRESS, balData(STAKING_CONTRACT));
+        await tDelay(200);
+        const userStaked = await storageSlot(STAKING_CONTRACT, '0x6');
+        await tDelay(200);
+        const inLP = await rpc(CLAWS_ADDRESS, balData(LP_POOL));
+        await tDelay(200);
+        const rewardRate = await rpc(STAKING_CONTRACT, '0x7b0a47ee');
+        const rewardsPool = Math.max(contractTotal - userStaked, 0);
+        const dailyRewards = rewardRate * 86400;
+        const apy = userStaked > 0 ? (dailyRewards * 365 / userStaked * 100) : 0;
+
+        // 3. ETH balance
+        let ethBalance = 0, ethPrice = 0;
+        try {
+            const ethBalRes = await fetch(BASE_RPC, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [TREASURY_WALLET, 'latest'], id: 1 })
+            }).then(r => r.json());
+            ethBalance = (ethBalRes.error || !ethBalRes.result) ? 0 : Number(BigInt(ethBalRes.result)) / 1e18;
+        } catch (e) {}
+        await tDelay(200);
+        try {
+            const ethRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
+            const ethData = await ethRes.json();
+            const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
+            ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
+        } catch (e) {}
+
+        // 4. Council allocation
+        let councilWeights = null;
+        try {
+            const host = 'www.inclawbate.com';
+            const allocRes = await fetch(`https://${host}/api/inclawbate/allocation-vote`);
+            const allocData = await allocRes.json();
+            if (allocData.council) councilWeights = allocData.council;
+        } catch (e) {}
+
+        // Build message
+        const ethValue = ethBalance * ethPrice;
+        const stakedValue = userStaked * price;
+        const lpValue = liquidity;
+
+        let msg = '🏦 <b>TREASURY STATUS</b>\n\n';
+
+        msg += '💰 <b>CLAWS Token</b>\n';
+        msg += `Price: ${fmtUsd(price)}\n`;
+        msg += `Market Cap: ${fmtUsd(mcap)}\n`;
+        msg += `Liquidity: ${fmtUsd(liquidity)}\n\n`;
+
+        msg += '📊 <b>Supply Breakdown</b>\n';
+        msg += `Staked: ${fmtB(userStaked)} (${(userStaked / TOTAL_SUPPLY * 100).toFixed(1)}%) ≈ ${fmtUsd(stakedValue)}\n`;
+        msg += `Rewards Pool: ${fmtB(rewardsPool)}\n`;
+        msg += `In LP: ${fmtB(inLP)} (${(inLP / TOTAL_SUPPLY * 100).toFixed(1)}%)\n\n`;
+
+        msg += '📈 <b>Staking</b>\n';
+        msg += `APY: ${apy.toFixed(1)}%\n`;
+        msg += `Daily Rewards: ${fmtB(dailyRewards)} CLAWS\n`;
+        msg += `🔗 inclawbate.com/stake/claws\n\n`;
+
+        msg += '🏛️ <b>Treasury Holdings</b>\n';
+        msg += `CLAWS/ETH LP: ${fmtUsd(lpValue)}\n`;
+        msg += `ETH: ${ethBalance.toFixed(4)} (${fmtUsd(ethValue)})\n`;
+        msg += `Funding Rate: $${DAILY_FUNDING}/day\n\n`;
+
+        msg += '⚖️ <b>Council Allocation ($' + DAILY_FUNDING + '/day)</b>\n';
+        if (councilWeights) {
+            for (const id of Object.keys(BUCKET_LABELS)) {
+                const pct = councilWeights[id] || 0;
+                if (pct === 0) continue;
+                const dollars = (DAILY_FUNDING * pct / 100).toFixed(2);
+                msg += `${BUCKET_LABELS[id]}: ${pct}% ($${dollars})\n`;
+            }
+        } else {
+            msg += '<i>No council allocation set yet</i>\n';
+        }
+
+        msg += '\n🔗 <a href="https://www.inclawbate.com/state">Full State → inclawbate.com/state</a>';
+
+        await sendMsg(chatId, msg);
+    } catch (err) {
+        await sendMsg(chatId, '❌ Error fetching treasury: ' + esc(err.message));
+    }
+}
+
 // ── Store message in telegram_messages table for ClawsNet bridge ──
 
 async function storeMessage(update) {
@@ -454,6 +615,8 @@ export default async function handler(req, res) {
             await handleMarketingPovs(chatId, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
+        } else if (cmd === 'treasury') {
+            await handleTreasury(chatId);
         } else if (cmd === 'daily') {
             if (!isAdmin(username)) { await sendMsg(chatId, '🔒 Admin only.'); }
             else {
@@ -485,6 +648,8 @@ export default async function handler(req, res) {
                 '/marketingpovs — All 15 marketing angles\n' +
                 '/marketingpovs 4 — View one in detail\n' +
                 '/research — Daily research prompt\n\n' +
+                '<b>Treasury</b>\n' +
+                '/treasury — Treasury status + allocation\n\n' +
                 '<b>Council</b>\n' +
                 '/daily — Post daily CLAWS update (admin)\n\n' +
                 '<b>Other</b>\n' +
