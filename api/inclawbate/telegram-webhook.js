@@ -442,7 +442,22 @@ function fmtB(n) {
 function fmtUsd(n) {
     if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
     if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-    return '$' + n.toFixed(2);
+    if (n >= 0.01) return '$' + n.toFixed(2);
+    if (n > 0) return '$' + n.toPrecision(3);
+    return '$0';
+}
+
+function fmtPrice(n) {
+    if (n >= 1) return '$' + n.toFixed(4);
+    if (n >= 0.001) return '$' + n.toFixed(6);
+    if (n > 0) {
+        // For very small prices, show enough decimals to get 3 sig figs
+        var s = n.toFixed(20);
+        var m = s.match(/^0\.(0+)/);
+        var zeros = m ? m[1].length : 0;
+        return '$' + n.toFixed(zeros + 3);
+    }
+    return '$0';
 }
 
 async function handleTreasury(chatId) {
@@ -507,7 +522,7 @@ async function handleTreasury(chatId) {
         let msg = '🏦 <b>TREASURY STATUS</b>\n\n';
 
         msg += '💰 <b>CLAWS Token</b>\n';
-        msg += `Price: ${fmtUsd(price)}\n`;
+        msg += `Price: ${fmtPrice(price)}\n`;
         msg += `Market Cap: ${fmtUsd(mcap)}\n`;
         msg += `Liquidity: ${fmtUsd(liquidity)}\n\n`;
 
