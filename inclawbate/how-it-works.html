@@ -1864,14 +1864,15 @@
     }
 
     function formatBalance(raw) {
-        if (!raw || raw === '0') return '0';
-        var s = raw.toString();
-        if (s.length <= 18) return '0';
-        var whole = Number(s.slice(0, s.length - 18));
+        if (!raw || raw === '0' || raw === 0) return '0';
+        /* Handle both string and number (scientific notation) from API */
+        var n = typeof raw === 'number' ? raw : Number(raw);
+        var whole = Math.floor(n / 1e18);
         if (whole >= 1e9) return (whole / 1e9).toFixed(1) + 'B';
         if (whole >= 1e6) return (whole / 1e6).toFixed(1) + 'M';
         if (whole >= 1e3) return (whole / 1e3).toFixed(1) + 'K';
-        return whole.toLocaleString();
+        if (whole > 0) return whole.toLocaleString();
+        return '0';
     }
 
     function renderVoters() {
