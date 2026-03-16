@@ -395,6 +395,62 @@
         }
         .launch-panel-close:hover { color: var(--text-primary); background: var(--bg-surface); }
         .launch-panel-body { padding: 14px 16px; }
+
+        /* Inline Inclawbators */
+        .iclw-inline-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+        .iclw-inline-filter {
+            padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border-subtle);
+            background: var(--bg-surface); color: var(--text-secondary);
+            font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .iclw-inline-filter:hover, .iclw-inline-filter.active {
+            border-color: var(--lobster-400); color: var(--lobster-400); background: hsla(9,52%,54%,0.08);
+        }
+        .iclw-inline-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 10px; padding: 12px 20px; max-height: 480px; overflow-y: auto;
+        }
+        .iclw-inline-card {
+            background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 12px; transition: all 0.2s;
+        }
+        .iclw-inline-card:hover { border-color: var(--lobster-300); transform: translateY(-1px); }
+        .iclw-inline-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .iclw-inline-avatar {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card);
+            border: 1px solid var(--border-subtle); overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: var(--text-dim); flex-shrink: 0;
+        }
+        .iclw-inline-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .iclw-inline-name { font-weight: 800; font-size: 0.82rem; color: var(--text-primary); }
+        .iclw-inline-handle { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); text-decoration: none; }
+        .iclw-inline-handle:hover { color: var(--lobster-400); }
+        .iclw-inline-tagline { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .iclw-inline-skills { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+        .iclw-inline-skill {
+            font-family: var(--font-mono); font-size: 0.55rem; font-weight: 600;
+            padding: 2px 6px; border-radius: 4px;
+            background: hsla(9,52%,54%,0.08); color: var(--lobster-400); text-transform: lowercase;
+        }
+        .iclw-inline-stats { display: flex; gap: 8px; font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-dim); margin-bottom: 6px; }
+        .iclw-inline-stats strong { color: var(--text-secondary); }
+        .iclw-inline-avail {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+        }
+        .iclw-inline-avail.available { color: #4ade80; }
+        .iclw-inline-avail.busy { color: #fbbf24; }
+        .iclw-inline-avail.unavailable { color: #ef4444; }
+        .iclw-inline-avail-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+        .iclw-inline-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--border-subtle); margin-top: 6px; }
+        .iclw-inline-hire {
+            padding: 4px 12px; background: none; border: 1px solid var(--lobster-400);
+            border-radius: 999px; color: var(--lobster-400); font-family: var(--font-mono);
+            font-size: 0.6rem; font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .iclw-inline-hire:hover { background: var(--lobster-400); color: #fff; }
+        .iclw-inline-empty { text-align: center; padding: 32px; color: var(--text-dim); font-size: 0.8rem; }
         .launch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .launch-field { margin-bottom: 10px; }
         .launch-field label {
@@ -1069,6 +1125,31 @@
             <iframe id="scheduleIframe" src="" style="width:100%;border:none;min-height:600px;background:transparent"></iframe>
         </div>
 
+        <!-- ═══ INCLAWBATORS PANEL ═══ -->
+        <div class="launch-panel" id="inclawbatorsPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#129438; Inclawbators</span>
+                <button class="launch-panel-close" onclick="closeInclawbatorsPanel()">&times;</button>
+            </div>
+            <div style="padding:16px 20px 8px;">
+                <div class="iclw-inline-filters" id="iclwFilters">
+                    <button class="iclw-inline-filter active" data-filter="all">All</button>
+                    <button class="iclw-inline-filter" data-filter="available">Available</button>
+                    <button class="iclw-inline-filter" data-filter="solidity">Solidity</button>
+                    <button class="iclw-inline-filter" data-filter="react">React</button>
+                    <button class="iclw-inline-filter" data-filter="design">Design</button>
+                    <button class="iclw-inline-filter" data-filter="marketing">Marketing</button>
+                    <button class="iclw-inline-filter" data-filter="content">Content</button>
+                </div>
+            </div>
+            <div class="iclw-inline-grid" id="iclwGrid">
+                <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:0.8rem;">Loading inclawbators...</div>
+            </div>
+            <div style="text-align:center;padding:12px 20px 20px;">
+                <a href="/inclawbators" style="font-size:0.75rem;color:var(--lobster-400);font-weight:700;text-decoration:none;">View full directory &rarr;</a>
+            </div>
+        </div>
+
         <!-- ═══ CHIP ACTIONS (always visible, right above chat) ═══ -->
         <div class="hub-chat-chips">
             <div class="chip-group">
@@ -1086,7 +1167,7 @@
             </div>
             <div class="chip-group">
                 <span class="chip-group-label">Hire</span>
-                <a href="/inclawbators" class="chat-prompt-chip" style="text-decoration:none">&#129438; Find an Inclawbator</a>
+                <button class="chat-prompt-chip" data-prompt="Find me an Inclawbator">&#129438; Find an Inclawbator</button>
                 <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to my community">&#x2708;&#xFE0F; Airdrop tokens</button>
             </div>
             <div class="chip-group">
@@ -1754,7 +1835,7 @@ async function chatSendMessage(text) {
             }
         }
         if (data.function_called === 'browse_inclawbators' || data.function_called === 'hire_inclawbator') {
-            window.open('/inclawbators', '_blank');
+            showInclawbatorsPanel();
         }
         if (data.function_called === 'build_landing_page') {
             window.open('https://inclawbate.com/build', '_blank');
@@ -1811,10 +1892,9 @@ var CHIP_ACTIONS = {
         chatReply: true,
         action: function() { closeAllPanels(); }
     },
-    'I need a designer for my project': {
-        reply: 'Browse the <a href="/inclawbators">Inclawbators directory</a> &mdash; real humans available for branding, strategy, dev, and more.',
-        chatReply: true,
-        action: function() { closeAllPanels(); }
+    'Find me an Inclawbator': {
+        reply: 'Here are the available Inclawbators &mdash; real humans you can hire for branding, strategy, dev, and more.',
+        action: function() { showInclawbatorsPanel(); }
     },
     'I want to airdrop tokens to my community': {
         reply: 'Opening the Disperse tool &mdash; swap and distribute tokens to multiple wallets in one transaction on Base.',
@@ -1929,6 +2009,7 @@ function closeAllPanels() {
     document.getElementById('disperseIframe').src = '';
     document.getElementById('schedulePanel').style.display = 'none';
     document.getElementById('scheduleIframe').src = '';
+    document.getElementById('inclawbatorsPanel').style.display = 'none';
     document.getElementById('hubPortfolioPanel').classList.remove('open');
     // Restore flywheel default view
     var fw = document.getElementById('flywheelSection');
@@ -1977,6 +2058,104 @@ function showSchedulePanel() {
 }
 
 function closeSchedulePanel() { closeAllPanels(); }
+
+// ── Inclawbators inline panel ──
+var _iclwData = [];
+var _iclwFilter = 'all';
+var _iclwLoaded = false;
+
+function showInclawbatorsPanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('inclawbatorsPanel');
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!_iclwLoaded) loadInclawbatorsInline();
+}
+
+function closeInclawbatorsPanel() { closeAllPanels(); }
+
+function loadInclawbatorsInline() {
+    fetch('/api/inclawbate/inclawbators').then(function(r) { return r.json(); }).then(function(data) {
+        if (data.success) {
+            _iclwData = data.inclawbators || [];
+            _iclwLoaded = true;
+            renderInclawbatorsInline();
+        }
+    }).catch(function() {
+        document.getElementById('iclwGrid').innerHTML = '<div class="iclw-inline-empty">Could not load. Try again.</div>';
+    });
+}
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function renderInclawbatorsInline() {
+    var grid = document.getElementById('iclwGrid');
+    if (!grid) return;
+    var filtered = _iclwData;
+    if (_iclwFilter === 'available') {
+        filtered = filtered.filter(function(p) { return p.availability === 'available'; });
+    } else if (_iclwFilter !== 'all') {
+        var needle = _iclwFilter.toLowerCase();
+        filtered = filtered.filter(function(p) {
+            return (p.skills || []).some(function(s) { return s.toLowerCase().includes(needle); }) ||
+                   (p.tagline || '').toLowerCase().includes(needle) ||
+                   (p.bio || '').toLowerCase().includes(needle);
+        });
+    }
+    if (!filtered.length) {
+        grid.innerHTML = '<div class="iclw-inline-empty">No inclawbators found for this filter.</div>';
+        return;
+    }
+    grid.innerHTML = filtered.map(function(p) {
+        var name = escHtml(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0,6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
+        var avatar = p.x_avatar_url
+            ? '<div class="iclw-inline-avatar"><img src="' + escHtml(p.x_avatar_url) + '" alt="" onerror="this.parentNode.innerHTML=\'&#129438;\'"></div>'
+            : '<div class="iclw-inline-avatar">&#129438;</div>';
+        var handle = p.x_handle ? '<a href="https://x.com/' + p.x_handle + '" target="_blank" rel="noopener" class="iclw-inline-handle">@' + escHtml(p.x_handle) + '</a>' : '';
+        var tagline = p.tagline ? '<div class="iclw-inline-tagline">' + escHtml(p.tagline) + '</div>' : '';
+        var skills = (p.skills || []).slice(0, 4).map(function(s) { return '<span class="iclw-inline-skill">' + escHtml(s) + '</span>'; }).join('');
+        var avail = p.availability || 'available';
+        var availLabel = avail.charAt(0).toUpperCase() + avail.slice(1);
+
+        var stats = '';
+        if (p.tokens_launched || p.apps_built || p.hire_count) {
+            stats = '<div class="iclw-inline-stats">';
+            if (p.tokens_launched) stats += '<span><strong>' + p.tokens_launched + '</strong> token' + (p.tokens_launched > 1 ? 's' : '') + '</span>';
+            if (p.apps_built) stats += '<span><strong>' + p.apps_built + '</strong> app' + (p.apps_built > 1 ? 's' : '') + '</span>';
+            if (p.hire_count) stats += '<span><strong>' + p.hire_count + '</strong> hire' + (p.hire_count > 1 ? 's' : '') + '</span>';
+            stats += '</div>';
+        }
+
+        var hireBtn = '';
+        if (p.x_handle && avail !== 'unavailable') {
+            hireBtn = '<a href="https://x.com/' + p.x_handle + '" target="_blank" rel="noopener" class="iclw-inline-hire">Hire</a>';
+        }
+
+        return '<div class="iclw-inline-card">' +
+            '<div class="iclw-inline-top">' + avatar +
+                '<div>' + '<div class="iclw-inline-name">' + name + '</div>' + handle + '</div>' +
+            '</div>' +
+            tagline +
+            (skills ? '<div class="iclw-inline-skills">' + skills + '</div>' : '') +
+            stats +
+            '<div class="iclw-inline-footer">' +
+                '<span class="iclw-inline-avail ' + avail + '"><span class="iclw-inline-avail-dot"></span>' + availLabel + '</span>' +
+                hireBtn +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// Inline filter buttons
+document.querySelectorAll('.iclw-inline-filter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.iclw-inline-filter').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        _iclwFilter = btn.dataset.filter;
+        renderInclawbatorsInline();
+    });
+});
 
 function showEmbedPanel(tool, title) {
     closeAllPanels();
