@@ -264,14 +264,19 @@
             </div>
         </div>
         <div class="iclw-edit-row">
-            <label class="iclw-edit-label">Portfolio Links (up to 5)</label>
+            <label class="iclw-edit-label">Contact Method</label>
+            <input class="iclw-edit-input" id="edit-contact" placeholder="e.g. DM me on X, t.me/yourhandle, discord: user#1234" maxlength="200">
+            <div class="iclw-edit-hint">How should hirers reach you? This is shown publicly.</div>
+        </div>
+        <div class="iclw-edit-row">
+            <label class="iclw-edit-label">Portfolio Links (up to 3)</label>
             <input class="iclw-edit-input" id="edit-link-0" placeholder="https://yourportfolio.com" style="margin-bottom:6px">
             <input class="iclw-edit-input" id="edit-link-1" placeholder="https://github.com/you" style="margin-bottom:6px">
             <input class="iclw-edit-input" id="edit-link-2" placeholder="https://dribbble.com/you">
             <div class="iclw-edit-hint">Links to your work, portfolio, GitHub, etc.</div>
         </div>
         <div class="iclw-edit-actions">
-            <button class="iclw-save-btn" id="save-profile-btn">Sign & Save Profile</button>
+            <button class="iclw-save-btn" id="save-profile-btn">Save Profile</button>
         </div>
         <div id="edit-status" style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-sm);"></div>
     </div>
@@ -293,9 +298,9 @@
 
     <!-- CTA -->
     <div class="iclw-cta">
-        <div class="iclw-cta-title">Want to be listed?</div>
-        <div class="iclw-cta-sub">Connect your wallet, fill out your profile, and start getting discovered by the ecosystem.</div>
-        <button class="iclw-cta-btn" id="create-profile-btn">Create Your Profile</button>
+        <div class="iclw-cta-title">Want to get hired?</div>
+        <div class="iclw-cta-sub">Log in with X, fill out your skills and contact method, and start getting gig requests from the ecosystem.</div>
+        <button class="iclw-cta-btn" id="create-profile-btn">Edit Your Profile</button>
     </div>
 </main>
 
@@ -305,16 +310,19 @@
 
 <script>
 (function() {
-    var API = '/api/inclawbate/inclawbators';
+    var API_LIST = '/api/inclawbate/inclawbators';
+    var API_SAVE = '/api/inclawbate/humans';
     var allProfiles = [];
     var currentFilter = 'all';
-    var connectedWallet = null;
+    var loggedInUser = null;
 
+    // Check X login
     try {
+        var token = localStorage.getItem('inclawbate_token');
         var stored = localStorage.getItem('inclawbate_profile');
-        if (stored) {
-            var p = JSON.parse(stored);
-            if (p.wallet_address) connectedWallet = p.wallet_address.toLowerCase();
+        if (token && stored) {
+            loggedInUser = JSON.parse(stored);
+            loggedInUser._token = token;
         }
     } catch(e) {}
 
@@ -333,7 +341,7 @@
     var RT_LABELS = { under_1h: '<1h', under_4h: '<4h', under_24h: '<24h', under_48h: '<48h' };
 
     function fetchProfiles() {
-        fetch(API).then(function(r) { return r.json(); }).then(function(data) {
+        fetch(API_LIST).then(function(r) { return r.json(); }).then(function(data) {
             if (data.success) { allProfiles = data.inclawbators || []; renderGrid(); }
         }).catch(function() {});
     }
@@ -387,6 +395,12 @@
                 }).join('') + '</div>';
             }
 
+            // Contact method
+            var contact = '';
+            if (p.contact_method) {
+                contact = '<div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:var(--space-sm);font-family:var(--font-mono);">&#128172; ' + esc(p.contact_method) + '</div>';
+            }
+
             // Meta info
             var meta = '';
             if (p.response_time && RT_LABELS[p.response_time]) meta += RT_LABELS[p.response_time];
@@ -396,8 +410,7 @@
             // Hire button
             var hireBtn = '';
             if (xLink && p.availability !== 'unavailable') {
-                var dmText = encodeURIComponent('Hey! I found you on Inclawbate and I\'d like to hire you for a project. Are you available?');
-                hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire ' + esc(p.display_name || p.x_name || 'them') + '</a>';
+                hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire</a>';
             }
 
             return '<div class="iclw-card">' +
@@ -407,7 +420,7 @@
                     (p.x_handle ? '<div class="iclw-handle">@' + esc(p.x_handle) + '</div>' : '') + '</div></div>' +
                 (p.tagline ? '<div class="iclw-tagline">' + esc(p.tagline) + '</div>' : '') +
                 (skills ? '<div class="iclw-skills">' + skills + '</div>' : '') +
-                stats + links +
+                stats + contact + links +
                 '<div class="iclw-card-footer"><span class="iclw-meta">' + meta + '</span>' + hireBtn + '</div>' +
             '</div>';
         }).join('');
@@ -423,47 +436,42 @@
         });
     });
 
-    // Create / Edit profile
-    async function connectAndEdit() {
-        if (!window.ethereum) {
-            alert('Install a wallet (MetaMask, Coinbase Wallet, etc.) to create your profile.');
+    // Edit profile — uses X login (JWT), no wallet required
+    function openEditPanel() {
+        if (!loggedInUser || !loggedInUser._token) {
+            alert('Please log in with X first (use the nav bar button).');
             return;
         }
-        try {
-            if (window._awaitProvider) await window._awaitProvider();
-            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            connectedWallet = accounts[0].toLowerCase();
-            var panel = document.getElementById('edit-panel');
-            panel.classList.add('open');
-            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var panel = document.getElementById('edit-panel');
+        panel.classList.add('open');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            // Pre-fill if profile exists
-            var existing = allProfiles.find(function(p) {
-                return p.wallet_address === connectedWallet;
+        // Pre-fill from current profile
+        var handle = (loggedInUser.x_handle || '').toLowerCase();
+        var existing = allProfiles.find(function(p) { return (p.x_handle || '').toLowerCase() === handle; });
+        if (existing) {
+            document.getElementById('edit-display-name').value = existing.display_name || '';
+            document.getElementById('edit-tagline').value = existing.tagline || '';
+            document.getElementById('edit-bio').value = existing.bio || '';
+            document.getElementById('edit-skills').value = (existing.skills || []).join(', ');
+            document.getElementById('edit-availability').value = existing.availability || 'available';
+            document.getElementById('edit-response-time').value = existing.response_time || '';
+            document.getElementById('edit-timezone').value = existing.timezone || '';
+            document.getElementById('edit-contact').value = existing.contact_method || '';
+            (existing.portfolio_links || []).forEach(function(l, i) {
+                var el = document.getElementById('edit-link-' + i);
+                if (el) el.value = l;
             });
-            if (existing) {
-                document.getElementById('edit-display-name').value = existing.display_name || '';
-                document.getElementById('edit-tagline').value = existing.tagline || '';
-                document.getElementById('edit-bio').value = existing.bio || '';
-                document.getElementById('edit-skills').value = (existing.skills || []).join(', ');
-                document.getElementById('edit-availability').value = existing.availability || 'available';
-                document.getElementById('edit-response-time').value = existing.response_time || '';
-                document.getElementById('edit-timezone').value = existing.timezone || '';
-                (existing.portfolio_links || []).forEach(function(l, i) {
-                    var el = document.getElementById('edit-link-' + i);
-                    if (el) el.value = l;
-                });
-            }
-        } catch(e) {}
+        }
     }
 
-    document.getElementById('create-profile-btn').addEventListener('click', connectAndEdit);
+    document.getElementById('create-profile-btn').addEventListener('click', openEditPanel);
 
-    // Save profile
+    // Save profile via JWT auth (humans API)
     document.getElementById('save-profile-btn').addEventListener('click', async function() {
         var btn = this;
         var status = document.getElementById('edit-status');
-        if (!connectedWallet) { connectAndEdit(); return; }
+        if (!loggedInUser || !loggedInUser._token) { openEditPanel(); return; }
 
         var tagline = document.getElementById('edit-tagline').value.trim();
         var bio = document.getElementById('edit-bio').value.trim();
@@ -473,31 +481,23 @@
         var display_name = document.getElementById('edit-display-name').value.trim();
         var response_time = document.getElementById('edit-response-time').value || null;
         var timezone = document.getElementById('edit-timezone').value.trim();
+        var contact_method = document.getElementById('edit-contact').value.trim();
         var portfolio_links = [];
         for (var i = 0; i < 3; i++) {
             var el = document.getElementById('edit-link-' + i);
             if (el && el.value.trim()) portfolio_links.push(el.value.trim());
         }
 
-        var ts = Math.floor(Date.now() / 1000);
-        var message = 'Inclawbate Profile Update\n\nTimestamp: ' + ts;
-
         btn.disabled = true;
-        btn.textContent = 'Signing...';
+        btn.textContent = 'Saving...';
         try {
-            var signature = await window.ethereum.request({
-                method: 'personal_sign',
-                params: [message, connectedWallet]
-            });
-
-            btn.textContent = 'Saving...';
-            var resp = await fetch(API, {
+            var resp = await fetch(API_SAVE, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + loggedInUser._token
+                },
                 body: JSON.stringify({
-                    address: connectedWallet,
-                    signature: signature,
-                    message: message,
                     tagline: tagline,
                     bio: bio,
                     skills: skills,
@@ -505,6 +505,7 @@
                     display_name: display_name,
                     response_time: response_time,
                     timezone: timezone,
+                    contact_method: contact_method,
                     portfolio_links: portfolio_links
                 })
             });
@@ -512,19 +513,19 @@
             if (data.success) {
                 status.textContent = 'Profile saved!';
                 status.style.color = '#4ade80';
-                btn.textContent = 'Sign & Save Profile';
+                btn.textContent = 'Save Profile';
                 btn.disabled = false;
                 fetchProfiles();
             } else {
                 status.textContent = 'Error: ' + (data.error || 'Unknown');
                 status.style.color = '#ef4444';
-                btn.textContent = 'Sign & Save Profile';
+                btn.textContent = 'Save Profile';
                 btn.disabled = false;
             }
         } catch(e) {
-            status.textContent = 'Signing cancelled.';
-            status.style.color = '#fbbf24';
-            btn.textContent = 'Sign & Save Profile';
+            status.textContent = 'Network error. Try again.';
+            status.style.color = '#ef4444';
+            btn.textContent = 'Save Profile';
             btn.disabled = false;
         }
     });

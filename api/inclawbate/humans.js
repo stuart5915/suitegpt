@@ -16,7 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,contact_method,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
 
 const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
@@ -286,6 +286,7 @@ export default async function handler(req, res) {
                     .map(u => String(u).slice(0, 500))
                     .filter(u => /^https?:\/\/.+/.test(u));
             }
+            if (req.body.contact_method !== undefined) updates.contact_method = req.body.contact_method ? String(req.body.contact_method).slice(0, 200) : null;
 
             if (Object.keys(updates).length === 0) {
                 return res.status(400).json({ error: 'No fields to update' });
