@@ -17,6 +17,8 @@ const ALLOWED_ORIGINS = [
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_ADDRESS = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const COUNCIL_ROW_KEY = 'council'; // sentinel key for council allocation row
 
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
 
@@ -109,32 +111,43 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // GET — return synthesis + individual votes
+    // GET — return synthesis + individual votes + council allocation
     if (req.method === 'GET') {
         try {
-            const { data: votes } = await supabase
+            const { data: allRows } = await supabase
                 .from('allocation_votes')
                 .select('wallet_address, weights, claws_balance, updated_at')
                 .order('claws_balance', { ascending: false });
 
-            const result = computeSynthesis(votes || []);
-            const voters = (votes || []).map(v => ({
+            // Separate council row from community votes
+            const councilRow = (allRows || []).find(v => v.wallet_address === COUNCIL_ROW_KEY);
+            const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
+
+            const result = computeSynthesis(communityVotes);
+            const voters = communityVotes.map(v => ({
                 address: v.wallet_address,
                 weights: v.weights,
                 claws_balance: v.claws_balance,
                 updated_at: v.updated_at
             }));
-            return res.status(200).json({ success: true, ...result, voters, buckets: BUCKET_IDS });
+            return res.status(200).json({
+                success: true,
+                ...result,
+                voters,
+                council: councilRow ? councilRow.weights : null,
+                councilUpdatedAt: councilRow ? councilRow.updated_at : null,
+                buckets: BUCKET_IDS
+            });
         } catch (err) {
             console.error('Fetch synthesis error:', err);
             return res.status(500).json({ error: 'Failed to fetch synthesis' });
         }
     }
 
-    // POST — cast vote
+    // POST — cast vote (community or council)
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { address, signature, message, weights } = req.body || {};
+    const { address, signature, message, weights, type } = req.body || {};
 
     if (!address || !signature || !message || !weights) {
         return res.status(400).json({ error: 'address, signature, message, and weights required' });
@@ -186,10 +199,32 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Fetch on-chain CLAWS balance
+        // Council allocation — only the council wallet can set this
+        if (type === 'council') {
+            if (address.toLowerCase() !== COUNCIL_WALLET) {
+                return res.status(403).json({ error: 'Only the council wallet can set allocation' });
+            }
+            const { error: upsertErr } = await supabase
+                .from('allocation_votes')
+                .upsert({
+                    wallet_address: COUNCIL_ROW_KEY,
+                    weights,
+                    claws_balance: '0',
+                    signature,
+                    message,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'wallet_address' });
+
+            if (upsertErr) {
+                console.error('Council upsert error:', upsertErr);
+                return res.status(500).json({ error: 'Failed to save council allocation' });
+            }
+            return res.status(200).json({ success: true, message: 'Council allocation set', council: weights });
+        }
+
+        // Community vote — regular CLAWS holder
         const clawsBalance = await getClawsBalance(address);
 
-        // Upsert vote (one vote per wallet)
         const { error: upsertErr } = await supabase
             .from('allocation_votes')
             .upsert({
@@ -206,12 +241,13 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Failed to save vote' });
         }
 
-        // Return updated synthesis
-        const { data: allVotes } = await supabase
+        // Return updated synthesis (exclude council row)
+        const { data: allRows } = await supabase
             .from('allocation_votes')
-            .select('weights, claws_balance');
+            .select('wallet_address, weights, claws_balance');
 
-        const result = computeSynthesis(allVotes || []);
+        const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
+        const result = computeSynthesis(communityVotes);
 
         return res.status(200).json({
             success: true,

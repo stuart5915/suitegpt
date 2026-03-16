@@ -185,24 +185,27 @@ async function refreshVoterBalances() {
 }
 
 async function fetchAllocationSynthesis() {
-    const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+    const COUNCIL_ROW_KEY = 'council';
     try {
-        const { data: votes } = await supabase
+        const { data: allRows } = await supabase
             .from('allocation_votes')
             .select('wallet_address, weights, claws_balance');
-        if (!votes || votes.length === 0) return null;
+        if (!allRows || allRows.length === 0) return null;
 
-        // Extract council's own vote
-        const councilVote = votes.find(v => v.wallet_address?.toLowerCase() === COUNCIL_WALLET);
-        const council = councilVote
-            ? BUCKET_IDS.map(id => councilVote.weights[id] || 0)
+        // Separate council row from community votes
+        const councilRow = allRows.find(v => v.wallet_address === COUNCIL_ROW_KEY);
+        const council = councilRow
+            ? BUCKET_IDS.map(id => councilRow.weights[id] || 0)
             : null;
+        const communityVotes = allRows.filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
 
-        // Community synthesis (token-weighted, all voters)
+        if (communityVotes.length === 0 && !council) return null;
+
+        // Community synthesis (token-weighted, excludes council row)
         let totalWeight = BigInt(0);
         const weightedSums = BUCKET_IDS.map(() => BigInt(0));
 
-        for (const vote of votes) {
+        for (const vote of communityVotes) {
             const bal = BigInt(vote.claws_balance || '0');
             const weight = bal > BigInt(0) ? bal : BigInt(1);
             totalWeight += weight;
@@ -221,9 +224,9 @@ async function fetchAllocationSynthesis() {
             const adjusted = synthesis.map(v => Math.round(v * scale));
             const adjTotal = adjusted.reduce((a, b) => a + b, 0);
             if (adjTotal !== 100) adjusted[0] += (100 - adjTotal);
-            return { community: adjusted, council, voterCount: votes.length };
+            return { community: adjusted, council, voterCount: communityVotes.length };
         }
-        return { community: synthesis, council, voterCount: votes.length };
+        return { community: synthesis, council, voterCount: communityVotes.length };
     } catch (e) {
         return null;
     }
