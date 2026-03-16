@@ -1718,6 +1718,8 @@
         .mm-card-stake-icon { width: 14px; height: 14px; background: linear-gradient(135deg, var(--accent), var(--cyan)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; }
         .mm-card-deposit-btn { margin-left: auto; background: var(--green-dim); border: 1px solid rgba(40, 200, 120, 0.2); color: var(--green); padding: 6px 16px; border-radius: 8px; font-family: var(--mono); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .mm-card-deposit-btn:hover { background: var(--green); color: #fff; }
+        .mm-delete-btn { background: none; border: 1px solid rgba(255,80,80,0.2); color: rgba(255,80,80,0.5); width: 26px; height: 26px; border-radius: 6px; font-size: 1.1rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .mm-delete-btn:hover { background: rgba(255,80,80,0.15); color: #ff5050; border-color: rgba(255,80,80,0.4); }
 
         /* Mirror Marketplace Create Modal */
         .mm-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -8417,6 +8419,8 @@
 
                 var needsSetup = !v.tracked_wallet || v.tracked_wallet === '0x0000000000000000000000000000000000000000';
                 var isCreator = window._navWalletAddress && v.creator_address && window._navWalletAddress.toLowerCase() === v.creator_address.toLowerCase();
+                var isAdmin = window._navWalletAddress && window._navWalletAddress.toLowerCase() === '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+                var canDelete = isCreator || isAdmin;
 
                 html += '<div class="mm-card" onclick="mmOpenVault(\'' + (v.vault_address || '') + '\')">' +
                     (needsSetup && isCreator ? '<div style="background:rgba(255,180,50,0.1);border:1px solid rgba(255,180,50,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;">' +
@@ -8433,10 +8437,13 @@
                             '<div class="mm-card-name">' + escapeHtml(v.name || 'Unnamed') + '</div>' +
                             '<div class="mm-card-creator">by ' + shortAddr(v.creator_address) + '</div>' +
                         '</div>' +
+                        '<div style="display:flex;align-items:center;gap:8px;">' +
                         '<div class="mm-card-badges">' +
                             (needsSetup ? '<span class="mm-badge out-range">Setup Required</span>' :
                             '<span class="mm-badge ' + (inRange ? 'in-range' : 'out-range') + '">' + (inRange ? 'In Range' : 'Out of Range') + '</span>') +
                             (feeBps > 0 ? '<span class="mm-badge fee">' + feeStr + ' fee</span>' : '<span class="mm-badge fee">Free</span>') +
+                        '</div>' +
+                        (canDelete ? '<button class="mm-delete-btn" title="Remove vault" onclick="event.stopPropagation(); mmDeleteVault(\'' + (v.vault_address || '') + '\', \'' + escapeHtml(v.name || 'Unnamed') + '\')">&times;</button>' : '') +
                         '</div>' +
                     '</div>' +
 
@@ -8474,6 +8481,27 @@
             grid.querySelectorAll('.mm-card').forEach(function(c) { c.remove(); });
             grid.insertAdjacentHTML('beforeend', html);
         }
+
+        // ── Delete vault (creator or admin only) ──
+        window.mmDeleteVault = async function(vaultAddr, vaultName) {
+            if (!window._navWalletAddress) return alert('Connect wallet first');
+            if (!confirm('Remove "' + vaultName + '" from the marketplace?')) return;
+            try {
+                var resp = await fetch('/api/basis/mirror-marketplace', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: vaultAddr,
+                        wallet_address: window._navWalletAddress
+                    })
+                });
+                var data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Failed to delete');
+                renderMirrorGrid();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        };
 
         // ── Open a specific vault (scrolls to mirror vault section and sets up for deposit) ──
         window.mmOpenVault = function(addr) {

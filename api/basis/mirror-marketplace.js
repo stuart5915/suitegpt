@@ -7,7 +7,7 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -111,6 +111,39 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ vault: data });
+    }
+
+    // DELETE — soft-delete a vault (creator or admin only)
+    if (req.method === 'DELETE') {
+      const { vault_address, wallet_address } = req.body;
+      if (!vault_address || !wallet_address) {
+        return res.status(400).json({ error: 'vault_address and wallet_address required' });
+      }
+
+      const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+      const wallet = wallet_address.toLowerCase();
+
+      // Verify caller is creator or admin
+      const { data: vault, error: fetchErr } = await supabase
+        .from('mirror_vault_marketplace')
+        .select('creator_address')
+        .eq('vault_address', vault_address.toLowerCase())
+        .single();
+
+      if (fetchErr) throw fetchErr;
+      if (!vault) return res.status(404).json({ error: 'vault not found' });
+
+      if (vault.creator_address !== wallet && wallet !== ADMIN_WALLET) {
+        return res.status(403).json({ error: 'not authorized' });
+      }
+
+      const { error: delErr } = await supabase
+        .from('mirror_vault_marketplace')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('vault_address', vault_address.toLowerCase());
+
+      if (delErr) throw delErr;
+      return res.status(200).json({ ok: true, deleted: vault_address });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
