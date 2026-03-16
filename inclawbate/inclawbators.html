@@ -174,6 +174,66 @@
         }
         .iclw-cta-btn:hover { opacity: 0.85; }
 
+        /* View tabs */
+        .iclw-view-tabs {
+            display: flex; justify-content: center; gap: 0; margin-bottom: var(--space-xl);
+            border-bottom: 1px solid var(--border-subtle); animation: fadeUp 0.5s var(--ease-smooth) 0.05s both;
+        }
+        .iclw-view-tab {
+            padding: 10px 24px; border: none; background: none; color: var(--text-dim);
+            font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent;
+        }
+        .iclw-view-tab:hover { color: var(--text-primary); }
+        .iclw-view-tab.active { color: var(--lobster-400); border-bottom-color: var(--lobster-400); }
+        .iclw-view-tab .tab-count {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+            background: hsla(9,52%,54%,0.12); color: var(--lobster-400); padding: 1px 6px;
+            border-radius: 999px; margin-left: 6px;
+        }
+
+        /* Gig section */
+        .iclw-gig-section { display: none; animation: fadeUp 0.25s ease both; }
+        .iclw-gig-section.active { display: block; }
+        .iclw-gig-filters {
+            display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+            margin-bottom: var(--space-lg);
+        }
+        .iclw-gig-item {
+            display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); margin-bottom: var(--space-sm); transition: all 0.2s;
+        }
+        .iclw-gig-item:hover { border-color: var(--lobster-300); }
+        .iclw-gig-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+        }
+        .iclw-gig-dot.open { background: #4ade80; box-shadow: 0 0 6px #4ade8044; }
+        .iclw-gig-dot.claimed { background: #fbbf24; box-shadow: 0 0 6px #fbbf2444; }
+        .iclw-gig-dot.completed { background: #4ade80; }
+        .iclw-gig-body { flex: 1; min-width: 0; }
+        .iclw-gig-desc { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; margin-bottom: 6px; }
+        .iclw-gig-meta {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim);
+        }
+        .iclw-gig-meta .cat { color: var(--lobster-400); text-transform: capitalize; }
+        .iclw-gig-meta .budget { color: #38bdf8; }
+        .iclw-gig-apply {
+            padding: 6px 16px; border: 1px solid var(--lobster-400); border-radius: 999px;
+            background: none; color: var(--lobster-400); font-family: var(--font-mono);
+            font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+            flex-shrink: 0; align-self: center;
+        }
+        .iclw-gig-apply:hover { background: var(--lobster-400); color: #fff; }
+        .iclw-gig-empty { text-align: center; padding: var(--space-2xl); color: var(--text-dim); font-size: 0.85rem; }
+        .iclw-gig-post-cta {
+            text-align: center; margin-top: var(--space-lg); padding: var(--space-lg);
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+        }
+        .iclw-gig-post-cta p { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-sm); }
+        .iclw-people-section { animation: fadeUp 0.5s var(--ease-smooth) 0.1s both; }
+
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 600px) {
             .iclw-hero h1 { font-size: 1.8rem; }
@@ -203,6 +263,7 @@
                 <a href="/inclawbators" class="active">Inclawbators</a>
             </div>
         </div>
+        <a href="/state" class="nav-link" style="font-weight:700">State</a>
         <a href="/dashboard" class="nav-link">Dashboard</a>
         <a href="/blog" class="nav-link">Blog</a>
     </div>
@@ -213,8 +274,34 @@
 <main class="iclw-page">
     <div class="iclw-hero">
         <h1>Inclawbators</h1>
-        <p class="iclw-hero-sub">Proven builders from the ecosystem. Portfolios auto-generated from real platform activity — tokens launched, apps built, CLAWS earned.</p>
+        <p class="iclw-hero-sub">The freelance marketplace for the Inclawbate ecosystem. Post gigs, find work, hire talent — all paid in CLAWS.</p>
     </div>
+
+    <!-- View Tabs -->
+    <div class="iclw-view-tabs">
+        <button class="iclw-view-tab active" data-view="gigs" onclick="switchView('gigs')">Open Gigs <span class="tab-count" id="gigTabCount">0</span></button>
+        <button class="iclw-view-tab" data-view="people" onclick="switchView('people')">People</button>
+    </div>
+
+    <!-- Gigs View -->
+    <div class="iclw-gig-section active" id="gigsView">
+        <div class="iclw-gig-filters" id="gigCatFilters">
+            <button class="iclw-filter-btn active" data-gig-cat="all">All</button>
+            <button class="iclw-filter-btn" data-gig-cat="design">Design</button>
+            <button class="iclw-filter-btn" data-gig-cat="dev">Dev</button>
+            <button class="iclw-filter-btn" data-gig-cat="marketing">Marketing</button>
+            <button class="iclw-filter-btn" data-gig-cat="content">Content</button>
+            <button class="iclw-filter-btn" data-gig-cat="strategy">Strategy</button>
+        </div>
+        <div id="gigList"></div>
+        <div class="iclw-gig-post-cta">
+            <p>Need something done? Post a gig and matching inclawbators get notified.</p>
+            <a href="/agents" class="iclw-cta-btn" style="text-decoration:none;font-size:0.8rem;padding:8px 22px;">Post a Gig</a>
+        </div>
+    </div>
+
+    <!-- People View -->
+    <div class="iclw-people-section" id="peopleView" style="display:none">
 
     <!-- Edit Profile Panel -->
     <div class="iclw-edit-panel" id="edit-panel">
@@ -302,6 +389,8 @@
         <div class="iclw-cta-sub">Log in with X, fill out your skills and contact method, and start getting gig requests from the ecosystem.</div>
         <button class="iclw-cta-btn" id="create-profile-btn">Edit Your Profile</button>
     </div>
+
+    </div><!-- /peopleView -->
 </main>
 
 <footer class="footer" style="text-align:center;padding:var(--space-xl);color:var(--text-dim);font-size:0.75rem;">
@@ -531,7 +620,112 @@
     });
 
     fetchProfiles();
+
+    // ── Gig marketplace ──
+    var _allGigs = [];
+    var _gigCatFilter = 'all';
+
+    function fetchGigs() {
+        fetch('/api/inclawbate/gigs?limit=50').then(function(r) { return r.json(); }).then(function(data) {
+            _allGigs = data.gigs || [];
+            var openCount = _allGigs.filter(function(g) { return g.status === 'open'; }).length;
+            var countEl = document.getElementById('gigTabCount');
+            if (countEl) countEl.textContent = openCount;
+            renderGigs();
+        }).catch(function() {});
+    }
+
+    function renderGigs() {
+        var list = document.getElementById('gigList');
+        if (!list) return;
+
+        var gigs = _allGigs;
+        if (_gigCatFilter !== 'all') gigs = gigs.filter(function(g) { return g.category === _gigCatFilter; });
+
+        if (!gigs.length) {
+            list.innerHTML = '<div class="iclw-gig-empty">' + (_gigCatFilter !== 'all' ? 'No ' + _gigCatFilter + ' gigs right now.' : 'No gigs posted yet. Be the first!') + '</div>';
+            return;
+        }
+
+        var STATUS_LABEL = { open: 'Open', claimed: 'In Progress', delivered: 'Delivered', completed: 'Done', cancelled: 'Cancelled' };
+        var TIMELINE_LABEL = { asap: 'ASAP', week: 'This week', norush: 'No rush' };
+
+        list.innerHTML = gigs.map(function(g) {
+            var who = g.hirer_handle ? '@' + esc(g.hirer_handle) : 'anon';
+            var ago = _timeAgo(g.created_at);
+            var statusCls = g.status || 'open';
+            var btn = '';
+            if (g.status === 'open') {
+                btn = '<button class="iclw-gig-apply" onclick="window._claimGig(\'' + g.id + '\')">Apply</button>';
+            } else if (g.status === 'claimed') {
+                btn = '<span style="font-family:var(--font-mono);font-size:0.6rem;color:#fbbf24;flex-shrink:0;align-self:center;">IN PROGRESS</span>';
+            } else if (g.status === 'completed') {
+                btn = '<span style="font-family:var(--font-mono);font-size:0.6rem;color:#4ade80;flex-shrink:0;align-self:center;">DONE</span>';
+            }
+
+            return '<div class="iclw-gig-item">' +
+                '<div class="iclw-gig-dot ' + statusCls + '"></div>' +
+                '<div class="iclw-gig-body">' +
+                    '<div class="iclw-gig-desc">' + esc(g.description) + '</div>' +
+                    '<div class="iclw-gig-meta">' +
+                        '<span class="cat">' + esc(g.category) + '</span>' +
+                        '<span class="budget">' + Number(g.budget_claws).toLocaleString() + ' CLAWS</span>' +
+                        '<span>' + (TIMELINE_LABEL[g.timeline] || g.timeline) + '</span>' +
+                        '<span>' + who + ' &middot; ' + ago + '</span>' +
+                        (g.status !== 'open' ? '<span>' + (STATUS_LABEL[g.status] || g.status) + '</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                btn +
+            '</div>';
+        }).join('');
+    }
+
+    function _timeAgo(ts) {
+        if (!ts) return '';
+        var diff = (Date.now() - new Date(ts).getTime()) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    // Claim gig (exposed globally)
+    window._claimGig = async function(gigId) {
+        var token = localStorage.getItem('inclawbate_token');
+        if (!token) { alert('Please log in first'); return; }
+        try {
+            var resp = await fetch('/api/inclawbate/gigs', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ gig_id: gigId, action: 'claim' })
+            });
+            var data = await resp.json();
+            if (data.success) { fetchGigs(); }
+            else { alert(data.error || 'Failed to claim gig'); }
+        } catch(e) { alert('Network error'); }
+    };
+
+    // Gig category filters
+    document.querySelectorAll('[data-gig-cat]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-gig-cat]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            _gigCatFilter = btn.dataset.gigCat;
+            renderGigs();
+        });
+    });
+
+    fetchGigs();
 })();
+
+// Tab switching (outside IIFE so onclick works)
+function switchView(view) {
+    document.querySelectorAll('.iclw-view-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.view === view); });
+    document.getElementById('gigsView').style.display = view === 'gigs' ? 'block' : 'none';
+    if (view === 'gigs') document.getElementById('gigsView').classList.add('active');
+    else document.getElementById('gigsView').classList.remove('active');
+    document.getElementById('peopleView').style.display = view === 'people' ? '' : 'none';
+}
 </script>
 </body>
 </html>
