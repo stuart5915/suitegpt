@@ -294,9 +294,43 @@
             <button class="iclw-filter-btn" data-gig-cat="strategy">Strategy</button>
         </div>
         <div id="gigList"></div>
-        <div class="iclw-gig-post-cta">
-            <p>Need something done? Post a gig and matching inclawbators get notified.</p>
-            <a href="/agents" class="iclw-cta-btn" style="text-decoration:none;font-size:0.8rem;padding:8px 22px;">Post a Gig</a>
+
+        <!-- Inline gig form -->
+        <div class="iclw-gig-post-cta" id="gigFormWrap">
+            <p style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:4px;">Post a gig</p>
+            <p style="margin-bottom:var(--space-md);">Describe what you need — matching inclawbators get notified automatically.</p>
+            <div style="text-align:left;max-width:520px;margin:0 auto;">
+                <textarea id="pg-desc" placeholder="e.g. Design a logo for my token, write a smart contract, run a Twitter campaign..." maxlength="500" style="width:100%;padding:10px 12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.85rem;min-height:64px;resize:vertical;margin-bottom:8px;"></textarea>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="pg-cats">
+                    <button class="iclw-filter-btn" data-pc="design">Design</button>
+                    <button class="iclw-filter-btn" data-pc="dev">Dev</button>
+                    <button class="iclw-filter-btn" data-pc="marketing">Marketing</button>
+                    <button class="iclw-filter-btn" data-pc="content">Content</button>
+                    <button class="iclw-filter-btn" data-pc="strategy">Strategy</button>
+                    <button class="iclw-filter-btn" data-pc="other">Other</button>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Budget (CLAWS)</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-budgets">
+                            <button class="iclw-filter-btn" data-pb="500">500</button>
+                            <button class="iclw-filter-btn" data-pb="1000">1K</button>
+                            <button class="iclw-filter-btn" data-pb="2500">2.5K</button>
+                            <button class="iclw-filter-btn" data-pb="5000">5K</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Timeline</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-times">
+                            <button class="iclw-filter-btn" data-pt="asap">ASAP</button>
+                            <button class="iclw-filter-btn" data-pt="week">This week</button>
+                            <button class="iclw-filter-btn" data-pt="norush">No rush</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="iclw-cta-btn" id="pg-submit" disabled style="width:100%;font-size:0.82rem;padding:10px;">Post Gig Request</button>
+                <div id="pg-status" style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;text-align:center;"></div>
+            </div>
         </div>
     </div>
 
@@ -716,6 +750,68 @@
     });
 
     fetchGigs();
+
+    // ── Inline post-a-gig form ──
+    var _pgCat = '', _pgBudget = 0, _pgTime = '';
+
+    function pgValidate() {
+        var desc = (document.getElementById('pg-desc').value || '').trim();
+        document.getElementById('pg-submit').disabled = !(desc.length >= 10 && _pgCat && _pgBudget > 0 && _pgTime);
+    }
+
+    document.querySelectorAll('[data-pc]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-pc]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active'); _pgCat = btn.dataset.pc; pgValidate();
+        });
+    });
+    document.querySelectorAll('[data-pb]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-pb]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active'); _pgBudget = parseInt(btn.dataset.pb); pgValidate();
+        });
+    });
+    document.querySelectorAll('[data-pt]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-pt]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active'); _pgTime = btn.dataset.pt; pgValidate();
+        });
+    });
+    document.getElementById('pg-desc').addEventListener('input', pgValidate);
+
+    document.getElementById('pg-submit').addEventListener('click', async function() {
+        var btn = this;
+        var status = document.getElementById('pg-status');
+        var desc = document.getElementById('pg-desc').value.trim();
+        if (!desc || !_pgCat || !_pgBudget || !_pgTime) return;
+
+        var token = localStorage.getItem('inclawbate_token');
+        if (!token) { status.textContent = 'Please log in first (connect X in the nav bar)'; status.style.color = '#ef4444'; return; }
+
+        btn.disabled = true; btn.textContent = 'Posting...'; status.textContent = '';
+        try {
+            var resp = await fetch('/api/inclawbate/gigs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ description: desc, category: _pgCat, budget_claws: _pgBudget, timeline: _pgTime })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                status.textContent = 'Gig posted! Matching inclawbators will be notified.'; status.style.color = '#4ade80';
+                document.getElementById('pg-desc').value = '';
+                document.querySelectorAll('[data-pc],[data-pb],[data-pt]').forEach(function(b) { b.classList.remove('active'); });
+                _pgCat = ''; _pgBudget = 0; _pgTime = '';
+                btn.textContent = 'Post Gig Request'; btn.disabled = true;
+                fetchGigs();
+            } else {
+                status.textContent = data.error || 'Failed to post'; status.style.color = '#ef4444';
+                btn.textContent = 'Post Gig Request'; btn.disabled = false;
+            }
+        } catch(e) {
+            status.textContent = 'Network error'; status.style.color = '#ef4444';
+            btn.textContent = 'Post Gig Request'; btn.disabled = false;
+        }
+    });
 })();
 
 // Tab switching (outside IIFE so onclick works)
