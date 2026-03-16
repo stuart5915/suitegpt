@@ -167,18 +167,22 @@ async function fetchTreasury(clawsPrice) {
         await delay(200);
 
         // 3. CLAWS in treasury wallet
+        await delay(300);
         const walletClaws = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(TREASURY_WALLET_RAW));
-        await delay(200);
+        await delay(300);
 
-        // 4. Treasury staked position: balanceOf(stakingContract, treasuryWallet)
-        //    Selector: 0x70a08231 + padded address
+        // 4. Treasury staked position
         const stakedClaws = await rpcRead(STAKING_CONTRACT, clawsBalanceOfData(TREASURY_WALLET_RAW));
-        await delay(200);
 
         // 5. Unclaimed rewards: earned(treasuryWallet)
-        //    earned(address) selector: 0x008cc262
+        await delay(500);
         const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
-        const unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
+        let unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
+        // Retry once if rate-limited
+        if (unclaimedClaws === 0) {
+            await delay(500);
+            unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
+        }
 
         const ethValue = ethBalance * ethPrice;
         const totalClaws = walletClaws + stakedClaws + unclaimedClaws;

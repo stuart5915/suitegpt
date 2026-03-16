@@ -489,6 +489,7 @@ async function handleTreasury(chatId) {
 
         // 3. ETH balance
         let ethBalance = 0, ethPrice = 0;
+        await tDelay(300);
         try {
             const ethBalRes = await fetch(BASE_RPC, {
                 method: 'POST',
@@ -497,7 +498,6 @@ async function handleTreasury(chatId) {
             }).then(r => r.json());
             ethBalance = (ethBalRes.error || !ethBalRes.result) ? 0 : Number(BigInt(ethBalRes.result)) / 1e18;
         } catch (e) {}
-        await tDelay(200);
         try {
             const ethRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
             const ethData = await ethRes.json();
@@ -507,13 +507,19 @@ async function handleTreasury(chatId) {
 
         // 4. CLAWS holdings of inclawbate.base.eth
         const treasuryRaw = TREASURY_WALLET.replace('0x', '').toLowerCase();
-        await tDelay(200);
+        await tDelay(300);
         const walletClaws = await rpc(CLAWS_ADDRESS, balData(TREASURY_WALLET));
-        await tDelay(200);
+        await tDelay(300);
         const stakedClaws = await rpc(STAKING_CONTRACT, balData(TREASURY_WALLET));
-        await tDelay(200);
+        // earned() needs extra breathing room — it's the last RPC call
+        await tDelay(500);
         const earnedData = '0x008cc262000000000000000000000000' + treasuryRaw;
-        const unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        let unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        // Retry once if rate-limited (returned 0)
+        if (unclaimedClaws === 0) {
+            await tDelay(500);
+            unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        }
         const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
 
         // 5. Council allocation
