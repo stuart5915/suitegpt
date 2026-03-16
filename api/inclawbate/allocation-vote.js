@@ -16,46 +16,45 @@ const ALLOWED_ORIGINS = [
 ];
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
-const STAKING_ADDRESS = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const STAKING_CONTRACTS = [
+    '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6', // InclawnchStaking
+    '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40'  // CLAWS staking pool
+];
 const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
-const COUNCIL_ROW_KEY = 'council'; // sentinel key for council allocation row
+const COUNCIL_ROW_KEY = 'council';
+const BASE_RPC = 'https://mainnet.base.org';
 
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
 
-// ERC-20 balanceOf selector
-const BALANCE_OF_SELECTOR = '0x70a08231';
+async function rpcCall(to, data) {
+    const res = await fetch(BASE_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] })
+    });
+    const json = await res.json();
+    return BigInt(json.result || '0x0');
+}
 
 async function getClawsBalance(address) {
     try {
         const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
-        const data = BALANCE_OF_SELECTOR + paddedAddr;
+        const balanceOfData = '0x70a08231' + paddedAddr;
+        const earnedData = '0x008cc262' + paddedAddr;
 
-        // Check both wallet balance and staked balance
-        const [walletRes, stakedRes] = await Promise.all([
-            fetch('https://mainnet.base.org', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jsonrpc: '2.0', id: 1, method: 'eth_call',
-                    params: [{ to: CLAWS_ADDRESS, data }, 'latest']
-                })
-            }),
-            fetch('https://mainnet.base.org', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jsonrpc: '2.0', id: 2, method: 'eth_call',
-                    params: [{ to: STAKING_ADDRESS, data }, 'latest']
-                })
-            })
-        ]);
+        // Wallet balance + staked in both contracts + earned rewards in both
+        const calls = [
+            rpcCall(CLAWS_ADDRESS, balanceOfData), // wallet balance
+        ];
+        for (const contract of STAKING_CONTRACTS) {
+            calls.push(rpcCall(contract, balanceOfData));  // staked
+            calls.push(rpcCall(contract, earnedData));     // earned rewards
+        }
 
-        const [walletJson, stakedJson] = await Promise.all([walletRes.json(), stakedRes.json()]);
-        const walletBal = BigInt(walletJson.result || '0x0');
-        const stakedBal = BigInt(stakedJson.result || '0x0');
-        const total = walletBal + stakedBal;
+        const results = await Promise.all(calls.map(p => p.catch(() => BigInt(0))));
+        let total = BigInt(0);
+        for (const r of results) total += r;
 
-        // Return as string (18 decimals)
         return total.toString();
     } catch (err) {
         console.error('Failed to fetch CLAWS balance:', err);
