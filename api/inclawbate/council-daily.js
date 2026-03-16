@@ -100,26 +100,44 @@ function clawsBalanceOfData(addr) {
 
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
+async function storageRead(contract, slot) {
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getStorageAt', params: [contract, slot, 'latest'], id: 1 })
+        });
+        const result = await res.json();
+        if (result.error || !result.result) return 0;
+        return Number(BigInt(result.result)) / 1e18;
+    } catch (e) { return 0; }
+}
+
 async function fetchStakingAndLP() {
     // Sequential RPC calls to avoid Base public RPC rate limit
-    const stakingTotal = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT));
+    // CLAWS.balanceOf(stakingContract) = total CLAWS in contract (staked + rewards pool)
+    const contractTotal = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT));
+    await delay(200);
+    // Storage slot 6 = _totalSupply = total staked by users (Synthetix StakingRewards layout)
+    const userStaked = await storageRead(STAKING_CONTRACT, '0x6');
     await delay(200);
     const inLP = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(LP_POOL));
     await delay(200);
     const rewardRate = await rpcRead(STAKING_CONTRACT, '0x7b0a47ee');  // rewardRate()
 
+    const rewardsPool = contractTotal - userStaked;
     const dailyRewards = rewardRate * 86400;
-    // stakingTotal includes both staked tokens and undistributed rewards
-    const apy = stakingTotal > 0 ? (dailyRewards * 365 / stakingTotal * 100) : 0;
+    const apy = userStaked > 0 ? (dailyRewards * 365 / userStaked * 100) : 0;
 
     return {
-        staked: stakingTotal,
+        staked: userStaked,
+        rewardsPool: rewardsPool > 0 ? rewardsPool : 0,
         inLP,
         dailyRewards,
         apy,
-        stakedPct: (stakingTotal / TOTAL_SUPPLY * 100).toFixed(1),
+        stakedPct: (userStaked / TOTAL_SUPPLY * 100).toFixed(1),
         lpPct: (inLP / TOTAL_SUPPLY * 100).toFixed(1),
-        lockedPct: ((stakingTotal + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
+        lockedPct: ((contractTotal + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
     };
 }
 
@@ -356,6 +374,11 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `Staked: ${formatNum(supply.staked)} (${supply.stakedPct}%)`;
         if (price > 0) msg += ` ≈ ${formatUsd(supply.staked * price)}`;
         msg += `\n`;
+        if (supply.rewardsPool > 0) {
+            msg += `Rewards Pool: ${formatNum(supply.rewardsPool)}`;
+            if (price > 0) msg += ` ≈ ${formatUsd(supply.rewardsPool * price)}`;
+            msg += `\n`;
+        }
         msg += `In LP: ${formatNum(supply.inLP)} (${supply.lpPct}%)`;
         if (price > 0) msg += ` ≈ ${formatUsd(supply.inLP * price)}`;
         msg += `\n`;
@@ -366,11 +389,6 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
             msg += `\n`;
-            if (supply.rewardsBalance > 0) {
-                msg += `Rewards Pool: ${formatNum(supply.rewardsBalance)} CLAWS`;
-                if (price > 0) msg += ` ≈ ${formatUsd(supply.rewardsBalance * price)}`;
-                msg += `\n`;
-            }
         }
     }
 
