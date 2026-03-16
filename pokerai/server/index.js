@@ -49,8 +49,9 @@ const clients = new Map(); // ws → { sessionId, walletAddress, authenticated, 
 // Authenticated wallet set — wallets that have passed signature verification
 const authenticatedWallets = new Set();
 
-// Per-wallet withdrawal lock to prevent race conditions
+// Per-wallet withdrawal locks to prevent race conditions
 const withdrawalsInProgress = new Set();
+const pokeraiWithdrawalsInProgress = new Set();
 
 let rooms; // initialized in startServer()
 
@@ -98,7 +99,11 @@ function broadcastStateToAll() {
 function sendBalance(ws, walletAddress) {
   if (!walletAddress || ws.readyState !== 1) return;
   const wallet = rooms.getWalletBalance(walletAddress);
-  ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(walletAddress.toLowerCase()) } }));
+  ws.send(JSON.stringify({ type: 'walletBalance', data: {
+    balance: wallet.balance,
+    pokeraiBalance: wallet.pokeraiBalance || 0,
+    isPlatformWallet: PLATFORM_WALLETS.has(walletAddress.toLowerCase())
+  }}));
 }
 
 // Check if a wallet action requires a connected wallet
@@ -162,9 +167,9 @@ wss.on('connection', (ws) => {
             client.authenticated = true;
             authenticatedWallets.add(addr);
 
-            // Get or create wallet (starts at 0 chips — must deposit USDC)
+            // Get or create wallet (starts at 0 chips — must deposit)
             const wallet = rooms.getWalletBalance(addr);
-            ws.send(JSON.stringify({ type: 'authenticated', data: { address: addr, balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(addr) } }));
+            ws.send(JSON.stringify({ type: 'authenticated', data: { address: addr, balance: wallet.balance, pokeraiBalance: wallet.pokeraiBalance || 0, isPlatformWallet: PLATFORM_WALLETS.has(addr) } }));
 
             // Send state with wallet context
             const s = rooms.getStateForClient(client.sessionId, addr, client.activeRoom);
@@ -183,16 +188,16 @@ wss.on('connection', (ws) => {
           if (client.walletAddress) {
             // Use async getOrCreateWallet so balance loads from Supabase on fresh restart
             const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
-            ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(client.walletAddress) } }));
+            ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance, pokeraiBalance: wallet.pokeraiBalance || 0, isPlatformWallet: PLATFORM_WALLETS.has(client.walletAddress) } }));
 
             // Deposits are credited via real-time chain event listener (chain.onDeposit).
             // No sync/reconciliation here — that caused phantom credits on reconnect.
           }
-          // Update reward engine with this wallet's value
+          // Update reward engine with this wallet's chips in play (split by currency)
           if (rewardEngine && client.walletAddress) {
-            const bal = (await rooms.store.getOrCreateWallet(client.walletAddress)).balance;
-            const ip = rooms.getChipsInPlay(client.walletAddress);
-            rewardEngine.updateWalletValue(client.walletAddress, bal + ip, 'usdc');
+            const { usdc: ipUsdc, pokerai: ipPokerai } = rooms.getChipsInPlayByCurrency(client.walletAddress);
+            rewardEngine.updateWalletValue(client.walletAddress, ipUsdc, 'usdc');
+            rewardEngine.updateWalletValue(client.walletAddress, ipPokerai, 'pokerai');
             // Send rewards state
             const rewards = rewardEngine.getWalletRewards(client.walletAddress);
             const stats = rewardEngine.getStats();
@@ -206,7 +211,7 @@ wss.on('connection', (ws) => {
 
         case 'subscribeRoom': {
           const roomId = msg.roomId || 'micro';
-          if (['sandbox', 'micro', 'mid', 'high'].includes(roomId)) {
+          if (['sandbox', 'micro', 'mid', 'high', 'pokerai_micro', 'pokerai_mid', 'pokerai_high'].includes(roomId)) {
             client.activeRoom = roomId;
             if (msg.tableId) client.activeTableId = msg.tableId;
             const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), roomId, client.activeTableId);
@@ -247,7 +252,8 @@ wss.on('connection', (ws) => {
             break;
           }
           const addr = client.walletAddress;
-          const result = rooms.fundLobbyAgent(addr, msg.agentId, msg.amount);
+          const currency = msg.currency || 'usdc';
+          const result = rooms.fundLobbyAgent(addr, msg.agentId, msg.amount, currency);
           ws.send(JSON.stringify({ type: 'fundAgentResult', data: result }));
           if (result.success) {
             rooms.store.recordTransaction(addr, 'fund_agent', 0, msg.amount);
@@ -555,14 +561,17 @@ wss.on('connection', (ws) => {
             break;
           }
 
-          if (withdrawalsInProgress.has(addr)) {
-            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'Withdrawal already in progress' } }));
+          // Separate lock for POKERAI withdrawals
+          if (pokeraiWithdrawalsInProgress.has(addr)) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: 'POKERAI withdrawal already in progress' } }));
             break;
           }
 
+          // Check POKERAI balance (not USDC)
           const wallet = rooms.getWalletBalance(addr);
-          if (wallet.balance < chips) {
-            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: `Not enough chips. You have ${wallet.balance.toLocaleString()}` } }));
+          const pokeraiBal = wallet.pokeraiBalance || 0;
+          if (pokeraiBal < chips) {
+            ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: `Not enough POKERAI chips. You have ${pokeraiBal.toLocaleString()}` } }));
             break;
           }
 
@@ -571,12 +580,12 @@ wss.on('connection', (ws) => {
             break;
           }
 
-          withdrawalsInProgress.add(addr);
+          pokeraiWithdrawalsInProgress.add(addr);
           try {
-            rooms.store.deductBalance(addr, chips);
+            rooms.store.deductBalance(addr, chips, 'pokerai');
             const txResult = await tokenChain.processWithdraw(addr, chips);
             if (txResult.error) {
-              rooms.store.addBalance(addr, chips);
+              rooms.store.addBalance(addr, chips, 'pokerai');
               ws.send(JSON.stringify({ type: 'withdrawPokeraiResult', data: { error: txResult.error } }));
             } else {
               await rooms.store.recordTransaction(addr, 'withdraw_pokerai', 0, chips, txResult.txHash);
@@ -584,7 +593,7 @@ wss.on('connection', (ws) => {
               sendBalance(ws, addr);
             }
           } finally {
-            withdrawalsInProgress.delete(addr);
+            pokeraiWithdrawalsInProgress.delete(addr);
           }
           break;
         }
@@ -598,16 +607,21 @@ wss.on('connection', (ws) => {
           try {
             const addr = client.walletAddress;
             const stats = await tokenChain.getPlayerDepositStats(addr);
-            const onChainDeposited = stats.deposited; // already in chips (1:1)
-            const alreadyCredited = await rooms.store.getTotalDepositedChips(addr); // TODO: filter by deposit_pokerai type
-            if (onChainDeposited > alreadyCredited) {
-              const credit = onChainDeposited - alreadyCredited;
-              await rooms.store.addBalance(addr, credit);
+            const onChainDeposited = Math.floor(parseFloat(stats.deposited)); // already in chips (1:1)
+            // Use POKERAI-specific deposit tracker (not USDC deposits!)
+            const alreadyCredited = rooms.store.getTotalDepositedPokeraiChips
+              ? await rooms.store.getTotalDepositedPokeraiChips(addr)
+              : 0;
+            const diff = onChainDeposited - alreadyCredited;
+            if (diff >= 1) {
+              const credit = diff;
+              await rooms.store.addBalance(addr, credit, 'pokerai');
               await rooms.store.recordTransaction(addr, 'deposit_pokerai', 0, credit);
               sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: credit } }));
+              console.log(`[CheckDepositPokerai] Credited ${credit} POKERAI chips to ${addr}`);
             } else {
-              ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: 0, message: 'Balance is correct' } }));
+              ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: 0, message: 'POKERAI balance is correct' } }));
             }
           } catch (e) {
             ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { error: e.message } }));
@@ -626,8 +640,44 @@ wss.on('connection', (ws) => {
         case 'setAutoTopUp': {
           if (!requireAuth(client, ws)) break;
           const addr = client.walletAddress;
-          const result = rooms.setAutoTopUp(addr, msg.enabled, msg.targetChips, msg.cashOutAt);
+          const result = rooms.setAutoTopUp(addr, {
+            enabled: msg.enabled,
+            targetChips: msg.targetChips,
+            cashOutAt: msg.cashOutAt,
+            maxTopUps: msg.maxTopUps || 0
+          });
           ws.send(JSON.stringify({ type: 'autoTopUpResult', data: result }));
+          break;
+        }
+
+        // === Agent Stats ===
+        case 'getAgentStats': {
+          if (!requireAuth(client, ws)) break;
+          const stats = await rooms.computeAgentStats(msg.agentId);
+          ws.send(JSON.stringify({ type: 'agentStats', agentId: msg.agentId, data: stats }));
+          break;
+        }
+
+        case 'resetLearning': {
+          if (!requireAuth(client, ws)) break;
+          const agentId = msg.agentId;
+          // Clear learned traits on the live agent
+          for (const [, room] of Object.entries(rooms.rooms)) {
+            for (const table of room.tables) {
+              const agent = table.agents.find(a => a.id === agentId);
+              if (agent && agent.traits) {
+                agent.traits.learned = {};
+              }
+            }
+          }
+          // Also clear in lobby agents
+          const lobbyAgent = rooms.lobby.find(a => a.id === agentId);
+          if (lobbyAgent && lobbyAgent.traits) lobbyAgent.traits.learned = {};
+          // Persist
+          if (rooms.store.saveLearnedTraits) {
+            await rooms.store.saveLearnedTraits(agentId, {});
+          }
+          ws.send(JSON.stringify({ type: 'resetLearningResult', agentId, success: true }));
           break;
         }
 
@@ -713,17 +763,23 @@ wss.on('connection', (ws) => {
 
           try {
             const onChain = tokenChain && tokenChain.rewards;
-            // Distribute on-chain via rewards contract (if deployed)
+            // Distribute on-chain FIRST — only record claim if tx succeeds
             if (onChain) {
               const txResult = await tokenChain.distributeReward(addr, claimable);
               if (txResult.error) {
                 ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: txResult.error } }));
                 break;
               }
+              // On-chain succeeded → safe to record claim
+              rewardEngine.recordClaim(addr, claimable);
+              ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, txHash: txResult.txHash } }));
+              console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI (tx: ${txResult.txHash})`);
+            } else {
+              // Test mode — no on-chain tx, record claim directly
+              rewardEngine.recordClaim(addr, claimable);
+              ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, testMode: true } }));
+              console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI (TEST MODE — no on-chain tx)`);
             }
-            rewardEngine.recordClaim(addr, claimable);
-            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable, testMode: !onChain } }));
-            console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI${onChain ? '' : ' (TEST MODE — no on-chain tx)'}`);
           } catch (e) {
             console.error('[Rewards] Claim failed:', e.message);
             ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: 'Claim failed — try again' } }));
@@ -1066,8 +1122,9 @@ async function startServer() {
   // Idle wallet balance does NOT earn rewards (prevents deposit-and-farm abuse)
   function updateRewardsForWallet(walletAddress) {
     if (!rewardEngine || !walletAddress || walletAddress.startsWith('sandbox_')) return;
-    const inPlay = rooms.getChipsInPlay(walletAddress);
-    rewardEngine.updateWalletValue(walletAddress, inPlay, 'usdc');
+    const { usdc, pokerai } = rooms.getChipsInPlayByCurrency(walletAddress);
+    rewardEngine.updateWalletValue(walletAddress, usdc, 'usdc');
+    rewardEngine.updateWalletValue(walletAddress, pokerai, 'pokerai');
   }
 
   // Set up auto-top-up balance change notifications
@@ -1160,7 +1217,7 @@ async function startServer() {
         tokenChain.onDeposit = async (walletAddress, chips, tokenRaw) => {
           console.log(`[TokenChain] Deposit event: ${walletAddress} → ${chips} chips (${chips} POKERAI)`);
           try {
-            await rooms.store.addBalance(walletAddress, chips);
+            await rooms.store.addBalance(walletAddress, chips, 'pokerai');
             await rooms.store.recordTransaction(walletAddress, 'deposit_pokerai', tokenRaw, chips);
             for (const [ws, cl] of clients) {
               if (cl.walletAddress === walletAddress && ws.readyState === 1) {

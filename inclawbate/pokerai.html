@@ -1684,6 +1684,30 @@
   .my-agent-card.losing { border-color: rgba(239,68,68,0.4); box-shadow: 0 0 24px rgba(239,68,68,0.08); }
   .my-agent-card.losing::before { background: linear-gradient(90deg, #ef4444, #f97316); }
 
+  /* Agent stats panel overlay */
+  .agent-stats-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .agent-stats-panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; max-width: 520px; width: 100%;
+    max-height: 80vh; overflow-y: auto; position: relative;
+  }
+  .agent-stats-panel h3 { margin: 0 0 16px 0; font-family: 'Rajdhani'; font-size: 22px; font-weight: 800; color: var(--text-primary); }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stats-cell { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .stats-cell .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stats-cell .value { font-family: 'Rajdhani'; font-size: 22px; font-weight: 800; margin-top: 2px; }
+  .stats-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); margin-top: 4px; overflow: hidden; }
+  .stats-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .stats-close { position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+  .stats-close:hover { color: var(--text-primary); }
+  .worst-hand-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .worst-hand-row:last-child { border-bottom: none; }
+
   /* Compact agent card for 20+ agent management */
   .my-agent-compact {
     background: var(--bg-card);
@@ -3581,19 +3605,22 @@
       </div>
       <!-- $POKERAI Tables -->
       <div class="room-category">
-        <div class="room-category-label pokerai">🃏 $POKERAI Tables · 0% Rake · PvP Only · <span style="color:#34d058">🔥 <span class="pokerai-apy-value">---</span> APY in $POKERAI</span></div>
+        <div class="room-category-label pokerai">🃏 $POKERAI Tables · 2.5% Rake · <span style="color:#34d058">🔥 <span class="pokerai-apy-value">---</span> APY in $POKERAI</span></div>
         <div class="room-category-row">
-          <button class="room-tab pokerai-tab" disabled>
-            <span class="room-tab-name" style="color:#34d058;opacity:0.6">Micro</span>
-            <span class="room-tab-info">Coming Soon</span>
+          <button class="room-tab pokerai-tab" onclick="switchRoom('pokerai_micro')" id="roomTab-pokerai_micro">
+            <span class="room-tab-name" style="color:#34d058">Micro</span>
+            <span class="room-tab-info">25/50 blinds</span>
+            <span class="room-tab-players" id="roomPlayers-pokerai_micro"></span>
           </button>
-          <button class="room-tab pokerai-tab" disabled>
-            <span class="room-tab-name" style="color:#34d058;opacity:0.6">Mid</span>
-            <span class="room-tab-info">Coming Soon</span>
+          <button class="room-tab pokerai-tab" onclick="switchRoom('pokerai_mid')" id="roomTab-pokerai_mid">
+            <span class="room-tab-name" style="color:#34d058">Mid</span>
+            <span class="room-tab-info">125/250 blinds</span>
+            <span class="room-tab-players" id="roomPlayers-pokerai_mid"></span>
           </button>
-          <button class="room-tab pokerai-tab" disabled>
-            <span class="room-tab-name" style="color:#34d058;opacity:0.6">High</span>
-            <span class="room-tab-info">Coming Soon</span>
+          <button class="room-tab pokerai-tab" onclick="switchRoom('pokerai_high')" id="roomTab-pokerai_high">
+            <span class="room-tab-name" style="color:#34d058">High</span>
+            <span class="room-tab-info">625/1250 blinds</span>
+            <span class="room-tab-players" id="roomPlayers-pokerai_high"></span>
           </button>
         </div>
       </div>
@@ -3920,6 +3947,17 @@
                     <option value="50000">50K</option>
                     <option value="100000">100K</option>
                     <option value="250000">250K</option>
+                  </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:11px;color:var(--text-muted)">Max refills:</label>
+                  <select id="autoMaxTopUps" onchange="updateAutoTopUp()" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Rajdhani'">
+                    <option value="0" selected>Unlimited</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
                   </select>
                 </div>
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -4276,6 +4314,11 @@
         <span class="vault-network-badge">Base</span>
         <button class="vault-close" onclick="closeVault()">&times;</button>
       </div>
+    </div>
+    <!-- Currency selector -->
+    <div style="display:flex;gap:4px;padding:12px 24px 0;justify-content:center">
+      <button class="vault-currency-tab active" id="vaultCurrUsdc" onclick="switchVaultCurrency('usdc')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:rgba(99,102,241,0.15);color:var(--accent-primary);font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">USDC</button>
+      <button class="vault-currency-tab" id="vaultCurrPokerai" onclick="switchVaultCurrency('pokerai')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-muted);font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px">$POKERAI</button>
     </div>
     <div class="vault-balance-bar">
       <div class="vault-balance-label">Available to Withdraw</div>
@@ -4634,8 +4677,16 @@ function handleMessage(msg) {
         if (fundedAgent) {
           fundedAgent.chipStack = msg.data.chipStack;
           fundedAgent.chips = msg.data.chipStack;
-          renderMyAgents();
         }
+        if (msg.data.newBalance !== undefined) {
+          if (msg.data.currency === 'pokerai') {
+            pokeraiWalletBalance = msg.data.newBalance;
+          } else {
+            walletBalance = msg.data.newBalance;
+          }
+        }
+        updateWalletUI();
+        renderMyAgents();
         showToast(`Agent funded! ${msg.data.chipStack.toLocaleString()} chips ready — now pick a table!`, 'success');
       }
       break;
@@ -4651,11 +4702,16 @@ function handleMessage(msg) {
           defundedAgent.chips = msg.data.chipStack;
         }
         if (msg.data.newBalance !== undefined) {
-          walletBalance = msg.data.newBalance;
+          if (msg.data.currency === 'pokerai') {
+            pokeraiWalletBalance = msg.data.newBalance;
+          } else {
+            walletBalance = msg.data.newBalance;
+          }
         }
         updateWalletUI();
         renderMyAgents();
-        showToast(`Withdrew ${msg.data.amount.toLocaleString()} chips back to wallet`, 'success');
+        const currLabel = msg.data.currency === 'pokerai' ? '$POKERAI' : 'USDC';
+        showToast(`Withdrew ${msg.data.amount.toLocaleString()} ${currLabel} chips back to wallet`, 'success');
       }
       break;
 
@@ -4665,7 +4721,11 @@ function handleMessage(msg) {
         showToast(msg.data.error, 'error');
       } else {
         if (msg.data.newBalance !== undefined) {
-          walletBalance = msg.data.newBalance;
+          if (msg.data.currency === 'pokerai') {
+            pokeraiWalletBalance = msg.data.newBalance;
+          } else {
+            walletBalance = msg.data.newBalance;
+          }
           updateWalletUI();
         }
         const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
@@ -4683,7 +4743,11 @@ function handleMessage(msg) {
         showToast('Top-up failed: ' + msg.data.error, 'error');
       } else {
         if (msg.data.newBalance !== undefined) {
-          walletBalance = msg.data.newBalance;
+          if (msg.data.currency === 'pokerai') {
+            pokeraiWalletBalance = msg.data.newBalance;
+          } else {
+            walletBalance = msg.data.newBalance;
+          }
           updateWalletUI();
         }
         showToast(`${msg.data.agentName} topped up +${window._lastTopUpAmount?.toLocaleString() || '?'}! New stack: ${msg.data.newStack.toLocaleString()} (invested: ${msg.data.totalInvested.toLocaleString()})`, 'success');
@@ -4718,7 +4782,11 @@ function handleMessage(msg) {
         showToast(msg.data.error, 'error');
       } else {
         if (msg.data.newBalance !== undefined) {
-          walletBalance = msg.data.newBalance;
+          if (msg.data.currency === 'pokerai') {
+            pokeraiWalletBalance = msg.data.newBalance;
+          } else {
+            walletBalance = msg.data.newBalance;
+          }
           updateWalletUI();
         }
         const pnlStr = msg.data.pnl >= 0 ? `+${msg.data.pnl}` : `${msg.data.pnl}`;
@@ -4729,6 +4797,7 @@ function handleMessage(msg) {
 
     case 'walletBalance':
       walletBalance = msg.data.balance || 0;
+      pokeraiWalletBalance = msg.data.pokeraiBalance || 0;
       if (msg.data.isPlatformWallet !== undefined) {
         isPlatformWallet = msg.data.isPlatformWallet;
       }
@@ -4758,7 +4827,21 @@ function handleMessage(msg) {
       break;
 
     case 'withdrawUsdcResult':
-      handleWithdrawResult(msg.data);
+      handleWithdrawResult(msg.data, 'usdc');
+      break;
+
+    case 'withdrawPokeraiResult':
+      handleWithdrawResult(msg.data, 'pokerai');
+      break;
+
+    case 'checkDepositPokeraiResult':
+      if (msg.data.credited > 0) {
+        showToast(`Credited ${msg.data.credited.toLocaleString()} POKERAI chips from deposit`, 'success');
+      } else if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast('POKERAI balance synced — no missing deposits', 'info');
+      }
       break;
 
     case 'depositConfirmed':
@@ -4778,7 +4861,12 @@ function handleMessage(msg) {
       } else {
         showToast('Balance synced — no missing deposits', 'info');
       }
-      document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
+      {
+        const noteEl = document.getElementById('depositNote');
+        if (noteEl) noteEl.textContent = _vaultCurrency === 'pokerai'
+          ? 'Deposits POKERAI on Base — 1 token = 1 chip'
+          : 'Deposits USDC on Base and credits chips instantly';
+      }
       break;
 
     case 'rewardsUpdate':
@@ -4806,6 +4894,14 @@ function handleMessage(msg) {
 
     case 'autoTopUpNotify':
       showToast(`Auto top-up: ${msg.data.agentName} +${msg.data.amount.toLocaleString()} chips (now ${msg.data.newStack.toLocaleString()})`, 'info');
+      break;
+
+    case 'agentStats':
+      if (msg.data) showAgentStatsPanel(msg.agentId, msg.data);
+      break;
+
+    case 'resetLearningResult':
+      if (msg.success) showToast('Learning reset — agent returns to base behavior', 'info');
       break;
 
     case 'backAgentResult':
@@ -5137,9 +5233,14 @@ function switchRoom(roomId) {
   const tab = document.getElementById('roomTab-' + roomId);
   if (tab) tab.classList.add('active');
   // Update table title
-  const names = { sandbox: 'Sandbox', micro: 'Micro (USDC)', mid: 'Mid Stakes (USDC)', high: 'High Stakes (USDC)' };
+  const names = {
+    sandbox: 'Sandbox', micro: 'Micro (USDC)', mid: 'Mid Stakes (USDC)', high: 'High Stakes (USDC)',
+    pokerai_micro: 'Micro ($POKERAI)', pokerai_mid: 'Mid Stakes ($POKERAI)', pokerai_high: 'High Stakes ($POKERAI)'
+  };
   const titleEl = document.getElementById('tableTitle');
   if (titleEl) titleEl.innerHTML = '<img src="/inclawbate/assets/pokerai-logo.png" alt="" style="width:28px;height:28px;margin:-6px 0;object-fit:contain;vertical-align:middle"> PokerAI — ' + (names[roomId] || roomId);
+  // Update wallet UI to show correct currency balance
+  updateWalletUI();
   // Tell server
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'subscribeRoom', roomId }));
@@ -5391,13 +5492,13 @@ function renderTableSeats() {
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
       <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
-           title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
+           title="${escapeHtml(agent.name)}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
         ${agent.emoji}
         ${cornerBadge}
         ${sidePocket}
       </div>
-      <div class="seat-name" style="${nameColor};${nameSize}">${agent.name.length > 12 ? agent.name.slice(0,12) : agent.name}</div>
+      <div class="seat-name" style="${nameColor};${nameSize}">${escapeHtml(agent.name.length > 12 ? agent.name.slice(0,12) : agent.name)}</div>
       <div class="seat-chips" style="${chipsSize}">${formatChips(agent.chips)}</div>
       ${winPctHTML}
       ${betHTML}
@@ -5472,7 +5573,7 @@ function renderCommunityCard(index, card) {
 // ============================================================
 // FUNDING — sends to server via WebSocket
 // ============================================================
-const ROOM_LABELS = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
+const ROOM_LABELS = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High', pokerai_micro: 'Micro ($POKERAI)', pokerai_mid: 'Mid ($POKERAI)', pokerai_high: 'High ($POKERAI)' };
 let _portfolioTopUpOpen = false;
 
 function renderPortfolioBar() {
@@ -5490,8 +5591,12 @@ function renderPortfolioBar() {
 
   bar.style.display = 'block';
 
+  const activeCurrency = getActiveCurrency();
   let totalInvested = 0, totalValue = 0, totalPnl = 0;
   playing.forEach(a => {
+    // Only sum agents matching the active currency
+    const agentCurrency = a.currency || (a.roomId && isPokeraiRoom(a.roomId) ? 'pokerai' : 'usdc');
+    if (agentCurrency !== activeCurrency && activeCurrency !== 'free') return;
     totalInvested += a.baseChips || 0;
     totalValue += a.chips || 0;
     totalPnl += a.pnl || 0;
@@ -5520,7 +5625,7 @@ function renderPortfolioBar() {
       <div class="portfolio-chip-main" onclick="switchRoom('${agent.roomId}')">
         <span style="font-size:18px">${agent.emoji}</span>
         <div style="min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${agent.name}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(agent.name)}</div>
           <div style="display:flex;align-items:center;gap:4px">
             <span class="room-badge">${roomLabel}</span>
             <span style="font-size:10px;color:var(--text-muted)">${formatChips(agent.chips)}</span>
@@ -5614,7 +5719,7 @@ function renderAgentHistory() {
       <div class="agent-history-header">
         <div class="agent-history-avatar" style="${isMine ? 'border-color:var(--accent-green)' : ''}">${agent.emoji}</div>
         <div>
-          <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${agent.name}</div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${escapeHtml(agent.name)}</div>
           <div style="font-size:11px;color:var(--text-muted)">${capitalize(agent.style)} · ${wr}% WR · ${agent.handsPlayed} hands</div>
         </div>
         <div style="margin-left:auto;text-align:right">
@@ -5645,7 +5750,7 @@ function renderAgentsSidebar() {
     <div class="agent-item style-${agent.style}" style="${borderStyle}${selected}cursor:pointer;" onclick="selectAgent('${agent.id}')">
       <div class="agent-avatar-sm">${agent.emoji}</div>
       <div class="agent-info" style="flex:1;min-width:0">
-        <div class="agent-name-sm" style="${isMine ? 'color:var(--accent-green)' : ''}">${agent.name}</div>
+        <div class="agent-name-sm" style="${isMine ? 'color:var(--accent-green)' : ''}">${escapeHtml(agent.name)}</div>
         <div class="agent-style">${capitalize(agent.style)}</div>
       </div>
       <div class="agent-stats">
@@ -5759,7 +5864,7 @@ function _renderRosterFromCache() {
       <div class="agent-card-header">
         <div class="agent-avatar-lg" style="${agent.isCustom ? 'border-color:var(--accent-cyan)' : ''}">${agent.emoji}</div>
         <div>
-          <div class="agent-name-lg" style="${agent.isCustom ? 'color:var(--accent-cyan)' : ''}">${agent.name}</div>
+          <div class="agent-name-lg" style="${agent.isCustom ? 'color:var(--accent-cyan)' : ''}">${escapeHtml(agent.name)}</div>
           <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
         </div>
       </div>
@@ -5833,7 +5938,7 @@ function renderPoolFlows() {
     const isCashout = flow.type === 'cashout';
     return `<div class="pool-flow-item ${flow.type}">
       <span class="flow-emoji">${flow.agentEmoji}</span>
-      <span class="flow-name">${flow.agentName}</span>
+      <span class="flow-name">${escapeHtml(flow.agentName)}</span>
       <span style="font-size:10px">${isCashout ? '→ pool' : '← pool'}</span>
       <span class="flow-amount">${isCashout ? '+' : '-'}${flow.amount.toLocaleString()}</span>
     </div>`;
@@ -5905,7 +6010,7 @@ function _renderLeaderboardFromCache() {
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:20px">${agent.emoji}</span>
-            <span style="font-weight:600;color:${nameColor}">${agent.name}</span>
+            <span style="font-weight:600;color:${nameColor}">${escapeHtml(agent.name)}</span>
             ${typeBadge}
           </div>
         </td>
@@ -5984,11 +6089,29 @@ function capitalize(s) {
 const WALLET_KEY = 'pokerai_wallet';
 const VAULT_ADDRESS = '0x810a68b796D6C89F181133355EFe297A36e547D0';
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const POKERAI_TOKEN_ADDRESS = '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07';
+let POKERAI_VAULT_ADDRESS = null; // Set after contracts deployed — env var on server
 const BASE_CHAIN_ID = '0x2105'; // 8453
 const CHIPS_PER_USDC = 10000;
 
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 let walletBalance = 0;
+let pokeraiWalletBalance = 0;
 let walletAuthenticated = false;
+
+function isPokeraiRoom(roomId) {
+  return roomId && roomId.startsWith('pokerai_');
+}
+function getActiveBalance() {
+  return isPokeraiRoom(activeRoom) ? pokeraiWalletBalance : walletBalance;
+}
+function getActiveCurrency() {
+  return isPokeraiRoom(activeRoom) ? 'pokerai' : 'usdc';
+}
 
 // POKERAI rewards state
 let pokeraiEarned = 0;
@@ -6001,7 +6124,7 @@ let _pokeraiDripRAF = null;
 function getWallet() {
   try {
     const data = JSON.parse(localStorage.getItem(WALLET_KEY));
-    if (data && data.address) return { address: data.address, balance: walletBalance };
+    if (data && data.address) return { address: data.address, balance: walletBalance, pokeraiBalance: pokeraiWalletBalance };
   } catch (e) {}
   return null;
 }
@@ -6022,6 +6145,7 @@ async function toggleWallet() {
   if (wallet) {
     localStorage.removeItem(WALLET_KEY);
     walletBalance = 0;
+    pokeraiWalletBalance = 0;
     walletAuthenticated = false;
     updateWalletUI();
     syncWalletToServer();
@@ -6065,6 +6189,7 @@ async function toggleWallet() {
       if (accs.length === 0) {
         localStorage.removeItem(WALLET_KEY);
         walletBalance = 0;
+        pokeraiWalletBalance = 0;
         walletAuthenticated = false;
         updateWalletUI();
         syncWalletToServer();
@@ -6108,6 +6233,7 @@ async function handleChallenge(data) {
 function handleAuthenticated(data) {
   walletAuthenticated = true;
   walletBalance = data.balance || 0;
+  pokeraiWalletBalance = data.pokeraiBalance || 0;
   isPlatformWallet = !!data.isPlatformWallet;
   updateWalletUI();
   showToast('Wallet verified!', 'gold');
@@ -6122,42 +6248,108 @@ function handleWalletClick() {
 function updateWalletUI() {
   const wallet = getWallet();
   const btn = document.getElementById('walletBtn');
-  const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const usdcAgentChips = (myAgents || []).filter(a => a.currency !== 'pokerai').reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const pokeraiAgentChips = (myAgents || []).filter(a => a.currency === 'pokerai').reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const agentChips = usdcAgentChips + pokeraiAgentChips;
   // Subtract backing from other users — those chips aren't yours
   const backingTotal = (myAgents || []).reduce((sum, a) => sum + (a.backingTotal || 0), 0);
-  const totalChips = walletBalance + agentChips - backingTotal;
+  const totalUsdcChips = walletBalance + usdcAgentChips - backingTotal;
+  const totalPokeraiChips = pokeraiWalletBalance + pokeraiAgentChips;
+  // Show active currency in header
+  const isPokerai = isPokeraiRoom(activeRoom);
+  const displayBalance = isPokerai ? totalPokeraiChips : totalUsdcChips;
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
-    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(totalChips)}</span>`;
+    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(displayBalance)}</span>`;
   } else {
     btn.className = 'wallet-btn disconnected';
     btn.innerHTML = 'Connect Wallet';
   }
   const fb = document.getElementById('formBalance');
-  if (fb) fb.textContent = walletBalance.toLocaleString();
+  if (fb) fb.textContent = (isPokerai ? pokeraiWalletBalance : walletBalance).toLocaleString();
   const hb = document.getElementById('balUsdc');
-  if (hb) hb.textContent = formatChips(totalChips);
-  // Subtitle: breakdown of wallet vs agents
+  if (hb) hb.textContent = formatChips(displayBalance);
+  // Subtitle: breakdown
   const balUsdcSub = document.getElementById('balUsdcSub');
-  if (balUsdcSub) balUsdcSub.textContent = '$' + (totalChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
+  if (balUsdcSub) {
+    if (isPokerai) {
+      balUsdcSub.textContent = totalPokeraiChips.toLocaleString() + ' $POKERAI total';
+    } else {
+      balUsdcSub.textContent = '$' + (totalUsdcChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
+    }
+  }
   const balUsdcTotal = document.getElementById('balUsdcTotal');
   if (balUsdcTotal) {
-    if (agentChips > 0) {
-      balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (agentChips / CHIPS_PER_USDC).toFixed(2);
+    if (isPokerai && pokeraiAgentChips > 0) {
+      balUsdcTotal.textContent = 'Wallet: ' + pokeraiWalletBalance.toLocaleString() + ' · Agents: ' + pokeraiAgentChips.toLocaleString();
+    } else if (!isPokerai && usdcAgentChips > 0) {
+      balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2);
     } else {
       balUsdcTotal.textContent = '';
     }
   }
   // Update vault modal if open
-  const vb = document.getElementById('vaultChipBalance');
-  if (vb) {
-    vb.textContent = walletBalance.toLocaleString();
-    const usd = document.getElementById('vaultUsdBalance');
-    if (usd) usd.textContent = '$' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' USDC';
-    const vac = document.getElementById('vaultAgentChips');
-    if (vac) vac.textContent = agentChips > 0 ? `${formatChips(agentChips)} chips in agents · sit out to withdraw` : '';
+  updateVaultDisplay();
+}
+
+let _vaultCurrency = 'usdc';
+function switchVaultCurrency(currency) {
+  _vaultCurrency = currency;
+  document.getElementById('vaultCurrUsdc').style.background = currency === 'usdc' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)';
+  document.getElementById('vaultCurrUsdc').style.color = currency === 'usdc' ? 'var(--accent-primary)' : 'var(--text-muted)';
+  document.getElementById('vaultCurrPokerai').style.background = currency === 'pokerai' ? 'rgba(52,208,88,0.15)' : 'rgba(255,255,255,0.04)';
+  document.getElementById('vaultCurrPokerai').style.color = currency === 'pokerai' ? '#34d058' : 'var(--text-muted)';
+  updateVaultDisplay();
+  // Update deposit/withdraw labels based on currency
+  const depositView = document.getElementById('vaultDeposit');
+  const withdrawView = document.getElementById('vaultWithdraw');
+  if (depositView) {
+    const label = depositView.querySelector('.vault-input-label');
+    if (label) label.textContent = currency === 'pokerai' ? 'Amount (POKERAI)' : 'Amount (USDC)';
+    const suffix = depositView.querySelector('.vault-input-suffix');
+    if (suffix) suffix.textContent = currency === 'pokerai' ? 'POKERAI' : 'USDC';
+    const btn = document.getElementById('depositBtn');
+    if (btn) btn.textContent = currency === 'pokerai' ? 'Deposit POKERAI' : 'Deposit USDC';
+    const note = document.getElementById('depositNote');
+    if (note) note.textContent = currency === 'pokerai' ? 'Deposits POKERAI on Base and credits chips 1:1' : 'Deposits USDC on Base and credits chips instantly';
+    // Update presets for POKERAI
+    const presets = depositView.querySelectorAll('.vault-preset');
+    if (currency === 'pokerai') {
+      const vals = [100, 1000, 10000, 100000];
+      presets.forEach((p, i) => { p.textContent = vals[i].toLocaleString(); p.onclick = () => { document.getElementById('depositAmount').value = vals[i]; updateDepositPreview(); }; });
+    } else {
+      const vals = [1, 5, 25, 100];
+      presets.forEach((p, i) => { p.textContent = '$' + vals[i]; p.onclick = () => setDepositAmount(vals[i]); });
+    }
   }
+  if (withdrawView) {
+    const minNote = withdrawView.querySelector('.vault-step-note');
+    if (minNote) minNote.textContent = currency === 'pokerai' ? 'Minimum withdrawal: 10 chips (10 POKERAI)' : 'Minimum withdrawal: 1,000 chips ($0.10 USDC)';
+  }
+  updateDepositPreview();
+  updateWithdrawPreview();
+}
+
+function updateVaultDisplay() {
+  const vb = document.getElementById('vaultChipBalance');
+  if (!vb) return;
+  const isPokerai = _vaultCurrency === 'pokerai';
+  const bal = isPokerai ? pokeraiWalletBalance : walletBalance;
+  vb.textContent = bal.toLocaleString();
+  const usd = document.getElementById('vaultUsdBalance');
+  if (usd) {
+    if (isPokerai) {
+      usd.textContent = bal.toLocaleString() + ' $POKERAI (1:1 chips)';
+    } else {
+      usd.textContent = '$' + (bal / CHIPS_PER_USDC).toFixed(2) + ' USDC';
+    }
+  }
+  const usdcAgentChips = (myAgents || []).filter(a => a.currency !== 'pokerai').reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const pokeraiAgentChips = (myAgents || []).filter(a => a.currency === 'pokerai').reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const agentChips = isPokerai ? pokeraiAgentChips : usdcAgentChips;
+  const vac = document.getElementById('vaultAgentChips');
+  if (vac) vac.textContent = agentChips > 0 ? `${formatChips(agentChips)} chips in agents · sit out to withdraw` : '';
 }
 
 // ── Vault Modal ──
@@ -6165,6 +6357,8 @@ function updateWalletUI() {
 function openVault(tab) {
   const wallet = getWallet();
   if (!wallet) { toggleWallet(); return; }
+  // Auto-select currency based on active room
+  switchVaultCurrency(isPokeraiRoom(activeRoom) ? 'pokerai' : 'usdc');
   updateWalletUI();
   document.getElementById('vaultOverlay').classList.add('show');
   if (tab === 'withdraw') {
@@ -6195,9 +6389,15 @@ function setDepositAmount(usd) {
 }
 
 function updateDepositPreview() {
-  const usd = parseFloat(document.getElementById('depositAmount').value) || 0;
-  const chips = Math.floor(usd * CHIPS_PER_USDC);
-  document.getElementById('depositConversion').textContent = '= ' + chips.toLocaleString() + ' chips';
+  const val = parseFloat(document.getElementById('depositAmount').value) || 0;
+  if (_vaultCurrency === 'pokerai') {
+    // 1 POKERAI = 1 chip
+    const chips = Math.floor(val);
+    document.getElementById('depositConversion').textContent = '= ' + chips.toLocaleString() + ' chips';
+  } else {
+    const chips = Math.floor(val * CHIPS_PER_USDC);
+    document.getElementById('depositConversion').textContent = '= ' + chips.toLocaleString() + ' chips';
+  }
 }
 
 function setWithdrawChips(chips) {
@@ -6206,20 +6406,25 @@ function setWithdrawChips(chips) {
 }
 
 function setWithdrawPct(pct) {
-  const chips = Math.floor(walletBalance * pct / 100);
-  // Round down to nearest 1000
-  const rounded = Math.max(1000, Math.floor(chips / 1000) * 1000);
-  setWithdrawChips(pct === 100 ? walletBalance : rounded);
+  const bal = _vaultCurrency === 'pokerai' ? pokeraiWalletBalance : walletBalance;
+  const minWithdraw = _vaultCurrency === 'pokerai' ? 10 : 1000;
+  const chips = Math.floor(bal * pct / 100);
+  const rounded = Math.max(minWithdraw, _vaultCurrency === 'pokerai' ? chips : Math.floor(chips / 1000) * 1000);
+  setWithdrawChips(pct === 100 ? bal : rounded);
 }
 
 function setWithdrawMax() {
-  setWithdrawChips(walletBalance);
+  setWithdrawChips(_vaultCurrency === 'pokerai' ? pokeraiWalletBalance : walletBalance);
 }
 
 function updateWithdrawPreview() {
   const chips = parseInt(document.getElementById('withdrawChips').value) || 0;
-  const usd = (chips / CHIPS_PER_USDC).toFixed(2);
-  document.getElementById('withdrawConversion').textContent = '= $' + usd + ' USDC';
+  if (_vaultCurrency === 'pokerai') {
+    document.getElementById('withdrawConversion').textContent = '= ' + chips.toLocaleString() + ' POKERAI';
+  } else {
+    const usd = (chips / CHIPS_PER_USDC).toFixed(2);
+    document.getElementById('withdrawConversion').textContent = '= $' + usd + ' USDC';
+  }
 }
 
 async function ensureBaseNetwork() {
@@ -6250,6 +6455,10 @@ async function ensureBaseNetwork() {
 }
 
 async function doDeposit() {
+  if (_vaultCurrency === 'pokerai') {
+    return doDepositPokerai();
+  }
+
   const usd = parseFloat(document.getElementById('depositAmount').value);
   if (!usd || usd < 0.10) { showToast('Minimum deposit is $0.10 USDC', 'error'); return; }
 
@@ -6318,8 +6527,6 @@ async function doDeposit() {
     document.getElementById('depositAmount').value = '';
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
-    // Event listener handles crediting automatically — no need to call checkDeposit here
-    // (calling both causes a race condition → double credit)
     closeVault();
   } catch (e) {
     console.error('Deposit failed:', e);
@@ -6330,6 +6537,80 @@ async function doDeposit() {
 
   btn.disabled = false;
   btn.innerHTML = 'Deposit USDC';
+}
+
+async function doDepositPokerai() {
+  const amount = parseFloat(document.getElementById('depositAmount').value);
+  if (!amount || amount < 10) { showToast('Minimum deposit is 10 POKERAI', 'error'); return; }
+
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first', 'error'); return; }
+
+  if (!POKERAI_VAULT_ADDRESS) {
+    showToast('POKERAI vault not yet deployed. Check back soon!', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('depositBtn');
+  btn.disabled = true;
+
+  if (!await ensureBaseNetwork()) { btn.disabled = false; return; }
+
+  const tokenAmount = ethers.parseEther(amount.toString()); // 18 decimals
+
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const signerAddr = await signer.getAddress();
+
+    // Check POKERAI balance
+    btn.innerHTML = '<span class="spinner"></span>Checking balance...';
+    const token = new ethers.Contract(POKERAI_TOKEN_ADDRESS, [
+      'function balanceOf(address) view returns (uint256)',
+      'function allowance(address,address) view returns (uint256)',
+      'function approve(address,uint256) returns (bool)'
+    ], signer);
+
+    const balance = await token.balanceOf(signerAddr);
+    if (balance < tokenAmount) {
+      showToast(`Not enough POKERAI. You have ${Number(ethers.formatEther(balance)).toLocaleString()} POKERAI.`, 'error');
+      btn.disabled = false; btn.innerHTML = 'Deposit POKERAI'; return;
+    }
+
+    // Approve if needed
+    const allowance = await token.allowance(signerAddr, POKERAI_VAULT_ADDRESS);
+    if (allowance < tokenAmount) {
+      btn.innerHTML = '<span class="spinner"></span>Approve POKERAI...';
+      document.getElementById('depositNote').textContent = 'Step 1/2: Approve POKERAI spending';
+      const approveTx = await token.approve(POKERAI_VAULT_ADDRESS, tokenAmount);
+      await approveTx.wait();
+    }
+
+    // Deposit to vault
+    btn.innerHTML = '<span class="spinner"></span>Depositing...';
+    document.getElementById('depositNote').textContent = 'Step 2/2: Confirm the deposit';
+    const vault = new ethers.Contract(POKERAI_VAULT_ADDRESS, [
+      'function deposit(uint256 tokenAmount)'
+    ], signer);
+    const tx = await vault.deposit(tokenAmount);
+    btn.innerHTML = '<span class="spinner"></span>Confirming...';
+    document.getElementById('depositNote').textContent = 'Waiting for confirmation on Base...';
+    await tx.wait();
+
+    showToast(`Deposited ${amount} POKERAI! Crediting chips...`, 'success');
+    document.getElementById('depositAmount').value = '';
+    updateDepositPreview();
+    document.getElementById('depositNote').textContent = 'Crediting chips...';
+    closeVault();
+  } catch (e) {
+    console.error('POKERAI deposit failed:', e);
+    const reason = e.reason || e.message || 'Transaction failed';
+    showToast(reason.length > 60 ? reason.slice(0, 60) + '...' : reason, 'error');
+    document.getElementById('depositNote').textContent = 'Deposits POKERAI on Base and credits chips 1:1';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = _vaultCurrency === 'pokerai' ? 'Deposit POKERAI' : 'Deposit USDC';
 }
 
 function checkDepositBalance() {
@@ -6344,13 +6625,24 @@ function refreshBalance() {
   const btn = document.getElementById('refreshBalBtn');
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   checkDepositBalance();
+  // Also check POKERAI deposits
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'checkDepositPokerai' }));
+  }
   setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 3000);
 }
 
 async function doWithdraw() {
   const chips = parseInt(document.getElementById('withdrawChips').value);
-  if (!chips || chips < 1000) { showToast('Minimum withdrawal: 1,000 chips ($0.10)', 'error'); return; }
-  if (chips > walletBalance) { showToast(`Not enough chips. You have ${walletBalance.toLocaleString()}`, 'error'); return; }
+  const isPokerai = _vaultCurrency === 'pokerai';
+  const bal = isPokerai ? pokeraiWalletBalance : walletBalance;
+  const minWithdraw = isPokerai ? 10 : 1000;
+
+  if (!chips || chips < minWithdraw) {
+    showToast(isPokerai ? 'Minimum withdrawal: 10 chips (10 POKERAI)' : 'Minimum withdrawal: 1,000 chips ($0.10)', 'error');
+    return;
+  }
+  if (chips > bal) { showToast(`Not enough ${isPokerai ? 'POKERAI' : 'USDC'} chips. You have ${bal.toLocaleString()}`, 'error'); return; }
 
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first', 'error'); return; }
@@ -6360,9 +6652,10 @@ async function doWithdraw() {
   btn.innerHTML = '<span class="spinner"></span>Sign to withdraw...';
 
   try {
-    const usd = (chips / CHIPS_PER_USDC).toFixed(2);
     const nonce = Math.random().toString(36).slice(2, 10);
-    const message = `PokerAI Withdraw\n${chips.toLocaleString()} chips ($${usd} USDC)\nTo: ${wallet.address}\nNonce: ${nonce}`;
+    const message = isPokerai
+      ? `PokerAI Withdraw\n${chips.toLocaleString()} chips (${chips} POKERAI)\nTo: ${wallet.address}\nNonce: ${nonce}`
+      : `PokerAI Withdraw\n${chips.toLocaleString()} chips ($${(chips / CHIPS_PER_USDC).toFixed(2)} USDC)\nTo: ${wallet.address}\nNonce: ${nonce}`;
     const signature = await window.ethereum.request({
       method: 'personal_sign',
       params: [message, wallet.address]
@@ -6370,17 +6663,18 @@ async function doWithdraw() {
 
     btn.innerHTML = '<span class="spinner"></span>Processing...';
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'withdrawUsdc', chips, signature, message }));
+      const type = isPokerai ? 'withdrawPokerai' : 'withdrawUsdc';
+      ws.send(JSON.stringify({ type, chips, signature, message }));
     }
   } catch (e) {
     btn.disabled = false;
     btn.innerHTML = 'Withdraw to Wallet';
     showToast('Signature rejected — withdrawal cancelled', 'info');
   }
-  // Result handled in handleMessage → withdrawUsdcResult
+  // Result handled in handleMessage
 }
 
-function handleWithdrawResult(data) {
+function handleWithdrawResult(data, currency = 'usdc') {
   const btn = document.getElementById('withdrawBtn');
   btn.disabled = false;
   btn.innerHTML = 'Withdraw to Wallet';
@@ -6388,8 +6682,12 @@ function handleWithdrawResult(data) {
   if (data.error) {
     showToast(data.error, 'error');
   } else {
-    const usd = data.usdcAmount || (data.chipAmount / CHIPS_PER_USDC);
-    showToast(`Withdrew $${usd.toFixed(2)} USDC to your wallet!`, 'success');
+    if (currency === 'pokerai') {
+      showToast(`Withdrew ${data.chipAmount || data.tokenAmount || ''} POKERAI to your wallet!`, 'success');
+    } else {
+      const usd = data.usdcAmount || (data.chipAmount / CHIPS_PER_USDC);
+      showToast(`Withdrew $${usd.toFixed(2)} USDC to your wallet!`, 'success');
+    }
     document.getElementById('withdrawChips').value = '';
     updateWithdrawPreview();
   }
@@ -6667,13 +6965,14 @@ function updateAutoTopUp() {
   const enabled = document.getElementById('autoTopUpToggle').checked;
   const targetChips = parseInt(document.getElementById('autoTopUpTarget').value) || 10000;
   const cashOutAt = parseInt(document.getElementById('autoCashOutTarget').value) || 0;
+  const maxTopUps = parseInt(document.getElementById('autoMaxTopUps').value) || 0;
   const label = document.getElementById('autoTopUpLabel');
   if (label) {
     label.textContent = enabled ? 'ON' : 'OFF';
     label.style.color = enabled ? 'var(--accent-green)' : 'var(--text-muted)';
   }
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'setAutoTopUp', enabled, targetChips, cashOutAt }));
+    ws.send(JSON.stringify({ type: 'setAutoTopUp', enabled, targetChips, cashOutAt, maxTopUps }));
   }
 }
 
@@ -6681,10 +6980,12 @@ function applyAutoTopUpState(config) {
   const toggle = document.getElementById('autoTopUpToggle');
   const target = document.getElementById('autoTopUpTarget');
   const cashOut = document.getElementById('autoCashOutTarget');
+  const maxTopUpsEl = document.getElementById('autoMaxTopUps');
   const label = document.getElementById('autoTopUpLabel');
   if (toggle) toggle.checked = config.enabled;
   if (target && config.targetChips) target.value = config.targetChips.toString();
   if (cashOut && config.cashOutAt) cashOut.value = config.cashOutAt.toString();
+  if (maxTopUpsEl) maxTopUpsEl.value = (config.maxTopUps || 0).toString();
   if (label) {
     label.textContent = config.enabled ? 'ON' : 'OFF';
     label.style.color = config.enabled ? 'var(--accent-green)' : 'var(--text-muted)';
@@ -6697,6 +6998,128 @@ let _openRoomPicker = null; // track which agent's room picker is open
 let _openWithdrawPanel = null; // track which agent's withdraw panel is open
 let _selectedFundAmount = {};  // track selected preset per agent { agentId: amount }
 let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
+
+// === Agent Stats ===
+
+function requestAgentStats(agentId) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'getAgentStats', agentId }));
+    showToast('Loading stats...', 'info');
+  }
+}
+
+function resetAgentLearning(agentId) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'resetLearning', agentId }));
+  }
+}
+
+function showAgentStatsPanel(agentId, stats) {
+  // Find agent name
+  const agent = myAgents.find(a => a.id === agentId) || gameState.agents.find(a => a.id === agentId);
+  const name = agent ? agent.name : 'Agent';
+  const emoji = agent ? agent.emoji : '';
+
+  if (!stats || stats.handsPlayed === 0) {
+    showToast(`${name} has no hand history yet`, 'info');
+    return;
+  }
+
+  const profitColor = stats.totalProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  const profitSign = stats.totalProfit >= 0 ? '+' : '';
+
+  // Hand distribution bar chart (CSS only)
+  const distEntries = Object.entries(stats.handDistribution || {}).sort((a, b) => b[1] - a[1]);
+  const maxDist = distEntries.length > 0 ? distEntries[0][1] : 1;
+  const distHtml = distEntries.slice(0, 8).map(([name, count]) => {
+    const pct = Math.round(count / maxDist * 100);
+    return `<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:3px">
+      <span style="width:80px;color:var(--text-muted);text-align:right">${name}</span>
+      <div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:3px"></div>
+      </div>
+      <span style="width:30px;color:var(--text-secondary);font-size:10px">${count}</span>
+    </div>`;
+  }).join('');
+
+  // Worst hands table
+  const worstHtml = (stats.worstHands || []).map(h => {
+    const cards = (h.cards || []).join(' ');
+    const board = (h.community || []).slice(0, 5).join(' ');
+    return `<div class="worst-hand-row">
+      <span style="color:var(--accent-red);font-weight:700;width:60px">${(h.delta || 0).toLocaleString()}</span>
+      <span style="color:var(--text-secondary)">${cards}</span>
+      <span style="color:var(--text-muted);font-size:10px">${board}</span>
+      <span style="color:var(--text-muted);margin-left:auto">${h.handName || h.result || ''}</span>
+    </div>`;
+  }).join('');
+
+  // Learned traits display
+  const lt = stats.learnedTraits || {};
+  const hasLearned = Object.keys(lt).length > 0 && Object.values(lt).some(v => v !== 0);
+  const learnedHtml = hasLearned ? `
+    <div style="margin-top:16px">
+      <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:#8b5cf6;margin-bottom:8px">Self-Learning Adjustments</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        ${lt.foldAdjust ? `<span style="padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(139,92,246,0.12);color:#8b5cf6">Fold: ${lt.foldAdjust > 0 ? '+' : ''}${(lt.foldAdjust * 100).toFixed(0)}%</span>` : ''}
+        ${lt.bluffAdjust ? `<span style="padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(139,92,246,0.12);color:#8b5cf6">Bluff: ${lt.bluffAdjust > 0 ? '+' : ''}${(lt.bluffAdjust * 100).toFixed(0)}%</span>` : ''}
+        ${lt.raiseAdjust ? `<span style="padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(139,92,246,0.12);color:#8b5cf6">Raise: ${lt.raiseAdjust > 0 ? '+' : ''}${(lt.raiseAdjust * 100).toFixed(0)}%</span>` : ''}
+      </div>
+      <button onclick="resetAgentLearning('${agentId}');document.querySelector('.agent-stats-overlay')?.remove()" style="padding:5px 14px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Reset Learning</button>
+    </div>` : '';
+
+  // Common mistakes
+  const mistakesHtml = (stats.commonMistakes || []).length > 0 ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-gold);margin-bottom:4px">Patterns Detected</div>
+      ${stats.commonMistakes.map(m => `<div style="font-size:11px;color:var(--text-secondary);padding:2px 0">• ${m}</div>`).join('')}
+    </div>` : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'agent-stats-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="agent-stats-panel">
+      <button class="stats-close" onclick="this.closest('.agent-stats-overlay').remove()">✕</button>
+      <h3>${emoji} ${escapeHtml(name)} — Stats</h3>
+      <div class="stats-grid">
+        <div class="stats-cell">
+          <div class="label">Win Rate (showdown)</div>
+          <div class="value" style="color:${stats.showdownWinRate >= 40 ? 'var(--accent-green)' : stats.showdownWinRate >= 25 ? 'var(--accent-gold)' : 'var(--accent-red)'}">${stats.showdownWinRate}%</div>
+          <div class="stats-bar"><div class="stats-bar-fill" style="width:${stats.showdownWinRate}%;background:${stats.showdownWinRate >= 40 ? '#22c55e' : stats.showdownWinRate >= 25 ? '#f5c542' : '#ef4444'}"></div></div>
+        </div>
+        <div class="stats-cell">
+          <div class="label">Total Profit</div>
+          <div class="value" style="color:${profitColor}">${profitSign}${stats.totalProfit.toLocaleString()}</div>
+          <div style="font-size:10px;color:var(--text-muted)">${stats.profitPerHand >= 0 ? '+' : ''}${stats.profitPerHand} per hand</div>
+        </div>
+        <div class="stats-cell">
+          <div class="label">Fold Rate</div>
+          <div class="value" style="color:var(--text-secondary)">${stats.foldRate}%</div>
+          <div style="font-size:10px;color:var(--text-muted)">Preflop: ${stats.preflopFoldRate}%</div>
+        </div>
+        <div class="stats-cell">
+          <div class="label">Hands Played</div>
+          <div class="value" style="color:var(--text-primary)">${stats.handsPlayed}</div>
+        </div>
+        <div class="stats-cell">
+          <div class="label">Avg Win</div>
+          <div class="value" style="color:var(--accent-green)">+${stats.avgWinAmount.toLocaleString()}</div>
+        </div>
+        <div class="stats-cell">
+          <div class="label">Avg Loss</div>
+          <div class="value" style="color:var(--accent-red)">${stats.avgLossAmount.toLocaleString()}</div>
+        </div>
+      </div>
+      ${stats.biggestWin ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Biggest win: <span style="color:var(--accent-green)">+${stats.biggestWin.delta.toLocaleString()}</span> (${stats.biggestWin.handName || 'N/A'})</div>` : ''}
+      ${stats.biggestLoss ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Biggest loss: <span style="color:var(--accent-red)">${stats.biggestLoss.delta.toLocaleString()}</span> (${stats.biggestLoss.handName || 'N/A'})</div>` : ''}
+      ${distHtml ? `<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Hand Distribution</div>${distHtml}</div>` : ''}
+      ${worstHtml ? `<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:var(--accent-red);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Worst Hands</div>${worstHtml}</div>` : ''}
+      ${mistakesHtml}
+      ${learnedHtml}
+    </div>`;
+  document.body.appendChild(overlay);
+}
 
 function toggleCompactExpand(agentId) {
   const el = document.getElementById('compactExpand-' + agentId);
@@ -6750,14 +7173,13 @@ function renderMyAgents() {
       const cardClass = pnl >= 0 ? 'profitable' : 'losing';
       const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
       const wrClass = wr >= 20 ? 'wr-hot' : wr >= 10 ? 'wr-warm' : 'wr-cold';
-      const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
-      const roomLabel = roomNames[agent.roomId] || '';
+      const roomLabel = ROOM_LABELS[agent.roomId] || '';
 
       return `
       <div class="my-agent-compact ${cardClass}" onclick="toggleCompactExpand('${agent.id}')">
         <div class="compact-emoji">${agent.emoji}</div>
         <div class="compact-info">
-          <div class="compact-name">${agent.name}</div>
+          <div class="compact-name">${escapeHtml(agent.name)}</div>
           <div class="compact-meta">
             <span class="agent-winrate ${wrClass}" style="font-size:10px;padding:1px 6px">${wr >= 20 ? '🔥' : ''}${wr}%</span>
             <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(34,197,94,0.12);color:var(--accent-green)">
@@ -6780,11 +7202,12 @@ function renderMyAgents() {
       <div id="compactExpand-${agent.id}" class="compact-expand" style="display:block">
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <div style="font-size:11px;color:var(--text-muted)">
-            invested <span style="color:var(--accent-gold)">${formatChips(agent.totalDeposited || agent.baseChips)}</span>${(agent.totalCashedOut || 0) > 0 ? ` · cashed out <span style="color:var(--accent-green)">${formatChips(agent.totalCashedOut)}</span>` : ''} · ${agent.handsPlayed} hands · ${wr}% WR
+            invested <span style="color:var(--accent-gold)">${formatChips(agent.totalDeposited || agent.baseChips)}</span>${(agent.totalCashedOut || 0) > 0 ? ` · cashed out <span style="color:var(--accent-green)">${formatChips(agent.totalCashedOut)}</span>` : ''} · ${agent.handsPlayed} hands · ${wr}% WR${(() => { const tc = (agent.autoEvents || []).filter(e => e.type === 'topup').length; return tc > 0 ? ` · <span style="color:var(--accent-gold)">${tc} refills</span>` : ''; })()}
           </div>
           <div style="display:flex;gap:4px;margin-left:auto">
             <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:5px 12px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif">WATCH</button>
             ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}',2500)" style="padding:5px 12px;background:none;border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Top Up</button>` : ''}
+            <button onclick="requestAgentStats('${agent.id}')" style="padding:5px 12px;background:none;border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#8b5cf6;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Stats</button>
             <button onclick="switchAgentRoom('${agent.id}')" style="padding:5px 12px;background:none;border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:var(--accent-primary);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Switch</button>
             <button onclick="leaveTable('${agent.id}');this.textContent='Leaving...';this.disabled=true;this.style.opacity='0.5'" style="padding:5px 12px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sit Out</button>
           </div>
@@ -6818,7 +7241,7 @@ function renderMyAgents() {
             <div class="my-agent-emoji">${agent.emoji}</div>
             <div>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-                <span style="font-family:'Rajdhani';font-size:26px;font-weight:800;color:var(--text-primary)">${agent.name}</span>
+                <span style="font-family:'Rajdhani';font-size:26px;font-weight:800;color:var(--text-primary)">${escapeHtml(agent.name)}</span>
                 <span style="padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(245,197,66,0.12);color:var(--accent-gold);border:1px solid rgba(245,197,66,0.3)">LOBBY</span>
               </div>
               <span class="agent-style-badge badge-${agent.style}" style="font-size:12px">${capitalize(agent.style)}</span>
@@ -6847,6 +7270,7 @@ function renderMyAgents() {
                 </div>`
               : `<button onclick="toggleFundPanel('${agent.id}')" style="padding:10px 20px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:12px;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 12px rgba(245,197,66,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,197,66,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(245,197,66,0.25)'">💰 FUND</button>`
             }
+            <button onclick="requestAgentStats('${agent.id}')" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s">Stats</button>
             <button onclick="editAgent('${agent.id}')" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-primary)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.3)'">Edit</button>
             <button class="btn-recall" onclick="recallAgent('${agent.id}')" style="font-size:12px;padding:8px 16px">Delete</button>
           </div>
@@ -6861,7 +7285,7 @@ function renderMyAgents() {
             <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
             <button onclick="confirmFund('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
           </div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> chips</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${getActiveBalance().toLocaleString()}</span> ${getActiveCurrency() === 'pokerai' ? '$POKERAI' : 'USDC'} chips</div>
         </div>
         <!-- Withdraw panel (partial withdraw) -->
         <div id="withdrawPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
@@ -6875,7 +7299,7 @@ function renderMyAgents() {
         </div>
         <!-- Room picker (shown when agent is funded — money tables only) -->
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake · PvP</div>
+          <div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake</div>
           <div class="room-picker" style="margin-bottom:10px">
             <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','micro')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Micro</span>
@@ -6890,7 +7314,21 @@ function renderMyAgents() {
               <span class="pick-sub">625/1250 blinds</span>
             </button>
           </div>
-          <div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;opacity:0.5">🃏 $POKERAI · 0% Rake · Coming Soon</div>
+          <div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🃏 $POKERAI · 2.5% Rake</div>
+          <div class="room-picker">
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','pokerai_micro')" style="border-color:rgba(52,208,88,0.3)">
+              <span class="pick-label">Micro</span>
+              <span class="pick-sub">25/50 blinds</span>
+            </button>
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','pokerai_mid')" style="border-color:rgba(52,208,88,0.3)">
+              <span class="pick-label">Mid</span>
+              <span class="pick-sub">125/250 blinds</span>
+            </button>
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','pokerai_high')" style="border-color:rgba(52,208,88,0.3)">
+              <span class="pick-label">High</span>
+              <span class="pick-sub">625/1250 blinds</span>
+            </button>
+          </div>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
       </div>`;
@@ -7142,13 +7580,14 @@ function _applyOpenPanels() {
 function _populateFundPresets(agentId) {
   const presetsEl = document.getElementById('fundPresets-' + agentId);
   if (!presetsEl) return;
+  const currency = getActiveCurrency();
   const savedAmt = _selectedFundAmount[agentId] || FUND_PRESETS[0];
   presetsEl.innerHTML = FUND_PRESETS.map(amt => {
     const chipLabel = amt >= 1000 ? (amt / 1000) + 'K' : amt;
-    const usdcLabel = '$' + (amt / 10000).toFixed(2);
+    const valueLabel = currency === 'pokerai' ? amt.toLocaleString() + ' POKERAI' : '$' + (amt / 10000).toFixed(2);
     const isSelected = amt === savedAmt;
     const borderStyle = isSelected ? 'border-color:var(--accent-gold);color:var(--accent-gold)' : '';
-    return `<button onclick="_selectFundPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${chipLabel}</div><div style="font-size:8px;opacity:0.6">${usdcLabel}</div></button>`;
+    return `<button onclick="_selectFundPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${chipLabel}</div><div style="font-size:8px;opacity:0.6">${valueLabel}</div></button>`;
   }).join('');
   const input = document.getElementById('fundAmount-' + agentId);
   if (input && document.activeElement !== input) input.value = savedAmt;
@@ -7171,9 +7610,11 @@ function confirmFund(agentId) {
 
   const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
   if (!amount || amount < 500) { showToast('Minimum fund is 500 chips', 'error'); return; }
-  if (amount > walletBalance) { showToast(`Not enough chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
+  const currency = getActiveCurrency();
+  const bal = getActiveBalance();
+  if (amount > bal) { showToast(`Not enough chips! You have ${bal.toLocaleString()} ${currency === 'pokerai' ? '$POKERAI' : 'USDC'} chips`, 'error'); return; }
 
-  ws.send(JSON.stringify({ type: 'fundAgent', agentId, amount }));
+  ws.send(JSON.stringify({ type: 'fundAgent', agentId, amount, currency }));
   showToast(`Funding agent with ${amount.toLocaleString()} chips...`, 'info');
 }
 
@@ -7206,10 +7647,11 @@ function _populateWithdrawPresets(agentId) {
     const amt = p.pct === 1 ? stack : Math.floor(stack * p.pct / 500) * 500; // round down to 500
     if (amt <= 0) return '';
     const chipLabel = amt >= 1000 ? (amt / 1000).toFixed(amt % 1000 === 0 ? 0 : 1) + 'K' : amt;
-    const usdcLabel = '$' + (amt / 10000).toFixed(2);
+    const currency = getActiveCurrency();
+    const valueLabel = currency === 'pokerai' ? amt.toLocaleString() + ' POKERAI' : '$' + (amt / 10000).toFixed(2);
     const isSelected = amt === savedAmt;
     const borderStyle = isSelected ? 'border-color:var(--accent-red);color:var(--accent-red)' : '';
-    return `<button onclick="_selectWithdrawPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${p.label}</div><div style="font-size:9px;opacity:0.7">${chipLabel}</div><div style="font-size:8px;opacity:0.5">${usdcLabel}</div></button>`;
+    return `<button onclick="_selectWithdrawPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${p.label}</div><div style="font-size:9px;opacity:0.7">${chipLabel}</div><div style="font-size:8px;opacity:0.5">${valueLabel}</div></button>`;
   }).filter(Boolean).join('');
   const input = document.getElementById('withdrawAmount-' + agentId);
   if (input && !input.value) input.value = savedAmt;
@@ -7247,8 +7689,7 @@ function joinFundedAgent(agentId, roomId) {
 
   _roomPickerOpen = false;
   ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId }));
-  const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
-  showToast(`Joining ${roomNames[roomId]}...`, 'info');
+  showToast(`Joining ${ROOM_LABELS[roomId] || roomId}...`, 'info');
 }
 
 function selectRoomForJoin(agentId, roomId) {
@@ -7276,7 +7717,8 @@ function switchAgentRoom(agentId) {
 function topUpAgent(agentId, amount) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
-  if (walletBalance < amount) { showToast('Not enough chips in wallet!', 'error'); return; }
+  const bal = getActiveBalance();
+  if (bal < amount) { showToast('Not enough chips in wallet!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
   // Server handles balance deduction
@@ -7348,10 +7790,10 @@ function backAgent(agentId, amount) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
-  if (walletBalance < amount) { showToast(`Not enough chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
+  if (walletBalance < amount) { showToast(`Not enough USDC chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
 
   ws.send(JSON.stringify({ type: 'backAgent', agentId, amount }));
-  showToast(`Backing agent with ${amount.toLocaleString()} chips...`, 'info');
+  showToast(`Backing agent with ${amount.toLocaleString()} USDC chips...`, 'info');
 }
 
 function unbackAgent(backingId) {
@@ -7397,6 +7839,7 @@ showView = function(name) {
       if (!accounts || accounts.length === 0 || accounts[0].toLowerCase() !== saved.address) {
         localStorage.removeItem(WALLET_KEY);
         walletBalance = 0;
+        pokeraiWalletBalance = 0;
         walletAuthenticated = false;
       }
     } catch (e) {

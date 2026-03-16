@@ -2,10 +2,13 @@ const { PokerEngine } = require('./poker-engine');
 const { AgentStore } = require('./agent-store');
 
 const ROOM_CONFIGS = {
-  sandbox: { name: 'Sandbox',      buyIn: 'FREE', bb: 50,   baseChips: 10000,  rakePct: 0,     isSandbox: true, currency: 'free', maxStack: Infinity },
-  micro:   { name: 'Micro',        buyIn: '25/50',   bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc', maxStack: 50000 },
-  mid:     { name: 'Mid Stakes',   buyIn: '125/250', bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc', maxStack: 250000 },
-  high:    { name: 'High Stakes',  buyIn: '625/1250', bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc', maxStack: 1000000 }
+  sandbox:       { name: 'Sandbox',      buyIn: 'FREE',     bb: 50,   baseChips: 10000,  rakePct: 0,     isSandbox: true, currency: 'free',    maxStack: Infinity },
+  micro:         { name: 'Micro',        buyIn: '25/50',    bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc',    maxStack: 50000 },
+  mid:           { name: 'Mid Stakes',   buyIn: '125/250',  bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc',    maxStack: 250000 },
+  high:          { name: 'High Stakes',  buyIn: '625/1250', bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc',    maxStack: 1000000 },
+  pokerai_micro: { name: 'Micro',        buyIn: '25/50',    bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'pokerai', maxStack: 50000 },
+  pokerai_mid:   { name: 'Mid Stakes',   buyIn: '125/250',  bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'pokerai', maxStack: 250000 },
+  pokerai_high:  { name: 'High Stakes',  buyIn: '625/1250', bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'pokerai', maxStack: 1000000 }
 };
 
 const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
@@ -23,7 +26,8 @@ class RoomManager {
     this.store = externalStore || new AgentStore();
     this.rooms = {};
     this.lobbyAgents = new Map(); // walletAddress → [agent configs]
-    this.pendingRakeChips = 0; // Accumulated rake waiting to be flushed on-chain
+    this.pendingRakeChips = 0; // Accumulated USDC rake waiting to be flushed on-chain
+    this.pendingPokeraiRakeChips = 0; // Accumulated POKERAI rake
     this.chainService = null; // Set by index.js after init
     this.autoTopUp = new Map(); // walletAddress → { enabled, targetChips }
     this.onBalanceChange = null; // callback set by index.js to notify clients
@@ -65,17 +69,20 @@ class RoomManager {
         chipStack: saved.chipStack || 0,
         handsWon: saved.handsWon || 0,
         handsPlayed: saved.handsPlayed || 0,
-        biggestPot: saved.biggestPot || 0
+        biggestPot: saved.biggestPot || 0,
+        currency: saved.currency || null
       };
 
       // Platform agents: auto-fund from wallet if low on chips so they can auto-seat
       if (PLATFORM_WALLETS.has(wallet.toLowerCase()) && lobbyAgent.chipStack < 500) {
         const walletData = this.store.getWallet(wallet);
-        if (walletData && walletData.balance >= 10000) {
+        const agentCurrency = lobbyAgent.currency || 'usdc';
+        const walBal = agentCurrency === 'pokerai' ? (walletData ? walletData.pokeraiBalance || 0 : 0) : (walletData ? walletData.balance : 0);
+        if (walletData && walBal >= 10000) {
           const topUp = 10000; // micro baseChips
           lobbyAgent.chipStack = topUp;
-          this.store.deductBalance(wallet, topUp);
-          console.log(`[Restore] Auto-funded platform agent ${lobbyAgent.name} with ${topUp} chips`);
+          this.store.deductBalance(wallet, topUp, agentCurrency);
+          console.log(`[Restore] Auto-funded platform agent ${lobbyAgent.name} with ${topUp} chips (${agentCurrency})`);
         }
       }
 
@@ -90,7 +97,7 @@ class RoomManager {
     // Auto-enable top-up for platform wallets so the self-sustaining loop resumes after redeploy
     for (const platformAddr of PLATFORM_WALLETS) {
       if (!this.autoTopUp.has(platformAddr)) {
-        this.autoTopUp.set(platformAddr, { enabled: true, targetChips: 10000, cashOutAt: 50000 });
+        this.autoTopUp.set(platformAddr, { enabled: true, targetChips: 10000, cashOutAt: 50000, maxTopUps: 0 });
         console.log(`[Restore] Auto-enabled top-up for platform wallet ${platformAddr.slice(0,8)}...`);
       }
     }
@@ -130,11 +137,20 @@ class RoomManager {
 
     // Per-hand logic — runs once when a hand finishes, NOT on every action
     table._onHandComplete = () => {
-      if (!room.isSandbox) {
+      if (room.isSandbox) {
+        // Refill sandbox bots that are running low so tables stay active
+        for (const a of table.agents) {
+          if (!a.isCustom && a.chips <= 500) {
+            a.chips = 10000;
+          }
+        }
+      } else {
         this._updateBackingValues(table);
         this._runAutoTopUp(table);
         this._recycleRake(table);
         this._rebalanceRoom(roomId);
+        // Persist hand history for custom agents to DB
+        this._persistHandHistory(table);
         // Notify reward engine of value changes
         if (this.onHandComplete) this.onHandComplete(table);
       }
@@ -159,6 +175,37 @@ class RoomManager {
     }
   }
 
+  _persistHandHistory(table) {
+    if (!this.store.saveHandHistory) return;
+    for (const a of table.agents) {
+      if (!a.isCustom || !a.walletAddress) continue;
+      // Grab the most recent hand history entry (just recorded by poker-engine)
+      const entry = a.handHistory[0];
+      if (!entry) continue;
+      this.store.saveHandHistory({
+        agentId: a.id,
+        walletAddress: a.walletAddress,
+        roomId: entry.roomId || table.roomId,
+        handNumber: entry.hand,
+        cards: entry.cards,
+        community: entry.community,
+        handName: entry.handName,
+        result: entry.result,
+        delta: entry.delta,
+        chipsBet: entry.chipsBet,
+        stackAfter: entry.stackAfter,
+        foldPhase: entry.foldPhase,
+        opponentHand: entry.opponentHand
+      });
+      // Persist learned traits if they've been updated (every 50 hands)
+      if (a.traits?.learned && Object.keys(a.traits.learned).length > 0 && a.handsPlayed % 50 === 0) {
+        if (this.store.saveLearnedTraits) {
+          this.store.saveLearnedTraits(a.id, a.traits.learned);
+        }
+      }
+    }
+  }
+
   _collectRake(table) {
     const key = '_lastRakeSnapshot';
     const prev = table[key] || 0;
@@ -166,21 +213,25 @@ class RoomManager {
     const newRake = current - prev;
     if (newRake > 0) {
       table[key] = current;
-      this.pendingRakeChips += newRake;
+      const currency = ROOM_CONFIGS[table.roomId]?.currency || 'usdc';
+      if (currency === 'pokerai') {
+        this.pendingPokeraiRakeChips += newRake;
+      } else {
+        this.pendingRakeChips += newRake;
+      }
     }
     // NOTE: _updateBackingValues, _runAutoTopUp, _recycleRake run in _onHandComplete only
     // _collectRake fires on every game state broadcast (every action) — must NOT run per-hand logic here
   }
 
   _runAutoTopUp(table) {
+    const currency = ROOM_CONFIGS[table.roomId]?.currency || 'usdc';
     for (const agent of table.agents) {
       if (!agent.isCustom || !agent.walletAddress) continue;
       const config = this.autoTopUp.get(agent.walletAddress);
       if (!config || !config.enabled) continue;
 
       // Skip auto top-up/cash-out when agent has human backers
-      // (auto-refill distorts backer P&L shares — let agent go bust if backed,
-      //  then refill normally after human withdraws their stake)
       const backings = this.store.getBackingsForAgent(agent.id);
       if (backings.length > 0) continue;
 
@@ -188,37 +239,50 @@ class RoomManager {
 
       // Auto cash-out: if agent is above cash-out threshold, skim excess back to wallet
       if (config.cashOutAt > 0 && agent.chips > config.cashOutAt) {
-        const excess = agent.chips - target; // bring back down to target, not cashOutAt
+        const excess = agent.chips - target;
         if (excess > 0) {
           agent.chips -= excess;
-          this.store.addBalance(agent.walletAddress, excess);
+          this.store.addBalance(agent.walletAddress, excess, currency);
           agent.totalCashedOut = (agent.totalCashedOut || 0) + excess;
           if (!agent.autoEvents) agent.autoEvents = [];
           agent.autoEvents.push({ type: 'cashout', amount: excess, chips: agent.chips, time: Date.now() });
-          console.log(`[AutoCashOut] ${agent.name}: -${excess} chips to wallet`);
+          console.log(`[AutoCashOut] ${agent.name}: -${excess} chips to wallet (${currency})`);
           if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
         }
       }
 
-      // Auto top-up: if agent drops below 50% of target, refill
+      // Auto top-up: if agent drops below 50% of target, refill from correct currency
       if (agent.chips < target * 0.5) {
+        // Enforce max top-up limit (count only 'topup' events, not cashouts)
+        if (config.maxTopUps > 0) {
+          const topUpCount = (agent.autoEvents || []).filter(e => e.type === 'topup').length;
+          if (topUpCount >= config.maxTopUps) {
+            if (!agent._topUpLimitLogged) {
+              console.log(`[AutoTopUp] ${agent.name} hit max top-ups (${config.maxTopUps}) — skipping`);
+              agent._topUpLimitLogged = true;
+            }
+            continue;
+          }
+        }
+
         const needed = target - agent.chips;
         const wallet = this.store.getWallet(agent.walletAddress);
-        if (!wallet || wallet.balance <= 0) continue;
+        if (!wallet) continue;
+        const walletBal = currency === 'pokerai' ? (wallet.pokeraiBalance || 0) : wallet.balance;
+        if (walletBal <= 0) continue;
 
-        const topUp = Math.min(needed, wallet.balance);
+        const topUp = Math.min(needed, walletBal);
         if (topUp <= 0) continue;
 
-        const deducted = this.store.deductBalance(agent.walletAddress, topUp);
-        if (deducted === false) continue; // wallet couldn't cover it, skip
+        const deducted = this.store.deductBalance(agent.walletAddress, topUp, currency);
+        if (deducted === false) continue;
         agent.chips += topUp;
         agent.totalDeposited = (agent.totalDeposited || 0) + topUp;
         if (!agent.autoEvents) agent.autoEvents = [];
         agent.autoEvents.push({ type: 'topup', amount: topUp, chips: agent.chips, time: Date.now() });
-        console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
+        console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (${currency}, wallet: ${walletBal - topUp})`);
 
         if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
-        // Notify client about the auto-top-up
         if (this.onAutoTopUp) this.onAutoTopUp(agent.walletAddress, agent.name, topUp, agent.chips);
       }
     }
@@ -228,6 +292,8 @@ class RoomManager {
     // Credit contractPool chips back to wallets that have auto-top-up enabled
     // This keeps the system self-sustaining when admin is bootstrapping tables
     if (table.contractPool <= 0) return;
+
+    const currency = ROOM_CONFIGS[table.roomId]?.currency || 'usdc';
 
     // Find all unique PLATFORM wallets with auto-top-up at this table
     // Rake recycling is admin-only — regular users should NOT receive rake credits
@@ -248,22 +314,29 @@ class RoomManager {
 
     let totalRecycled = 0;
     for (const addr of wallets) {
-      this.store.addBalance(addr, perWallet);
+      this.store.addBalance(addr, perWallet, currency);
       totalRecycled += perWallet;
-      console.log(`[RakeRecycle] ${addr.slice(0,8)}...: +${perWallet} chips from pool`);
+      console.log(`[RakeRecycle] ${addr.slice(0,8)}...: +${perWallet} chips from pool (${currency})`);
       if (this.onBalanceChange) this.onBalanceChange(addr);
     }
 
     table.contractPool -= totalRecycled;
 
     // Subtract recycled chips from pending on-chain rake to prevent double-counting
-    // (chips recycled in-game should NOT also be flushed on-chain)
-    this.pendingRakeChips = Math.max(0, this.pendingRakeChips - totalRecycled);
+    if (currency === 'pokerai') {
+      this.pendingPokeraiRakeChips = Math.max(0, this.pendingPokeraiRakeChips - totalRecycled);
+    } else {
+      this.pendingRakeChips = Math.max(0, this.pendingRakeChips - totalRecycled);
+    }
   }
 
   // === Platform Agent Rebalancing ===
   // Platform agents act as elastic liquidity — they fill tables so humans always have opponents,
   // and move between tables as humans join/leave.
+
+  _getRoomCurrency(roomId) {
+    return ROOM_CONFIGS[roomId]?.currency || 'usdc';
+  }
 
   _isPlatformAgent(agent) {
     return agent.isCustom && agent.walletAddress && PLATFORM_WALLETS.has(agent.walletAddress.toLowerCase());
@@ -492,19 +565,94 @@ class RoomManager {
 
   // === Auto Top-Up settings ===
 
-  setAutoTopUp(walletAddress, enabled, targetChips, cashOutAt) {
+  setAutoTopUp(walletAddress, { enabled, targetChips, cashOutAt, maxTopUps }) {
     if (enabled) {
-      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0 });
-      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt}`);
+      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
+      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt} maxTopUps=${maxTopUps || 'unlimited'}`);
     } else {
       this.autoTopUp.delete(walletAddress);
       console.log(`[AutoTopUp] Disabled for ${walletAddress.slice(0,8)}...`);
     }
-    return { success: true, enabled, targetChips, cashOutAt };
+    return { success: true, enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0 };
   }
 
   getAutoTopUp(walletAddress) {
-    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000, cashOutAt: 0 };
+    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000, cashOutAt: 0, maxTopUps: 0 };
+  }
+
+  // === Agent Stats ===
+
+  async computeAgentStats(agentId) {
+    if (!this.store.getAgentHandHistory) return null;
+    const rows = await this.store.getAgentHandHistory(agentId, 200);
+    if (!rows || rows.length === 0) return { handsPlayed: 0 };
+
+    const hands = rows;
+    const wins = hands.filter(h => h.result === 'win');
+    const losses = hands.filter(h => h.result === 'loss');
+    const folds = hands.filter(h => h.result === 'fold');
+    const showdowns = hands.filter(h => h.result === 'win' || h.result === 'loss');
+    const preflopFolds = folds.filter(h => h.fold_phase === 'preflop');
+
+    const totalProfit = hands.reduce((s, h) => s + (h.delta || 0), 0);
+    const avgWin = wins.length > 0 ? Math.round(wins.reduce((s, h) => s + h.delta, 0) / wins.length) : 0;
+    const avgLoss = losses.length > 0 ? Math.round(losses.reduce((s, h) => s + h.delta, 0) / losses.length) : 0;
+
+    // Biggest win/loss
+    let biggestWin = null, biggestLoss = null;
+    for (const h of hands) {
+      if (h.delta > 0 && (!biggestWin || h.delta > biggestWin.delta)) {
+        biggestWin = { delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community };
+      }
+      if (h.delta < 0 && (!biggestLoss || h.delta < biggestLoss.delta)) {
+        biggestLoss = { delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community };
+      }
+    }
+
+    // Worst 5 hands
+    const worstHands = [...hands].sort((a, b) => a.delta - b.delta).slice(0, 5).map(h => ({
+      delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community, result: h.result
+    }));
+
+    // Hand name distribution
+    const handDistribution = {};
+    for (const h of hands) {
+      if (h.hand_name) handDistribution[h.hand_name] = (handDistribution[h.hand_name] || 0) + 1;
+    }
+
+    // Common mistakes
+    const commonMistakes = [];
+    if (preflopFolds.length / Math.max(hands.length, 1) > 0.6) {
+      commonMistakes.push('Folding too much preflop');
+    }
+    if (showdowns.length > 5 && wins.length / showdowns.length < 0.3) {
+      commonMistakes.push('Low showdown win rate — calling too loose');
+    }
+    const bigLosses = losses.filter(h => Math.abs(h.delta) > (h.chips_bet || 1) * 3);
+    if (bigLosses.length > 3) {
+      commonMistakes.push('Overcommitting to losing hands');
+    }
+
+    // Get learned traits
+    const learnedTraits = this.store.getLearnedTraits ? this.store.getLearnedTraits(agentId) : {};
+
+    return {
+      handsPlayed: hands.length,
+      winRate: showdowns.length > 0 ? Math.round(wins.length / showdowns.length * 100) : 0,
+      foldRate: Math.round(folds.length / Math.max(hands.length, 1) * 100),
+      preflopFoldRate: Math.round(preflopFolds.length / Math.max(hands.length, 1) * 100),
+      showdownWinRate: showdowns.length > 0 ? Math.round(wins.length / showdowns.length * 100) : 0,
+      avgWinAmount: avgWin,
+      avgLossAmount: avgLoss,
+      biggestWin,
+      biggestLoss,
+      worstHands,
+      totalProfit,
+      profitPerHand: hands.length > 0 ? Math.round(totalProfit / hands.length) : 0,
+      handDistribution,
+      commonMistakes,
+      learnedTraits
+    };
   }
 
   _startRakeTimer() {
@@ -693,24 +841,33 @@ class RoomManager {
 
   // === Fund agent in lobby (separate from joining) ===
 
-  fundLobbyAgent(walletAddress, agentId, amount) {
+  fundLobbyAgent(walletAddress, agentId, amount, currency = 'usdc') {
     const walletLobby = this.lobbyAgents.get(walletAddress);
     if (!walletLobby) return { error: 'No agents in lobby' };
     const agent = walletLobby.find(a => a.id === agentId);
     if (!agent) return { error: 'Agent not found in lobby' };
     if (!amount || amount < 500) return { error: 'Minimum fund is 500 chips' };
 
+    // Check correct currency balance
     const wallet = this.store.getWallet(walletAddress);
-    if (!wallet || wallet.balance < amount) return { error: `Not enough chips! You have ${(wallet ? wallet.balance : 0).toLocaleString()}` };
+    const bal = currency === 'pokerai' ? (wallet ? wallet.pokeraiBalance || 0 : 0) : (wallet ? wallet.balance : 0);
+    if (bal < amount) return { error: `Not enough ${currency.toUpperCase()} chips! You have ${bal.toLocaleString()}` };
 
-    const deducted = this.store.deductBalance(walletAddress, amount);
+    // If agent already has chips in a different currency, reject (must defund first)
+    if (agent.chipStack > 0 && agent.currency && agent.currency !== currency) {
+      return { error: `Agent has ${agent.chipStack.toLocaleString()} ${(agent.currency || 'usdc').toUpperCase()} chips. Defund first before switching currency.` };
+    }
+
+    const deducted = this.store.deductBalance(walletAddress, amount, currency);
     if (deducted === false) {
       return { error: 'Failed to deduct chips from wallet' };
     }
     agent.chipStack += amount;
+    agent.currency = currency;
     this.store.saveAgent(agent);
-    console.log(`[RoomManager] Funded ${agent.name} with ${amount} chips (total: ${agent.chipStack})`);
-    return { success: true, agentId, chipStack: agent.chipStack };
+    const newBalance = this.store.getWalletBalance(walletAddress, currency);
+    console.log(`[RoomManager] Funded ${agent.name} with ${amount} ${currency} chips (total: ${agent.chipStack})`);
+    return { success: true, agentId, chipStack: agent.chipStack, currency, newBalance };
   }
 
   defundLobbyAgent(walletAddress, agentId, amount) {
@@ -723,13 +880,14 @@ class RoomManager {
     const withdrawAmt = amount || agent.chipStack;
     if (withdrawAmt <= 0 || withdrawAmt > agent.chipStack) return { error: 'Invalid amount' };
 
+    const currency = agent.currency || 'usdc';
     agent.chipStack -= withdrawAmt;
-    this.store.addBalance(walletAddress, withdrawAmt);
+    this.store.addBalance(walletAddress, withdrawAmt, currency);
+    if (agent.chipStack === 0) agent.currency = null; // clear currency when empty
     this.store.saveAgent(agent);
-    const wallet = this.store.getWallet(walletAddress);
-    const newBalance = wallet ? wallet.balance : 0;
-    console.log(`[RoomManager] Defunded ${agent.name}: -${withdrawAmt} chips (remaining: ${agent.chipStack}, wallet: ${newBalance})`);
-    return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt, newBalance };
+    const newBalance = this.store.getWalletBalance(walletAddress, currency);
+    console.log(`[RoomManager] Defunded ${agent.name}: -${withdrawAmt} ${currency} chips (remaining: ${agent.chipStack}, wallet: ${newBalance})`);
+    return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt, newBalance, currency };
   }
 
   // === Backing operations ===
@@ -944,6 +1102,17 @@ class RoomManager {
     }
 
     const lobbyAgent = walletLobby[lobbyIdx];
+    const roomCurrency = room.currency || 'usdc';
+
+    // If agent has chips in a different currency, return them first
+    if (lobbyAgent.chipStack > 0 && lobbyAgent.currency && lobbyAgent.currency !== roomCurrency && roomCurrency !== 'free') {
+      const oldCurrency = lobbyAgent.currency;
+      this.store.addBalance(walletAddress, lobbyAgent.chipStack, oldCurrency);
+      console.log(`[RoomManager] Returned ${lobbyAgent.chipStack} ${oldCurrency} chips to wallet (switching to ${roomCurrency})`);
+      lobbyAgent.chipStack = 0;
+      lobbyAgent.currency = null;
+      if (this.onBalanceChange) this.onBalanceChange(walletAddress);
+    }
 
     // Reset baseChips for real-money rooms — sandbox P&L shouldn't carry over
     lobbyAgent.baseChips = lobbyAgent.chipStack;
@@ -961,8 +1130,10 @@ class RoomManager {
       if (chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
       const wallet = this.store.getWallet(walletAddress);
       if (!wallet) return { error: 'Wallet not found' };
-      if (wallet.balance < chipStack) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
+      const walletBal = roomCurrency === 'pokerai' ? (wallet.pokeraiBalance || 0) : wallet.balance;
+      if (walletBal < chipStack) return { error: `Not enough ${roomCurrency.toUpperCase()} chips! You have ${walletBal.toLocaleString()}` };
       lobbyAgent.chipStack = chipStack;
+      lobbyAgent.currency = roomCurrency;
       fundedInline = true;
     }
 
@@ -973,7 +1144,8 @@ class RoomManager {
     // Enforce max stack per room tier
     const maxStack = room.maxStack || Infinity;
     if (lobbyAgent.chipStack > maxStack) {
-      return { error: `Max buy-in for ${room.name} is ${maxStack.toLocaleString()} chips ($${(maxStack / 10000).toFixed(0)} USDC). Withdraw some chips first.` };
+      const label = roomCurrency === 'pokerai' ? `${maxStack.toLocaleString()} chips (${maxStack} POKERAI)` : `${maxStack.toLocaleString()} chips ($${(maxStack / 10000).toFixed(0)} USDC)`;
+      return { error: `Max buy-in for ${room.name} is ${label}. Withdraw some chips first.` };
     }
 
     const table = this._findAvailableTable(roomId);
@@ -987,12 +1159,13 @@ class RoomManager {
 
     // Deduct balance if funded inline (not pre-funded)
     if (fundedInline) {
-      const deducted = this.store.deductBalance(walletAddress, chipStack);
+      const deducted = this.store.deductBalance(walletAddress, chipStack, roomCurrency);
       if (deducted === false) {
         // Roll back: unseat the agent and return to lobby
         const agentIdx = table.agents.findIndex(a => a.id === agentId);
         if (agentIdx >= 0) table._executeUnseat(agentIdx, table.agents[agentIdx]);
         lobbyAgent.chipStack = 0;
+        lobbyAgent.currency = null;
         if (!this.lobbyAgents.has(walletAddress)) this.lobbyAgents.set(walletAddress, []);
         this.lobbyAgents.get(walletAddress).push(lobbyAgent);
         return { error: 'Failed to deduct chips from wallet' };
@@ -1011,7 +1184,7 @@ class RoomManager {
 
     return {
       success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot,
-      newBalance: this.store.getWallet(walletAddress).balance
+      newBalance: this.store.getWalletBalance(walletAddress, roomCurrency), currency: roomCurrency
     };
   }
 
@@ -1105,6 +1278,8 @@ class RoomManager {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
 
+    const currency = ROOM_CONFIGS[table.roomId]?.currency || 'usdc';
+
     // Enforce max stack per room tier
     const roomConfig = ROOM_CONFIGS[table.roomId];
     if (roomConfig && roomConfig.maxStack) {
@@ -1116,22 +1291,24 @@ class RoomManager {
       }
     }
 
-    // Deduct from wallet
+    // Deduct from correct currency wallet
     const wallet = this.store.getWallet(walletAddress);
     if (!wallet) return { error: 'Wallet not found' };
-    if (wallet.balance < amount) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
+    const bal = currency === 'pokerai' ? (wallet.pokeraiBalance || 0) : wallet.balance;
+    if (bal < amount) return { error: `Not enough ${currency.toUpperCase()} chips! You have ${bal.toLocaleString()}` };
 
     const result = table.topUpAgent(walletAddress, agentId, amount);
     if (result.error) return result;
 
-    const deducted = this.store.deductBalance(walletAddress, amount);
+    const deducted = this.store.deductBalance(walletAddress, amount, currency);
     if (deducted === false) {
       // Roll back: remove the top-up chips from the agent
       const agent = table.agents.find(a => a.id === agentId);
       if (agent) agent.chips -= amount;
       return { error: 'Failed to deduct chips from wallet' };
     }
-    result.newBalance = this.store.getWallet(walletAddress).balance;
+    result.newBalance = this.store.getWalletBalance(walletAddress, currency);
+    result.currency = currency;
     return result;
   }
 
@@ -1184,6 +1361,16 @@ class RoomManager {
       console.log(`[RoomManager] Deducted ${deduct} backing chips from deleteAgent finalChips (owner gets ${finalChips})`);
     }
 
+    // Determine currency: from table room, agent, or fallback to usdc
+    let agentCurrency = 'usdc';
+    if (table && this.rooms[table.roomId]) {
+      agentCurrency = this.rooms[table.roomId].currency || 'usdc';
+    } else {
+      // Agent in lobby — check stored currency
+      const storedAgent = this.store.getAgent ? this.store.getAgent(agentId) : null;
+      if (storedAgent && storedAgent.currency) agentCurrency = storedAgent.currency;
+    }
+
     // Return chips to wallet
     const wasInSandbox = table && this.rooms[table.roomId] && this.rooms[table.roomId].isSandbox;
     if (wasInSandbox) {
@@ -1196,7 +1383,7 @@ class RoomManager {
         finalChips = 0;
       }
     } else if (finalChips > 0) {
-      this.store.addBalance(walletAddress, finalChips);
+      this.store.addBalance(walletAddress, finalChips, agentCurrency === 'free' ? 'usdc' : agentCurrency);
     }
 
     // Remove from persistent store (skip sandbox)
@@ -1206,7 +1393,8 @@ class RoomManager {
 
     return {
       success: true, finalChips, pnl,
-      newBalance: this.store.getWallet(walletAddress).balance
+      newBalance: this.store.getWalletBalance(walletAddress, agentCurrency === 'free' ? 'usdc' : agentCurrency),
+      currency: agentCurrency === 'free' ? 'usdc' : agentCurrency
     };
   }
 
@@ -1240,6 +1428,7 @@ class RoomManager {
               prompt: a.prompt || '',
               pnl: a.chips - a.baseChips,
               backingTotal,
+              currency: room.currency || 'usdc',
               status: 'playing',
               roomId: table.roomId,
               tableId: table.tableId
@@ -1267,6 +1456,7 @@ class RoomManager {
         rules: a.rules || {},
         prompt: a.prompt || '',
         pnl: 0,
+        currency: a.currency || null,
         status: 'lobby'
       });
     }
@@ -1344,6 +1534,23 @@ class RoomManager {
     return total;
   }
 
+  getChipsInPlayByCurrency(walletAddress) {
+    let usdc = 0, pokerai = 0;
+    for (const room of Object.values(this.rooms)) {
+      if (room.isSandbox) continue;
+      const currency = room.currency || 'usdc';
+      for (const table of room.tables) {
+        for (const a of table.agents) {
+          if (a.isCustom && a.walletAddress === walletAddress) {
+            if (currency === 'pokerai') pokerai += a.chips;
+            else usdc += a.chips;
+          }
+        }
+      }
+    }
+    return { usdc, pokerai };
+  }
+
   getChipsInLobby(walletAddress) {
     const walletLobby = this.lobbyAgents.get(walletAddress) || [];
     return walletLobby.reduce((sum, a) => sum + (a.chipStack || 0), 0);
@@ -1356,7 +1563,7 @@ class RoomManager {
     const wallet = this.store.getWallet ? this.store.getWallet(walletAddress) : null;
     if (wallet) return wallet;
     // Fallback: return 0 balance, don't create wallet synchronously
-    return { address: walletAddress, balance: 0 };
+    return { address: walletAddress, balance: 0, pokeraiBalance: 0 };
   }
 
   // === State ===

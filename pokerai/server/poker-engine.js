@@ -261,11 +261,18 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 
   // Apply prompt modifiers to agent percentages (temporary for this decision)
   let effectiveAgent = agent;
-  if (promptMods.raiseBoost || promptMods.bluffBoost || promptMods.foldBoost) {
+  if (promptMods.raiseBoost || promptMods.bluffBoost || promptMods.foldBoost || agent.traits?.learned) {
     effectiveAgent = Object.create(agent);
     effectiveAgent.raisePct = Math.max(0, Math.min(100, agent.raisePct + (promptMods.raiseBoost || 0)));
     effectiveAgent.bluffPct = Math.max(0, Math.min(100, agent.bluffPct + (promptMods.bluffBoost || 0)));
     effectiveAgent.foldPct = Math.max(0, Math.min(100, agent.foldPct + (promptMods.foldBoost || 0)));
+    // Apply self-learned adjustments (0-1 scale → 0-100 pct scale)
+    if (agent.traits?.learned) {
+      const l = agent.traits.learned;
+      effectiveAgent.foldPct = Math.max(0, Math.min(100, effectiveAgent.foldPct + (l.foldAdjust || 0) * 100));
+      effectiveAgent.bluffPct = Math.max(0, Math.min(100, effectiveAgent.bluffPct + (l.bluffAdjust || 0) * 100));
+      effectiveAgent.raisePct = Math.max(0, Math.min(100, effectiveAgent.raisePct + (l.raiseAdjust || 0) * 100));
+    }
   }
   if (promptMods.slowPlay) rules = { ...rules, slowPlay: true };
 
@@ -531,6 +538,7 @@ class PokerEngine {
       a.currentBet = 0;
       a.roundBet = 0;
       a.allIn = false;
+      a._foldPhase = null;
     }
 
     // Sandbox auto-recovery: when most house bots are dead or pool is empty, reset table
@@ -824,6 +832,7 @@ class PokerEngine {
       }
       case 'fold':
         agent.folded = true;
+        agent._foldPhase = this.phase || 'preflop';
         logMsg += `<span class="action-fold">folds</span>`;
         break;
       case 'check':
@@ -1022,6 +1031,10 @@ class PokerEngine {
 
     // Record hand history for every agent that played this hand
     this._recordHandHistory();
+    // Self-learning: analyze and adjust agent behavior every 50 hands
+    for (const a of this.agents) {
+      if (a.isCustom) this._analyzeAndLearn(a);
+    }
     // Only auto-cashout HOUSE bots (not custom agents)
     this._checkHouseBotCashouts();
     this.updateAllFundPositions();
@@ -1046,6 +1059,24 @@ class PokerEngine {
 
   _recordHandHistory() {
     const MAX_HISTORY = 20;
+
+    // Find the main winner's hand name for opponent_hand tracking
+    const showdownPlayers = this.agents.filter(a => !a.folded && a._startChips !== undefined);
+    let mainWinnerHandName = null;
+    let mainWinnerId = null;
+    if (showdownPlayers.length > 1) {
+      // Find biggest winner at showdown
+      let bestDelta = -Infinity;
+      for (const p of showdownPlayers) {
+        const d = p.chips - p._startChips;
+        if (d > bestDelta) {
+          bestDelta = d;
+          mainWinnerId = p.id;
+          mainWinnerHandName = p._handName || null;
+        }
+      }
+    }
+
     for (const a of this.agents) {
       if (a._startChips === undefined) continue; // didn't play
       const delta = a.chips - a._startChips;
@@ -1058,11 +1089,95 @@ class PokerEngine {
         handName: a._handName || null,
         delta,
         chipsBet: a.currentBet,
-        stackAfter: a.chips
+        stackAfter: a.chips,
+        foldPhase: a.folded ? (a._foldPhase || 'preflop') : null,
+        opponentHand: (!a.folded && delta < 0 && mainWinnerId !== a.id) ? mainWinnerHandName : null,
+        roomId: this.roomId || null
       };
       a.handHistory.unshift(entry);
       if (a.handHistory.length > MAX_HISTORY) a.handHistory.pop();
     }
+  }
+
+  _analyzeAndLearn(agent) {
+    if (!agent.isCustom) return;
+    const history = agent.handHistory;
+    if (!history || history.length < 10) return;
+    // Only run every 50 cumulative hands
+    if (agent.handsPlayed % 50 !== 0) return;
+
+    const stats = this._computeQuickStats(history);
+
+    if (!agent.traits) agent.traits = {};
+    if (!agent.traits.learned) agent.traits.learned = {};
+
+    // Rule 1: Folding too much preflop → lower fold tendency
+    if (stats.preflopFoldRate > 0.7) {
+      agent.traits.learned.foldAdjust = (agent.traits.learned.foldAdjust || 0) - 0.05;
+    }
+
+    // Rule 2: Losing at showdown too often → increase fold tendency
+    if (stats.showdownWinRate < 0.3 && stats.showdownCount > 5) {
+      agent.traits.learned.foldAdjust = (agent.traits.learned.foldAdjust || 0) + 0.05;
+    }
+
+    // Rule 3: Bluffing and getting caught → reduce bluff frequency
+    if (stats.bluffLossRate > 0.6) {
+      agent.traits.learned.bluffAdjust = (agent.traits.learned.bluffAdjust || 0) - 0.05;
+    }
+
+    // Rule 4: Never raising with strong hands → increase raise tendency
+    if (stats.strongHandPassiveRate > 0.5) {
+      agent.traits.learned.raiseAdjust = (agent.traits.learned.raiseAdjust || 0) + 0.05;
+    }
+
+    // Clamp to [-0.2, +0.2]
+    for (const key of ['foldAdjust', 'bluffAdjust', 'raiseAdjust']) {
+      if (agent.traits.learned[key] !== undefined) {
+        agent.traits.learned[key] = Math.max(-0.2, Math.min(0.2, agent.traits.learned[key]));
+      }
+    }
+
+    console.log(`[Learn] ${agent.name} after ${agent.handsPlayed} hands: fold=${(agent.traits.learned.foldAdjust || 0).toFixed(2)} bluff=${(agent.traits.learned.bluffAdjust || 0).toFixed(2)} raise=${(agent.traits.learned.raiseAdjust || 0).toFixed(2)}`);
+  }
+
+  _computeQuickStats(history) {
+    let totalHands = history.length;
+    let preflopFolds = 0;
+    let showdownWins = 0;
+    let showdownCount = 0;
+    let bluffAttempts = 0;
+    let bluffLosses = 0;
+    let strongHandPassive = 0;
+    let strongHandCount = 0;
+
+    for (const h of history) {
+      if (h.result === 'fold' && h.foldPhase === 'preflop') preflopFolds++;
+      if (h.result === 'win' || h.result === 'loss') {
+        showdownCount++;
+        if (h.result === 'win') showdownWins++;
+      }
+      // Detect bluffs: raised/bet but lost (no strong hand name)
+      const weakHands = ['High Card', 'Last Standing', null];
+      if (h.result === 'loss' && h.chipsBet > 0 && weakHands.includes(h.handName)) {
+        bluffAttempts++;
+        bluffLosses++;
+      }
+      // Strong hand but didn't win much (passive play)
+      const strongNames = ['Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush'];
+      if (strongNames.includes(h.handName)) {
+        strongHandCount++;
+        if (h.delta <= 0) strongHandPassive++;
+      }
+    }
+
+    return {
+      preflopFoldRate: totalHands > 0 ? preflopFolds / totalHands : 0,
+      showdownWinRate: showdownCount > 0 ? showdownWins / showdownCount : 0.5,
+      showdownCount,
+      bluffLossRate: bluffAttempts > 0 ? bluffLosses / bluffAttempts : 0,
+      strongHandPassiveRate: strongHandCount > 0 ? strongHandPassive / strongHandCount : 0
+    };
   }
 
   _checkHouseBotCashouts() {
