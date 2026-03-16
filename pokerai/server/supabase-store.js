@@ -353,6 +353,7 @@ class SupabaseStore {
   // =========== Hand History ===========
 
   _initHandHistoryBatch() {
+    if (this._handHistoryTimer) clearInterval(this._handHistoryTimer);
     this._handHistoryBatch = [];
     this._handHistoryTimer = setInterval(() => this._flushHandHistory(), 5000);
   }
@@ -381,8 +382,17 @@ class SupabaseStore {
     if (!this._handHistoryBatch || this._handHistoryBatch.length === 0) return;
     const batch = this._handHistoryBatch;
     this._handHistoryBatch = [];
-    const { error } = await this.supabase.from('poker_hand_history').insert(batch);
-    if (error) console.error(`[SupabaseStore] Hand history flush failed (${batch.length} rows):`, error.message);
+    try {
+      const { error } = await this.supabase.from('poker_hand_history').insert(batch);
+      if (error) {
+        console.error(`[SupabaseStore] Hand history flush failed (${batch.length} rows):`, error.message);
+        // Restore failed batch so data isn't lost
+        this._handHistoryBatch = [...batch, ...this._handHistoryBatch];
+      }
+    } catch (err) {
+      console.error(`[SupabaseStore] Hand history flush exception:`, err.message);
+      this._handHistoryBatch = [...batch, ...this._handHistoryBatch];
+    }
   }
 
   async getAgentHandHistory(agentId, limit = 200) {

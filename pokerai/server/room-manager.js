@@ -602,16 +602,16 @@ class RoomManager {
     let biggestWin = null, biggestLoss = null;
     for (const h of hands) {
       if (h.delta > 0 && (!biggestWin || h.delta > biggestWin.delta)) {
-        biggestWin = { delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community };
+        biggestWin = { delta: h.delta, handName: h.hand_name, cards: h.cards || [], community: h.community || [] };
       }
       if (h.delta < 0 && (!biggestLoss || h.delta < biggestLoss.delta)) {
-        biggestLoss = { delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community };
+        biggestLoss = { delta: h.delta, handName: h.hand_name, cards: h.cards || [], community: h.community || [] };
       }
     }
 
     // Worst 5 hands
     const worstHands = [...hands].sort((a, b) => a.delta - b.delta).slice(0, 5).map(h => ({
-      delta: h.delta, handName: h.hand_name, cards: h.cards, community: h.community, result: h.result
+      delta: h.delta, handName: h.hand_name, cards: h.cards || [], community: h.community || [], result: h.result
     }));
 
     // Hand name distribution
@@ -1119,7 +1119,9 @@ class RoomManager {
     // Track total invested/cashed-out for accurate P&L across auto top-ups/cash-outs
     lobbyAgent.totalDeposited = lobbyAgent.chipStack;
     lobbyAgent.totalCashedOut = 0;
-    lobbyAgent.autoEvents = [];
+    // Preserve autoEvents so max top-up limit count carries across table moves
+    // Only reset if agent had no prior events (fresh join)
+    if (!lobbyAgent.autoEvents) lobbyAgent.autoEvents = [];
 
     // If agent is already funded (via fundAgent), use their existing stack
     // Otherwise fund inline (legacy flow)

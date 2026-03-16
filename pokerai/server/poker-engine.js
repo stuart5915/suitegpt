@@ -1157,11 +1157,11 @@ class PokerEngine {
         showdownCount++;
         if (h.result === 'win') showdownWins++;
       }
-      // Detect bluffs: raised/bet but lost (no strong hand name)
+      // Detect bluffs: bet with a weak hand (win or lose)
       const weakHands = ['High Card', 'Last Standing', null];
-      if (h.result === 'loss' && h.chipsBet > 0 && weakHands.includes(h.handName)) {
+      if (h.chipsBet > 0 && weakHands.includes(h.handName) && h.result !== 'fold') {
         bluffAttempts++;
-        bluffLosses++;
+        if (h.result === 'loss') bluffLosses++;
       }
       // Strong hand but didn't win much (passive play)
       const strongNames = ['Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush'];
