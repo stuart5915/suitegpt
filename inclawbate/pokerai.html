@@ -7439,6 +7439,10 @@ function renderMyAgents() {
         <!-- Fund panel (shown when agent has no chips) -->
         <div id="fundPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(245,197,66,0.3);border-radius:10px;padding:10px">
           <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's chip stack:</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px">
+            <button id="fundCurrUsdc-${agent.id}" onclick="switchFundCurrency('${agent.id}','usdc')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary)">💲 USDC</button>
+            <button id="fundCurrPokerai-${agent.id}" onclick="switchFundCurrency('${agent.id}','pokerai')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted)">🃏 POKERAI</button>
+          </div>
           <div style="font-size:9px;color:#f5c542;margin-bottom:4px;opacity:0.8">⚠️ Your agent plays hands automatically once joined to a table. You can withdraw chips anytime.</div>
           <div style="font-size:9px;color:#34d058;margin-bottom:6px">🔥 Earning <span class="pokerai-apy-value">---</span> APY in $POKERAI rewards</div>
           <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
@@ -7446,7 +7450,7 @@ function renderMyAgents() {
             <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
             <button onclick="confirmFund('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
           </div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${getActiveBalance().toLocaleString()}</span> ${getActiveCurrency() === 'pokerai' ? '$POKERAI' : 'USDC'} chips</div>
+          <div id="fundBalLabel-${agent.id}" style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> USDC chips</div>
         </div>
         <!-- Withdraw panel (partial withdraw) -->
         <div id="withdrawPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
@@ -7741,7 +7745,7 @@ function _applyOpenPanels() {
 function _populateFundPresets(agentId) {
   const presetsEl = document.getElementById('fundPresets-' + agentId);
   if (!presetsEl) return;
-  const currency = getActiveCurrency();
+  const currency = _getFundCurrency(agentId);
   const savedAmt = _selectedFundAmount[agentId] || FUND_PRESETS[0];
   presetsEl.innerHTML = FUND_PRESETS.map(amt => {
     const chipLabel = amt >= 1000 ? (amt / 1000) + 'K' : amt;
@@ -7763,6 +7767,34 @@ function _selectFundPreset(agentId, amt, btn) {
 }
 
 const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
+const _fundPanelCurrency = {}; // per-agent fund currency selection
+
+function switchFundCurrency(agentId, currency) {
+  _fundPanelCurrency[agentId] = currency;
+  const uBtn = document.getElementById('fundCurrUsdc-' + agentId);
+  const pBtn = document.getElementById('fundCurrPokerai-' + agentId);
+  if (uBtn) {
+    uBtn.style.background = currency === 'usdc' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)';
+    uBtn.style.borderColor = currency === 'usdc' ? 'rgba(99,102,241,0.3)' : 'var(--border)';
+    uBtn.style.color = currency === 'usdc' ? 'var(--accent-primary)' : 'var(--text-muted)';
+  }
+  if (pBtn) {
+    pBtn.style.background = currency === 'pokerai' ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)';
+    pBtn.style.borderColor = currency === 'pokerai' ? 'rgba(139,92,246,0.3)' : 'var(--border)';
+    pBtn.style.color = currency === 'pokerai' ? 'hsl(263,70%,68%)' : 'var(--text-muted)';
+  }
+  _populateFundPresets(agentId);
+  // Update balance label
+  const balLabel = document.getElementById('fundBalLabel-' + agentId);
+  if (balLabel) {
+    const bal = currency === 'pokerai' ? pokeraiWalletBalance : walletBalance;
+    balLabel.innerHTML = 'Balance: <span class="wallet-balance" style="color:var(--accent-gold)">' + bal.toLocaleString() + '</span> ' + (currency === 'pokerai' ? '$POKERAI' : 'USDC') + ' chips';
+  }
+}
+
+function _getFundCurrency(agentId) {
+  return _fundPanelCurrency[agentId] || getActiveCurrency();
+}
 
 function confirmFund(agentId) {
   const wallet = getWallet();
@@ -7771,12 +7803,12 @@ function confirmFund(agentId) {
 
   const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
   if (!amount || amount < 500) { showToast('Minimum fund is 500 chips', 'error'); return; }
-  const currency = getActiveCurrency();
-  const bal = getActiveBalance();
+  const currency = _getFundCurrency(agentId);
+  const bal = currency === 'pokerai' ? pokeraiWalletBalance : walletBalance;
   if (amount > bal) { showToast(`Not enough chips! You have ${bal.toLocaleString()} ${currency === 'pokerai' ? '$POKERAI' : 'USDC'} chips`, 'error'); return; }
 
   ws.send(JSON.stringify({ type: 'fundAgent', agentId, amount, currency }));
-  showToast(`Funding agent with ${amount.toLocaleString()} chips...`, 'info');
+  showToast(`Funding agent with ${amount.toLocaleString()} ${currency === 'pokerai' ? 'POKERAI' : 'USDC'} chips...`, 'info');
 }
 
 function defundAgent(agentId, amount) {
