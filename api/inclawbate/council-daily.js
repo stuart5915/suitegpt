@@ -415,18 +415,31 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 
     if (supply) {
         const price = claws?.price || 0;
-        msg += `\n<b>🔒 Supply Breakdown</b>\n`;
+        const treasuryWallet = treasury?.walletClaws || 0;
+        const accounted = supply.staked + supply.rewardsPool + supply.inLP + treasuryWallet;
+        const circulating = Math.max(TOTAL_SUPPLY - accounted, 0);
+        const circulatingPct = (circulating / TOTAL_SUPPLY * 100).toFixed(1);
+        const rewardsPct = (supply.rewardsPool / TOTAL_SUPPLY * 100).toFixed(1);
+        const treasuryPct = (treasuryWallet / TOTAL_SUPPLY * 100).toFixed(1);
+
+        msg += `\n<b>🔒 Supply Breakdown (100B)</b>\n`;
         msg += `Staked: ${formatNum(supply.staked)} (${supply.stakedPct}%)`;
         if (price > 0) msg += ` ≈ ${formatUsd(supply.staked * price)}`;
         msg += `\n`;
         if (supply.rewardsPool > 0) {
-            msg += `Rewards Pool: ${formatNum(supply.rewardsPool)}`;
+            msg += `Rewards Pool: ${formatNum(supply.rewardsPool)} (${rewardsPct}%)`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.rewardsPool * price)}`;
             msg += `\n`;
         }
         msg += `In LP: ${formatNum(supply.inLP)} (${supply.lpPct}%)`;
         if (price > 0) msg += ` ≈ ${formatUsd(supply.inLP * price)}`;
         msg += `\n`;
+        if (treasuryWallet > 0) {
+            msg += `Treasury Wallet: ${formatNum(treasuryWallet)} (${treasuryPct}%)`;
+            if (price > 0) msg += ` ≈ ${formatUsd(treasuryWallet * price)}`;
+            msg += `\n`;
+        }
+        msg += `Circulating: ${formatNum(circulating)} (${circulatingPct}%)\n`;
         msg += `Total Locked: ${supply.lockedPct}%\n`;
         if (supply.apy > 0) {
             msg += `\n<b>💰 Staking</b>\n`;

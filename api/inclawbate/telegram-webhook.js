@@ -545,10 +545,15 @@ async function handleTreasury(chatId) {
         msg += `Market Cap: ${fmtUsd(mcap)}\n`;
         msg += `Liquidity: ${fmtUsd(liquidity)}\n\n`;
 
-        msg += '📊 <b>Supply Breakdown</b>\n';
+        const accounted = userStaked + rewardsPool + inLP + walletClaws;
+        const circulating = Math.max(TOTAL_SUPPLY - accounted, 0);
+
+        msg += '📊 <b>Supply Breakdown (100B)</b>\n';
         msg += `Staked: ${fmtB(userStaked)} (${(userStaked / TOTAL_SUPPLY * 100).toFixed(1)}%) ≈ ${fmtUsd(stakedValue)}\n`;
-        msg += `Rewards Pool: ${fmtB(rewardsPool)}\n`;
-        msg += `In LP: ${fmtB(inLP)} (${(inLP / TOTAL_SUPPLY * 100).toFixed(1)}%)\n\n`;
+        msg += `Rewards Pool: ${fmtB(rewardsPool)} (${(rewardsPool / TOTAL_SUPPLY * 100).toFixed(1)}%)\n`;
+        msg += `In LP: ${fmtB(inLP)} (${(inLP / TOTAL_SUPPLY * 100).toFixed(1)}%)\n`;
+        if (walletClaws > 0) msg += `Treasury Wallet: ${fmtB(walletClaws)} (${(walletClaws / TOTAL_SUPPLY * 100).toFixed(1)}%)\n`;
+        msg += `Circulating: ${fmtB(circulating)} (${(circulating / TOTAL_SUPPLY * 100).toFixed(1)}%)\n\n`;
 
         msg += '📈 <b>Staking</b>\n';
         msg += `APY: ${apy.toFixed(1)}%\n`;
