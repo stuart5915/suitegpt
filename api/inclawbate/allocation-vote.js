@@ -36,32 +36,22 @@ async function rpcCall(to, data) {
     return BigInt(json.result || '0x0');
 }
 
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
-
 async function getClawsBalance(address) {
     try {
         const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
         const balanceOfData = '0x70a08231' + paddedAddr;
-        const earnedData = '0x008cc262' + paddedAddr;
 
-        // Sequential calls with delays to avoid Base RPC rate limits
+        // Parallel calls: wallet balance + staked in each contract (skip earned — small amounts)
+        const results = await Promise.all([
+            rpcCall(CLAWS_ADDRESS, balanceOfData).catch(() => BigInt(0)),
+            ...STAKING_CONTRACTS.map(c => rpcCall(c, balanceOfData).catch(() => BigInt(0)))
+        ]);
+
         let total = BigInt(0);
-
-        // Wallet balance
-        total += await rpcCall(CLAWS_ADDRESS, balanceOfData).catch(() => BigInt(0));
-        await delay(200);
-
-        // Staked + earned in each staking contract
-        for (const contract of STAKING_CONTRACTS) {
-            total += await rpcCall(contract, balanceOfData).catch(() => BigInt(0));
-            await delay(200);
-            total += await rpcCall(contract, earnedData).catch(() => BigInt(0));
-            await delay(200);
-        }
-
+        for (const r of results) total += r;
         return total.toString();
     } catch (err) {
-        console.error('Failed to fetch CLAWS balance:', err);
+        console.error('Failed to fetch CLAWS balance for', address, err);
         return '0';
     }
 }
@@ -127,9 +117,8 @@ export default async function handler(req, res) {
             const councilRow = (allRows || []).find(v => v.wallet_address === COUNCIL_ROW_KEY);
             const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
 
-            // Refresh on-chain balances sequentially to avoid Base RPC rate limits
-            const refreshed = [];
-            for (const v of communityVotes) {
+            // Refresh on-chain balances in parallel (3 RPC calls per voter, all concurrent)
+            const refreshed = await Promise.all(communityVotes.map(async (v) => {
                 try {
                     const freshBalance = await getClawsBalance(v.wallet_address);
                     // Update DB in background if balance changed
@@ -139,11 +128,11 @@ export default async function handler(req, res) {
                             .eq('wallet_address', v.wallet_address)
                             .then(() => {});
                     }
-                    refreshed.push({ ...v, claws_balance: freshBalance });
+                    return { ...v, claws_balance: freshBalance };
                 } catch {
-                    refreshed.push(v); // fallback to stored balance on error
+                    return v; // fallback to stored balance on error
                 }
-            }
+            }));
 
             const result = computeSynthesis(refreshed);
             const voters = refreshed.map(v => ({
