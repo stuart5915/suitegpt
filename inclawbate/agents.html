@@ -1925,6 +1925,7 @@ var CHIP_ACTIONS = {
     },
     'How is my project doing? Run a health check': {
         reply: 'To run a health check I need your token address. Type it in the chat and I\'ll pull analytics from DexScreener, staking stats, and project status.',
+        chatReply: true,
         action: function() { closeAllPanels(); }
     },
     'I need a designer for my project': {
@@ -1941,27 +1942,34 @@ var CHIP_ACTIONS = {
     },
     'Show me the best yield vaults': {
         reply: 'Check out the <a href="/vaults">Vaults page</a> for active yield opportunities. Our automated LP manager earns fees and buys back CLAWS.',
+        chatReply: true,
         action: function() { closeAllPanels(); }
     },
     'Browse apps in the store': {
         reply: 'Browse 98+ apps on the <a href="/apps">Apps page</a> &mdash; games, tools, dashboards, all built on Inclawbate.',
+        chatReply: true,
         action: function() { closeAllPanels(); }
     },
     'Show me staking stats and APY': {
         reply: 'View live staking stats on the <a href="/stake">Stake page</a> &mdash; TVL, APY, and your wallet position for every pool.',
+        chatReply: true,
         action: function() { closeAllPanels(); }
     }
 };
 
 document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
     chip.addEventListener('click', function() {
-        var prompt = chip.getAttribute('data-prompt') || chip.textContent.trim();
-        if (!prompt) return;
+        // Skip chips with their own onclick (e.g. portfolio)
+        if (!chip.getAttribute('data-prompt')) return;
+        var prompt = chip.getAttribute('data-prompt');
         var preset = CHIP_ACTIONS[prompt];
         if (preset) {
-            chatAddMessage(prompt, true);
-            chatAddMessage(preset.reply, false);
             if (preset.action) preset.action();
+            // Only show chat reply if there's no panel action (info-only chips)
+            if (preset.chatReply) {
+                chatAddMessage(prompt, true);
+                chatAddMessage(preset.reply, false);
+            }
         } else {
             chatSendMessage(prompt);
         }
