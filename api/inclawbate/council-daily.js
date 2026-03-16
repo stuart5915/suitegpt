@@ -79,6 +79,7 @@ async function fetchClawsPrice() {
 const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
 
+const _debug = [];
 async function rpcRead(to, data) {
     try {
         const res = await fetch(BASE_RPC, {
@@ -87,10 +88,12 @@ async function rpcRead(to, data) {
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
         });
         const result = await res.json();
+        _debug.push({ to: to.slice(0, 10), data: data.slice(0, 20), raw: JSON.stringify(result).slice(0, 150) });
         if (result.error || !result.result) return 0;
         // Use BigInt for precision on large token balances, then convert to number
         return Number(BigInt(result.result)) / 1e18;
     } catch (e) {
+        _debug.push({ to: to.slice(0, 10), data: data.slice(0, 20), err: e.message });
         return 0;
     }
 }
@@ -526,7 +529,8 @@ export default async function handler(req, res) {
                 treasury,
                 allocation,
                 tasks
-            }
+            },
+            _debug
         });
     } catch (err) {
         console.error('Council daily error:', err);
