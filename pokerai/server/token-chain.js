@@ -28,7 +28,7 @@ class TokenChainService {
     this._operatorKey = config.operatorKey;
     this._tokenVaultAddress = config.tokenVaultAddress;
     this._rewardsAddress = config.rewardsAddress;
-    this.provider = new ethers.JsonRpcProvider(config.rpcUrl, 8453, { staticNetwork: true });
+    this.provider = new ethers.JsonRpcProvider(config.rpcUrl, 8453, { staticNetwork: true, pollingInterval: 15000 });
     this.operatorWallet = new ethers.Wallet(config.operatorKey, this.provider);
 
     // Token vault (deposits/withdrawals)
@@ -58,7 +58,11 @@ class TokenChainService {
     // Health check — verify provider is alive, reconnect if stale
     this._healthInterval = setInterval(async () => {
       try {
-        await this.provider.getBlockNumber();
+        const bn = await Promise.race([
+          this.provider.getBlockNumber(),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('Health check timeout')), 5000))
+        ]);
+        if (!bn) throw new Error('No block number');
       } catch (e) {
         console.error('[TokenChain] Health check failed, reconnecting...', e.message);
         this._reconnect();
@@ -76,12 +80,16 @@ class TokenChainService {
         this.onDeposit(addr, chipAmt, Number(tokenAmount));
       }
     });
+    // Catch polling errors from ethers event subscription (prevents unhandled rejections)
+    this.vaultReadOnly.on('error', (err) => {
+      console.error('[TokenChain] Listener error (will retry):', err.message?.slice(0, 80));
+    });
   }
 
   _reconnect() {
     try {
       if (this.vaultReadOnly) this.vaultReadOnly.removeAllListeners();
-      this.provider = new ethers.JsonRpcProvider(this._rpcUrl, 8453, { staticNetwork: true });
+      this.provider = new ethers.JsonRpcProvider(this._rpcUrl, 8453, { staticNetwork: true, pollingInterval: 15000 });
       this.operatorWallet = new ethers.Wallet(this._operatorKey, this.provider);
       if (this._tokenVaultAddress) {
         this.vault = new ethers.Contract(this._tokenVaultAddress, TOKEN_VAULT_ABI, this.operatorWallet);

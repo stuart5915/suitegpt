@@ -41,7 +41,8 @@ class ChainService {
 
     // Primary provider + operator wallet (for write txs)
     // staticNetwork avoids network detection RPC call on startup (prevents rate limiting)
-    this.provider = new ethers.JsonRpcProvider(this.rpcUrl, 8453, { staticNetwork: true });
+    // pollingInterval 15s to avoid overwhelming free RPCs (default 4s is too aggressive)
+    this.provider = new ethers.JsonRpcProvider(this.rpcUrl, 8453, { staticNetwork: true, pollingInterval: 15000 });
     this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
     this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
 
@@ -90,7 +91,7 @@ class ChainService {
   }
 
   _startListener() {
-    this.provider.removeAllListeners();
+    try { this.provider.removeAllListeners(); } catch (e) { /* ignore */ }
     const readOnly = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.provider);
     readOnly.on('Deposit', (player, usdcAmount, chips) => {
       const addr = player.toLowerCase();
@@ -100,6 +101,10 @@ class ChainService {
       if (this.onDeposit) {
         this.onDeposit(addr, chipAmt, Number(usdcAmount));
       }
+    });
+    // Catch polling errors from ethers event subscription (prevents unhandled rejections)
+    readOnly.on('error', (err) => {
+      console.error('[Chain] Listener error (will retry):', err.message?.slice(0, 80));
     });
     this._listenerActive = true;
     console.log('[Chain] Listening for Deposit events...');
@@ -116,7 +121,7 @@ class ChainService {
     const nextRpc = this.rpcList[nextIdx];
 
     console.log(`[Chain] Switching provider to: ${nextRpc}`);
-    this.provider = new ethers.JsonRpcProvider(nextRpc, 8453, { staticNetwork: true });
+    this.provider = new ethers.JsonRpcProvider(nextRpc, 8453, { staticNetwork: true, pollingInterval: 15000 });
     this.operatorWallet = new ethers.Wallet(this.operatorKey, this.provider);
     this.vault = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.operatorWallet);
     this.rpcUrl = nextRpc;
