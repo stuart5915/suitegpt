@@ -1264,9 +1264,10 @@ async function startServer() {
     console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
   }
 
-  // Initialize POKERAI token chain service (vault + rewards distributor)
+  // Stagger POKERAI chain init to avoid RPC rate limiting (free RPCs throttle concurrent requests)
   if (process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL &&
       (process.env.POKERAI_VAULT_ADDRESS || process.env.POKERAI_REWARDS_ADDRESS)) {
+    await new Promise(r => setTimeout(r, 3000));
     try {
       const { TokenChainService } = require('./token-chain');
       tokenChain = new TokenChainService({
