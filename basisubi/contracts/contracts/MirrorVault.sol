@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -25,7 +24,6 @@ import "./libraries/LiquidityAmounts.sol";
 contract MirrorVault is
     Initializable,
     ERC4626Upgradeable,
-    UUPSUpgradeable,
     ReentrancyGuardUpgradeable,
     PausableUpgradeable,
     IERC721Receiver
@@ -62,7 +60,7 @@ contract MirrorVault is
 
     // Admin
     address public admin;
-    bool public upgradeRenounced;
+    address public factory;
     bool public wethIsToken0;
 
     // Stats
@@ -96,7 +94,7 @@ contract MirrorVault is
     // ══════════════════════════════════════════════════════════════
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "not admin");
+        require(msg.sender == admin || msg.sender == factory, "not admin");
         _;
     }
 
@@ -109,37 +107,44 @@ contract MirrorVault is
         _disableInitializers();
     }
 
-    function initialize(
-        address _usdc,
-        address _weth,
-        address _positionManager,
-        address _swapRouter,
-        address _pool,
-        address _admin,
-        address _feeManager,
-        uint256 _depositCap
-    ) external initializer {
-        require(_usdc != address(0) && _weth != address(0), "zero token");
-        require(_positionManager != address(0) && _swapRouter != address(0), "zero contract");
-        require(_pool != address(0), "zero pool");
-        require(_admin != address(0), "zero admin");
+    struct VaultInitParams {
+        address usdc;
+        address weth_;
+        address positionManager_;
+        address swapRouter_;
+        address pool_;
+        address admin_;
+        address factory_;
+        address feeManager_;
+        uint256 depositCap_;
+        uint256 performanceFeeBps_;
+        string name_;
+        string symbol_;
+    }
 
-        __ERC20_init("Basis Mirror Vault", "bmUSDC");
-        __ERC4626_init(IERC20(_usdc));
-        __UUPSUpgradeable_init();
+    function initialize(VaultInitParams calldata p) external initializer {
+        require(p.usdc != address(0) && p.weth_ != address(0), "zero token");
+        require(p.positionManager_ != address(0) && p.swapRouter_ != address(0), "zero contract");
+        require(p.pool_ != address(0), "zero pool");
+        require(p.admin_ != address(0), "zero admin");
+
+        __ERC20_init(p.name_, p.symbol_);
+        __ERC4626_init(IERC20(p.usdc));
         __ReentrancyGuard_init();
         __Pausable_init();
 
-        weth = IERC20(_weth);
-        positionManager = INonfungiblePositionManager(_positionManager);
-        swapRouter = ICLSwapRouter(_swapRouter);
-        pool = _pool;
-        admin = _admin;
-        feeManager = _feeManager;
-        depositCap = _depositCap;
+        weth = IERC20(p.weth_);
+        positionManager = INonfungiblePositionManager(p.positionManager_);
+        swapRouter = ICLSwapRouter(p.swapRouter_);
+        pool = p.pool_;
+        admin = p.admin_;
+        factory = p.factory_;
+        feeManager = p.feeManager_;
+        depositCap = p.depositCap_;
+        performanceFeeBps = p.performanceFeeBps_;
         slippageTolerance = 100; // 1% default
         compoundMinimum = 1e6;   // $1 USDC
-        wethIsToken0 = _weth < _usdc;
+        wethIsToken0 = p.weth_ < p.usdc;
     }
 
     function version() external pure returns (uint256) { return 1; }
@@ -374,18 +379,6 @@ contract MirrorVault is
     function recoverToken(address token) external onlyAdmin {
         require(token != asset() && token != address(weth), "protected");
         IERC20(token).safeTransfer(admin, IERC20(token).balanceOf(address(this)));
-    }
-
-    // ══════════════════════════════════════════════════════════════
-    //  UUPS
-    // ══════════════════════════════════════════════════════════════
-
-    function _authorizeUpgrade(address) internal view override {
-        require(msg.sender == admin && !upgradeRenounced, "unauthorized");
-    }
-
-    function renounceUpgradeability() external onlyAdmin {
-        upgradeRenounced = true;
     }
 
     // ══════════════════════════════════════════════════════════════
