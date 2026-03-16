@@ -36,7 +36,8 @@ Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides
 ### When user types `/ceo`:
 1. Read `CEO.md` (vision, decision framework, current state)
 2. Read `CEO_TASKS.md` (full prioritized backlog)
-3. Assess current state:
+3. Read `COUNCIL.md` and `COUNCIL_MEMBERS.md` (council governance + member activity)
+4. Assess current state:
    - What was recently completed?
    - What's in-progress?
    - Any deadlines approaching?
@@ -56,6 +57,61 @@ Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides
 ### When user adds a new task:
 - Add it to `CEO_TASKS.md` with appropriate priority tier
 - Explain where it fits relative to other priorities
+
+---
+
+## /council Command
+
+Manage the CLAWS Council — members, activity, decisions, and weekly cadence. Data stored in `COUNCIL.md` (governance framework) and `COUNCIL_MEMBERS.md` (dynamic member/activity data).
+
+### When user types `/council`:
+1. Read `COUNCIL.md` and `COUNCIL_MEMBERS.md`
+2. Output a summary: active members, what each is working on, current week's Done/In Progress/Planned
+3. Ask: "Need to update anything?"
+
+### `/council status` — Weekly Cadence Report
+1. Read `COUNCIL_MEMBERS.md`
+2. Output formatted report:
+   - **Done** — what was completed last week
+   - **In Progress** — what's being worked on now
+   - **Planned** — what's coming next
+   - **Per-member status** — what each council member is doing
+3. This is copy-pasteable into the Telegram council group
+
+### `/council add [name]` — Add a New Member
+1. Ask for: wallet address, X handle, roles/skills, current work
+2. Add to the Active Members section in `COUNCIL_MEMBERS.md`
+3. Update the member table in `COUNCIL.md`
+
+### `/council update [name]` — Update a Member
+1. Read current member info from `COUNCIL_MEMBERS.md`
+2. Apply the update (new role, current work, completed items, status change)
+3. Save changes
+
+### `/council task [name] [task description]` — Assign/Log a Task
+1. Add task to member's "Currently working on" in `COUNCIL_MEMBERS.md`
+2. Add to "In Progress" in the current week's cadence section
+
+### `/council done [description]` — Log Something as Completed
+1. Move item from "In Progress" to "Done" in current week's cadence
+2. Update relevant member's "Recently completed"
+
+### `/council decide [description]` — Log a Decision
+1. Add to the Decisions Log table with date, description, and who decided
+
+### `/council week` — Start a New Week
+1. Archive the current week's cadence (move to a "Past Weeks" section or trim)
+2. Create a new "Week of [date]" section
+3. Roll over any unfinished "In Progress" items
+4. Prompt: "What's planned for this week?"
+
+### `/council propose [description]` — Add a Proposal
+1. Add to the Proposals (Pending) section in `COUNCIL_MEMBERS.md`
+
+### When user pastes Telegram messages about council activity:
+- Parse what happened (who said what, any commitments, any decisions)
+- Suggest updates to `COUNCIL_MEMBERS.md`
+- Apply after user confirms
 
 ---
 

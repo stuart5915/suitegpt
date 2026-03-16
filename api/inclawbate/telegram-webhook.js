@@ -322,6 +322,18 @@ export default async function handler(req, res) {
             await handleCurrent(chatId, username, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
+        } else if (cmd === 'daily') {
+            if (!isAdmin(username)) { await sendMsg(chatId, '🔒 Admin only.'); }
+            else {
+                await sendMsg(chatId, '⏳ Generating daily post...');
+                try {
+                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.inclawbate.com';
+                    const protocol = host.includes('localhost') ? 'http' : 'https';
+                    const r = await fetch(`${protocol}://${host}/api/inclawbate/council-daily`, { method: 'POST' });
+                    if (r.ok) await sendMsg(chatId, '✅ Daily post sent!');
+                    else await sendMsg(chatId, '❌ Failed: ' + (await r.text()).slice(0, 200));
+                } catch (e) { await sendMsg(chatId, '❌ ' + esc(e.message)); }
+            }
         } else if (cmd === 'myid') {
             await sendMsg(chatId, '🆔 Your chat ID: <code>' + chatId + '</code>');
         } else if (cmd === 'help') {
@@ -336,6 +348,8 @@ export default async function handler(req, res) {
                 '/remove 2 — Delete by number\n\n' +
                 '<b>Marketing</b>\n' +
                 '/research — Daily research prompt\n\n' +
+                '<b>Council</b>\n' +
+                '/daily — Post daily CLAWS update (admin)\n\n' +
                 '<b>Other</b>\n' +
                 '/start yourxhandle — Link your X profile (DM)\n' +
                 '/myid — Get your chat ID\n' +
