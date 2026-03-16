@@ -79,7 +79,6 @@ async function fetchClawsPrice() {
 const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
 
-const _debug = [];
 async function rpcRead(to, data) {
     try {
         const res = await fetch(BASE_RPC, {
@@ -88,12 +87,9 @@ async function rpcRead(to, data) {
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
         });
         const result = await res.json();
-        _debug.push({ to: to.slice(0, 10), data: data.slice(0, 20), raw: JSON.stringify(result).slice(0, 150) });
         if (result.error || !result.result) return 0;
-        // Use BigInt for precision on large token balances, then convert to number
         return Number(BigInt(result.result)) / 1e18;
     } catch (e) {
-        _debug.push({ to: to.slice(0, 10), data: data.slice(0, 20), err: e.message });
         return 0;
     }
 }
@@ -102,15 +98,15 @@ function clawsBalanceOfData(addr) {
     return '0x70a08231000000000000000000000000' + addr.replace('0x', '').toLowerCase();
 }
 
+const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
 async function fetchStakingAndLP() {
-    // CLAWS.balanceOf(stakingContract) = all CLAWS in staking (staked + rewards pool)
-    // CLAWS.balanceOf(LP_POOL) = CLAWS in Uniswap LP
-    // rewardRate() on staking contract = CLAWS/sec being distributed
-    const [stakingTotal, inLP, rewardRate] = await Promise.all([
-        rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT)),
-        rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(LP_POOL)),
-        rpcRead(STAKING_CONTRACT, '0x7b0a47ee'),  // rewardRate()
-    ]);
+    // Sequential RPC calls to avoid Base public RPC rate limit
+    const stakingTotal = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT));
+    await delay(200);
+    const inLP = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(LP_POOL));
+    await delay(200);
+    const rewardRate = await rpcRead(STAKING_CONTRACT, '0x7b0a47ee');  // rewardRate()
 
     const dailyRewards = rewardRate * 86400;
     // stakingTotal includes both staked tokens and undistributed rewards
@@ -135,12 +131,14 @@ async function fetchTreasuryStaking() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: STAKING_CONTRACT, data }, 'latest'], id: 1 })
-        }).then(r => r.json()).then(r => parseInt(r.result, 16) / 1e18).catch(() => 0);
+        }).then(r => r.json()).then(r => {
+            if (r.error || !r.result) return 0;
+            return Number(BigInt(r.result)) / 1e18;
+        }).catch(() => 0);
 
-        const [staked, earned] = await Promise.all([
-            rpcCall(calldata('0x70a08231')),  // balanceOf(address)
-            rpcCall(calldata('0x008cc262'))    // earned(address)
-        ]);
+        const staked = await rpcCall(calldata('0x70a08231'));  // balanceOf(address)
+        await delay(200);
+        const earned = await rpcCall(calldata('0x008cc262'));  // earned(address)
         return { staked: Math.round(staked), earned: Math.round(earned) };
     } catch (e) {
         return null;
@@ -173,7 +171,9 @@ async function getClawsBalance(address) {
         body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
     }).then(r => r.json()).then(r => BigInt(r.result || '0x0')).catch(() => BigInt(0));
 
-    const [wallet, staked] = await Promise.all([rpc(CLAWS_ADDRESS), rpc(VOTE_STAKING_CONTRACT)]);
+    const wallet = await rpc(CLAWS_ADDRESS);
+    await delay(200);
+    const staked = await rpc(VOTE_STAKING_CONTRACT);
     return (wallet + staked).toString();
 }
 
@@ -482,17 +482,19 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Refresh voter balances first (catches transfer gaming)
-        await refreshVoterBalances();
-
-        // Fetch all data in parallel
-        const [claws, supply, tasks, treasuryStaking, allocation] = await Promise.all([
+        // Fetch non-RPC data in parallel first
+        const [claws, tasks, allocation] = await Promise.all([
             fetchClawsPrice(),
-            fetchStakingAndLP(),
             fetchTasks(),
-            fetchTreasuryStaking(),
             fetchAllocationSynthesis()
         ]);
+
+        // RPC calls sequentially to avoid Base RPC rate limits
+        const supply = await fetchStakingAndLP();
+        const treasuryStaking = await fetchTreasuryStaking();
+
+        // Refresh voter balances last (lower priority, most RPC-heavy)
+        await refreshVoterBalances();
 
         // Treasury = LP TVL + staked CLAWS value + earned rewards value
         const clawsPrice = claws?.price || 0;
@@ -529,8 +531,7 @@ export default async function handler(req, res) {
                 treasury,
                 allocation,
                 tasks
-            },
-            _debug
+            }
         });
     } catch (err) {
         console.error('Council daily error:', err);
