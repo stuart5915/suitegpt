@@ -111,6 +111,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     // GET — return synthesis + individual votes + council allocation
+    // Refreshes on-chain CLAWS balances for all voters so weights stay accurate
     if (req.method === 'GET') {
         try {
             const { data: allRows } = await supabase
@@ -122,8 +123,25 @@ export default async function handler(req, res) {
             const councilRow = (allRows || []).find(v => v.wallet_address === COUNCIL_ROW_KEY);
             const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
 
-            const result = computeSynthesis(communityVotes);
-            const voters = communityVotes.map(v => ({
+            // Refresh on-chain balances for all community voters
+            const refreshed = await Promise.all(communityVotes.map(async (v) => {
+                try {
+                    const freshBalance = await getClawsBalance(v.wallet_address);
+                    // Update DB in background if balance changed
+                    if (freshBalance !== v.claws_balance) {
+                        supabase.from('allocation_votes')
+                            .update({ claws_balance: freshBalance })
+                            .eq('wallet_address', v.wallet_address)
+                            .then(() => {});
+                    }
+                    return { ...v, claws_balance: freshBalance };
+                } catch {
+                    return v; // fallback to stored balance on error
+                }
+            }));
+
+            const result = computeSynthesis(refreshed);
+            const voters = refreshed.map(v => ({
                 address: v.wallet_address,
                 weights: v.weights,
                 claws_balance: v.claws_balance,
