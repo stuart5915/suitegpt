@@ -77,6 +77,20 @@
             opacity: 0.6;
             text-decoration: line-through;
         }
+        .state-item.incubation-item {
+            border-color: rgba(255, 100, 50, 0.2);
+            background: rgba(255, 100, 50, 0.04);
+        }
+        .state-item .owner {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--lobster-300);
+            background: rgba(255, 100, 50, 0.1);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
         .state-item .item-meta {
             font-size: 0.75rem;
             color: var(--text-dim);
@@ -229,10 +243,16 @@
         <div id="focus-list" class="loading">Loading...</div>
     </div>
 
-    <!-- Active Projects -->
-    <div class="state-section" id="active-section">
-        <h2>📂 Active Projects <span class="count" id="active-count"></span></h2>
-        <div id="active-list" class="loading">Loading...</div>
+    <!-- Incubations -->
+    <div class="state-section" id="incubation-section">
+        <h2>🦞 Incubations <span class="count" id="incubation-count"></span></h2>
+        <div id="incubation-list" class="loading">Loading...</div>
+    </div>
+
+    <!-- Responsibilities -->
+    <div class="state-section" id="responsibility-section">
+        <h2>👥 Responsibilities</h2>
+        <div id="responsibility-list" class="loading">Loading...</div>
     </div>
 
     <!-- Recently Done -->
@@ -346,8 +366,9 @@ fetch('/api/inclawbate/team-state')
     .then(function(r) { return r.json(); })
     .then(function(data) {
         renderItems(document.getElementById('focus-list'), data.focus, 'focus-item');
-        renderItems(document.getElementById('active-list'), data.active);
-        document.getElementById('active-count').textContent = data.active.length;
+        renderItems(document.getElementById('incubation-list'), data.incubations, 'incubation-item');
+        document.getElementById('incubation-count').textContent = data.incubations.length;
+        renderItems(document.getElementById('responsibility-list'), data.responsibilities);
         renderItems(document.getElementById('backlog-list'), data.backlog);
         document.getElementById('backlog-count').textContent = data.backlog.length;
         if (data.done && data.done.length) {

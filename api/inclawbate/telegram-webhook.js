@@ -52,15 +52,17 @@ function isAdmin(username) {
 // ── /state — shows focus + active projects + numbered backlog ──
 
 async function handleState(chatId) {
-    const [focusRes, activeRes, todoRes, doneRes] = await Promise.all([
+    const [focusRes, incubationRes, responsibilityRes, todoRes, doneRes] = await Promise.all([
         supabase.from('team_state').select('*').eq('category', 'current').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('*').eq('category', 'active').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('*').eq('category', 'incubation').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('*').eq('category', 'responsibility').order('created_at', { ascending: true }),
         supabase.from('team_state').select('*').eq('category', 'todo').order('created_at', { ascending: true }),
         supabase.from('team_state').select('*').eq('category', 'done').order('created_at', { ascending: false }).limit(5)
     ]);
 
     const focus = focusRes.data || [];
-    const active = activeRes.data || [];
+    const incubations = incubationRes.data || [];
+    const responsibilities = responsibilityRes.data || [];
     const todos = todoRes.data || [];
     const done = doneRes.data || [];
 
@@ -72,9 +74,14 @@ async function handleState(chatId) {
         focus.forEach(c => { msg += `→ ${esc(c.content)}\n`; });
     }
 
-    if (active.length) {
-        msg += `\n📂 <b>ACTIVE (${active.length})</b>\n`;
-        active.forEach((a, i) => { msg += `${i + 1}. ${esc(a.content)}\n`; });
+    if (incubations.length) {
+        msg += `\n🦞 <b>INCUBATIONS (${incubations.length})</b>\n`;
+        incubations.forEach((a, i) => { msg += `${i + 1}. ${esc(a.content)}\n`; });
+    }
+
+    if (responsibilities.length) {
+        msg += `\n👥 <b>RESPONSIBILITIES</b>\n`;
+        responsibilities.forEach(r => { msg += `• ${esc(r.content)}\n`; });
     }
 
     if (todos.length) {
@@ -87,53 +94,66 @@ async function handleState(chatId) {
         done.forEach(d => { msg += `• ${esc(d.content)}\n`; });
     }
 
-    if (!focus.length && !active.length && !todos.length) {
+    if (!focus.length && !incubations.length && !todos.length) {
         msg += '\n<i>Nothing tracked. /add something</i>\n';
     }
 
     await sendMsg(chatId, msg);
 }
 
-// ── /active — move item to active projects (admin only) ──
+// ── /incubation — add/show incubation projects (admin only) ──
 
-async function handleActive(chatId, username, args) {
+async function handleIncubation(chatId, username, args) {
     if (!isAdmin(username)) return;
 
-    // No args = just show active projects
     if (!args) {
         const { data } = await supabase
             .from('team_state')
             .select('*')
-            .eq('category', 'active')
+            .eq('category', 'incubation')
             .order('created_at', { ascending: true });
 
         if (data && data.length) {
-            let msg = '📂 <b>ACTIVE PROJECTS:</b>\n';
+            let msg = '🦞 <b>INCUBATIONS:</b>\n';
             data.forEach((a, i) => { msg += `${i + 1}. ${esc(a.content)}\n`; });
             await sendMsg(chatId, msg);
         } else {
-            await sendMsg(chatId, '<i>No active projects. /active 3 to move one from backlog</i>');
+            await sendMsg(chatId, '<i>No incubations. /incubation Project Name to add one</i>');
         }
         return;
     }
 
-    // "clear" removes all active
-    if (args.toLowerCase() === 'clear') {
-        await supabase.from('team_state').delete().eq('category', 'active');
-        await sendMsg(chatId, '📂 Active projects cleared.');
+    // Add directly as incubation
+    const { error } = await supabase.from('team_state').insert({ category: 'incubation', content: args, author: username });
+    if (error) { await sendMsg(chatId, '❌ ' + esc(error.message)); return; }
+    await sendMsg(chatId, `🦞 <b>Incubation added:</b> ${esc(args)}`);
+}
+
+// ── /duty — add/show responsibilities (admin only) ──
+
+async function handleDuty(chatId, username, args) {
+    if (!isAdmin(username)) return;
+
+    if (!args) {
+        const { data } = await supabase
+            .from('team_state')
+            .select('*')
+            .eq('category', 'responsibility')
+            .order('created_at', { ascending: true });
+
+        if (data && data.length) {
+            let msg = '👥 <b>RESPONSIBILITIES:</b>\n';
+            data.forEach((r, i) => { msg += `${i + 1}. ${esc(r.content)}\n`; });
+            await sendMsg(chatId, msg);
+        } else {
+            await sendMsg(chatId, '<i>No responsibilities. /duty Daily X posts — Stu</i>');
+        }
         return;
     }
 
-    // Find the item from backlog by number or text
-    const item = await findTodo(args);
-    if (!item) {
-        await sendMsg(chatId, `❌ No match for "${esc(args)}"`);
-        return;
-    }
-
-    // Move from todo to active
-    await supabase.from('team_state').update({ category: 'active' }).eq('id', item.id);
-    await sendMsg(chatId, `📂 <b>Now active:</b> ${esc(item.content)}`);
+    const { error } = await supabase.from('team_state').insert({ category: 'responsibility', content: args, author: username });
+    if (error) { await sendMsg(chatId, '❌ ' + esc(error.message)); return; }
+    await sendMsg(chatId, `👥 <b>Responsibility added:</b> ${esc(args)}`);
 }
 
 // ── /current — set or show what you're working on (admin only) ──
@@ -375,8 +395,10 @@ export default async function handler(req, res) {
             await handleRemove(chatId, username, args);
         } else if (cmd === 'current') {
             await handleCurrent(chatId, username, args);
-        } else if (cmd === 'active') {
-            await handleActive(chatId, username, args);
+        } else if (cmd === 'incubation') {
+            await handleIncubation(chatId, username, args);
+        } else if (cmd === 'duty') {
+            await handleDuty(chatId, username, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
         } else if (cmd === 'daily') {
@@ -397,14 +419,15 @@ export default async function handler(req, res) {
             await sendMsg(chatId,
                 '🦞 <b>Inclawbate Bot</b>\n\n' +
                 '<b>Tasks</b>\n' +
-                '/state — Full state (focus + active + backlog)\n' +
+                '/state — Full state\n' +
                 '/current 3 — Set focus item\n' +
                 '/current clear — Clear focus\n' +
-                '/active 3 — Move backlog item to active\n' +
-                '/active clear — Clear active projects\n' +
                 '/add thing — Add to backlog\n' +
                 '/done 1 — Check off by number\n' +
                 '/remove 2 — Delete by number\n\n' +
+                '<b>Projects</b>\n' +
+                '/incubation Name — Add incubation\n' +
+                '/duty Task — Owner — Add responsibility\n\n' +
                 '<b>Marketing</b>\n' +
                 '/research — Daily research prompt\n\n' +
                 '<b>Council</b>\n' +

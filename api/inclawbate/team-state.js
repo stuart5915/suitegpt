@@ -1,5 +1,5 @@
 // Inclawbate — Team State (read-only)
-// GET → returns focus/active/backlog/done from team_state table
+// GET → returns focus/incubations/responsibilities/backlog/done from team_state table
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -12,9 +12,10 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
     try {
-        const [focusRes, activeRes, todoRes, doneRes] = await Promise.all([
+        const [focusRes, incubationRes, responsibilityRes, todoRes, doneRes] = await Promise.all([
             supabase.from('team_state').select('id, content, author, created_at').eq('category', 'current').order('created_at', { ascending: true }),
-            supabase.from('team_state').select('id, content, author, created_at').eq('category', 'active').order('created_at', { ascending: true }),
+            supabase.from('team_state').select('id, content, author, created_at').eq('category', 'incubation').order('created_at', { ascending: true }),
+            supabase.from('team_state').select('id, content, author, created_at').eq('category', 'responsibility').order('created_at', { ascending: true }),
             supabase.from('team_state').select('id, content, author, created_at').eq('category', 'todo').order('created_at', { ascending: true }),
             supabase.from('team_state').select('id, content, author, created_at').eq('category', 'done').order('created_at', { ascending: false }).limit(10)
         ]);
@@ -23,7 +24,8 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
             focus: (focusRes.data || []).map(fmt),
-            active: (activeRes.data || []).map(fmt),
+            incubations: (incubationRes.data || []).map(fmt),
+            responsibilities: (responsibilityRes.data || []).map(fmt),
             backlog: (todoRes.data || []).map(fmt),
             done: (doneRes.data || []).map(fmt)
         });

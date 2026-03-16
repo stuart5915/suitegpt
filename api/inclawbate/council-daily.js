@@ -181,16 +181,16 @@ async function fetchTreasury(clawsPrice) {
 // Treasury = LP TVL + staked CLAWS value + earned rewards value
 
 async function fetchTasks() {
-    const [doneRes, focusRes, activeRes, todoRes] = await Promise.all([
+    const [doneRes, focusRes, incubationRes, todoRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('content').eq('category', 'active').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content').eq('category', 'incubation').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
         focus: (focusRes.data || []).map(r => r.content),
-        active: (activeRes.data || []).map(r => r.content),
+        incubations: (incubationRes.data || []).map(r => r.content),
         backlog: (todoRes.data || []).map(r => r.content)
     };
 }
@@ -435,7 +435,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `<i>Vote: inclawbate.com/how-it-works</i>\n`;
     }
 
-    // Focus / Active / Backlog
+    // Focus / Incubations / Backlog
     if (tasks.done.length) {
         msg += `\n<b>✅ Done</b>\n`;
         tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
@@ -446,11 +446,16 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         tasks.focus.forEach(t => { msg += `→ ${esc(t)}\n`; });
     }
 
-    if (tasks.active.length || tasks.backlog.length) {
-        msg += `\n📂 ${tasks.active.length} active projects · ${tasks.backlog.length} in backlog\n`;
+    if (tasks.incubations.length) {
+        msg += `\n<b>🦞 Incubations</b> (${tasks.incubations.length})\n`;
+        tasks.incubations.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
-    msg += `<i>Full list: inclawbate.com/state</i>\n`;
+    if (tasks.backlog.length) {
+        msg += `\n📋 ${tasks.backlog.length} in backlog\n`;
+    }
+
+    msg += `<i>Full state: inclawbate.com/state</i>\n`;
 
     msg += `\n🔗 inclawbate.com`;
 
@@ -492,8 +497,8 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     if (tasks.focus.length) {
         tweet += `🔥 ${tasks.focus[0]}\n`;
     }
-    if (tasks.active.length || tasks.backlog.length) {
-        tweet += `📂 ${tasks.active.length} active · ${tasks.backlog.length} backlog\n`;
+    if (tasks.incubations.length) {
+        tweet += `🦞 ${tasks.incubations.length} incubations\n`;
     }
 
     tweet += `\ninclawbate.com/state`;
