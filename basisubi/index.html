@@ -1888,8 +1888,7 @@
         <div class="nav-inner">
             <a href="#" class="nav-brand">Basis <span style="font-size:0.65em; font-weight:400; color:var(--text-dim); margin-left:6px;">by <span style="color:var(--accent-bright)">Inclawbate</span></span></a>
             <ul class="nav-links">
-                <li><a href="#mirror-marketplace" style="color:var(--green);">Marketplace</a></li>
-                <li><a href="#mirror">Deposit</a></li>
+                <li><a href="#mirror" style="color:var(--green);">Vault</a></li>
                 <li><a href="#tracker">Track LP</a></li>
                 <li><a href="#how">How It Works</a></li>
                 <li><a href="#learn">Learn</a></li>
@@ -1899,33 +1898,34 @@
         </div>
     </nav>
 
-    <!-- ═══ MIRROR MARKETPLACE (TOP) ═══ -->
-    <section class="mm-section" id="mirror-marketplace" style="padding-top: 90px; padding-bottom: 40px;">
-        <div class="container">
-            <!-- Vault Grid -->
-            <div class="mm-grid" id="mm-vault-grid">
-                <div class="mm-empty" id="mm-empty">
-                    No mirror vaults yet.<br>
-                    <button class="mm-create-btn" style="margin-top:16px;" onclick="openMirrorCreateModal()">Create one</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- ═══ MIRROR VAULT ═══ -->
-    <section class="mirror-section" id="mirror">
+    <section class="mirror-section" id="mirror" style="padding-top: 90px;">
         <div class="container">
 
             <div class="mirror-hero-card fade-in">
                 <div class="mirror-top">
                     <div class="mirror-title-row">
-                        <div class="mirror-title">ETH / USDC Mirror Vault</div>
+                        <div class="mirror-title">Mirror Vault</div>
                         <div class="mirror-badges">
                             <span class="mirror-badge erc4626">ERC-4626</span>
                             <span class="mirror-badge live" id="mv-badge-status">Loading...</span>
                         </div>
                     </div>
-                    <div class="mirror-desc">Deposit USDC and automatically mirror the tick range of a tracked Aerodrome LP position. The vault holds your capital in the same concentrated range as the leader &mdash; when they move, the vault follows.</div>
+                    <div class="mirror-desc">Deposit USDC into any mirror vault. The vault copies a pro LP's tick range on Aerodrome &mdash; when they rebalance, the vault follows. Same yield, no management.</div>
+
+                    <!-- Vault address input -->
+                    <div style="margin-top:16px; margin-bottom:8px;">
+                        <div class="mirror-input-row">
+                            <div class="mirror-input-wrap">
+                                <input type="text" class="mirror-input" id="mv-vault-address" placeholder="0x... paste a mirror vault address" spellcheck="false" autocomplete="off" style="font-size:0.82rem;">
+                            </div>
+                            <button class="mirror-submit" onclick="mvLoadVault()" style="background:linear-gradient(135deg,var(--accent),var(--cyan));">Load Vault</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+                            <span style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim);">or</span>
+                            <button onclick="openMirrorCreateModal()" style="background:none; border:1px solid var(--border); color:var(--cyan); font-family:var(--mono); font-size:0.72rem; padding:5px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--border)'">Create New Vault</button>
+                        </div>
+                    </div>
 
                     <!-- Stats grid -->
                     <div class="mirror-stats-grid" id="mv-stats-grid">
@@ -8308,6 +8308,18 @@
 
         // Store the load function globally for manual refresh
         window.refreshMirrorVault = loadMirrorVault;
+
+        // Load a vault by address from the input field
+        window.mvLoadVault = function() {
+            var input = document.getElementById('mv-vault-address');
+            var addr = (input ? input.value.trim() : '');
+            if (!addr || addr.length < 42 || !addr.startsWith('0x')) {
+                alert('Enter a valid vault address');
+                return;
+            }
+            window.MIRROR_VAULT_ADDRESS = addr;
+            loadMirrorVault();
+        };
     })();
 
     // ═══ MIRROR MARKETPLACE JS ═══
