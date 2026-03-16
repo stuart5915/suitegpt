@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclawbators — Inclawbate</title>
+    <meta name="description" content="Human builders available for incubation. Browse skills, connect wallets, and hire talent from the Inclawbate ecosystem.">
+    <meta property="og:title" content="Inclawbators — Inclawbate">
+    <meta property="og:description" content="Human builders available for incubation. Browse skills, connect wallets, and hire talent.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/inclawbators">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; }
+        .iclw-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
+        }
+
+        /* Hero */
+        .iclw-hero { text-align: center; margin-bottom: var(--space-2xl); animation: fadeUp 0.5s var(--ease-smooth) both; }
+        .iclw-hero h1 {
+            font-family: var(--font-display); font-size: 2.4rem; font-weight: 900;
+            background: var(--title-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            line-height: 1.15; margin-bottom: var(--space-md);
+        }
+        .iclw-hero-sub { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; max-width: 520px; margin: 0 auto; }
+
+        /* Filters */
+        .iclw-filters {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+            margin-bottom: var(--space-xl); animation: fadeUp 0.5s var(--ease-smooth) 0.1s both;
+        }
+        .iclw-filter-btn {
+            padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body);
+            font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .iclw-filter-btn:hover, .iclw-filter-btn.active {
+            border-color: var(--lobster-400); color: var(--lobster-400); background: hsla(9,52%,54%,0.06);
+        }
+
+        /* Grid */
+        .iclw-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: var(--space-md); animation: fadeUp 0.5s var(--ease-smooth) 0.2s both;
+        }
+
+        /* Card */
+        .iclw-card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-lg);
+            transition: all 0.2s; position: relative;
+        }
+        .iclw-card:hover { border-color: var(--lobster-300); transform: translateY(-2px); }
+        .iclw-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-md); }
+        .iclw-avatar {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--bg-surface);
+            border: 2px solid var(--border-subtle); object-fit: cover;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: var(--text-dim); flex-shrink: 0;
+        }
+        .iclw-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .iclw-name { font-weight: 800; font-size: 0.95rem; color: var(--text-primary); }
+        .iclw-handle { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+        .iclw-tagline { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: var(--space-sm); }
+        .iclw-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--space-sm); }
+        .iclw-skill {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
+            padding: 3px 8px; border-radius: 4px;
+            background: hsla(9,52%,54%,0.08); color: var(--lobster-400);
+            text-transform: lowercase;
+        }
+        .iclw-status {
+            position: absolute; top: 14px; right: 14px;
+            display: flex; align-items: center; gap: 5px;
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .iclw-status-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .iclw-status--available .iclw-status-dot { background: #4ade80; box-shadow: 0 0 6px #4ade8066; }
+        .iclw-status--available { color: #4ade80; }
+        .iclw-status--busy .iclw-status-dot { background: #fbbf24; box-shadow: 0 0 6px #fbbf2466; }
+        .iclw-status--busy { color: #fbbf24; }
+        .iclw-status--unavailable .iclw-status-dot { background: #ef4444; }
+        .iclw-status--unavailable { color: #ef4444; }
+        .iclw-card-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle); margin-top: var(--space-sm);
+        }
+        .iclw-wallet {
+            font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim);
+        }
+        .iclw-contact-btn {
+            padding: 5px 12px; background: transparent; border: 1px solid var(--lobster-400);
+            border-radius: 999px; color: var(--lobster-400); font-family: var(--font-mono);
+            font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .iclw-contact-btn:hover { background: var(--lobster-400); color: #fff; }
+
+        /* Empty state */
+        .iclw-empty {
+            text-align: center; padding: var(--space-2xl); color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Edit Profile Panel */
+        .iclw-edit-panel {
+            display: none; background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-xl); margin-bottom: var(--space-xl);
+            animation: fadeUp 0.25s ease both;
+        }
+        .iclw-edit-panel.open { display: block; }
+        .iclw-edit-title {
+            font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: var(--space-md);
+        }
+        .iclw-edit-row { margin-bottom: var(--space-md); }
+        .iclw-edit-label {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim);
+            margin-bottom: 4px; display: block;
+        }
+        .iclw-edit-input, .iclw-edit-textarea {
+            width: 100%; padding: 10px 12px; background: var(--bg-card);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font-body); font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+        .iclw-edit-input:focus, .iclw-edit-textarea:focus { border-color: var(--lobster-400); outline: none; }
+        .iclw-edit-textarea { min-height: 80px; resize: vertical; }
+        .iclw-edit-hint { font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; }
+        .iclw-edit-actions { display: flex; gap: 8px; margin-top: var(--space-md); }
+        .iclw-save-btn {
+            padding: 8px 20px; background: var(--accent-gradient); border: none;
+            border-radius: 999px; color: #fff; font-family: var(--font-body);
+            font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+        }
+        .iclw-save-btn:hover { opacity: 0.85; }
+        .iclw-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* CTA */
+        .iclw-cta {
+            text-align: center; margin-top: var(--space-2xl);
+            padding: var(--space-xl); background: var(--bg-card);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+        }
+        .iclw-cta-title { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-sm); }
+        .iclw-cta-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-md); }
+        .iclw-cta-btn {
+            display: inline-block; padding: 10px 28px; background: var(--accent-gradient);
+            border: none; border-radius: 999px; color: #fff; font-family: var(--font-body);
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+        }
+        .iclw-cta-btn:hover { opacity: 0.85; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .iclw-hero h1 { font-size: 1.8rem; }
+            .iclw-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="/" class="nav-brand"><span class="nav-logo">inclawbate &#129438;</span></a>
+    <div class="nav-links">
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/ecosystem">Ecosystem</a>
+                <a href="/how-it-works">How It Works</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/vaults">Vaults</a>
+                <a href="/schedule">X Schedule</a>
+                <a href="/agents">Agents</a>
+                <a href="/tools">Tools</a>
+                <a href="/inclawbators" class="active">Inclawbators</a>
+            </div>
+        </div>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+<script src="/js/nav-auth.js"></script>
+
+<main class="iclw-page">
+    <div class="iclw-hero">
+        <h1>Inclawbators</h1>
+        <p class="iclw-hero-sub">Human builders available for incubation. Browse skills, check availability, and hire talent from the ecosystem.</p>
+    </div>
+
+    <!-- Edit Profile Panel (hidden until wallet connected + click) -->
+    <div class="iclw-edit-panel" id="edit-panel">
+        <div class="iclw-edit-title">Your Inclawbator Profile</div>
+        <div class="iclw-edit-row">
+            <label class="iclw-edit-label">Tagline</label>
+            <input class="iclw-edit-input" id="edit-tagline" placeholder="Full-stack builder, smart contract dev, etc." maxlength="120">
+            <div class="iclw-edit-hint">One line about what you do (120 chars max)</div>
+        </div>
+        <div class="iclw-edit-row">
+            <label class="iclw-edit-label">Bio</label>
+            <textarea class="iclw-edit-textarea" id="edit-bio" placeholder="What you've built, what you're good at, what you're looking for..." maxlength="500"></textarea>
+            <div class="iclw-edit-hint">Tell people about yourself (500 chars max)</div>
+        </div>
+        <div class="iclw-edit-row">
+            <label class="iclw-edit-label">Skills</label>
+            <input class="iclw-edit-input" id="edit-skills" placeholder="solidity, react, design, tokenomics, marketing">
+            <div class="iclw-edit-hint">Comma-separated list of your skills</div>
+        </div>
+        <div class="iclw-edit-row">
+            <label class="iclw-edit-label">Availability</label>
+            <select class="iclw-edit-input" id="edit-availability">
+                <option value="available">Available</option>
+                <option value="busy">Busy</option>
+                <option value="unavailable">Unavailable</option>
+            </select>
+        </div>
+        <div class="iclw-edit-actions">
+            <button class="iclw-save-btn" id="save-profile-btn">Sign & Save Profile</button>
+        </div>
+        <div id="edit-status" style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-sm);"></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="iclw-filters">
+        <button class="iclw-filter-btn active" data-filter="all">All</button>
+        <button class="iclw-filter-btn" data-filter="available">Available</button>
+        <button class="iclw-filter-btn" data-filter="solidity">Solidity</button>
+        <button class="iclw-filter-btn" data-filter="react">React</button>
+        <button class="iclw-filter-btn" data-filter="design">Design</button>
+        <button class="iclw-filter-btn" data-filter="marketing">Marketing</button>
+    </div>
+
+    <!-- Directory Grid -->
+    <div class="iclw-grid" id="iclw-grid"></div>
+    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found. Be the first to create your profile.</div>
+
+    <!-- CTA -->
+    <div class="iclw-cta">
+        <div class="iclw-cta-title">Want to be listed?</div>
+        <div class="iclw-cta-sub">Connect your wallet, fill out your profile, and start getting hired by the ecosystem.</div>
+        <button class="iclw-cta-btn" id="create-profile-btn">Create Your Profile</button>
+    </div>
+</main>
+
+<footer class="footer" style="text-align:center;padding:var(--space-xl);color:var(--text-dim);font-size:0.75rem;">
+    <p>&copy; 2026 Inclawbate. Anyone Can Build. Everyone Gets Paid.</p>
+</footer>
+
+<script>
+(function() {
+    var API = 'https://inclawbate.com/api/inclawbate/inclawbators';
+    var allProfiles = [];
+    var currentFilter = 'all';
+    var connectedWallet = null;
+
+    // Check if already logged in
+    try {
+        var stored = localStorage.getItem('inclawbate_profile');
+        if (stored) {
+            var p = JSON.parse(stored);
+            if (p.wallet_address) connectedWallet = p.wallet_address;
+        }
+    } catch(e) {}
+
+    function fetchProfiles() {
+        fetch(API)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    allProfiles = data.inclawbators || [];
+                    renderGrid();
+                }
+            })
+            .catch(function() {});
+    }
+
+    function renderGrid() {
+        var grid = document.getElementById('iclw-grid');
+        var empty = document.getElementById('iclw-empty');
+        if (!grid) return;
+
+        var filtered = allProfiles;
+        if (currentFilter === 'available') {
+            filtered = filtered.filter(function(p) { return p.availability === 'available'; });
+        } else if (currentFilter !== 'all') {
+            filtered = filtered.filter(function(p) {
+                return (p.skills || []).some(function(s) {
+                    return s.toLowerCase().includes(currentFilter.toLowerCase());
+                });
+            });
+        }
+
+        if (filtered.length === 0) {
+            grid.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+
+        grid.innerHTML = filtered.map(function(p) {
+            var statusClass = 'iclw-status--' + (p.availability || 'available');
+            var statusLabel = (p.availability || 'available').charAt(0).toUpperCase() + (p.availability || 'available').slice(1);
+            var avatar = p.x_avatar_url
+                ? '<div class="iclw-avatar"><img src="' + p.x_avatar_url + '" alt=""></div>'
+                : '<div class="iclw-avatar">&#129438;</div>';
+            var skills = (p.skills || []).map(function(s) {
+                return '<span class="iclw-skill">' + s + '</span>';
+            }).join('');
+            var addr = p.wallet_address || '';
+            var shortAddr = addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+            var xLink = p.x_handle ? 'https://x.com/' + p.x_handle : '';
+
+            return '<div class="iclw-card">' +
+                '<div class="iclw-status ' + statusClass + '"><span class="iclw-status-dot"></span>' + statusLabel + '</div>' +
+                '<div class="iclw-card-header">' +
+                    avatar +
+                    '<div>' +
+                        '<div class="iclw-name">' + (p.x_name || shortAddr || 'Anon') + '</div>' +
+                        (p.x_handle ? '<div class="iclw-handle">@' + p.x_handle + '</div>' : '') +
+                    '</div>' +
+                '</div>' +
+                (p.tagline ? '<div class="iclw-tagline">' + p.tagline + '</div>' : '') +
+                (skills ? '<div class="iclw-skills">' + skills + '</div>' : '') +
+                '<div class="iclw-card-footer">' +
+                    '<span class="iclw-wallet">' + shortAddr + '</span>' +
+                    (xLink ? '<a href="' + xLink + '" target="_blank" class="iclw-contact-btn">Contact</a>' : '') +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Filters
+    document.querySelectorAll('.iclw-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.iclw-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            renderGrid();
+        });
+    });
+
+    // Create / Edit profile
+    async function connectAndEdit() {
+        if (!window.ethereum) {
+            alert('Install a wallet (MetaMask, Coinbase Wallet, etc.) to create your profile.');
+            return;
+        }
+        try {
+            if (window._awaitProvider) await window._awaitProvider();
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            connectedWallet = accounts[0];
+            var panel = document.getElementById('edit-panel');
+            panel.classList.add('open');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Pre-fill if profile exists
+            var existing = allProfiles.find(function(p) {
+                return p.wallet_address === connectedWallet.toLowerCase();
+            });
+            if (existing) {
+                document.getElementById('edit-tagline').value = existing.tagline || '';
+                document.getElementById('edit-bio').value = existing.bio || '';
+                document.getElementById('edit-skills').value = (existing.skills || []).join(', ');
+                document.getElementById('edit-availability').value = existing.availability || 'available';
+            }
+        } catch(e) {
+            console.error('Wallet connect failed:', e);
+        }
+    }
+
+    document.getElementById('create-profile-btn').addEventListener('click', connectAndEdit);
+
+    // Save profile
+    document.getElementById('save-profile-btn').addEventListener('click', async function() {
+        var btn = this;
+        var status = document.getElementById('edit-status');
+        if (!connectedWallet) { connectAndEdit(); return; }
+
+        var tagline = document.getElementById('edit-tagline').value.trim();
+        var bio = document.getElementById('edit-bio').value.trim();
+        var skillsRaw = document.getElementById('edit-skills').value;
+        var skills = skillsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        var availability = document.getElementById('edit-availability').value;
+
+        var ts = Math.floor(Date.now() / 1000);
+        var message = 'Inclawbate Profile Update\n\nTimestamp: ' + ts;
+
+        btn.disabled = true;
+        btn.textContent = 'Signing...';
+        try {
+            var signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, connectedWallet]
+            });
+
+            btn.textContent = 'Saving...';
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    address: connectedWallet,
+                    signature: signature,
+                    message: message,
+                    tagline: tagline,
+                    bio: bio,
+                    skills: skills,
+                    availability: availability
+                })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                status.textContent = 'Profile saved!';
+                status.style.color = '#4ade80';
+                btn.textContent = 'Sign & Save Profile';
+                btn.disabled = false;
+                fetchProfiles(); // Refresh grid
+            } else {
+                status.textContent = 'Error: ' + (data.error || 'Unknown');
+                status.style.color = '#ef4444';
+                btn.textContent = 'Sign & Save Profile';
+                btn.disabled = false;
+            }
+        } catch(e) {
+            status.textContent = 'Signing cancelled.';
+            status.style.color = '#fbbf24';
+            btn.textContent = 'Sign & Save Profile';
+            btn.disabled = false;
+        }
+    });
+
+    fetchProfiles();
+})();
+</script>
+</body>
+</html>
