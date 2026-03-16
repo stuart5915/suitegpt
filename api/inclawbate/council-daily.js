@@ -202,16 +202,18 @@ async function fetchTreasury(clawsPrice) {
 // Treasury = LP TVL + staked CLAWS value + earned rewards value
 
 async function fetchTasks() {
-    const [doneRes, focusRes, incubationRes, todoRes] = await Promise.all([
+    const [doneRes, focusRes, incubationRes, responsibilityRes, todoRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'incubation').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content').eq('category', 'responsibility').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
         focus: (focusRes.data || []).map(r => r.content),
         incubations: (incubationRes.data || []).map(r => r.content),
+        responsibilities: (responsibilityRes.data || []).map(r => r.content),
         backlog: (todoRes.data || []).map(r => r.content)
     };
 }
@@ -482,6 +484,11 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         tasks.incubations.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
+    if (tasks.responsibilities.length) {
+        msg += `\n<b>👥 Responsibilities</b>\n`;
+        tasks.responsibilities.forEach(t => { msg += `• ${esc(t)}\n`; });
+    }
+
     if (tasks.backlog.length) {
         msg += `\n📋 ${tasks.backlog.length} in backlog\n`;
     }
@@ -539,6 +546,12 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     if (tasks.incubations.length) {
         tweet += `\n🦞 Incubations (${tasks.incubations.length}):\n`;
         tasks.incubations.forEach(t => { tweet += `- ${t}\n`; });
+    }
+
+    // Responsibilities
+    if (tasks.responsibilities.length) {
+        tweet += `\n👥 Duties:\n`;
+        tasks.responsibilities.forEach(t => { tweet += `- ${t}\n`; });
     }
 
     // Focus
