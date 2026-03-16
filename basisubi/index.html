@@ -8415,21 +8415,34 @@
                 var barRight = Math.max(0, Math.min(100, ((rangeHigh - (mid - window_)) / (2 * window_)) * 100));
                 var barWidth = Math.max(5, barRight - barLeft);
 
+                var needsSetup = !v.tracked_wallet || v.tracked_wallet === '0x0000000000000000000000000000000000000000';
+                var isCreator = window._navWalletAddress && v.creator_address && window._navWalletAddress.toLowerCase() === v.creator_address.toLowerCase();
+
                 html += '<div class="mm-card" onclick="mmOpenVault(\'' + (v.vault_address || '') + '\')">' +
+                    (needsSetup && isCreator ? '<div style="background:rgba(255,180,50,0.1);border:1px solid rgba(255,180,50,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;">' +
+                        '<div style="font-family:var(--mono);font-size:0.72rem;color:#ffb432;margin-bottom:8px;">Tracked position not set. Set it now:</div>' +
+                        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                            '<input type="text" id="mm-setup-wallet-' + i + '" placeholder="0x... tracked wallet" style="flex:1;min-width:180px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:0.72rem;" onclick="event.stopPropagation()">' +
+                            '<input type="text" id="mm-setup-nft-' + i + '" placeholder="NFT token ID" style="width:120px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:0.72rem;" onclick="event.stopPropagation()">' +
+                            '<button style="background:linear-gradient(135deg,var(--accent),var(--cyan));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:0.72rem;cursor:pointer;" onclick="event.stopPropagation(); mmSetTrackedPosition(\'' + (v.vault_address || '') + '\', ' + i + ')">Set</button>' +
+                        '</div>' +
+                        '<div id="mm-setup-status-' + i + '" style="font-family:var(--mono);font-size:0.65rem;color:var(--text-secondary);margin-top:6px;"></div>' +
+                    '</div>' : '') +
                     '<div class="mm-card-header">' +
                         '<div>' +
                             '<div class="mm-card-name">' + escapeHtml(v.name || 'Unnamed') + '</div>' +
                             '<div class="mm-card-creator">by ' + shortAddr(v.creator_address) + '</div>' +
                         '</div>' +
                         '<div class="mm-card-badges">' +
-                            '<span class="mm-badge ' + (inRange ? 'in-range' : 'out-range') + '">' + (inRange ? 'In Range' : 'Out of Range') + '</span>' +
+                            (needsSetup ? '<span class="mm-badge out-range">Setup Required</span>' :
+                            '<span class="mm-badge ' + (inRange ? 'in-range' : 'out-range') + '">' + (inRange ? 'In Range' : 'Out of Range') + '</span>') +
                             (feeBps > 0 ? '<span class="mm-badge fee">' + feeStr + ' fee</span>' : '<span class="mm-badge fee">Free</span>') +
                         '</div>' +
                     '</div>' +
 
                     '<div class="mm-card-tracked">' +
                         '<span class="mm-card-tracked-label">Tracking</span>' +
-                        '<span class="mm-card-tracked-addr">' + shortAddr(v.tracked_wallet) + '</span>' +
+                        '<span class="mm-card-tracked-addr">' + (needsSetup ? 'Not set' : shortAddr(v.tracked_wallet)) + '</span>' +
                         (v.tracked_token_id && v.tracked_token_id !== '0' ? '<span class="mm-card-tracked-nft">NFT #' + v.tracked_token_id + '</span>' : '') +
                     '</div>' +
 
@@ -8479,6 +8492,46 @@
                 var inp = document.getElementById('mv-deposit-amt');
                 if (inp) inp.focus();
             }, 500);
+        };
+
+        // ── Set tracked position on existing vault (admin only) ──
+        window.mmSetTrackedPosition = async function(vaultAddr, idx) {
+            var walletInput = document.getElementById('mm-setup-wallet-' + idx);
+            var nftInput = document.getElementById('mm-setup-nft-' + idx);
+            var statusEl = document.getElementById('mm-setup-status-' + idx);
+            var trackedWallet = walletInput ? walletInput.value.trim() : '';
+            var tokenId = nftInput ? nftInput.value.trim() : '0';
+
+            if (!trackedWallet || trackedWallet.length < 42) { statusEl.textContent = 'Enter tracked wallet address'; return; }
+            if (!tokenId || tokenId === '0') { statusEl.textContent = 'Enter NFT token ID'; return; }
+
+            if (!window.ethereum) { statusEl.textContent = 'Connect wallet first'; return; }
+
+            try {
+                statusEl.textContent = 'Sending tx...';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(vaultAddr, [
+                    'function setTrackedPosition(address _wallet, uint256 _tokenId) external'
+                ], signer);
+                var tx = await vault.setTrackedPosition(trackedWallet, tokenId);
+                statusEl.textContent = 'Confirming...';
+                await tx.wait();
+                statusEl.textContent = 'Done! Tracked position set.';
+                statusEl.style.color = 'var(--green)';
+
+                // Update Supabase
+                fetch(MIRROR_MP_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vault_address: vaultAddr, tracked_wallet: trackedWallet, tracked_token_id: tokenId })
+                });
+
+                setTimeout(function() { loadMirrorMarketplace(); }, 2000);
+            } catch(e) {
+                statusEl.textContent = 'Error: ' + (e.reason || e.message);
+                statusEl.style.color = '#ff6450';
+            }
         };
 
         // ── Create Modal ──
