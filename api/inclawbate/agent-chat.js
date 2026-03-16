@@ -25,7 +25,9 @@ FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis.
 
 EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
 
-HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. For actually initiating a hire, use hire_inclawbator. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees.
+HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. For actually initiating a hire, use hire_inclawbator. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees. You can also use browse_open_gigs to show open gig requests — this is a freelance marketplace where hirers post requests and inclawbators apply.
+
+BROWSE GIGS — When someone asks about available work, freelance opportunities, what help people need, or wants to find a gig to work on, use browse_open_gigs. This shows open gig requests from the ecosystem that inclawbators can claim.
 
 BUILD A LANDING PAGE — When someone wants a branded page for their project, use build_landing_page. The AI builder creates full pages with no code needed.
 
@@ -248,6 +250,19 @@ const TOOLS = [
           skill: { type: 'string', description: 'Required skill: design, development, marketing, content' }
         },
         required: ['handle']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'browse_open_gigs',
+      description: 'Show open gig requests from the ecosystem. Use when someone asks about available work, freelance opportunities, open gigs, or what help people need. Also use when an Inclawbator wants to find work.',
+      parameters: {
+        type: 'object',
+        properties: {
+          category: { type: 'string', description: 'Filter by category: design, dev, marketing, content, strategy' }
+        }
       }
     }
   },
@@ -672,13 +687,14 @@ async function browseInclawbators(args) {
       hires: p.hire_count || 0,
       earned: p.total_paid ? Math.round(p.total_paid) + ' CLAWS' : '0 CLAWS'
     }));
-    if (!profiles.length) return JSON.stringify({ message: 'No Inclawbators found matching that skill. Check the full directory at inclawbate.com/inclawbator' });
+    if (!profiles.length) return JSON.stringify({ message: 'No Inclawbators found matching that skill. Check the full directory at inclawbate.com/inclawbator or post a gig request!' });
     return JSON.stringify({
       action: 'show_inclawbators',
       count: profiles.length,
       inclawbators: profiles,
       directory_url: 'https://inclawbate.com/inclawbator',
-      payment: 'CLAWS token, direct wallet-to-wallet, zero platform fee'
+      payment: 'CLAWS token, direct wallet-to-wallet, zero platform fee',
+      tip: 'You can also post a gig request and matching inclawbators will be notified automatically.'
     });
   } catch (e) {
     return JSON.stringify({ error: 'Could not fetch Inclawbators', directory_url: 'https://inclawbate.com/inclawbator' });
@@ -704,6 +720,32 @@ function hireInclawbatorInfo(args) {
       ? 'Ready to hire @' + handle.replace(/^@/, '') + '! Send CLAWS to their wallet and share the tx hash to get started.'
       : 'Browse the Inclawbators directory to find the right person first.'
   });
+}
+
+async function browseOpenGigs(args) {
+  try {
+    let url = APP_API + '/gigs?status=open&limit=10';
+    if (args.category) url += '&category=' + encodeURIComponent(args.category);
+    const res = await fetch(url);
+    const data = await res.json();
+    const gigs = (data.gigs || []).slice(0, 8).map(g => ({
+      description: (g.description || '').slice(0, 120),
+      category: g.category,
+      budget: Number(g.budget_claws).toLocaleString() + ' CLAWS',
+      timeline: g.timeline === 'asap' ? 'ASAP' : g.timeline === 'week' ? 'This week' : 'No rush',
+      posted_by: g.hirer_handle ? '@' + g.hirer_handle : 'anonymous'
+    }));
+    if (!gigs.length) return JSON.stringify({ message: 'No open gigs right now. Post one at inclawbate.com/agents!' });
+    return JSON.stringify({
+      action: 'show_open_gigs',
+      count: gigs.length,
+      gigs,
+      post_url: 'https://inclawbate.com/agents',
+      note: 'Click "Open gigs" to browse the full list, or "Post a gig" to create your own request.'
+    });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch gigs', url: 'https://inclawbate.com/agents' });
+  }
 }
 
 function buildLandingPageInfo(args) {
@@ -957,6 +999,7 @@ async function executeTool(name, args) {
     case 'get_project_status': return await getProjectStatus(args);
     case 'browse_inclawbators': return await browseInclawbators(args);
     case 'hire_inclawbator': return hireInclawbatorInfo(args);
+    case 'browse_open_gigs': return await browseOpenGigs(args);
     case 'build_landing_page': return buildLandingPageInfo(args);
     case 'register_project': return registerProjectInfo(args);
     case 'get_staking_stats': return await getStakingStats(args);

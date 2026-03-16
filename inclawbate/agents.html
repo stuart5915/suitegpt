@@ -479,6 +479,16 @@
         .gig-footer { text-align: center; padding: 8px 0 4px; }
         .gig-footer a { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; text-decoration: none; transition: color 0.15s; }
         .gig-footer a:hover { color: var(--lobster-400); }
+        .gig-tabs { display: flex; gap: 0; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+        .gig-tab {
+            padding: 8px 18px; border: none; background: none; color: var(--text-dim);
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+            cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent;
+        }
+        .gig-tab:hover { color: var(--text-primary); }
+        .gig-tab.active { color: var(--lobster-400); border-bottom-color: var(--lobster-400); }
+        .gig-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        #myGigsFeed, #openGigsFeed { max-height: 420px; }
         .launch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .launch-field { margin-bottom: 10px; }
         .launch-field label {
@@ -1219,6 +1229,44 @@
             </div>
         </div>
 
+        <!-- ═══ MY GIGS PANEL ═══ -->
+        <div class="launch-panel" id="myGigsPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F4CB; My Gigs</span>
+                <button class="launch-panel-close" onclick="closeMyGigsPanel()">&times;</button>
+            </div>
+            <div class="gig-panel-body">
+                <div class="gig-tabs" id="myGigsTabs">
+                    <button class="gig-tab active" data-tab="posted" onclick="switchMyGigsTab('posted')">Posted</button>
+                    <button class="gig-tab" data-tab="claimed" onclick="switchMyGigsTab('claimed')">Claimed</button>
+                </div>
+                <div class="gig-feed" id="myGigsFeed">
+                    <div class="gig-empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ OPEN GIGS PANEL ═══ -->
+        <div class="launch-panel" id="openGigsPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F4E2; Open Gigs</span>
+                <button class="launch-panel-close" onclick="closeOpenGigsPanel()">&times;</button>
+            </div>
+            <div class="gig-panel-body">
+                <div class="gig-filter-row" id="openGigsFilters">
+                    <button class="gig-cat active" data-cat="all" onclick="filterOpenGigs('all')">All</button>
+                    <button class="gig-cat" data-cat="design" onclick="filterOpenGigs('design')">Design</button>
+                    <button class="gig-cat" data-cat="dev" onclick="filterOpenGigs('dev')">Dev</button>
+                    <button class="gig-cat" data-cat="marketing" onclick="filterOpenGigs('marketing')">Marketing</button>
+                    <button class="gig-cat" data-cat="content" onclick="filterOpenGigs('content')">Content</button>
+                    <button class="gig-cat" data-cat="strategy" onclick="filterOpenGigs('strategy')">Strategy</button>
+                </div>
+                <div class="gig-feed" id="openGigsFeed">
+                    <div class="gig-empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ CHIP ACTIONS (always visible, right above chat) ═══ -->
         <div class="hub-chat-chips">
             <div class="chip-group">
@@ -1908,6 +1956,9 @@ async function chatSendMessage(text) {
         if (data.function_called === 'browse_inclawbators' || data.function_called === 'hire_inclawbator') {
             showInclawbatorsPanel();
         }
+        if (data.function_called === 'browse_open_gigs') {
+            showOpenGigsPanel();
+        }
         if (data.function_called === 'build_landing_page') {
             window.open('https://inclawbate.com/build', '_blank');
         }
@@ -2089,6 +2140,8 @@ function closeAllPanels() {
     document.getElementById('schedulePanel').style.display = 'none';
     document.getElementById('scheduleIframe').src = '';
     document.getElementById('inclawbatorsPanel').style.display = 'none';
+    document.getElementById('myGigsPanel').style.display = 'none';
+    document.getElementById('openGigsPanel').style.display = 'none';
     document.getElementById('hubPortfolioPanel').classList.remove('open');
     // Restore flywheel default view
     var fw = document.getElementById('flywheelSection');
@@ -2157,6 +2210,187 @@ function showInclawbatorsPanel() {
 }
 
 function closeInclawbatorsPanel() { closeAllPanels(); }
+
+// ── My Gigs panel ──
+var _myGigsTab = 'posted';
+var _myGigsData = [];
+
+function showMyGigsPanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('myGigsPanel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadMyGigs();
+}
+
+function closeMyGigsPanel() { closeAllPanels(); }
+
+function switchMyGigsTab(tab) {
+    _myGigsTab = tab;
+    document.querySelectorAll('#myGigsTabs .gig-tab').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-tab') === tab); });
+    renderMyGigs();
+}
+
+function loadMyGigs() {
+    var profile = null;
+    try { profile = JSON.parse(localStorage.getItem('inclawbate_profile')); } catch(e) {}
+    if (!profile) {
+        document.getElementById('myGigsFeed').innerHTML = '<div class="gig-empty">Log in to see your gigs.</div>';
+        return;
+    }
+    fetch('/api/inclawbate/gigs?limit=50').then(function(r) { return r.json(); }).then(function(data) {
+        _myGigsData = data.gigs || [];
+        renderMyGigs();
+    }).catch(function() {
+        document.getElementById('myGigsFeed').innerHTML = '<div class="gig-empty">Failed to load gigs.</div>';
+    });
+}
+
+function renderMyGigs() {
+    var profile = null;
+    try { profile = JSON.parse(localStorage.getItem('inclawbate_profile')); } catch(e) {}
+    var feed = document.getElementById('myGigsFeed');
+    if (!feed || !profile) return;
+    var handle = (profile.x_handle || '').toLowerCase();
+
+    var filtered = _myGigsData.filter(function(g) {
+        if (_myGigsTab === 'posted') return (g.hirer_handle || '').toLowerCase() === handle;
+        return (g.claimed_by_handle || '').toLowerCase() === handle;
+    });
+
+    if (!filtered.length) {
+        feed.innerHTML = '<div class="gig-empty">' + (_myGigsTab === 'posted' ? 'You haven\'t posted any gigs yet.' : 'You haven\'t claimed any gigs yet.') + '</div>';
+        return;
+    }
+
+    var STATUS_LABEL = { open: 'Open', claimed: 'In Progress', delivered: 'Delivered', completed: 'Done', cancelled: 'Cancelled', disputed: 'Disputed' };
+    var STATUS_COLOR = { open: '#4ade80', claimed: '#fbbf24', delivered: '#38bdf8', completed: '#4ade80', cancelled: '#666', disputed: '#ef4444' };
+
+    feed.innerHTML = filtered.map(function(g) {
+        var status = STATUS_LABEL[g.status] || g.status;
+        var color = STATUS_COLOR[g.status] || '#999';
+        var actions = '';
+
+        if (_myGigsTab === 'posted') {
+            if (g.status === 'open') actions = '<button class="gig-feed-claim" style="background:#ef4444" onclick="cancelGig(\'' + g.id + '\')">Cancel</button>';
+            else if (g.status === 'claimed' || g.status === 'delivered') actions = '<button class="gig-feed-claim" onclick="completeGig(\'' + g.id + '\')">Mark Done</button>';
+        }
+
+        var other = '';
+        if (_myGigsTab === 'posted' && g.claimed_by_handle) other = '<span>Claimed by @' + escH(g.claimed_by_handle) + '</span>';
+        else if (_myGigsTab === 'claimed') other = '<span>By @' + escH(g.hirer_handle || 'anon') + '</span>';
+
+        return '<div class="gig-feed-item">' +
+            '<div class="gig-feed-icon" style="color:' + color + '">&#9679;</div>' +
+            '<div class="gig-feed-info">' +
+                '<div class="gig-feed-desc">' + escH(g.description.length > 80 ? g.description.slice(0,77) + '...' : g.description) + '</div>' +
+                '<div class="gig-feed-meta">' +
+                    '<span class="cat">' + escH(g.category) + '</span>' +
+                    '<span class="budget">' + Number(g.budget_claws).toLocaleString() + ' CLAWS</span>' +
+                    '<span style="color:' + color + '">' + status + '</span>' +
+                    other +
+                '</div>' +
+            '</div>' +
+            actions +
+        '</div>';
+    }).join('');
+}
+
+async function cancelGig(gigId) {
+    var token = localStorage.getItem('inclawbate_token');
+    if (!token) { alert('Please log in first'); return; }
+    if (!confirm('Cancel this gig?')) return;
+    try {
+        var resp = await fetch('/api/inclawbate/gigs', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ gig_id: gigId, action: 'cancel' })
+        });
+        var data = await resp.json();
+        if (data.success) loadMyGigs();
+        else alert(data.error || 'Failed to cancel');
+    } catch(e) { alert('Network error'); }
+}
+
+async function completeGig(gigId) {
+    var token = localStorage.getItem('inclawbate_token');
+    if (!token) { alert('Please log in first'); return; }
+    try {
+        var resp = await fetch('/api/inclawbate/gigs', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ gig_id: gigId, action: 'complete' })
+        });
+        var data = await resp.json();
+        if (data.success) loadMyGigs();
+        else alert(data.error || 'Failed to complete');
+    } catch(e) { alert('Network error'); }
+}
+
+// ── Open Gigs panel ──
+var _openGigsFilter = 'all';
+var _openGigsData = [];
+
+function showOpenGigsPanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('openGigsPanel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadOpenGigs();
+}
+
+function closeOpenGigsPanel() { closeAllPanels(); }
+
+function filterOpenGigs(cat) {
+    _openGigsFilter = cat;
+    document.querySelectorAll('#openGigsFilters .gig-cat').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-cat') === cat); });
+    renderOpenGigs();
+}
+
+function loadOpenGigs() {
+    fetch('/api/inclawbate/gigs?status=open&limit=50').then(function(r) { return r.json(); }).then(function(data) {
+        _openGigsData = data.gigs || [];
+        renderOpenGigs();
+    }).catch(function() {
+        document.getElementById('openGigsFeed').innerHTML = '<div class="gig-empty">Failed to load gigs.</div>';
+    });
+}
+
+function renderOpenGigs() {
+    var feed = document.getElementById('openGigsFeed');
+    if (!feed) return;
+    var TIMELINE_LABEL = { asap: 'ASAP', week: 'This week', norush: 'No rush' };
+
+    var gigs = _openGigsData;
+    if (_openGigsFilter !== 'all') gigs = gigs.filter(function(g) { return g.category === _openGigsFilter; });
+
+    if (!gigs.length) {
+        feed.innerHTML = '<div class="gig-empty">' + (_openGigsFilter !== 'all' ? 'No open ' + _openGigsFilter + ' gigs right now.' : 'No open gigs right now. Post one!') + '</div>';
+        return;
+    }
+
+    feed.innerHTML = gigs.map(function(g) {
+        var who = g.hirer_handle ? '@' + escH(g.hirer_handle) : 'anon';
+        var ago = timeAgo(g.created_at);
+        return '<div class="gig-feed-item">' +
+            '<div class="gig-feed-icon open">&#128994;</div>' +
+            '<div class="gig-feed-info">' +
+                '<div class="gig-feed-desc">' + escH(g.description.length > 120 ? g.description.slice(0,117) + '...' : g.description) + '</div>' +
+                '<div class="gig-feed-meta">' +
+                    '<span class="cat">' + escH(g.category) + '</span>' +
+                    '<span class="budget">' + Number(g.budget_claws).toLocaleString() + ' CLAWS</span>' +
+                    '<span>' + (TIMELINE_LABEL[g.timeline] || g.timeline) + '</span>' +
+                    '<span>' + who + ' &middot; ' + ago + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<button class="gig-feed-claim" onclick="claimGig(\'' + g.id + '\')">Apply</button>' +
+        '</div>';
+    }).join('');
+}
 
 function escH(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
