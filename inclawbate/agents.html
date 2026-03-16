@@ -56,18 +56,11 @@
         }
         .hub-connect-btn:hover { opacity: 0.9; }
         .hub-connect-btn.connected { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
-        .hub-portfolio-btn {
-            padding: 7px 16px; background: var(--bg-surface); border: 1px solid var(--border-subtle);
-            border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body);
-            font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
-            display: none; flex-shrink: 0;
-        }
-        .hub-portfolio-btn:hover { border-color: var(--lobster-300); color: var(--lobster-300); }
-        .hub-portfolio-btn.has-items { display: inline-flex; align-items: center; gap: 6px; }
-        .hub-portfolio-count {
-            font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+        .portfolio-chip .hub-portfolio-count {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
             background: var(--accent-gradient); color: #fff; padding: 1px 6px;
             border-radius: var(--radius-full); min-width: 16px; text-align: center;
+            margin-left: 2px;
         }
 
         /* ═══ ZONE 2: PORTFOLIO PANEL (collapsible) ═══ */
@@ -960,21 +953,9 @@
                 <div class="hub-address" id="hubAddress">Connect wallet to see your workspace</div>
                 <div class="hub-summary" id="hubSummary"></div>
             </div>
-            <button class="hub-portfolio-btn" id="hubPortfolioBtn" onclick="togglePortfolio()">My Portfolio <span class="hub-portfolio-count" id="hubPortfolioCount">0</span></button>
             <button class="hub-connect-btn" id="hubConnectBtn" onclick="hubConnect()">Connect Wallet</button>
         </div>
     </section>
-
-    <!-- ═══ PORTFOLIO PANEL (collapsible) ═══ -->
-    <div class="hub-portfolio-panel" id="hubPortfolioPanel">
-        <div class="hub-portfolio-cards" id="hubPortfolioCards"></div>
-        <div class="hub-portfolio-actions">
-            <button class="hub-action-btn" onclick="hubChatFill('I want to launch a new token')">+ New Token</button>
-            <button class="hub-action-btn" onclick="hubChatFill('Build me an app')">+ New App</button>
-            <button class="hub-action-btn" onclick="hubChatFill('Create a stake pool for my token')">+ Stake Pool</button>
-            <button class="hub-action-btn" onclick="hubChatFill('Set up an AI agent for my project')">+ New Agent</button>
-        </div>
-    </div>
 
     <!-- ═══ AGENT PRESENCE CARDS ═══ -->
     <section class="inclaw-presence" id="presenceCards">
@@ -1058,6 +1039,45 @@
 
     <!-- ═══ THE INCLAWBATOR CHAT (hero) ═══ -->
     <section class="hub-chat-section">
+        <!-- ═══ CHIP ACTIONS (above chat) ═══ -->
+        <div class="hub-chat-chips">
+            <div class="chip-group">
+                <span class="chip-group-label">Launch</span>
+                <button class="chat-prompt-chip portfolio-chip" id="hubPortfolioBtn" onclick="togglePortfolio(); return false;" style="display:none">&#x1F4BC; My Portfolio <span class="hub-portfolio-count" id="hubPortfolioCount">0</span></button>
+                <button class="chat-prompt-chip" data-prompt="I want to launch a new token">&#x1F680; Launch token</button>
+                <button class="chat-prompt-chip" data-prompt="I want to create a staking pool for my token">&#x1F3E6; Create stake pool</button>
+                <button class="chat-prompt-chip" data-prompt="Build me a landing page for my project">&#x1F4C4; Landing page</button>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">Grow</span>
+                <button class="chat-prompt-chip" data-prompt="I want to promote my project on Inclawbate's X">&#x1F4E3; Promote</button>
+                <button class="chat-prompt-chip" data-prompt="Set up an AI agent for my project">&#x1F916; X agent</button>
+                <button class="chat-prompt-chip" data-prompt="How is my project doing? Run a health check">&#x1F4CA; Health check</button>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">Hire</span>
+                <button class="chat-prompt-chip" data-prompt="I need a designer for my project">&#129438; Find an Inclawbator</button>
+                <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to my community">&#x2708;&#xFE0F; Airdrop tokens</button>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">Explore</span>
+                <button class="chat-prompt-chip" data-prompt="Show me the best yield vaults">&#x1F4B0; Find yield</button>
+                <button class="chat-prompt-chip" data-prompt="Browse apps in the store">&#x1F50D; Browse apps</button>
+                <button class="chat-prompt-chip" data-prompt="Show me staking stats and APY">&#x1F4C8; Staking stats</button>
+            </div>
+        </div>
+
+        <!-- ═══ PORTFOLIO PANEL (collapsible, above chat) ═══ -->
+        <div class="hub-portfolio-panel" id="hubPortfolioPanel">
+            <div class="hub-portfolio-cards" id="hubPortfolioCards"></div>
+            <div class="hub-portfolio-actions">
+                <button class="hub-action-btn" onclick="hubChatFill('I want to launch a new token')">+ New Token</button>
+                <button class="hub-action-btn" onclick="hubChatFill('Build me an app')">+ New App</button>
+                <button class="hub-action-btn" onclick="hubChatFill('Create a stake pool for my token')">+ Stake Pool</button>
+                <button class="hub-action-btn" onclick="hubChatFill('Set up an AI agent for my project')">+ New Agent</button>
+            </div>
+        </div>
+
         <!-- ═══ TOKEN LAUNCH PANEL ═══ -->
         <div class="launch-panel" id="launchPanel" style="display:none" data-chain="base">
             <div class="launch-panel-header">
@@ -1226,31 +1246,6 @@
                 <input type="text" class="chat-input" id="chatInput" placeholder="Ask the Inclawbator anything..." maxlength="500" autocomplete="off">
                 <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
             </form>
-        </div>
-        <div class="hub-chat-chips">
-            <div class="chip-group">
-                <span class="chip-group-label">Launch</span>
-                <button class="chat-prompt-chip" data-prompt="I want to launch a new token">&#x1F680; Launch token</button>
-                <button class="chat-prompt-chip" data-prompt="I want to create a staking pool for my token">&#x1F3E6; Create stake pool</button>
-                <button class="chat-prompt-chip" data-prompt="Build me a landing page for my project">&#x1F4C4; Landing page</button>
-            </div>
-            <div class="chip-group">
-                <span class="chip-group-label">Grow</span>
-                <button class="chat-prompt-chip" data-prompt="I want to promote my project on Inclawbate's X">&#x1F4E3; Promote</button>
-                <button class="chat-prompt-chip" data-prompt="Set up an AI agent for my project">&#x1F916; X agent</button>
-                <button class="chat-prompt-chip" data-prompt="How is my project doing? Run a health check">&#x1F4CA; Health check</button>
-            </div>
-            <div class="chip-group">
-                <span class="chip-group-label">Hire</span>
-                <button class="chat-prompt-chip" data-prompt="I need a designer for my project">&#129438; Find an Inclawbator</button>
-                <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to my community">&#x2708;&#xFE0F; Airdrop tokens</button>
-            </div>
-            <div class="chip-group">
-                <span class="chip-group-label">Explore</span>
-                <button class="chat-prompt-chip" data-prompt="Show me the best yield vaults">&#x1F4B0; Find yield</button>
-                <button class="chat-prompt-chip" data-prompt="Browse apps in the store">&#x1F50D; Browse apps</button>
-                <button class="chat-prompt-chip" data-prompt="Show me staking stats and APY">&#x1F4C8; Staking stats</button>
-            </div>
         </div>
     </section>
 
@@ -1697,14 +1692,14 @@ function hubRenderSummary() {
     if (_hubData.vaults.length) parts.push(_hubData.vaults.length + ' Vault' + (_hubData.vaults.length > 1 ? 's' : ''));
     var el = document.getElementById('hubSummary');
     el.textContent = parts.length ? parts.join(' \u00B7 ') : '';
-    // Show/hide portfolio button
+    // Show/hide portfolio chip
     var btn = document.getElementById('hubPortfolioBtn');
     var countEl = document.getElementById('hubPortfolioCount');
     if (total > 0) {
-        btn.classList.add('has-items');
+        btn.style.display = '';
         countEl.textContent = total;
     } else {
-        btn.classList.remove('has-items');
+        btn.style.display = 'none';
     }
 }
 
