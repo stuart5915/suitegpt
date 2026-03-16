@@ -142,23 +142,37 @@ async function fetchStakingAndLP() {
     };
 }
 
-async function fetchTreasuryStaking() {
-    // Read Stuart's staked CLAWS + unclaimed rewards from staking contract
+const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
+const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
+
+async function fetchTreasury(clawsPrice) {
     try {
-        const calldata = (selector) => selector + '000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
-        const rpcCall = (data) => fetch(BASE_RPC, {
+        // 1. ETH balance of treasury wallet
+        const ethBalRes = await fetch(BASE_RPC, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: STAKING_CONTRACT, data }, 'latest'], id: 1 })
-        }).then(r => r.json()).then(r => {
-            if (r.error || !r.result) return 0;
-            return Number(BigInt(r.result)) / 1e18;
-        }).catch(() => 0);
-
-        const staked = await rpcCall(calldata('0x70a08231'));  // balanceOf(address)
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [TREASURY_WALLET, 'latest'], id: 1 })
+        }).then(r => r.json());
+        const ethBalance = (ethBalRes.error || !ethBalRes.result) ? 0 : Number(BigInt(ethBalRes.result)) / 1e18;
         await delay(200);
-        const earned = await rpcCall(calldata('0x008cc262'));  // earned(address)
-        return { staked: Math.round(staked), earned: Math.round(earned) };
+
+        // 2. ETH price from DexScreener (WETH on Base)
+        let ethPrice = 0;
+        try {
+            const ethRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
+            const ethData = await ethRes.json();
+            const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
+            ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
+        } catch (e) { /* ETH price unavailable */ }
+
+        const ethValue = ethBalance * ethPrice;
+
+        return {
+            ethBalance,
+            ethPrice,
+            ethValue: Math.round(ethValue),
+            basisVault: BASIS_VAULT_VALUE,
+        };
     } catch (e) {
         return null;
     }
@@ -287,9 +301,9 @@ async function saveSnapshot(claws, supply, treasuryData, voterCount) {
             lp_pct: parseFloat(supply?.lpPct) || 0,
             total_locked_pct: parseFloat(supply?.lockedPct) || 0,
             treasury_total: treasuryData?.total || 0,
-            lp_value: treasuryData?.lp || 0,
-            staked_value: treasuryData?.staked || 0,
-            earned_value: treasuryData?.earned || 0,
+            lp_value: treasuryData?.clawsLp || 0,
+            staked_value: treasuryData?.ethValue || 0,
+            earned_value: treasuryData?.basisVault || 0,
             voter_count: voterCount || 0
         }, { onConflict: 'snapshot_date' });
     } catch (e) { console.error('Snapshot save error:', e); }
@@ -393,14 +407,17 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
     }
 
-    // Treasury with day-over-day change
+    // Treasury breakdown
     if (treasury?.total) {
         const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
         msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}${formatDelta(treasuryChange)}\n`;
-        msg += `LP: ${formatUsd(treasury.lp)}`;
-        if (treasury.staked > 0) msg += ` | Staked: ${formatUsd(treasury.staked)}`;
-        if (treasury.earned > 0) msg += ` | Earned: ${formatUsd(treasury.earned)}`;
-        msg += `\n`;
+        msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
+        if (treasury.ethBalance > 0) {
+            msg += `ETH: ${treasury.ethBalance.toFixed(4)} (${formatUsd(treasury.ethValue)})\n`;
+        }
+        if (treasury.basisVault > 0) {
+            msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
+        }
         msg += `Funding Rate: $${TREASURY_FUNDING_RATE}/day\n`;
     }
 
@@ -511,19 +528,26 @@ export default async function handler(req, res) {
 
         // RPC calls sequentially to avoid Base RPC rate limits
         const supply = await fetchStakingAndLP();
-        const treasuryStaking = await fetchTreasuryStaking();
+        const clawsPrice = claws?.price || 0;
+        const treasuryRaw = await fetchTreasury(clawsPrice);
 
         // Refresh voter balances last (lower priority, most RPC-heavy)
         await refreshVoterBalances();
 
-        // Treasury = LP TVL + staked CLAWS value + earned rewards value
-        const clawsPrice = claws?.price || 0;
+        // Treasury breakdown
         const lpValue = claws?.liquidity || 0;
-        const stakedValue = treasuryStaking ? treasuryStaking.staked * clawsPrice : 0;
-        const earnedValue = treasuryStaking ? treasuryStaking.earned * clawsPrice : 0;
-        const treasury = Math.round(lpValue + stakedValue + earnedValue) || null;
+        const ethValue = treasuryRaw?.ethValue || 0;
+        const basisVault = treasuryRaw?.basisVault || 0;
+        const treasuryTotal = Math.round(lpValue + ethValue + basisVault) || null;
 
-        const treasuryData = { total: treasury, lp: Math.round(lpValue), staked: Math.round(stakedValue), earned: Math.round(earnedValue) };
+        const treasuryData = {
+            total: treasuryTotal,
+            clawsLp: Math.round(lpValue),
+            ethBalance: treasuryRaw?.ethBalance || 0,
+            ethPrice: treasuryRaw?.ethPrice || 0,
+            ethValue: Math.round(ethValue),
+            basisVault,
+        };
 
         // Fetch yesterday's snapshot for day-over-day comparison
         const yesterday = await fetchYesterdaySnapshot();
