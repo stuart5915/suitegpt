@@ -3,8 +3,10 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./MirrorVault.sol";
 
 /// @title MirrorVaultFactory — Deploy Mirror Vaults
@@ -12,7 +14,8 @@ import "./MirrorVault.sol";
 ///         First vault per wallet is free. Additional vaults require burning
 ///         BASIS tokens. All Base mainnet addresses are stored in the factory
 ///         so creators only pick a name, fee, and tracked position.
-contract MirrorVaultFactory is Ownable {
+contract MirrorVaultFactory is Ownable2Step, Pausable {
+    using SafeERC20 for IERC20;
 
     // ══════════════════════════════════════════════════════════════
     //  ERRORS
@@ -23,6 +26,7 @@ contract MirrorVaultFactory is Ownable {
     error DepositCapTooLow();
     error MustBurnBasis();
     error TrackedWalletZero();
+    error FactoryPaused();
 
     // ══════════════════════════════════════════════════════════════
     //  STATE
@@ -70,6 +74,7 @@ contract MirrorVaultFactory is Ownable {
     event BurnAmountUpdated(uint256 oldAmount, uint256 newAmount);
     event FreeVaultLimitUpdated(uint256 oldLimit, uint256 newLimit);
     event BasisTokenUpdated(address oldToken, address newToken);
+    event FeeManagerUpdated(address oldFeeManager, address newFeeManager);
 
     // ══════════════════════════════════════════════════════════════
     //  CONSTRUCTOR
@@ -88,7 +93,7 @@ contract MirrorVaultFactory is Ownable {
         uint256 freeVaultLimit_;  // e.g. 1
     }
 
-    constructor(FactoryParams memory p) Ownable(msg.sender) {
+    constructor(FactoryParams memory p) Ownable(msg.sender) Pausable() {
         beacon = new UpgradeableBeacon(p.implementation, address(this));
 
         usdc = p.usdc_;
@@ -118,7 +123,7 @@ contract MirrorVaultFactory is Ownable {
         uint256 depositCap_,
         address trackedWallet_,
         uint256 trackedTokenId_
-    ) external returns (address vault) {
+    ) external whenNotPaused returns (address vault) {
         if (bytes(name_).length < 3) revert NameTooShort();
         if (performanceFeeBps_ > 3000) revert FeeTooHigh();
         if (depositCap_ < 100e6) revert DepositCapTooLow();
@@ -131,7 +136,7 @@ contract MirrorVaultFactory is Ownable {
             if (address(basisToken) == address(0)) revert MustBurnBasis();
             // Transfer BASIS to dead address (burn)
             burned = burnPerVault;
-            basisToken.transferFrom(msg.sender, address(0xdead), burned);
+            basisToken.safeTransferFrom(msg.sender, address(0xdead), burned);
             totalBurned += burned;
         }
 
@@ -229,8 +234,12 @@ contract MirrorVaultFactory is Ownable {
     }
 
     function setFeeManager(address newFeeManager) external onlyOwner {
+        emit FeeManagerUpdated(feeManager, newFeeManager);
         feeManager = newFeeManager;
     }
+
+    function pause() external onlyOwner { _pause(); }
+    function unpause() external onlyOwner { _unpause(); }
 
     /// @notice Upgrade all mirror vaults to a new implementation
     function upgradeImplementation(address newImpl) external onlyOwner {

@@ -60,6 +60,7 @@ contract MirrorVault is
 
     // Admin
     address public admin;
+    address public pendingAdmin;
     address public factory;
     bool public wethIsToken0;
 
@@ -353,13 +354,25 @@ contract MirrorVault is
         compoundMinimum = newMin;
     }
 
+    function setFeeManager(address newFeeManager) external onlyAdmin {
+        feeManager = newFeeManager;
+    }
+
     function pause() external onlyAdmin { _pause(); }
     function unpause() external onlyAdmin { _unpause(); }
 
+    /// @notice Propose a new admin. Must be accepted by the new admin.
     function transferAdmin(address newAdmin) external onlyAdmin {
         require(newAdmin != address(0), "zero address");
-        emit AdminTransferred(admin, newAdmin);
-        admin = newAdmin;
+        pendingAdmin = newAdmin;
+    }
+
+    /// @notice Accept admin role. Only callable by the pending admin.
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin, "not pending admin");
+        emit AdminTransferred(admin, pendingAdmin);
+        admin = pendingAdmin;
+        pendingAdmin = address(0);
     }
 
     function emergencyExitLP() external onlyAdmin {

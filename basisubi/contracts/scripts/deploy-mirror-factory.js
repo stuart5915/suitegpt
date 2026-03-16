@@ -10,6 +10,9 @@ const POSITION_MANAGER = "0x827922686190790b37229fd06084350E74485b72";
 const SWAP_ROUTER = "0xBE6D8f0d05cC4be24d5167a3eF062215bE6D18a5";
 const AERO_POOL = "0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59"; // ETH/USDC CL
 
+// Main admin wallet (inclawbate.base.eth) — ownership transferred here after deploy
+const MAIN_WALLET = "0x91B5C0D07859CFeAfEB67d9694121CD741F049bd";
+
 // BASIS token (set after Clanker launch, or address(0) for now)
 const BASIS_TOKEN = process.env.BASIS_TOKEN_ADDRESS || ethers.ZeroAddress;
 
@@ -64,6 +67,17 @@ async function main() {
   console.log("MirrorVaultFactory:", factoryAddr);
 
   // ───────────────────────────────────────────
+  //  Step 3: Transfer ownership to main wallet
+  // ───────────────────────────────────────────
+
+  console.log("\n--- Transferring ownership to main wallet ---");
+  console.log("Main wallet:", MAIN_WALLET);
+  const tx = await factory.transferOwnership(MAIN_WALLET);
+  await tx.wait();
+  console.log("Ownership transfer initiated (Ownable2Step).");
+  console.log("Main wallet must call factory.acceptOwnership() to finalize.");
+
+  // ───────────────────────────────────────────
   //  Summary
   // ───────────────────────────────────────────
 
@@ -72,25 +86,29 @@ async function main() {
   console.log("═══════════════════════════════════════════");
   console.log("Implementation:", implAddr);
   console.log("Factory:       ", factoryAddr);
-  console.log("Owner:         ", deployer.address);
+  console.log("Deployer:      ", deployer.address);
+  console.log("Pending Owner: ", MAIN_WALLET);
   console.log("BASIS Token:   ", BASIS_TOKEN);
   console.log("Burn/Vault:    ", ethers.formatEther(BURN_PER_VAULT), "BASIS");
   console.log("Free Limit:    ", FREE_VAULT_LIMIT);
 
   console.log("\n--- NEXT STEPS ---");
-  console.log("1. Verify on BaseScan:");
+  console.log("1. IMPORTANT: Accept ownership from main wallet:");
+  console.log(`   factory.acceptOwnership() from ${MAIN_WALLET}`);
+  console.log("");
+  console.log("2. Verify on BaseScan:");
   console.log(`   npx hardhat verify --network base ${implAddr}`);
   console.log(`   npx hardhat verify --network base ${factoryAddr}`);
   console.log("");
-  console.log("2. Launch BASIS token on Clanker, then:");
+  console.log("3. Launch BASIS token on Clanker, then:");
   console.log(`   factory.setBasisToken(BASIS_TOKEN_ADDRESS)`);
   console.log("");
-  console.log("3. Create first mirror vault:");
+  console.log("4. Create first mirror vault:");
   console.log(
     '   factory.createVault("Whale Mirror", 500, 50000e6, TRACKED_WALLET, TOKEN_ID)'
   );
   console.log("");
-  console.log("4. Set env vars:");
+  console.log("5. Set env vars:");
   console.log(`   MIRROR_FACTORY_ADDRESS=${factoryAddr}`);
   console.log(`   MIRROR_IMPL_ADDRESS=${implAddr}`);
 }
