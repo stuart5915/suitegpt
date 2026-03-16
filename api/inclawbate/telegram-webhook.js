@@ -334,6 +334,57 @@ async function handleResearch(chatId) {
     );
 }
 
+// ── /marketingpovs — all marketing perspectives ──
+
+const MARKETING_POVS = [
+    { num: 1, emoji: '🔨', name: 'THE BUILDER', angle: 'Anyone can build. No code needed. AI does the work.', target: 'Non-technical people, small biz, creators' },
+    { num: 2, emoji: '🚀', name: 'THE LAUNCHER', angle: 'Launch a token with real infrastructure, not just a meme.', target: 'Token creators, memecoin degens' },
+    { num: 3, emoji: '💰', name: 'THE YIELD MACHINE', angle: 'Everything you touch earns. Stake, play, build — it all compounds.', target: 'DeFi users, yield farmers' },
+    { num: 4, emoji: '🃏', name: 'THE GAME', angle: 'Play poker against AI. Real money. Real strategy.', target: 'Poker players, crypto gamers' },
+    { num: 5, emoji: '💼', name: 'THE GIG ECONOMY', angle: 'Get hired on-chain. Build your portfolio. Earn crypto.', target: 'Freelancers, devs, designers' },
+    { num: 6, emoji: '🏛️', name: 'THE DAO', angle: 'Community-governed treasury. Your CLAWS = your vote.', target: 'Governance enthusiasts, holders' },
+    { num: 7, emoji: '🤖', name: 'THE AI ARMY', angle: 'AI agents that work 24/7 — tweeting, building, playing, growing.', target: 'Tech enthusiasts, AI believers' },
+    { num: 8, emoji: '♾️', name: 'THE PERPETUAL ENGINE', angle: 'A system that outlives everyone. Unstoppable. Forever.', target: 'Philosophical crypto thinkers' },
+    { num: 9, emoji: '✊', name: "THE PEOPLE'S PLATFORM", angle: 'No VC. No gatekeepers. Built by people, for people.', target: 'Anti-establishment, indie builders' },
+    { num: 10, emoji: '🧰', name: 'THE TOOLKIT', angle: '50+ free tools for builders, devs, and creators.', target: 'Developers, SEO people, creators' },
+    { num: 11, emoji: '🕊️', name: 'THE PHILANTHROPIST', angle: 'Crypto that gives back. Real impact. Real giving.', target: 'Faith communities, impact investors' },
+    { num: 12, emoji: '🦞', name: 'THE BRAND', angle: 'The lobster. Iconic. Memeable. Recognizable.', target: 'Meme culture, visual-first audiences' },
+    { num: 13, emoji: '🥚', name: 'THE INCUBATOR', angle: 'Submit your idea. We build everything. You just show up.', target: 'First-time founders, non-crypto people' },
+    { num: 14, emoji: '🔄', name: 'THE SELF-FUNDING LOOP', angle: 'Revenue feeds growth feeds revenue. The loop runs itself.', target: 'Crypto analysts, business-minded' },
+    { num: 15, emoji: '🌐', name: 'WEB3 SIMPLIFIED', angle: "Crypto is complicated. We made it simple.", target: 'Normies, web2 people, students' },
+];
+
+async function handleMarketingPovs(chatId, args) {
+    // If a number is given, show detail for that perspective
+    const num = parseInt(args, 10);
+    if (!isNaN(num) && num >= 1 && num <= MARKETING_POVS.length) {
+        const p = MARKETING_POVS[num - 1];
+        let msg = `${p.emoji} <b>${p.name}</b>\n\n`;
+        msg += `<b>Angle:</b> ${esc(p.angle)}\n`;
+        msg += `<b>Target:</b> ${esc(p.target)}\n\n`;
+        msg += `📖 Full details: inclawbate.com/tools\n`;
+        msg += `\n<i>Use /marketingpovs to see all perspectives</i>`;
+        await sendMsg(chatId, msg);
+        return;
+    }
+
+    let msg = '🦞 <b>MARKETING PERSPECTIVES</b>\n';
+    msg += '<i>15 angles Inclawbate can market from</i>\n\n';
+
+    for (const p of MARKETING_POVS) {
+        msg += `${p.emoji} <b>${p.num}. ${p.name}</b>\n`;
+        msg += `${esc(p.angle)}\n`;
+        msg += `<i>→ ${esc(p.target)}</i>\n\n`;
+    }
+
+    msg += '<b>HIGH CONVERSION:</b> #1 Builder, #4 Game, #3 Yield, #10 Toolkit\n';
+    msg += '<b>HIGH ENGAGEMENT:</b> #12 Brand, #9 People, #8 Engine, #6 DAO\n';
+    msg += '<b>HIGH TRUST:</b> #14 Loop, #11 Philanthropist, #5 Gig\n\n';
+    msg += '<i>/marketingpovs 4 — view one in detail</i>';
+
+    await sendMsg(chatId, msg);
+}
+
 // ── Store message in telegram_messages table for ClawsNet bridge ──
 
 async function storeMessage(update) {
@@ -399,6 +450,8 @@ export default async function handler(req, res) {
             await handleIncubation(chatId, username, args);
         } else if (cmd === 'duty') {
             await handleDuty(chatId, username, args);
+        } else if (cmd === 'marketingpovs') {
+            await handleMarketingPovs(chatId, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
         } else if (cmd === 'daily') {
@@ -429,6 +482,8 @@ export default async function handler(req, res) {
                 '/incubation Name — Add incubation\n' +
                 '/duty Task — Owner — Add responsibility\n\n' +
                 '<b>Marketing</b>\n' +
+                '/marketingpovs — All 15 marketing angles\n' +
+                '/marketingpovs 4 — View one in detail\n' +
                 '/research — Daily research prompt\n\n' +
                 '<b>Council</b>\n' +
                 '/daily — Post daily CLAWS update (admin)\n\n' +
