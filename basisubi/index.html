@@ -8637,7 +8637,10 @@
                 var factoryAbi = [
                     'function createVault(string name_, uint256 performanceFeeBps_, uint256 depositCap_, address trackedWallet_, uint256 trackedTokenId_) external returns (address)',
                     'function vaultsByCreator(address, uint256) view returns (address)',
-                    'function freeVaultsRemaining(address) view returns (uint256)'
+                    'function freeVaultsRemaining(address) view returns (uint256)',
+                    'function vaultCount() view returns (uint256)',
+                    'function allVaults(uint256) view returns (address)',
+                    'event VaultCreated(address indexed vault, address indexed creator, string name, address trackedWallet, uint256 trackedTokenId, uint256 performanceFeeBps, uint256 depositCap, uint256 basisBurned, uint256 index)'
                 ];
                 var factory = new ethers.Contract(factoryAddr, factoryAbi, signer);
 
@@ -8649,16 +8652,25 @@
                 var vaultAddr = '';
                 for (var i = 0; i < receipt.logs.length; i++) {
                     try {
-                        var parsed = factory.interface.parseLog(receipt.logs[i]);
+                        var parsed = factory.interface.parseLog({ topics: receipt.logs[i].topics, data: receipt.logs[i].data });
                         if (parsed && parsed.name === 'VaultCreated') {
-                            vaultAddr = parsed.args.vault;
+                            vaultAddr = parsed.args[0]; // first indexed arg = vault address
                             break;
                         }
                     } catch(e) {}
                 }
 
+                // Fallback: read the latest vault from the factory
                 if (!vaultAddr) {
-                    statusEl.textContent = 'Vault deployed but could not read address from event.';
+                    try {
+                        var count = await factory.vaultCount();
+                        vaultAddr = await factory.allVaults(Number(count) - 1);
+                    } catch(e2) {}
+                }
+
+                if (!vaultAddr) {
+                    statusEl.textContent = 'Vault deployed but could not read address. Check BaseScan for tx: ' + receipt.hash;
+                    statusEl.style.color = '#ffb432';
                     return;
                 }
 
