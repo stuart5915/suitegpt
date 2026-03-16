@@ -437,6 +437,10 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     if (treasury?.total) {
         const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
         msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}${formatDelta(treasuryChange)}\n`;
+        if (treasury.totalClaws > 0) {
+            msg += `CLAWS: ${formatNum(treasury.totalClaws)} (${formatUsd(treasury.totalClawsValue)})\n`;
+            msg += `  Wallet: ${formatNum(treasury.walletClaws)} · Staked: ${formatNum(treasury.stakedClaws)} · Unclaimed: ${formatNum(treasury.unclaimedClaws)}\n`;
+        }
         msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
         if (treasury.ethBalance > 0) {
             msg += `ETH: ${treasury.ethBalance.toFixed(4)} (${formatUsd(treasury.ethValue)})\n`;
@@ -445,16 +449,6 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
         }
         msg += `Funding Rate: $${TREASURY_FUNDING_RATE}/day\n`;
-        // CLAWS holdings of inclawbate.base.eth
-        if (treasury.totalClaws > 0) {
-            msg += `\n<b>🦞 inclawbate.base.eth CLAWS</b>\n`;
-            msg += `Wallet: ${formatNum(treasury.walletClaws)}\n`;
-            msg += `Staked: ${formatNum(treasury.stakedClaws)}\n`;
-            msg += `Unclaimed: ${formatNum(treasury.unclaimedClaws)}\n`;
-            msg += `Total: ${formatNum(treasury.totalClaws)}`;
-            if (treasury.totalClawsValue > 0) msg += ` (${formatUsd(treasury.totalClawsValue)})`;
-            msg += `\n`;
-        }
     }
 
     // Allocation — council vs community
@@ -596,7 +590,8 @@ export default async function handler(req, res) {
         const lpValue = claws?.liquidity || 0;
         const ethValue = treasuryRaw?.ethValue || 0;
         const basisVault = treasuryRaw?.basisVault || 0;
-        const treasuryTotal = Math.round(lpValue + ethValue + basisVault) || null;
+        const clawsHeldValue = treasuryRaw?.totalClawsValue || 0;
+        const treasuryTotal = Math.round(lpValue + ethValue + basisVault + clawsHeldValue) || null;
 
         const treasuryData = {
             total: treasuryTotal,

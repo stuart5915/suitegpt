@@ -529,8 +529,10 @@ async function handleTreasury(chatId) {
         const ethValue = ethBalance * ethPrice;
         const stakedValue = userStaked * price;
         const lpValue = liquidity;
+        const totalClawsValue = totalClaws * price;
+        const treasuryTotal = lpValue + ethValue + totalClawsValue;
 
-        let msg = '🏦 <b>TREASURY STATUS</b>\n\n';
+        let msg = '🏦 <b>TREASURY STATUS</b> ' + fmtUsd(treasuryTotal) + '\n\n';
 
         msg += '💰 <b>CLAWS Token</b>\n';
         msg += `Price: ${fmtPrice(price)}\n`;
@@ -548,20 +550,13 @@ async function handleTreasury(chatId) {
         msg += `🔗 inclawbate.com/stake/claws\n\n`;
 
         msg += '🏛️ <b>Treasury Holdings</b>\n';
+        if (totalClaws > 0) {
+            msg += `CLAWS: ${fmtB(totalClaws)} (${fmtUsd(totalClawsValue)})\n`;
+            msg += `  Wallet: ${fmtB(walletClaws)} · Staked: ${fmtB(stakedClaws)} · Unclaimed: ${fmtB(unclaimedClaws)}\n`;
+        }
         msg += `CLAWS/ETH LP: ${fmtUsd(lpValue)}\n`;
         msg += `ETH: ${ethBalance.toFixed(4)} (${fmtUsd(ethValue)})\n`;
         msg += `Funding Rate: $${DAILY_FUNDING}/day\n\n`;
-
-        if (totalClaws > 0) {
-            const totalClawsValue = totalClaws * price;
-            msg += '🦞 <b>inclawbate.base.eth CLAWS</b>\n';
-            msg += `Wallet: ${fmtB(walletClaws)}\n`;
-            msg += `Staked: ${fmtB(stakedClaws)}\n`;
-            msg += `Unclaimed: ${fmtB(unclaimedClaws)}\n`;
-            msg += `Total: ${fmtB(totalClaws)}`;
-            if (totalClawsValue > 0) msg += ` (${fmtUsd(totalClawsValue)})`;
-            msg += '\n\n';
-        }
 
         msg += '⚖️ <b>Council Allocation ($' + DAILY_FUNDING + '/day)</b>\n';
         if (councilWeights) {
