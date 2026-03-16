@@ -87,38 +87,40 @@ async function rpcRead(to, data) {
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
         });
         const result = await res.json();
-        const val = parseInt(result.result, 16);
-        return isNaN(val) ? 0 : val / 1e18;
+        if (result.error || !result.result) return 0;
+        // Use BigInt for precision on large token balances, then convert to number
+        return Number(BigInt(result.result)) / 1e18;
     } catch (e) {
         return 0;
     }
 }
 
+function clawsBalanceOfData(addr) {
+    return '0x70a08231000000000000000000000000' + addr.replace('0x', '').toLowerCase();
+}
+
 async function fetchStakingAndLP() {
-    // totalSupply() on staking contract = total staked CLAWS
-    // rewardRate() = CLAWS per second being distributed
-    // balanceOf(stakingContract) on CLAWS token = rewards pool balance
-    const [staked, inLP, rewardRate, rewardsBalance] = await Promise.all([
-        rpcRead(STAKING_CONTRACT, '0x18160ddd'),                           // totalSupply()
-        rpcRead(CLAWS_ADDRESS, '0x70a08231000000000000000000000000' +       // CLAWS.balanceOf(LP_POOL)
-            LP_POOL.replace('0x', '').toLowerCase()),
-        rpcRead(STAKING_CONTRACT, '0x7b0a47ee'),                           // rewardRate()
-        rpcRead(CLAWS_ADDRESS, '0x70a08231000000000000000000000000' +       // CLAWS.balanceOf(stakingContract) = unclaimed rewards pool
-            STAKING_CONTRACT.replace('0x', '').toLowerCase()),
+    // CLAWS.balanceOf(stakingContract) = all CLAWS in staking (staked + rewards pool)
+    // CLAWS.balanceOf(LP_POOL) = CLAWS in Uniswap LP
+    // rewardRate() on staking contract = CLAWS/sec being distributed
+    const [stakingTotal, inLP, rewardRate] = await Promise.all([
+        rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT)),
+        rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(LP_POOL)),
+        rpcRead(STAKING_CONTRACT, '0x7b0a47ee'),  // rewardRate()
     ]);
 
     const dailyRewards = rewardRate * 86400;
-    const apy = staked > 0 ? (dailyRewards * 365 / staked * 100) : 0;
+    // stakingTotal includes both staked tokens and undistributed rewards
+    const apy = stakingTotal > 0 ? (dailyRewards * 365 / stakingTotal * 100) : 0;
 
     return {
-        staked,
+        staked: stakingTotal,
         inLP,
-        rewardsBalance,
         dailyRewards,
         apy,
-        stakedPct: (staked / TOTAL_SUPPLY * 100).toFixed(1),
+        stakedPct: (stakingTotal / TOTAL_SUPPLY * 100).toFixed(1),
         lpPct: (inLP / TOTAL_SUPPLY * 100).toFixed(1),
-        lockedPct: ((staked + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
+        lockedPct: ((stakingTotal + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
     };
 }
 
