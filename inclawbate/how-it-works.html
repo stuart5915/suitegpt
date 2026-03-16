@@ -1867,8 +1867,11 @@
         if (!raw || raw === '0') return '0';
         var s = raw.toString();
         if (s.length <= 18) return '0';
-        var whole = s.slice(0, s.length - 18);
-        return Number(whole).toLocaleString();
+        var whole = Number(s.slice(0, s.length - 18));
+        if (whole >= 1e9) return (whole / 1e9).toFixed(1) + 'B';
+        if (whole >= 1e6) return (whole / 1e6).toFixed(1) + 'M';
+        if (whole >= 1e3) return (whole / 1e3).toFixed(1) + 'K';
+        return whole.toLocaleString();
     }
 
     function renderVoters() {
