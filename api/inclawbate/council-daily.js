@@ -14,6 +14,7 @@ const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID;
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
+const TREASURY_WALLET_RAW = '91B5C0D07859CFeAfEB67d9694121CD741F049bd'; // no 0x prefix, for calldata
 const BASE_RPC = 'https://mainnet.base.org';
 
 // ── Helpers ──
@@ -89,7 +90,27 @@ async function fetchStakingBalance() {
     }
 }
 
-// Treasury = CLAWS/ETH LP pool TVL (already fetched from DexScreener)
+async function fetchTreasuryStaking() {
+    // Read Stuart's staked CLAWS + unclaimed rewards from staking contract
+    try {
+        const calldata = (selector) => selector + '000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
+        const rpcCall = (data) => fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: STAKING_CONTRACT, data }, 'latest'], id: 1 })
+        }).then(r => r.json()).then(r => parseInt(r.result, 16) / 1e18).catch(() => 0);
+
+        const [staked, earned] = await Promise.all([
+            rpcCall(calldata('0x70a08231')),  // balanceOf(address)
+            rpcCall(calldata('0x008cc262'))    // earned(address)
+        ]);
+        return { staked: Math.round(staked), earned: Math.round(earned) };
+    } catch (e) {
+        return null;
+    }
+}
+
+// Treasury = LP TVL + staked CLAWS value + earned rewards value
 
 async function fetchTasks() {
     const [doneRes, currentRes, todoRes] = await Promise.all([
@@ -144,9 +165,12 @@ function buildTelegramPost(claws, staked, tasks, treasury) {
     }
 
     // Treasury
-    if (treasury !== null) {
-        msg += `\n<b>🏦 Treasury</b>\n`;
-        msg += `Total: ${formatUsd(treasury)}\n`;
+    if (treasury?.total) {
+        msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}\n`;
+        msg += `LP: ${formatUsd(treasury.lp)}`;
+        if (treasury.staked > 0) msg += ` | Staked: ${formatUsd(treasury.staked)}`;
+        if (treasury.earned > 0) msg += ` | Earned: ${formatUsd(treasury.earned)}`;
+        msg += `\n`;
     }
 
     // Done
@@ -190,8 +214,8 @@ function buildTweet(claws, staked, tasks, treasury) {
         tweet += `🔒 ${formatNum(staked)} staked (${(staked / 100e9 * 100).toFixed(1)}%)\n`;
     }
 
-    if (treasury !== null) {
-        tweet += `🏦 Treasury: ${formatUsd(treasury)}\n`;
+    if (treasury?.total) {
+        tweet += `🏦 Treasury: ${formatUsd(treasury.total)}\n`;
     }
 
     tweet += `\n`;
@@ -225,18 +249,24 @@ export default async function handler(req, res) {
 
     try {
         // Fetch all data in parallel
-        const [claws, staked, tasks] = await Promise.all([
+        const [claws, staked, tasks, treasuryStaking] = await Promise.all([
             fetchClawsPrice(),
             fetchStakingBalance(),
-            fetchTasks()
+            fetchTasks(),
+            fetchTreasuryStaking()
         ]);
 
-        // Treasury = CLAWS/ETH LP pool TVL
-        const treasury = claws?.liquidity ? Math.round(claws.liquidity) : null;
+        // Treasury = LP TVL + staked CLAWS value + earned rewards value
+        const clawsPrice = claws?.price || 0;
+        const lpValue = claws?.liquidity || 0;
+        const stakedValue = treasuryStaking ? treasuryStaking.staked * clawsPrice : 0;
+        const earnedValue = treasuryStaking ? treasuryStaking.earned * clawsPrice : 0;
+        const treasury = Math.round(lpValue + stakedValue + earnedValue) || null;
 
         // Build messages
-        const telegramPost = buildTelegramPost(claws, staked, tasks, treasury);
-        const tweet = buildTweet(claws, staked, tasks, treasury);
+        const treasuryData = { total: treasury, lp: Math.round(lpValue), staked: Math.round(stakedValue), earned: Math.round(earnedValue) };
+        const telegramPost = buildTelegramPost(claws, staked, tasks, treasuryData);
+        const tweet = buildTweet(claws, staked, tasks, treasuryData);
 
         // Post to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
