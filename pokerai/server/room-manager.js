@@ -197,8 +197,8 @@ class RoomManager {
         foldPhase: entry.foldPhase,
         opponentHand: entry.opponentHand
       });
-      // Persist learned traits if they've been updated (every 50 hands)
-      if (a.traits?.learned && Object.keys(a.traits.learned).length > 0 && a.handsPlayed % 50 === 0) {
+      // Persist learned traits when learning analysis ran (every 50 hands)
+      if (a.traits?.learned && Object.keys(a.traits.learned).length > 0 && a.handsPlayed > 0 && a.handsPlayed % 50 === 0) {
         if (this.store.saveLearnedTraits) {
           this.store.saveLearnedTraits(a.id, a.traits.learned);
         }
@@ -1430,6 +1430,9 @@ class RoomManager {
               prompt: a.prompt || '',
               pnl: a.chips - a.baseChips,
               backingTotal,
+              totalDeposited: a.totalDeposited || a.baseChips,
+              totalCashedOut: a.totalCashedOut || 0,
+              autoEvents: a.autoEvents || [],
               currency: room.currency || 'usdc',
               status: 'playing',
               roomId: table.roomId,
