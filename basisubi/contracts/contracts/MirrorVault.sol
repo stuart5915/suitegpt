@@ -71,8 +71,15 @@ contract MirrorVault is
     uint256 public lastCompoundTime;
     uint256 public totalFeesEarnedUsdc;
 
+    // V2 — Gauge staking for AERO rewards
+    ICLGauge public gauge;
+    IERC20 public aeroToken;
+    bool public gaugeStakingEnabled;
+    int24 public aeroSwapTickSpacing;
+    bool private _isStakedInGauge;
+
     // Reserved
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 
     // ══════════════════════════════════════════════════════════════
     //  EVENTS
@@ -89,6 +96,10 @@ contract MirrorVault is
     event PerformanceFeeUpdated(uint256 newFeeBps);
     event AdminTransferred(address indexed oldAdmin, address indexed newAdmin);
     event EmergencyExitLP(uint256 usdcRecovered);
+    event GaugeUpdated(address indexed gauge, address aeroToken, int24 aeroTickSpacing);
+    event AeroCompounded(uint256 aeroAmount, uint256 usdcReceived);
+    event GaugeStaked(uint256 indexed tokenId);
+    event GaugeUnstaked(uint256 indexed tokenId);
 
     // ══════════════════════════════════════════════════════════════
     //  MODIFIERS
@@ -148,7 +159,7 @@ contract MirrorVault is
         wethIsToken0 = p.weth_ < p.usdc;
     }
 
-    function version() external pure returns (uint256) { return 1; }
+    function version() external pure returns (uint256) { return 2; }
 
     function onERC721Received(address, address, uint256, bytes calldata)
         external pure override returns (bytes4)
@@ -221,6 +232,7 @@ contract MirrorVault is
 
         // 1. Exit current position (if any)
         if (tokenId != 0) {
+            _unstakeFromGauge();
             _removeAllLiquidity();
             (uint256 fees0, uint256 fees1) = _collectAll();
             _takePerformanceFee(fees0, fees1);
@@ -251,19 +263,27 @@ contract MirrorVault is
     }
 
     /// @notice Deploy idle USDC into the current mirrored range.
-    ///         Only works when range is set and position is in range.
+    ///         Claims AERO rewards, collects trading fees, and compounds everything.
     function compound() external nonReentrant {
         require(trackedTickLower != 0 || trackedTickUpper != 0, "no range set");
+
+        // 1. Claim AERO rewards while staked (before unstaking)
+        _handleAeroRewards();
+
+        // 2. Unstake for LP operations
+        _unstakeFromGauge();
 
         uint256 fees0;
         uint256 fees1;
 
+        // 3. Collect trading fees
         if (tokenId != 0) {
             require(_isInRange(), "out of range - call mirror()");
             (fees0, fees1) = _collectFees();
             _takePerformanceFee(fees0, fees1);
         }
 
+        // 4. Deploy all idle USDC (trading fees + AERO proceeds + existing idle)
         uint256 idle = IERC20(asset()).balanceOf(address(this));
         require(idle >= compoundMinimum, "below minimum");
 
@@ -301,34 +321,6 @@ contract MirrorVault is
         emit TrackedPositionUpdated(_wallet, _tokenId);
     }
 
-    /// @notice Auto-discover the best ETH/USDC position for a wallet.
-    ///         Finds the position with the most liquidity.
-    function discoverTrackedPosition(address _wallet) external onlyAdmin {
-        require(_wallet != address(0), "zero wallet");
-
-        uint256 balance = IERC721Enumerable(address(positionManager)).balanceOf(_wallet);
-        require(balance > 0, "no positions");
-
-        uint256 bestId;
-        uint128 bestLiq;
-
-        for (uint256 i = 0; i < balance; i++) {
-            uint256 tid = IERC721Enumerable(address(positionManager)).tokenOfOwnerByIndex(_wallet, i);
-            (,,address t0, address t1,,,,uint128 liq,,,,) = positionManager.positions(tid);
-            bool validPair = (t0 == address(weth) && t1 == asset()) ||
-                             (t0 == asset() && t1 == address(weth));
-            if (validPair && liq > bestLiq) {
-                bestLiq = liq;
-                bestId = tid;
-            }
-        }
-
-        require(bestLiq > 0, "no ETH/USDC positions");
-        trackedWallet = _wallet;
-        trackedTokenId = bestId;
-
-        emit TrackedPositionUpdated(_wallet, bestId);
-    }
 
     // ══════════════════════════════════════════════════════════════
     //  ADMIN — CONFIG
@@ -377,6 +369,7 @@ contract MirrorVault is
 
     function emergencyExitLP() external onlyAdmin {
         if (tokenId == 0) return;
+        _unstakeFromGauge();
         _removeAllLiquidity();
         _collectAll();
         positionManager.burn(tokenId);
@@ -392,6 +385,27 @@ contract MirrorVault is
     function recoverToken(address token) external onlyAdmin {
         require(token != asset() && token != address(weth), "protected");
         IERC20(token).safeTransfer(admin, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @notice Configure gauge staking for AERO rewards. V2 upgrade.
+    function setGauge(address _gauge, address _aeroToken, int24 _aeroTickSpacing) external onlyAdmin {
+        gauge = ICLGauge(_gauge);
+        aeroToken = IERC20(_aeroToken);
+        aeroSwapTickSpacing = _aeroTickSpacing;
+        gaugeStakingEnabled = _gauge != address(0);
+        emit GaugeUpdated(_gauge, _aeroToken, _aeroTickSpacing);
+    }
+
+    /// @notice Stake the existing LP position in gauge. Call after setGauge.
+    function adminStakeInGauge() external onlyAdmin {
+        require(address(gauge) != address(0) && gaugeStakingEnabled, "gauge not enabled");
+        require(tokenId != 0, "no position");
+        _stakeInGauge();
+    }
+
+    /// @notice Unstake the LP position from gauge without exiting.
+    function adminUnstakeFromGauge() external onlyAdmin {
+        _unstakeFromGauge();
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -445,6 +459,24 @@ contract MirrorVault is
         if (trackedWallet != address(0)) {
             (int24 ll, int24 lu, bool active) = _getTrackedRange();
             _needsMirror = active && (ll != trackedTickLower || lu != trackedTickUpper);
+        }
+    }
+
+    function getGaugeInfo() external view returns (
+        address _gauge,
+        address _aeroToken,
+        bool _gaugeStakingEnabled,
+        bool _isStaked,
+        uint256 _pendingAero
+    ) {
+        _gauge = address(gauge);
+        _aeroToken = address(aeroToken);
+        _gaugeStakingEnabled = gaugeStakingEnabled;
+        _isStaked = _isStakedInGauge;
+        if (_isStaked && _gauge != address(0) && tokenId != 0) {
+            try ICLGauge(_gauge).earned(address(this), tokenId) returns (uint256 earned) {
+                _pendingAero = earned;
+            } catch {}
         }
     }
 
@@ -542,9 +574,14 @@ contract MirrorVault is
         currentTickUpper = tu;
         IERC20(t0).forceApprove(address(positionManager), 0);
         IERC20(t1).forceApprove(address(positionManager), 0);
+
+        // Stake in gauge for AERO rewards
+        _stakeInGauge();
     }
 
     function _addToPosition(uint256 usdcAmount) internal {
+        _unstakeFromGauge();
+
         uint256 usdcToSwap = _calculateSwapAmount(usdcAmount, currentTickLower, currentTickUpper);
         uint256 wethAmount = usdcToSwap > 0 ? _swap(asset(), address(weth), usdcToSwap) : 0;
         uint256 usdcRemaining = IERC20(asset()).balanceOf(address(this));
@@ -567,10 +604,14 @@ contract MirrorVault is
         );
         IERC20(t0).forceApprove(address(positionManager), 0);
         IERC20(t1).forceApprove(address(positionManager), 0);
+
+        _stakeInGauge();
     }
 
     function _removeLiquidityForUsdc(uint256 usdcNeeded) internal {
         if (tokenId == 0) return;
+        _unstakeFromGauge();
+
         uint256 lpValue = _getLPValueInUsdc();
         if (lpValue == 0) return;
         (,,,,,,, uint128 liquidity,,,,) = positionManager.positions(tokenId);
@@ -594,7 +635,12 @@ contract MirrorVault is
         if (wethBal > 0) _swap(address(weth), asset(), wethBal);
 
         (,,,,,,, uint128 remaining,,,,) = positionManager.positions(tokenId);
-        if (remaining == 0) { positionManager.burn(tokenId); tokenId = 0; }
+        if (remaining == 0) {
+            positionManager.burn(tokenId);
+            tokenId = 0;
+        } else {
+            _stakeInGauge();
+        }
     }
 
     function _removeAllLiquidity() internal {
@@ -691,10 +737,62 @@ contract MirrorVault is
         if (r < tick) r += ts;
         return r;
     }
-}
 
-/// @dev Minimal ERC721Enumerable interface for position discovery.
-interface IERC721Enumerable {
-    function balanceOf(address owner) external view returns (uint256);
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    // ══════════════════════════════════════════════════════════════
+    //  INTERNAL — GAUGE STAKING (V2)
+    // ══════════════════════════════════════════════════════════════
+
+    /// @dev Stake the vault's LP NFT in the gauge for AERO rewards.
+    function _stakeInGauge() internal {
+        if (!gaugeStakingEnabled || tokenId == 0 || _isStakedInGauge) return;
+        positionManager.approve(address(gauge), tokenId);
+        gauge.deposit(tokenId);
+        _isStakedInGauge = true;
+        emit GaugeStaked(tokenId);
+    }
+
+    /// @dev Unstake the vault's LP NFT from the gauge.
+    function _unstakeFromGauge() internal {
+        if (!_isStakedInGauge || tokenId == 0) return;
+        gauge.withdraw(tokenId);
+        _isStakedInGauge = false;
+        emit GaugeUnstaked(tokenId);
+    }
+
+    /// @dev Claim AERO rewards from gauge and swap to USDC.
+    function _handleAeroRewards() internal {
+        if (!_isStakedInGauge || address(gauge) == address(0) || address(aeroToken) == address(0)) return;
+
+        // Claim AERO while staked
+        try gauge.getReward(tokenId) {} catch {}
+
+        // Swap any AERO balance → WETH → USDC
+        uint256 aeroBal = aeroToken.balanceOf(address(this));
+        if (aeroBal == 0) return;
+
+        uint256 wethOut = _swapViaRouter(address(aeroToken), address(weth), aeroBal, aeroSwapTickSpacing);
+        uint256 usdcOut;
+        if (wethOut > 0) {
+            usdcOut = _swap(address(weth), asset(), wethOut);
+        }
+
+        emit AeroCompounded(aeroBal, usdcOut);
+    }
+
+    /// @dev Single-hop swap via the Aerodrome router (no slippage oracle).
+    function _swapViaRouter(address tokenIn, address tokenOut, uint256 amountIn, int24 tickSpacing)
+        internal returns (uint256)
+    {
+        if (amountIn == 0) return 0;
+        IERC20(tokenIn).forceApprove(address(swapRouter), amountIn);
+        uint256 out = swapRouter.exactInputSingle(
+            ICLSwapRouter.ExactInputSingleParams({
+                tokenIn: tokenIn, tokenOut: tokenOut, tickSpacing: tickSpacing,
+                recipient: address(this), deadline: block.timestamp,
+                amountIn: amountIn, amountOutMinimum: 0, sqrtPriceLimitX96: 0
+            })
+        );
+        IERC20(tokenIn).forceApprove(address(swapRouter), 0);
+        return out;
+    }
 }

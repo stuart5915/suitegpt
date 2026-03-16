@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 const RPC = 'https://mainnet.base.org';
-const FACTORY = '0x27615125c72E1dBB707644051F6A0E4c175bC3B2';
+const FACTORY = '0x77D78854FaF659bf108CaEd4e40851F1a5FC7537';
 const NPM = '0x827922686190790b37229fd06084350E74485b72';
 const POOL = '0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59';
 const GAUGE = '0xF33a96b5932D9E9B9A0eDA447AbD8C9d48d2e0c8';

@@ -50,6 +50,11 @@ contract MirrorVaultFactory is Ownable2Step, Pausable {
     // Fee manager (optional, can be address(0) for no fees)
     address public feeManager;
 
+    // Gauge config (V2) — auto-applied to every new vault
+    address public gaugeAddress;
+    address public aeroTokenAddress;
+    int24 public aeroSwapTickSpacing;
+
     // Registry
     address[] public allVaults;
     mapping(address => address[]) public vaultsByCreator;
@@ -91,6 +96,9 @@ contract MirrorVaultFactory is Ownable2Step, Pausable {
         address feeManager_;      // address(0) for no fees
         uint256 burnPerVault_;    // e.g. 1000e18 = 1000 BASIS
         uint256 freeVaultLimit_;  // e.g. 1
+        address gauge_;           // ETH/USDC CL gauge (address(0) to skip)
+        address aeroToken_;       // AERO token for reward swaps
+        int24 aeroSwapTickSpacing_; // AERO/WETH pool tick spacing (e.g. 200)
     }
 
     constructor(FactoryParams memory p) Ownable(msg.sender) Pausable() {
@@ -105,6 +113,9 @@ contract MirrorVaultFactory is Ownable2Step, Pausable {
         feeManager = p.feeManager_;
         burnPerVault = p.burnPerVault_;
         freeVaultLimit = p.freeVaultLimit_;
+        gaugeAddress = p.gauge_;
+        aeroTokenAddress = p.aeroToken_;
+        aeroSwapTickSpacing = p.aeroSwapTickSpacing_;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -168,6 +179,11 @@ contract MirrorVaultFactory is Ownable2Step, Pausable {
         // Set tracked position on the new vault
         if (trackedTokenId_ != 0) {
             MirrorVault(vault).setTrackedPosition(trackedWallet_, trackedTokenId_);
+        }
+
+        // Auto-configure gauge staking for AERO rewards
+        if (gaugeAddress != address(0)) {
+            MirrorVault(vault).setGauge(gaugeAddress, aeroTokenAddress, aeroSwapTickSpacing);
         }
 
         // Register
@@ -236,6 +252,12 @@ contract MirrorVaultFactory is Ownable2Step, Pausable {
     function setFeeManager(address newFeeManager) external onlyOwner {
         emit FeeManagerUpdated(feeManager, newFeeManager);
         feeManager = newFeeManager;
+    }
+
+    function setGaugeConfig(address _gauge, address _aeroToken, int24 _tickSpacing) external onlyOwner {
+        gaugeAddress = _gauge;
+        aeroTokenAddress = _aeroToken;
+        aeroSwapTickSpacing = _tickSpacing;
     }
 
     function pause() external onlyOwner { _pause(); }
