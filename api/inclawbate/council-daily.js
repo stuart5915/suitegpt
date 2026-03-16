@@ -184,7 +184,7 @@ async function fetchTasks() {
     const [doneRes, currentRes, todoRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true }).limit(5)
+        supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
@@ -370,7 +370,8 @@ function getDateStr() {
 
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
-    let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n\n`;
+    let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
+    msg += `<i>Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</i>\n\n`;
 
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
@@ -432,24 +433,24 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `<i>Vote: inclawbate.com/how-it-works</i>\n`;
     }
 
-    // Past / Present / Future
+    // Past / Present / Future + full backlog
     if (tasks.done.length) {
-        msg += `\n<b>Past</b>\n`;
+        msg += `\n<b>✅ Past</b>\n`;
         tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
     if (tasks.current.length) {
-        msg += `\n<b>Present</b>\n`;
-        tasks.current.forEach(t => { msg += `• ${esc(t)}\n`; });
+        msg += `\n<b>🔥 Present</b>\n`;
+        tasks.current.forEach(t => { msg += `→ ${esc(t)}\n`; });
     }
 
     if (tasks.todo.length) {
-        msg += `\n<b>Future</b>\n`;
-        tasks.todo.slice(0, 5).forEach(t => { msg += `• ${esc(t)}\n`; });
+        msg += `\n<b>📋 Backlog</b> (${tasks.todo.length})\n`;
+        tasks.todo.forEach((t, i) => { msg += `${i + 1}. ${esc(t)}\n`; });
     }
 
     if (!tasks.done.length && !tasks.current.length && !tasks.todo.length) {
-        msg += `\n<i>No tasks logged. Use /add to add items.</i>\n`;
+        msg += `\n<i>No tasks logged.</i>\n`;
     }
 
     msg += `\n🔗 inclawbate.com`;
