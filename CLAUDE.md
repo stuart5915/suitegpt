@@ -37,18 +37,22 @@ Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides
 1. Read `CEO.md` (vision, decision framework, current state)
 2. Read `CEO_TASKS.md` (full prioritized backlog)
 3. Read `COUNCIL.md` and `COUNCIL_MEMBERS.md` (council governance + member activity)
-4. Assess current state:
-   - What was recently completed?
-   - What's in-progress?
+4. Fetch live team state: `WebFetch GET https://www.inclawbate.com/api/inclawbate/team-state` — this returns the **actual** Past/Present/Future items from the daily post (managed via Telegram bot). Compare this with CEO_TASKS.md to find gaps.
+5. Assess current state:
+   - What's in Present (actively being worked on)?
+   - What's in Future (queued up)?
+   - Does Present/Future align with the priority backlog in CEO_TASKS.md?
+   - Any P0/P1 tasks missing from Present/Future?
    - Any deadlines approaching?
-   - Any blocked tasks that got unblocked?
-4. Recommend the **top 1-3 things to work on right now**, with reasoning based on the decision framework (revenue > user issues > growth > stickiness > marketing > partnerships > nice-to-haves)
-5. Ask: "Want to dive into one of these, or is something else on your mind?"
+6. Recommend the **top 1-3 things to work on right now**, with reasoning based on the decision framework (revenue > user issues > growth > stickiness > marketing > partnerships > nice-to-haves)
+7. If Present/Future needs updating, suggest specific Telegram commands: `/add [task]`, `/done [number]`, `/current [number]`
+8. Ask: "Want to dive into one of these, or is something else on your mind?"
 
 ### When user says "idk what to do" or similar:
 - Run the `/ceo` flow above
 - Be decisive — pick THE one thing and explain why
 - If multiple things are equal priority, pick whichever can ship fastest
+- Always check live team state to avoid recommending something already in Present
 
 ### When a task is completed:
 - Update `CEO_TASKS.md` — move to "Recently Completed" with date
