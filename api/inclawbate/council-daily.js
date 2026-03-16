@@ -232,6 +232,51 @@ async function fetchAllocationSynthesis() {
     }
 }
 
+// ── Treasury Snapshots ──
+
+async function saveSnapshot(claws, supply, treasuryData, voterCount) {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        await supabase.from('treasury_snapshots').upsert({
+            snapshot_date: today,
+            claws_price: claws?.price || 0,
+            change_24h: claws?.change24h || 0,
+            volume_24h: claws?.volume24h || 0,
+            liquidity: claws?.liquidity || 0,
+            mcap: claws?.mcap || 0,
+            staked_amount: supply?.staked || 0,
+            staked_pct: parseFloat(supply?.stakedPct) || 0,
+            lp_amount: supply?.inLP || 0,
+            lp_pct: parseFloat(supply?.lpPct) || 0,
+            total_locked_pct: parseFloat(supply?.lockedPct) || 0,
+            treasury_total: treasuryData?.total || 0,
+            lp_value: treasuryData?.lp || 0,
+            staked_value: treasuryData?.staked || 0,
+            earned_value: treasuryData?.earned || 0,
+            voter_count: voterCount || 0
+        }, { onConflict: 'snapshot_date' });
+    } catch (e) { console.error('Snapshot save error:', e); }
+}
+
+async function fetchYesterdaySnapshot() {
+    try {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const { data } = await supabase
+            .from('treasury_snapshots')
+            .select('*')
+            .eq('snapshot_date', yesterday)
+            .single();
+        return data || null;
+    } catch (e) { return null; }
+}
+
+function calcChange(current, previous) {
+    if (!previous || !current) return null;
+    const diff = current - previous;
+    const pct = previous !== 0 ? ((diff / previous) * 100).toFixed(1) : null;
+    return { diff, pct };
+}
+
 // ── Formatters ──
 
 function formatNum(n) {
@@ -247,11 +292,18 @@ function formatUsd(n) {
     return '$' + Math.round(n);
 }
 
+function formatDelta(change) {
+    if (!change) return '';
+    const arrow = change.diff >= 0 ? '↑' : '↓';
+    const val = formatUsd(Math.abs(change.diff));
+    return ` (${arrow}${val}${change.pct ? ', ' + (change.diff >= 0 ? '+' : '') + change.pct + '%' : ''})`;
+}
+
 function getDateStr() {
     return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
 }
 
-function buildTelegramPost(claws, supply, tasks, treasury, allocation) {
+function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n\n`;
 
@@ -272,9 +324,10 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation) {
         msg += `🔒 Total Locked: ${supply.lockedPct}%\n`;
     }
 
-    // Treasury
+    // Treasury with day-over-day change
     if (treasury?.total) {
-        msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}\n`;
+        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+        msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}${formatDelta(treasuryChange)}\n`;
         msg += `LP: ${formatUsd(treasury.lp)}`;
         if (treasury.staked > 0) msg += ` | Staked: ${formatUsd(treasury.staked)}`;
         if (treasury.earned > 0) msg += ` | Earned: ${formatUsd(treasury.earned)}`;
@@ -319,7 +372,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation) {
     return msg;
 }
 
-function buildTweet(claws, supply, tasks, treasury, allocation) {
+function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let tweet = `🦞 CLAWS Daily | ${date}\n\n`;
 
@@ -334,7 +387,8 @@ function buildTweet(claws, supply, tasks, treasury, allocation) {
     }
 
     if (treasury?.total) {
-        tweet += `🏦 Treasury: ${formatUsd(treasury.total)}\n`;
+        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+        tweet += `🏦 Treasury: ${formatUsd(treasury.total)}${treasuryChange ? ' (' + (treasuryChange.diff >= 0 ? '+' : '') + formatUsd(treasuryChange.diff) + ')' : ''}\n`;
     }
 
     if (allocation) {
@@ -395,10 +449,17 @@ export default async function handler(req, res) {
         const earnedValue = treasuryStaking ? treasuryStaking.earned * clawsPrice : 0;
         const treasury = Math.round(lpValue + stakedValue + earnedValue) || null;
 
-        // Build messages
         const treasuryData = { total: treasury, lp: Math.round(lpValue), staked: Math.round(stakedValue), earned: Math.round(earnedValue) };
-        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation);
-        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation);
+
+        // Fetch yesterday's snapshot for day-over-day comparison
+        const yesterday = await fetchYesterdaySnapshot();
+
+        // Save today's snapshot
+        await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
+
+        // Build messages
+        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday);
+        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday);
 
         // Post to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
