@@ -312,6 +312,72 @@
         .voter-balance { color: var(--text-dim); font-size: 0.65rem; }
         .voter-time { color: var(--text-dim); font-size: 0.6rem; white-space: nowrap; }
 
+        /* Daily distribution breakdown */
+        .daily-dist {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: var(--space-lg);
+        }
+        .daily-dist-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .daily-dist-header .amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #4ade80;
+        }
+        .daily-dist-header .label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        .dist-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+        .dist-row .dist-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dist-row .dist-name {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+        .dist-row .dist-bar-wrap {
+            flex: 1;
+            height: 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .dist-row .dist-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+        .dist-row .dist-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            min-width: 55px;
+            text-align: right;
+        }
+        @media (max-width: 768px) {
+            .dist-row .dist-name { min-width: 90px; font-size: 0.7rem; }
+            .daily-dist-header .amount { font-size: 1.4rem; }
+        }
+
         .loading { color: var(--text-dim); font-style: italic; }
     </style>
 </head>
@@ -421,6 +487,15 @@
                         <button class="alloc-vote-btn" id="council-save-btn" style="background:#fbbf24;color:#0a0a0f;">Sign & Set Allocation</button>
                         <span id="council-save-info" style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--text-dim);"></span>
                     </div>
+                </div>
+
+                <!-- Daily distribution breakdown -->
+                <div class="daily-dist" id="daily-dist">
+                    <div class="daily-dist-header">
+                        <span class="amount">$100</span>
+                        <span class="label">per day funding &mdash; distributed by council allocation</span>
+                    </div>
+                    <div id="dist-rows"></div>
                 </div>
 
                 <!-- Community synthesis bar -->
@@ -606,6 +681,27 @@ fetch('/api/inclawbate/team-state')
             bar.appendChild(seg);
         });
         if (info) info.textContent = 'Set by inclawbate.base.eth \u2014 this is the active distribution';
+        renderDistribution();
+    }
+
+    var DAILY_FUNDING = 100;
+
+    function renderDistribution() {
+        var container = document.getElementById('dist-rows');
+        if (!container) return;
+        container.innerHTML = '';
+        var weights = councilWeights || null;
+        buckets.forEach(function(b) {
+            var pct = weights ? (weights[b.id] || 0) : b.default;
+            var dollars = (DAILY_FUNDING * pct / 100).toFixed(2);
+            var row = document.createElement('div');
+            row.className = 'dist-row';
+            row.innerHTML = '<span class="dist-dot" style="background:' + b.color + '"></span>' +
+                '<span class="dist-name">' + b.label + '</span>' +
+                '<div class="dist-bar-wrap"><div class="dist-bar-fill" style="width:' + pct + '%;background:' + b.color + '"></div></div>' +
+                '<span class="dist-amount">$' + dollars + '</span>';
+            container.appendChild(row);
+        });
     }
 
     /* Council admin sliders */
