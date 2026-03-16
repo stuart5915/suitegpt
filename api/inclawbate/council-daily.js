@@ -360,12 +360,16 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Refresh voter balances first (catches transfer gaming)
+        await refreshVoterBalances();
+
         // Fetch all data in parallel
-        const [claws, supply, tasks, treasuryStaking] = await Promise.all([
+        const [claws, supply, tasks, treasuryStaking, allocation] = await Promise.all([
             fetchClawsPrice(),
             fetchStakingAndLP(),
             fetchTasks(),
-            fetchTreasuryStaking()
+            fetchTreasuryStaking(),
+            fetchAllocationSynthesis()
         ]);
 
         // Treasury = LP TVL + staked CLAWS value + earned rewards value
@@ -377,8 +381,8 @@ export default async function handler(req, res) {
 
         // Build messages
         const treasuryData = { total: treasury, lp: Math.round(lpValue), staked: Math.round(stakedValue), earned: Math.round(earnedValue) };
-        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData);
-        const tweet = buildTweet(claws, supply, tasks, treasuryData);
+        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation);
+        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation);
 
         // Post to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
@@ -394,6 +398,7 @@ export default async function handler(req, res) {
                 claws,
                 supply,
                 treasury,
+                allocation,
                 tasks
             }
         });
