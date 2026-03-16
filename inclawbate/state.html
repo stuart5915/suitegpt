@@ -324,7 +324,7 @@
             display: flex;
             align-items: baseline;
             gap: 10px;
-            margin-bottom: 16px;
+            margin-bottom: 6px;
         }
         .daily-dist-header .amount {
             font-family: 'JetBrains Mono', monospace;
@@ -336,11 +336,28 @@
             font-size: 0.8rem;
             color: var(--text-dim);
         }
+        .dist-legend {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+        .dist-legend span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .dist-legend .leg-swatch {
+            width: 18px;
+            height: 8px;
+            border-radius: 2px;
+        }
         .dist-row {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 6px 0;
+            padding: 5px 0;
         }
         .dist-row .dist-dot {
             width: 8px; height: 8px;
@@ -355,12 +372,23 @@
         }
         .dist-row .dist-bar-wrap {
             flex: 1;
-            height: 14px;
+            height: 18px;
             background: rgba(255,255,255,0.04);
             border-radius: 4px;
             overflow: hidden;
+            position: relative;
         }
-        .dist-row .dist-bar-fill {
+        .dist-row .dist-bar-community {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            border-radius: 4px;
+            opacity: 0.25;
+            transition: width 0.4s ease;
+        }
+        .dist-row .dist-bar-council {
+            position: absolute;
+            top: 0; left: 0;
             height: 100%;
             border-radius: 4px;
             transition: width 0.4s ease;
@@ -470,47 +498,36 @@
                 <p>Treasury receives <strong>$100/day</strong> in funding, distributed across buckets like reinvestment, CLAWS buybacks, LP, staking rewards, ecosystem development, grants, giving, and council compensation.</p>
             </div>
 
+            <!-- Daily distribution breakdown -->
+            <div class="daily-dist" id="daily-dist">
+                <div class="daily-dist-header">
+                    <span class="amount">$100</span>
+                    <span class="label">per day funding</span>
+                </div>
+                <div class="dist-legend">
+                    <span><span class="leg-swatch" style="background:var(--text-primary);opacity:1;"></span> Council (active)</span>
+                    <span><span class="leg-swatch" style="background:var(--text-primary);opacity:0.25;"></span> Community (advisory)</span>
+                    <span id="alloc-voter-count" style="font-family:'JetBrains Mono',monospace;"></span>
+                </div>
+                <div id="dist-rows"></div>
+            </div>
+
+            <!-- Council admin sliders (hidden unless council wallet connected) -->
+            <div id="council-admin-panel" style="display:none;margin-bottom:var(--space-md);padding:16px;border:1px solid rgba(251,191,36,0.25);border-radius:12px;background:rgba(251,191,36,0.04);">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#fbbf24;margin-bottom:10px;">Set Council Allocation</div>
+                <div class="alloc-rows" id="council-sliders"></div>
+                <div id="council-total" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
+                <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
+                    <button class="alloc-vote-btn" id="council-save-btn" style="background:#fbbf24;color:#0a0a0f;">Sign & Set Allocation</button>
+                    <span id="council-save-info" style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--text-dim);"></span>
+                </div>
+            </div>
+
+            <!-- Your vote sliders -->
             <div class="alloc-card">
-                <!-- Council allocation bar -->
-                <div style="margin-bottom: var(--space-md);">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">&mdash; Council Allocation <span style="font-weight:400;opacity:0.6;">(active)</span></div>
-                    <div class="alloc-synth-bar" id="alloc-council-bar"></div>
-                    <div id="alloc-council-info" style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);margin-top:4px;"></div>
-                </div>
-
-                <!-- Council admin sliders (hidden unless council wallet connected) -->
-                <div id="council-admin-panel" style="display:none;margin-bottom:var(--space-md);padding:16px;border:1px solid rgba(251,191,36,0.25);border-radius:12px;background:rgba(251,191,36,0.04);">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#fbbf24;margin-bottom:10px;">Set Council Allocation</div>
-                    <div class="alloc-rows" id="council-sliders"></div>
-                    <div id="council-total" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
-                    <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
-                        <button class="alloc-vote-btn" id="council-save-btn" style="background:#fbbf24;color:#0a0a0f;">Sign & Set Allocation</button>
-                        <span id="council-save-info" style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--text-dim);"></span>
-                    </div>
-                </div>
-
-                <!-- Daily distribution breakdown -->
-                <div class="daily-dist" id="daily-dist">
-                    <div class="daily-dist-header">
-                        <span class="amount">$100</span>
-                        <span class="label">per day funding &mdash; distributed by council allocation</span>
-                    </div>
-                    <div id="dist-rows"></div>
-                </div>
-
-                <!-- Community synthesis bar -->
-                <div style="margin-bottom: 4px;">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">&mdash; Community Synthesis <span style="font-weight:400;opacity:0.6;">(advisory)</span></div>
-                    <div class="alloc-synth-bar" id="alloc-synth-bar"></div>
-                    <div class="alloc-voter-count" id="alloc-voter-count"></div>
-                </div>
-
-                <!-- Your vote sliders -->
-                <div style="margin-top: var(--space-lg);">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Your Allocation</div>
-                    <div class="alloc-rows" id="alloc-sliders"></div>
-                    <div id="alloc-total" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
-                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Your Allocation</div>
+                <div class="alloc-rows" id="alloc-sliders"></div>
+                <div id="alloc-total" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
 
                 <!-- Vote button -->
                 <div class="alloc-vote-area">
@@ -627,61 +644,11 @@ fetch('/api/inclawbate/team-state')
                     totalVoters = data.totalVoters || 0;
                     allVoters = data.voters || [];
                     councilWeights = data.council || null;
-                    renderCouncilBar();
-                    renderSynthBar();
+                    renderDistribution();
                     renderVoters();
                 }
             })
             .catch(function() {});
-    }
-
-    function renderSynthBar() {
-        var bar = document.getElementById('alloc-synth-bar');
-        if (!bar) return;
-        bar.innerHTML = '';
-        buckets.forEach(function(b, i) {
-            var seg = document.createElement('div');
-            seg.className = 'alloc-synth-seg';
-            seg.style.background = b.color;
-            seg.style.flex = synthesis[i];
-            seg.textContent = synthesis[i] > 4 ? b.label.split(' ')[0] + ' ' + synthesis[i] + '%' : '';
-            bar.appendChild(seg);
-        });
-        var count = document.getElementById('alloc-voter-count');
-        if (count) count.textContent = totalVoters > 0
-            ? totalVoters + ' vote' + (totalVoters !== 1 ? 's' : '') + ' cast'
-            : '0 votes cast \u2014 be the first to set the direction';
-    }
-
-    function renderCouncilBar() {
-        var bar = document.getElementById('alloc-council-bar');
-        var info = document.getElementById('alloc-council-info');
-        if (!bar) return;
-        bar.innerHTML = '';
-        if (!councilWeights) {
-            buckets.forEach(function(b) {
-                var seg = document.createElement('div');
-                seg.className = 'alloc-synth-seg';
-                seg.style.background = b.color;
-                seg.style.opacity = '0.35';
-                seg.style.flex = b.default;
-                seg.textContent = b.default > 4 ? b.label.split(' ')[0] + ' ' + b.default + '%' : '';
-                bar.appendChild(seg);
-            });
-            if (info) info.textContent = 'Defaults shown \u2014 council has not voted yet';
-            return;
-        }
-        buckets.forEach(function(b) {
-            var pct = councilWeights[b.id] || 0;
-            var seg = document.createElement('div');
-            seg.className = 'alloc-synth-seg';
-            seg.style.background = b.color;
-            seg.style.flex = pct;
-            seg.textContent = pct > 4 ? b.label.split(' ')[0] + ' ' + pct + '%' : '';
-            bar.appendChild(seg);
-        });
-        if (info) info.textContent = 'Set by inclawbate.base.eth \u2014 this is the active distribution';
-        renderDistribution();
     }
 
     var DAILY_FUNDING = 100;
@@ -690,18 +657,25 @@ fetch('/api/inclawbate/team-state')
         var container = document.getElementById('dist-rows');
         if (!container) return;
         container.innerHTML = '';
-        var weights = councilWeights || null;
-        buckets.forEach(function(b) {
-            var pct = weights ? (weights[b.id] || 0) : b.default;
-            var dollars = (DAILY_FUNDING * pct / 100).toFixed(2);
+        buckets.forEach(function(b, i) {
+            var councilPct = councilWeights ? (councilWeights[b.id] || 0) : b.default;
+            var communityPct = synthesis[i] || 0;
+            var dollars = (DAILY_FUNDING * councilPct / 100).toFixed(2);
             var row = document.createElement('div');
             row.className = 'dist-row';
             row.innerHTML = '<span class="dist-dot" style="background:' + b.color + '"></span>' +
                 '<span class="dist-name">' + b.label + '</span>' +
-                '<div class="dist-bar-wrap"><div class="dist-bar-fill" style="width:' + pct + '%;background:' + b.color + '"></div></div>' +
+                '<div class="dist-bar-wrap">' +
+                    '<div class="dist-bar-community" style="width:' + communityPct + '%;background:' + b.color + '"></div>' +
+                    '<div class="dist-bar-council" style="width:' + councilPct + '%;background:' + b.color + '"></div>' +
+                '</div>' +
                 '<span class="dist-amount">$' + dollars + '</span>';
             container.appendChild(row);
         });
+        var count = document.getElementById('alloc-voter-count');
+        if (count) count.textContent = totalVoters > 0
+            ? totalVoters + ' vote' + (totalVoters !== 1 ? 's' : '') + ' cast'
+            : '';
     }
 
     /* Council admin sliders */
@@ -778,7 +752,7 @@ fetch('/api/inclawbate/team-state')
             var data = await resp.json();
             if (data.success) {
                 councilWeights = weights;
-                renderCouncilBar();
+                renderDistribution();
                 if (info) { info.textContent = 'Council allocation saved!'; info.style.color = '#4ade80'; }
                 if (btn) { btn.textContent = 'Update Allocation'; btn.disabled = false; }
             } else {
@@ -916,7 +890,7 @@ fetch('/api/inclawbate/team-state')
             if (data.success) {
                 synthesis = data.synthesis;
                 totalVoters = data.totalVoters || 0;
-                renderSynthBar();
+                renderDistribution();
                 fetchSynthesis();
                 if (info) { info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS'; info.style.color = '#4ade80'; }
                 if (btn) { btn.textContent = 'Update Vote'; btn.disabled = false; }
@@ -1012,8 +986,7 @@ fetch('/api/inclawbate/team-state')
         } catch (e) {}
     }
 
-    renderCouncilBar();
-    renderSynthBar();
+    renderDistribution();
     renderSliders();
     fetchSynthesis();
     checkExistingWallet();
