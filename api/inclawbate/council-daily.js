@@ -14,7 +14,6 @@ const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID;
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
-const TREASURY_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 const BASE_RPC = 'https://mainnet.base.org';
 
 // ── Helpers ──
@@ -90,59 +89,7 @@ async function fetchStakingBalance() {
     }
 }
 
-async function fetchTreasuryValue(clawsPrice) {
-    try {
-        // Fetch ETH balance + exchange rate and all token balances in parallel
-        const [addrRes, tokensRes] = await Promise.all([
-            fetch(`https://base.blockscout.com/api/v2/addresses/${TREASURY_WALLET}`).then(r => r.json()),
-            fetch(`https://base.blockscout.com/api/v2/addresses/${TREASURY_WALLET}/token-balances`).then(r => r.json())
-        ]);
-
-        // ETH value
-        const ethBal = Number(addrRes.coin_balance || '0') / 1e18;
-        const ethPrice = parseFloat(addrRes.exchange_rate) || 0;
-        let total = ethBal * ethPrice;
-
-        // Also fetch POKERAI price from DexScreener
-        let pokeraiPrice = 0;
-        try {
-            const pr = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07');
-            const pd = await pr.json();
-            pokeraiPrice = parseFloat(pd?.pairs?.[0]?.priceUsd) || 0;
-        } catch (e) {}
-
-        // Token values
-        const tokens = Array.isArray(tokensRes) ? tokensRes : [];
-        for (const t of tokens) {
-            const token = t.token;
-            if (!t.value || !token) continue;
-
-            const decimals = parseInt(token.decimals) || 18;
-            const bal = Number(BigInt(t.value) / BigInt(10 ** Math.min(decimals, 18))) / (decimals > 18 ? Math.pow(10, decimals - 18) : 1);
-            const symbol = (token.symbol || '').toUpperCase();
-            const addr = (token.address_hash || '').toLowerCase();
-
-            // Blockscout has a price
-            const rate = parseFloat(token.exchange_rate);
-            if (rate > 0) {
-                total += bal * rate;
-            }
-            // CLAWS — use DexScreener price
-            else if (addr === CLAWS_ADDRESS.toLowerCase() && clawsPrice > 0) {
-                total += bal * clawsPrice;
-            }
-            // POKERAI — use DexScreener price
-            else if (symbol === 'POKERAI' && pokeraiPrice > 0) {
-                total += bal * pokeraiPrice;
-            }
-        }
-
-        return Math.round(total);
-    } catch (e) {
-        console.error('Treasury fetch error:', e);
-        return null;
-    }
-}
+// Treasury = CLAWS/ETH LP pool TVL (already fetched from DexScreener)
 
 async function fetchTasks() {
     const [doneRes, currentRes, todoRes] = await Promise.all([
@@ -284,8 +231,8 @@ export default async function handler(req, res) {
             fetchTasks()
         ]);
 
-        // Treasury needs CLAWS price, so fetch after
-        const treasury = await fetchTreasuryValue(claws?.price || 0);
+        // Treasury = CLAWS/ETH LP pool TVL
+        const treasury = claws?.liquidity ? Math.round(claws.liquidity) : null;
 
         // Build messages
         const telegramPost = buildTelegramPost(claws, staked, tasks, treasury);
