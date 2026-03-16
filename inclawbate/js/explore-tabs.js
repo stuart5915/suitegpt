@@ -6,7 +6,6 @@
         { label: 'Apps',         href: '/apps' },
         { label: 'NFTs',         href: '/nfts' },
         { label: 'Staking',      href: '/stake' },
-        { label: 'Vaults',       href: '/vaults' },
         { label: 'Agents',       href: '/agents' },
         { label: 'Inclawbators', href: '/inclawbators' },
         { label: 'Tools',        href: '/tools' }

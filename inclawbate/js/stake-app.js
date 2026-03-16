@@ -115,6 +115,26 @@ var POOLS = {
         featured: false,
         category: 'inclawbator',
         auditLink: '/audit/clawnch-rewards'
+    },
+    pokerai: {
+        name: 'PokerAI',
+        ticker: 'POKERAI',
+        token: '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07',
+        rewardToken: '0x7ca47B141639B893C6782823C0b219f872056379',
+        rewardTicker: 'CLAWS',
+        staking: 'DEPLOY_ADDRESS_HERE',
+        decimals: 18,
+        logo: '/inclawbate/assets/pokerai-logo.png',
+        color: 'hsl(263, 70%, 58%)',
+        colorDim: 'hsla(263, 70%, 58%, 0.12)',
+        glow: 'hsla(263, 70%, 58%, 0.18)',
+        description: 'Stake POKERAI, earn CLAWS rewards. Play poker. Get rewarded.',
+        website: 'https://pokerai.app',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07&chain=base',
+        chartLink: 'https://dexscreener.com/base/0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07',
+        featured: false,
+        category: 'inclawbator',
+        auditLink: '/audit/clawnch-rewards'
     }
 };
 
