@@ -432,21 +432,19 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `<i>Vote: inclawbate.com/how-it-works</i>\n`;
     }
 
-    // Done
+    // Past / Present / Future
     if (tasks.done.length) {
-        msg += `\n<b>✅ Done</b>\n`;
+        msg += `\n<b>Past</b>\n`;
         tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
-    // Building
     if (tasks.current.length) {
-        msg += `\n<b>🔨 Building</b>\n`;
+        msg += `\n<b>Present</b>\n`;
         tasks.current.forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
-    // Coming up
     if (tasks.todo.length) {
-        msg += `\n<b>📋 Coming Up</b>\n`;
+        msg += `\n<b>Future</b>\n`;
         tasks.todo.slice(0, 5).forEach(t => { msg += `• ${esc(t)}\n`; });
     }
 
@@ -491,14 +489,11 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
 
     tweet += `\n`;
 
-    if (tasks.done.length) {
-        tweet += `✅ ${tasks.done[0]}\n`;
-    }
     if (tasks.current.length) {
-        tweet += `🔨 ${tasks.current[0]}\n`;
+        tweet += `Now: ${tasks.current[0]}\n`;
     }
     if (tasks.todo.length) {
-        tweet += `📋 ${tasks.todo[0]}\n`;
+        tweet += `Next: ${tasks.todo[0]}\n`;
     }
 
     tweet += `\ninclawbate.com`;
