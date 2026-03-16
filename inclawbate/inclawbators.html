@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inclawbators — Inclawbate</title>
-    <meta name="description" content="Human builders available for incubation. Browse skills, connect wallets, and hire talent from the Inclawbate ecosystem.">
+    <meta name="description" content="Proven builders from the Inclawbate ecosystem. Browse portfolios, check availability, and hire talent — all on-chain.">
     <meta property="og:title" content="Inclawbators — Inclawbate">
-    <meta property="og:description" content="Human builders available for incubation. Browse skills, connect wallets, and hire talent.">
+    <meta property="og:description" content="Proven builders from the Inclawbate ecosystem. Browse portfolios, check availability, and hire talent.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/inclawbators">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
@@ -19,8 +19,7 @@
     <style>
         body { opacity: 1; }
         .iclw-page {
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 920px; margin: 0 auto;
             padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
             background:
                 radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
@@ -34,7 +33,7 @@
             background: var(--title-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             line-height: 1.15; margin-bottom: var(--space-md);
         }
-        .iclw-hero-sub { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; max-width: 520px; margin: 0 auto; }
+        .iclw-hero-sub { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; max-width: 560px; margin: 0 auto; }
 
         /* Filters */
         .iclw-filters {
@@ -52,7 +51,7 @@
 
         /* Grid */
         .iclw-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
             gap: var(--space-md); animation: fadeUp 0.5s var(--ease-smooth) 0.2s both;
         }
 
@@ -63,12 +62,12 @@
             transition: all 0.2s; position: relative;
         }
         .iclw-card:hover { border-color: var(--lobster-300); transform: translateY(-2px); }
-        .iclw-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-md); }
+        .iclw-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-sm); }
         .iclw-avatar {
             width: 44px; height: 44px; border-radius: 50%; background: var(--bg-surface);
             border: 2px solid var(--border-subtle); object-fit: cover;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; color: var(--text-dim); flex-shrink: 0;
+            font-size: 1.2rem; color: var(--text-dim); flex-shrink: 0; overflow: hidden;
         }
         .iclw-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .iclw-name { font-weight: 800; font-size: 0.95rem; color: var(--text-primary); }
@@ -78,8 +77,7 @@
         .iclw-skill {
             font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
             padding: 3px 8px; border-radius: 4px;
-            background: hsla(9,52%,54%,0.08); color: var(--lobster-400);
-            text-transform: lowercase;
+            background: hsla(9,52%,54%,0.08); color: var(--lobster-400); text-transform: lowercase;
         }
         .iclw-status {
             position: absolute; top: 14px; right: 14px;
@@ -94,25 +92,40 @@
         .iclw-status--busy { color: #fbbf24; }
         .iclw-status--unavailable .iclw-status-dot { background: #ef4444; }
         .iclw-status--unavailable { color: #ef4444; }
+
+        /* Stats row */
+        .iclw-stats {
+            display: flex; gap: 10px; margin-bottom: var(--space-sm);
+            font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim);
+        }
+        .iclw-stat { display: flex; align-items: center; gap: 3px; }
+        .iclw-stat strong { color: var(--text-secondary); font-weight: 700; }
+
+        /* Portfolio links */
+        .iclw-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-sm); }
+        .iclw-link {
+            font-family: var(--font-mono); font-size: 0.58rem; font-weight: 600;
+            padding: 2px 7px; border-radius: 4px; text-decoration: none;
+            background: hsla(200,70%,50%,0.08); color: #38bdf8; transition: all 0.2s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; display: inline-block;
+        }
+        .iclw-link:hover { background: hsla(200,70%,50%,0.16); }
+
+        /* Card footer */
         .iclw-card-footer {
             display: flex; align-items: center; justify-content: space-between;
             padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle); margin-top: var(--space-sm);
         }
-        .iclw-wallet {
-            font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim);
-        }
-        .iclw-contact-btn {
-            padding: 5px 12px; background: transparent; border: 1px solid var(--lobster-400);
+        .iclw-meta { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); }
+        .iclw-hire-btn {
+            padding: 5px 14px; background: transparent; border: 1px solid var(--lobster-400);
             border-radius: 999px; color: var(--lobster-400); font-family: var(--font-mono);
-            font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none;
         }
-        .iclw-contact-btn:hover { background: var(--lobster-400); color: #fff; }
+        .iclw-hire-btn:hover { background: var(--lobster-400); color: #fff; }
 
         /* Empty state */
-        .iclw-empty {
-            text-align: center; padding: var(--space-2xl); color: var(--text-dim);
-            font-size: 0.9rem;
-        }
+        .iclw-empty { text-align: center; padding: var(--space-2xl); color: var(--text-dim); font-size: 0.9rem; }
 
         /* Edit Profile Panel */
         .iclw-edit-panel {
@@ -121,24 +134,23 @@
             animation: fadeUp 0.25s ease both;
         }
         .iclw-edit-panel.open { display: block; }
-        .iclw-edit-title {
-            font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: var(--space-md);
-        }
+        .iclw-edit-title { font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: var(--space-md); }
         .iclw-edit-row { margin-bottom: var(--space-md); }
         .iclw-edit-label {
             font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim);
             margin-bottom: 4px; display: block;
         }
-        .iclw-edit-input, .iclw-edit-textarea {
+        .iclw-edit-input, .iclw-edit-textarea, .iclw-edit-select {
             width: 100%; padding: 10px 12px; background: var(--bg-card);
             border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
             color: var(--text-primary); font-family: var(--font-body); font-size: 0.85rem;
             transition: border-color 0.2s;
         }
-        .iclw-edit-input:focus, .iclw-edit-textarea:focus { border-color: var(--lobster-400); outline: none; }
+        .iclw-edit-input:focus, .iclw-edit-textarea:focus, .iclw-edit-select:focus { border-color: var(--lobster-400); outline: none; }
         .iclw-edit-textarea { min-height: 80px; resize: vertical; }
         .iclw-edit-hint { font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; }
+        .iclw-edit-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
         .iclw-edit-actions { display: flex; gap: 8px; margin-top: var(--space-md); }
         .iclw-save-btn {
             padding: 8px 20px; background: var(--accent-gradient); border: none;
@@ -150,9 +162,8 @@
 
         /* CTA */
         .iclw-cta {
-            text-align: center; margin-top: var(--space-2xl);
-            padding: var(--space-xl); background: var(--bg-card);
-            border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+            text-align: center; margin-top: var(--space-2xl); padding: var(--space-xl);
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
         }
         .iclw-cta-title { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-sm); }
         .iclw-cta-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-md); }
@@ -164,10 +175,10 @@
         .iclw-cta-btn:hover { opacity: 0.85; }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
         @media (max-width: 600px) {
             .iclw-hero h1 { font-size: 1.8rem; }
             .iclw-grid { grid-template-columns: 1fr; }
+            .iclw-edit-row-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -201,12 +212,26 @@
 <main class="iclw-page">
     <div class="iclw-hero">
         <h1>Inclawbators</h1>
-        <p class="iclw-hero-sub">Human builders available for incubation. Browse skills, check availability, and hire talent from the ecosystem.</p>
+        <p class="iclw-hero-sub">Proven builders from the ecosystem. Portfolios auto-generated from real platform activity — tokens launched, apps built, CLAWS earned.</p>
     </div>
 
-    <!-- Edit Profile Panel (hidden until wallet connected + click) -->
+    <!-- Edit Profile Panel -->
     <div class="iclw-edit-panel" id="edit-panel">
         <div class="iclw-edit-title">Your Inclawbator Profile</div>
+        <div class="iclw-edit-row-grid">
+            <div class="iclw-edit-row">
+                <label class="iclw-edit-label">Display Name</label>
+                <input class="iclw-edit-input" id="edit-display-name" placeholder="How you want to be known" maxlength="50">
+            </div>
+            <div class="iclw-edit-row">
+                <label class="iclw-edit-label">Availability</label>
+                <select class="iclw-edit-input iclw-edit-select" id="edit-availability">
+                    <option value="available">Available</option>
+                    <option value="busy">Busy</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
+            </div>
+        </div>
         <div class="iclw-edit-row">
             <label class="iclw-edit-label">Tagline</label>
             <input class="iclw-edit-input" id="edit-tagline" placeholder="Full-stack builder, smart contract dev, etc." maxlength="120">
@@ -215,20 +240,34 @@
         <div class="iclw-edit-row">
             <label class="iclw-edit-label">Bio</label>
             <textarea class="iclw-edit-textarea" id="edit-bio" placeholder="What you've built, what you're good at, what you're looking for..." maxlength="500"></textarea>
-            <div class="iclw-edit-hint">Tell people about yourself (500 chars max)</div>
         </div>
         <div class="iclw-edit-row">
             <label class="iclw-edit-label">Skills</label>
             <input class="iclw-edit-input" id="edit-skills" placeholder="solidity, react, design, tokenomics, marketing">
             <div class="iclw-edit-hint">Comma-separated list of your skills</div>
         </div>
+        <div class="iclw-edit-row-grid">
+            <div class="iclw-edit-row">
+                <label class="iclw-edit-label">Response Time</label>
+                <select class="iclw-edit-input iclw-edit-select" id="edit-response-time">
+                    <option value="">Not set</option>
+                    <option value="under_1h">Under 1 hour</option>
+                    <option value="under_4h">Under 4 hours</option>
+                    <option value="under_24h">Under 24 hours</option>
+                    <option value="under_48h">Under 48 hours</option>
+                </select>
+            </div>
+            <div class="iclw-edit-row">
+                <label class="iclw-edit-label">Timezone</label>
+                <input class="iclw-edit-input" id="edit-timezone" placeholder="e.g. EST, UTC+2, PST">
+            </div>
+        </div>
         <div class="iclw-edit-row">
-            <label class="iclw-edit-label">Availability</label>
-            <select class="iclw-edit-input" id="edit-availability">
-                <option value="available">Available</option>
-                <option value="busy">Busy</option>
-                <option value="unavailable">Unavailable</option>
-            </select>
+            <label class="iclw-edit-label">Portfolio Links (up to 5)</label>
+            <input class="iclw-edit-input" id="edit-link-0" placeholder="https://yourportfolio.com" style="margin-bottom:6px">
+            <input class="iclw-edit-input" id="edit-link-1" placeholder="https://github.com/you" style="margin-bottom:6px">
+            <input class="iclw-edit-input" id="edit-link-2" placeholder="https://dribbble.com/you">
+            <div class="iclw-edit-hint">Links to your work, portfolio, GitHub, etc.</div>
         </div>
         <div class="iclw-edit-actions">
             <button class="iclw-save-btn" id="save-profile-btn">Sign & Save Profile</button>
@@ -244,16 +283,17 @@
         <button class="iclw-filter-btn" data-filter="react">React</button>
         <button class="iclw-filter-btn" data-filter="design">Design</button>
         <button class="iclw-filter-btn" data-filter="marketing">Marketing</button>
+        <button class="iclw-filter-btn" data-filter="content">Content</button>
     </div>
 
     <!-- Directory Grid -->
     <div class="iclw-grid" id="iclw-grid"></div>
-    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found. Be the first to create your profile.</div>
+    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found yet. Be the first to create your profile.</div>
 
     <!-- CTA -->
     <div class="iclw-cta">
         <div class="iclw-cta-title">Want to be listed?</div>
-        <div class="iclw-cta-sub">Connect your wallet, fill out your profile, and start getting hired by the ecosystem.</div>
+        <div class="iclw-cta-sub">Connect your wallet, fill out your profile, and start getting discovered by the ecosystem.</div>
         <button class="iclw-cta-btn" id="create-profile-btn">Create Your Profile</button>
     </div>
 </main>
@@ -264,30 +304,37 @@
 
 <script>
 (function() {
-    var API = 'https://inclawbate.com/api/inclawbate/inclawbators';
+    var API = '/api/inclawbate/inclawbators';
     var allProfiles = [];
     var currentFilter = 'all';
     var connectedWallet = null;
 
-    // Check if already logged in
     try {
         var stored = localStorage.getItem('inclawbate_profile');
         if (stored) {
             var p = JSON.parse(stored);
-            if (p.wallet_address) connectedWallet = p.wallet_address;
+            if (p.wallet_address) connectedWallet = p.wallet_address.toLowerCase();
         }
     } catch(e) {}
 
+    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    function formatLink(url) {
+        try {
+            var u = new URL(url);
+            var host = u.hostname.replace('www.', '');
+            var path = u.pathname.replace(/\/$/, '');
+            if (path.length > 20) path = path.slice(0, 20) + '...';
+            return host + (path && path !== '/' ? path : '');
+        } catch(e) { return url.slice(0, 30); }
+    }
+
+    var RT_LABELS = { under_1h: '<1h', under_4h: '<4h', under_24h: '<24h', under_48h: '<48h' };
+
     function fetchProfiles() {
-        fetch(API)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    allProfiles = data.inclawbators || [];
-                    renderGrid();
-                }
-            })
-            .catch(function() {});
+        fetch(API).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) { allProfiles = data.inclawbators || []; renderGrid(); }
+        }).catch(function() {});
     }
 
     function renderGrid() {
@@ -300,47 +347,67 @@
             filtered = filtered.filter(function(p) { return p.availability === 'available'; });
         } else if (currentFilter !== 'all') {
             filtered = filtered.filter(function(p) {
-                return (p.skills || []).some(function(s) {
-                    return s.toLowerCase().includes(currentFilter.toLowerCase());
-                });
+                var needle = currentFilter.toLowerCase();
+                return (p.skills || []).some(function(s) { return s.toLowerCase().includes(needle); }) ||
+                       (p.tagline || '').toLowerCase().includes(needle) ||
+                       (p.bio || '').toLowerCase().includes(needle);
             });
         }
 
-        if (filtered.length === 0) {
-            grid.innerHTML = '';
-            empty.style.display = '';
-            return;
-        }
+        if (filtered.length === 0) { grid.innerHTML = ''; empty.style.display = ''; return; }
         empty.style.display = 'none';
 
         grid.innerHTML = filtered.map(function(p) {
             var statusClass = 'iclw-status--' + (p.availability || 'available');
             var statusLabel = (p.availability || 'available').charAt(0).toUpperCase() + (p.availability || 'available').slice(1);
+            var displayName = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
             var avatar = p.x_avatar_url
-                ? '<div class="iclw-avatar"><img src="' + p.x_avatar_url + '" alt=""></div>'
+                ? '<div class="iclw-avatar"><img src="' + esc(p.x_avatar_url) + '" alt="" onerror="this.parentNode.innerHTML=\'&#129438;\'"></div>'
                 : '<div class="iclw-avatar">&#129438;</div>';
-            var skills = (p.skills || []).map(function(s) {
-                return '<span class="iclw-skill">' + s + '</span>';
-            }).join('');
-            var addr = p.wallet_address || '';
-            var shortAddr = addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+            var skills = (p.skills || []).slice(0, 6).map(function(s) { return '<span class="iclw-skill">' + esc(s) + '</span>'; }).join('');
             var xLink = p.x_handle ? 'https://x.com/' + p.x_handle : '';
+
+            // Stats
+            var stats = '';
+            var hasStats = p.tokens_launched || p.apps_built || p.hire_count;
+            if (hasStats) {
+                stats = '<div class="iclw-stats">';
+                if (p.tokens_launched) stats += '<span class="iclw-stat"><strong>' + p.tokens_launched + '</strong> token' + (p.tokens_launched > 1 ? 's' : '') + '</span>';
+                if (p.apps_built) stats += '<span class="iclw-stat"><strong>' + p.apps_built + '</strong> app' + (p.apps_built > 1 ? 's' : '') + '</span>';
+                if (p.hire_count) stats += '<span class="iclw-stat"><strong>' + p.hire_count + '</strong> hire' + (p.hire_count > 1 ? 's' : '') + '</span>';
+                stats += '</div>';
+            }
+
+            // Portfolio links
+            var links = '';
+            if (p.portfolio_links && p.portfolio_links.length) {
+                links = '<div class="iclw-links">' + p.portfolio_links.slice(0, 3).map(function(l) {
+                    return '<a href="' + esc(l) + '" target="_blank" rel="noopener" class="iclw-link">' + esc(formatLink(l)) + '</a>';
+                }).join('') + '</div>';
+            }
+
+            // Meta info
+            var meta = '';
+            if (p.response_time && RT_LABELS[p.response_time]) meta += RT_LABELS[p.response_time];
+            if (p.timezone) meta += (meta ? ' · ' : '') + esc(p.timezone);
+            if (!meta && p.wallet_address) meta = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
+
+            // Hire button
+            var hireBtn = '';
+            if (xLink && p.availability !== 'unavailable') {
+                var dmText = encodeURIComponent('Hey! I found you on Inclawbate and I\'d like to hire you for a project. Are you available?');
+                hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire ' + esc(p.display_name || p.x_name || 'them') + '</a>';
+            }
 
             return '<div class="iclw-card">' +
                 '<div class="iclw-status ' + statusClass + '"><span class="iclw-status-dot"></span>' + statusLabel + '</div>' +
-                '<div class="iclw-card-header">' +
-                    avatar +
-                    '<div>' +
-                        '<div class="iclw-name">' + (p.x_name || shortAddr || 'Anon') + '</div>' +
-                        (p.x_handle ? '<div class="iclw-handle">@' + p.x_handle + '</div>' : '') +
-                    '</div>' +
-                '</div>' +
-                (p.tagline ? '<div class="iclw-tagline">' + p.tagline + '</div>' : '') +
+                '<div class="iclw-card-header">' + avatar +
+                    '<div><div class="iclw-name">' + displayName + '</div>' +
+                    (p.x_handle ? '<div class="iclw-handle">@' + esc(p.x_handle) + '</div>' : '') + '</div></div>' +
+                (p.tagline ? '<div class="iclw-tagline">' + esc(p.tagline) + '</div>' : '') +
                 (skills ? '<div class="iclw-skills">' + skills + '</div>' : '') +
-                '<div class="iclw-card-footer">' +
-                    '<span class="iclw-wallet">' + shortAddr + '</span>' +
-                    (xLink ? '<a href="' + xLink + '" target="_blank" class="iclw-contact-btn">Contact</a>' : '') +
-                '</div>' +
+                stats + links +
+                '<div class="iclw-card-footer"><span class="iclw-meta">' + meta + '</span>' + hireBtn + '</div>' +
             '</div>';
         }).join('');
     }
@@ -364,24 +431,29 @@
         try {
             if (window._awaitProvider) await window._awaitProvider();
             var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            connectedWallet = accounts[0];
+            connectedWallet = accounts[0].toLowerCase();
             var panel = document.getElementById('edit-panel');
             panel.classList.add('open');
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             // Pre-fill if profile exists
             var existing = allProfiles.find(function(p) {
-                return p.wallet_address === connectedWallet.toLowerCase();
+                return p.wallet_address === connectedWallet;
             });
             if (existing) {
+                document.getElementById('edit-display-name').value = existing.display_name || '';
                 document.getElementById('edit-tagline').value = existing.tagline || '';
                 document.getElementById('edit-bio').value = existing.bio || '';
                 document.getElementById('edit-skills').value = (existing.skills || []).join(', ');
                 document.getElementById('edit-availability').value = existing.availability || 'available';
+                document.getElementById('edit-response-time').value = existing.response_time || '';
+                document.getElementById('edit-timezone').value = existing.timezone || '';
+                (existing.portfolio_links || []).forEach(function(l, i) {
+                    var el = document.getElementById('edit-link-' + i);
+                    if (el) el.value = l;
+                });
             }
-        } catch(e) {
-            console.error('Wallet connect failed:', e);
-        }
+        } catch(e) {}
     }
 
     document.getElementById('create-profile-btn').addEventListener('click', connectAndEdit);
@@ -397,6 +469,14 @@
         var skillsRaw = document.getElementById('edit-skills').value;
         var skills = skillsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
         var availability = document.getElementById('edit-availability').value;
+        var display_name = document.getElementById('edit-display-name').value.trim();
+        var response_time = document.getElementById('edit-response-time').value || null;
+        var timezone = document.getElementById('edit-timezone').value.trim();
+        var portfolio_links = [];
+        for (var i = 0; i < 3; i++) {
+            var el = document.getElementById('edit-link-' + i);
+            if (el && el.value.trim()) portfolio_links.push(el.value.trim());
+        }
 
         var ts = Math.floor(Date.now() / 1000);
         var message = 'Inclawbate Profile Update\n\nTimestamp: ' + ts;
@@ -420,7 +500,11 @@
                     tagline: tagline,
                     bio: bio,
                     skills: skills,
-                    availability: availability
+                    availability: availability,
+                    display_name: display_name,
+                    response_time: response_time,
+                    timezone: timezone,
+                    portfolio_links: portfolio_links
                 })
             });
             var data = await resp.json();
@@ -429,7 +513,7 @@
                 status.style.color = '#4ade80';
                 btn.textContent = 'Sign & Save Profile';
                 btn.disabled = false;
-                fetchProfiles(); // Refresh grid
+                fetchProfiles();
             } else {
                 status.textContent = 'Error: ' + (data.error || 'Unknown');
                 status.style.color = '#ef4444';
