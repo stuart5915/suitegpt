@@ -89,7 +89,8 @@ async function fetchClawsBalanceOf(contractAddr) {
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: CLAWS_ADDRESS, data }, 'latest'], id: 1 })
         });
         const result = await res.json();
-        return parseInt(result.result, 16) / 1e18;
+        const val = parseInt(result.result, 16);
+        return isNaN(val) ? 0 : val / 1e18;
     } catch (e) {
         return 0;
     }
@@ -292,6 +293,20 @@ function formatUsd(n) {
     return '$' + Math.round(n);
 }
 
+function formatPrice(p) {
+    if (p >= 1) return '$' + p.toFixed(2);
+    if (p >= 0.01) return '$' + p.toFixed(4);
+    // For tiny prices, show as $0.0₅113 style (subscript zero count)
+    const s = p.toFixed(18).replace(/0+$/, '');
+    const match = s.match(/^0\.(0+)/);
+    if (match) {
+        const zeros = match[1].length;
+        const sig = s.slice(2 + zeros, 2 + zeros + 3);
+        return '$0.0' + String.fromCharCode(0x2080 + zeros) + sig;
+    }
+    return '$' + p.toFixed(6);
+}
+
 function formatDelta(change) {
     if (!change) return '';
     const arrow = change.diff >= 0 ? '↑' : '↓';
@@ -310,10 +325,10 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
     if (claws) {
-        const arrow = claws.change24h >= 0 ? '↑' : '↓';
-        msg += `Price: $${claws.price < 0.0001 ? claws.price.toExponential(2) : claws.price.toFixed(6)}\n`;
-        msg += `24h: ${arrow} ${Math.abs(claws.change24h).toFixed(1)}% | Vol: ${formatUsd(claws.volume24h)}\n`;
-        msg += `LP: ${formatUsd(claws.liquidity)} | MCap: ${formatUsd(claws.mcap)}\n`;
+        const arrow = claws.change24h >= 0 ? '📈' : '📉';
+        msg += `Price: ${formatPrice(claws.price)}\n`;
+        msg += `${arrow} ${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}% today | ${formatUsd(claws.volume24h)} volume\n`;
+        msg += `Liquidity: ${formatUsd(claws.liquidity)} | MCap: ${formatUsd(claws.mcap)}\n`;
     } else {
         msg += `<i>Price data unavailable</i>\n`;
     }
@@ -378,8 +393,8 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
 
     if (claws) {
         const arrow = claws.change24h >= 0 ? '↑' : '↓';
-        tweet += `💰 $${claws.price < 0.0001 ? claws.price.toExponential(2) : claws.price.toFixed(6)}`;
-        tweet += ` (${arrow}${Math.abs(claws.change24h).toFixed(1)}%)\n`;
+        tweet += `💰 ${formatPrice(claws.price)}`;
+        tweet += ` (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
     }
 
     if (supply) {
