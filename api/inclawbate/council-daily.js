@@ -388,7 +388,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `APY: ${supply.apy.toFixed(1)}%\n`;
             msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
-            msg += `\n`;
+            msg += `\nStake: https://www.inclawbate.com/stake/claws\n`;
         }
     }
 
