@@ -79,14 +79,12 @@ async function fetchClawsPrice() {
 const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
 
-async function fetchClawsBalanceOf(contractAddr) {
+async function rpcRead(to, data) {
     try {
-        const addr = contractAddr.replace('0x', '').toLowerCase();
-        const data = '0x70a08231000000000000000000000000' + addr;
         const res = await fetch(BASE_RPC, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: CLAWS_ADDRESS, data }, 'latest'], id: 1 })
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
         });
         const result = await res.json();
         const val = parseInt(result.result, 16);
@@ -97,13 +95,27 @@ async function fetchClawsBalanceOf(contractAddr) {
 }
 
 async function fetchStakingAndLP() {
-    const [staked, inLP] = await Promise.all([
-        fetchClawsBalanceOf(STAKING_CONTRACT),
-        fetchClawsBalanceOf(LP_POOL)
+    // totalSupply() on staking contract = total staked CLAWS
+    // rewardRate() = CLAWS per second being distributed
+    // balanceOf(stakingContract) on CLAWS token = rewards pool balance
+    const [staked, inLP, rewardRate, rewardsBalance] = await Promise.all([
+        rpcRead(STAKING_CONTRACT, '0x18160ddd'),                           // totalSupply()
+        rpcRead(CLAWS_ADDRESS, '0x70a08231000000000000000000000000' +       // CLAWS.balanceOf(LP_POOL)
+            LP_POOL.replace('0x', '').toLowerCase()),
+        rpcRead(STAKING_CONTRACT, '0x7b0a47ee'),                           // rewardRate()
+        rpcRead(CLAWS_ADDRESS, '0x70a08231000000000000000000000000' +       // CLAWS.balanceOf(stakingContract) = unclaimed rewards pool
+            STAKING_CONTRACT.replace('0x', '').toLowerCase()),
     ]);
+
+    const dailyRewards = rewardRate * 86400;
+    const apy = staked > 0 ? (dailyRewards * 365 / staked * 100) : 0;
+
     return {
         staked,
         inLP,
+        rewardsBalance,
+        dailyRewards,
+        apy,
         stakedPct: (staked / TOTAL_SUPPLY * 100).toFixed(1),
         lpPct: (inLP / TOTAL_SUPPLY * 100).toFixed(1),
         lockedPct: ((staked + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
@@ -334,9 +346,27 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     }
 
     if (supply) {
-        msg += `Staked: ${formatNum(supply.staked)} (${supply.stakedPct}%)\n`;
-        msg += `In LP: ${formatNum(supply.inLP)} (${supply.lpPct}%)\n`;
-        msg += `🔒 Total Locked: ${supply.lockedPct}%\n`;
+        const price = claws?.price || 0;
+        msg += `\n<b>🔒 Supply Breakdown</b>\n`;
+        msg += `Staked: ${formatNum(supply.staked)} (${supply.stakedPct}%)`;
+        if (price > 0) msg += ` ≈ ${formatUsd(supply.staked * price)}`;
+        msg += `\n`;
+        msg += `In LP: ${formatNum(supply.inLP)} (${supply.lpPct}%)`;
+        if (price > 0) msg += ` ≈ ${formatUsd(supply.inLP * price)}`;
+        msg += `\n`;
+        msg += `Total Locked: ${supply.lockedPct}%\n`;
+        if (supply.apy > 0) {
+            msg += `\n<b>💰 Staking</b>\n`;
+            msg += `APY: ${supply.apy.toFixed(1)}%\n`;
+            msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
+            if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
+            msg += `\n`;
+            if (supply.rewardsBalance > 0) {
+                msg += `Rewards Pool: ${formatNum(supply.rewardsBalance)} CLAWS`;
+                if (price > 0) msg += ` ≈ ${formatUsd(supply.rewardsBalance * price)}`;
+                msg += `\n`;
+            }
+        }
     }
 
     // Treasury with day-over-day change
@@ -398,7 +428,9 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     }
 
     if (supply) {
-        tweet += `🔒 ${supply.lockedPct}% locked (${supply.stakedPct}% staked + ${supply.lpPct}% LP)\n`;
+        tweet += `🔒 ${supply.lockedPct}% locked (${supply.stakedPct}% staked + ${supply.lpPct}% LP)`;
+        if (supply.apy > 0) tweet += ` | ${supply.apy.toFixed(0)}% APY`;
+        tweet += `\n`;
     }
 
     if (treasury?.total) {
