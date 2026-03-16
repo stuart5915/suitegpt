@@ -3882,6 +3882,19 @@
                     <button onclick="refreshBalance()" id="refreshBalBtn" class="bal-btn" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text-muted);padding:4px 8px;font-size:11px" title="Sync balance with on-chain deposits">↻</button>
                   </div>
                 </div>
+                <!-- POKERAI Chips Balance -->
+                <div class="bal-card bal-pokerai-chips" id="balPokeraiChipsCard" style="display:none;border-color:hsl(263,70%,58%);background:linear-gradient(135deg,hsla(263,70%,58%,0.08),hsla(263,70%,58%,0.03))">
+                  <img src="/inclawbate/assets/pokerai-logo.png" alt="POKERAI" class="bal-logo" style="width:44px;height:44px;margin:-6px auto 2px">
+                  <div class="bal-label">POKERAI</div>
+                  <div class="bal-amount"><span id="balPokeraiChips">0</span></div>
+                  <div class="bal-sub" id="balPokeraiChipsSub">0 $POKERAI total</div>
+                  <div class="bal-sub" id="balPokeraiChipsTotal" style="color:hsl(263,70%,68%);font-size:9px;margin-top:2px"></div>
+                  <div class="bal-actions">
+                    <button onclick="openVaultPokerai()" class="bal-btn bal-btn-deposit">Deposit</button>
+                    <button onclick="openVaultPokerai('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
+                    <button onclick="refreshPokeraiBalance()" id="refreshPokeraiBal" class="bal-btn" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text-muted);padding:4px 8px;font-size:11px" title="Sync POKERAI balance with on-chain deposits">↻</button>
+                  </div>
+                </div>
                 <!-- $POKERAI Rewards -->
                 <div class="bal-card bal-pokerai">
                   <img src="/inclawbate/assets/pokerai-logo.png" alt="POKERAI" class="bal-logo" style="width:44px;height:44px;margin:-6px auto 2px">
@@ -6273,7 +6286,11 @@ function updateWalletUI() {
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
-    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(displayBalance)}</span>`;
+    let balHtml = `${short} <span class="wallet-balance" style="margin-left:6px">💲${formatChips(totalUsdcChips)}</span>`;
+    if (pokeraiWalletBalance > 0 || pokeraiAgentChips > 0) {
+      balHtml += `<span class="wallet-balance" style="margin-left:5px;color:hsl(263,70%,68%)">🃏${formatChips(totalPokeraiChips)}</span>`;
+    }
+    btn.innerHTML = balHtml;
   } else {
     btn.className = 'wallet-btn disconnected';
     btn.innerHTML = 'Connect Wallet';
@@ -6299,6 +6316,22 @@ function updateWalletUI() {
       balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2);
     } else {
       balUsdcTotal.textContent = '';
+    }
+  }
+  // Update POKERAI chips card
+  const pokeraiCard = document.getElementById('balPokeraiChipsCard');
+  if (pokeraiCard) {
+    const totalPok = pokeraiWalletBalance + pokeraiAgentChips;
+    pokeraiCard.style.display = wallet ? '' : 'none';
+    const pokBal = document.getElementById('balPokeraiChips');
+    if (pokBal) pokBal.textContent = formatChips(totalPok);
+    const pokSub = document.getElementById('balPokeraiChipsSub');
+    if (pokSub) pokSub.textContent = totalPok.toLocaleString() + ' $POKERAI total';
+    const pokTotal = document.getElementById('balPokeraiChipsTotal');
+    if (pokTotal) {
+      pokTotal.textContent = pokeraiAgentChips > 0
+        ? 'Wallet: ' + pokeraiWalletBalance.toLocaleString() + ' · Agents: ' + pokeraiAgentChips.toLocaleString()
+        : '';
     }
   }
   // Update vault modal if open
@@ -6362,6 +6395,33 @@ function updateVaultDisplay() {
   const agentChips = isPokerai ? pokeraiAgentChips : usdcAgentChips;
   const vac = document.getElementById('vaultAgentChips');
   if (vac) vac.textContent = agentChips > 0 ? `${formatChips(agentChips)} chips in agents · sit out to withdraw` : '';
+}
+
+function openVaultPokerai(tab) {
+  const wallet = getWallet();
+  if (!wallet) { toggleWallet(); return; }
+  switchVaultCurrency('pokerai');
+  updateWalletUI();
+  document.getElementById('vaultOverlay').classList.add('show');
+  if (tab === 'withdraw') {
+    document.querySelectorAll('.vault-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('depositView').style.display = 'none';
+    const wTab = document.querySelector('.withdraw-tab');
+    const wView = document.getElementById('withdrawView');
+    if (wTab) wTab.classList.add('active');
+    if (wView) wView.style.display = 'block';
+  }
+}
+
+function refreshPokeraiBalance() {
+  const wallet = getWallet();
+  if (!wallet || wallet.address.startsWith('sandbox_')) { showToast('Connect a real wallet to sync deposits', 'info'); return; }
+  const btn = document.getElementById('refreshPokeraiBal');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'checkDepositPokerai' }));
+  }
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 3000);
 }
 
 // ── Vault Modal ──
