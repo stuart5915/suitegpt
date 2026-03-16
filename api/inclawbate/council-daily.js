@@ -572,7 +572,7 @@ export default async function handler(req, res) {
             data: {
                 claws,
                 supply,
-                treasury,
+                treasury: treasuryData,
                 allocation,
                 tasks
             }
