@@ -21,8 +21,6 @@ DISCOVER APPS — Use browse_apps to find community-built apps in the app store.
 
 STAKE CLAWS — Use get_staking_info to explain CLAWS staking and earning passive income.
 
-FIND YIELD — Use get_basis_vaults to show DeFi yield vaults on Basis.
-
 EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
 
 HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. For actually initiating a hire, use hire_inclawbator. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees. You can also use browse_open_gigs to show open gig requests — this is a freelance marketplace where hirers post requests and inclawbators apply.
@@ -99,19 +97,6 @@ const TOOLS = [
       name: 'get_incubation_info',
       description: 'Get details about Inclawbate incubation — services, process, cost.',
       parameters: { type: 'object', properties: {} }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_basis_vaults',
-      description: 'Get DeFi yield vaults from Basis — shows APY, TVL, strategy type. For users asking about yield, DeFi, or earning on their crypto.',
-      parameters: {
-        type: 'object',
-        properties: {
-          sort: { type: 'string', description: 'Sort by: apy, return, newest, active, tvl. Default: apy' }
-        }
-      }
     }
   },
   {
@@ -422,7 +407,6 @@ function getEcosystemInfo() {
     products: [
       { name: 'App Store', description: 'Community-built apps — browse or build your own with AI', url: 'https://inclawbate.com/apps' },
       { name: 'App Builder', description: 'AI builds apps for you, no code needed', url: 'https://inclawbate.com/build' },
-      { name: 'Basis', description: 'DeFi yield vaults — Aerodrome LP + Aave leverage on Base', url: 'https://basisubi.com' },
       { name: 'PokerAI', description: 'AI poker — watch agents play, deposit USDC chips', url: 'https://pokerai.app' },
       { name: 'CLAWS Staking', description: 'Stake CLAWS to earn passive income', url: 'https://inclawbate.com/stake' },
       { name: 'Skills Marketplace', description: 'Browse and use agent skills', url: 'https://inclawbate.com/skills' },
@@ -527,27 +511,6 @@ function createStakingInfo() {
   });
 }
 
-async function getBasisVaults(args) {
-  try {
-    const sort = args.sort || 'apy';
-    const res = await fetch('https://inclawbate.com/api/basis/marketplace?sort=' + sort + '&limit=8');
-    const data = await res.json();
-    const vaults = (data.vaults || []).map(v => ({
-      name: v.name,
-      manager: v.manager_name || 'Anonymous',
-      apy: v.estimated_apy ? v.estimated_apy.toFixed(1) + '%' : 'N/A',
-      tvl: v.tvl_usdc ? '$' + Number(v.tvl_usdc).toLocaleString() : '$0',
-      return_7d: v.return_7d ? v.return_7d.toFixed(2) + '%' : 'N/A',
-      fee: v.performance_fee_bps ? (v.performance_fee_bps / 100) + '%' : '0%',
-      strategy: v.brain_config || {}
-    }));
-    if (!vaults.length) return JSON.stringify({ message: 'No vaults found yet. Check back soon at https://basisubi.com' });
-    return JSON.stringify({ count: vaults.length, vaults, explore: 'https://basisubi.com', deposit_info: 'Deposit USDC into any vault to earn yield. Vaults use Aerodrome LP + Aave leverage strategies on Base.' });
-  } catch (e) {
-    return JSON.stringify({ error: 'Could not fetch vaults', explore: 'https://basisubi.com' });
-  }
-}
-
 function getStakingInfo() {
   return JSON.stringify({
     token: 'CLAWS',
@@ -566,7 +529,7 @@ async function getUserWorkspace(args) {
   const wallet = (args.wallet || '').toLowerCase();
   if (!wallet) return JSON.stringify({ error: 'No wallet provided' });
 
-  const results = { apps: [], agents: [], vaults: [] };
+  const results = { apps: [], agents: [] };
 
   try {
     const appsRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(wallet) + '&limit=20');
@@ -585,24 +548,14 @@ async function getUserWorkspace(args) {
     }));
   } catch (e) {}
 
-  try {
-    const vaultRes = await fetch('https://inclawbate.com/api/basis/marketplace?manager=' + encodeURIComponent(wallet));
-    const vaultData = await vaultRes.json();
-    results.vaults = (vaultData.vaults || []).map(v => ({
-      name: v.name, apy: v.estimated_apy ? v.estimated_apy.toFixed(1) + '%' : 'N/A',
-      tvl: v.tvl_usdc ? '$' + Number(v.tvl_usdc).toLocaleString() : '$0'
-    }));
-  } catch (e) {}
-
   const summary = [];
   if (results.apps.length) summary.push(results.apps.length + ' app' + (results.apps.length > 1 ? 's' : ''));
   if (results.agents.length) summary.push(results.agents.length + ' agent' + (results.agents.length > 1 ? 's' : ''));
-  if (results.vaults.length) summary.push(results.vaults.length + ' vault' + (results.vaults.length > 1 ? 's' : ''));
 
   return JSON.stringify({
     wallet, summary: summary.length ? summary.join(', ') : 'Fresh workspace — nothing built yet!',
     ...results,
-    suggestions: !summary.length ? ['Launch a token', 'Build an app', 'Create a marketing agent', 'Explore yield vaults'] : []
+    suggestions: !summary.length ? ['Launch a token', 'Build an app', 'Create a marketing agent', 'Post a gig'] : []
   });
 }
 
@@ -991,7 +944,6 @@ async function executeTool(name, args) {
     case 'build_app_info': return buildAppInfo();
     case 'create_agent_info': return createAgentInfo();
     case 'create_staking_info': return createStakingInfo();
-    case 'get_basis_vaults': return await getBasisVaults(args);
     case 'get_staking_info': return getStakingInfo();
     case 'get_user_workspace': return await getUserWorkspace(args);
     case 'get_token_analytics': return await getTokenAnalytics(args);
