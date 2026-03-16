@@ -1902,27 +1902,11 @@
     <!-- ═══ MIRROR MARKETPLACE (TOP) ═══ -->
     <section class="mm-section" id="mirror-marketplace" style="padding-top: 90px; padding-bottom: 40px;">
         <div class="container">
-            <div style="text-align:center; margin-bottom:32px;">
-                <div class="section-label">The Mirror Vault</div>
-                <h2 class="section-title" style="margin-bottom:10px;">Copy a pro LP. Earn the same yield.</h2>
-                <p class="section-desc" style="margin:0 auto; max-width:640px;">Deposit USDC. The vault reads a tracked Aerodrome LP position and automatically mirrors its tick range. When the leader rebalances, the vault follows. Same concentrated liquidity exposure &mdash; no manual management.</p>
-            </div>
-
-            <!-- Sort & Create Bar -->
-            <div class="mm-sort-bar" style="margin-bottom:20px;">
-                <button class="mm-sort-btn active" onclick="mmSort('tvl')" id="mm-sort-tvl">TVL</button>
-                <button class="mm-sort-btn" onclick="mmSort('apy')" id="mm-sort-apy">APY</button>
-                <button class="mm-sort-btn" onclick="mmSort('staked')" id="mm-sort-staked">Most Staked</button>
-                <button class="mm-sort-btn" onclick="mmSort('newest')" id="mm-sort-newest">Newest</button>
-                <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mm-count">0 mirror vaults</span>
-                <button class="mm-create-btn" onclick="openMirrorCreateModal()">+ Create Mirror Vault</button>
-            </div>
-
-            <!-- Mirror Vault Grid -->
+            <!-- Vault Grid -->
             <div class="mm-grid" id="mm-vault-grid">
                 <div class="mm-empty" id="mm-empty">
-                    No mirror vaults yet. Be the first to create one.<br>
-                    <button class="mm-create-btn" style="margin-top:16px;" onclick="openMirrorCreateModal()">Create Mirror Vault</button>
+                    No mirror vaults yet.<br>
+                    <button class="mm-create-btn" style="margin-top:16px;" onclick="openMirrorCreateModal()">Create one</button>
                 </div>
             </div>
         </div>
@@ -8371,14 +8355,11 @@
         function renderMirrorGrid() {
             var grid = document.getElementById('mm-vault-grid');
             var empty = document.getElementById('mm-empty');
-            var count = document.getElementById('mm-count');
-            if (!grid || !count) return;
-
-            count.textContent = mmVaults.length + ' mirror vault' + (mmVaults.length !== 1 ? 's' : '');
+            if (!grid) return;
 
             if (mmVaults.length === 0) {
                 if (empty) empty.style.display = 'block';
-                grid.querySelectorAll('.mm-card').forEach(function(c) { c.remove(); });
+                grid.querySelectorAll('.mm-card, .mm-card-add').forEach(function(c) { c.remove(); });
                 return;
             }
 
@@ -8472,8 +8453,16 @@
                 '</div>';
             });
 
+            // Add "+ Custom Vault" card at the end
+            html += '<div class="mm-card mm-card-add" onclick="openMirrorCreateModal()" style="display:flex;align-items:center;justify-content:center;min-height:180px;border-style:dashed;cursor:pointer;opacity:0.6;transition:opacity 0.2s;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">' +
+                '<div style="text-align:center;">' +
+                    '<div style="font-size:2rem;color:var(--cyan);margin-bottom:8px;">+</div>' +
+                    '<div style="font-family:var(--mono);font-size:0.8rem;color:var(--text-secondary);">Create Custom Vault</div>' +
+                '</div>' +
+            '</div>';
+
             // Replace grid content but preserve the empty div
-            grid.querySelectorAll('.mm-card').forEach(function(c) { c.remove(); });
+            grid.querySelectorAll('.mm-card, .mm-card-add').forEach(function(c) { c.remove(); });
             grid.insertAdjacentHTML('beforeend', html);
         }
 
