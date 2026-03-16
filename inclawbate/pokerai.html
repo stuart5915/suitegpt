@@ -4904,7 +4904,7 @@ function handleMessage(msg) {
       break;
 
     case 'agentStats':
-      if (msg.data) showAgentStatsPanel(msg.agentId, msg.data);
+      if (msg.data) showAgentStatsPanel(msg.agentId, msg.data, msg.includeSandbox);
       break;
 
     case 'resetLearningResult':
@@ -7091,9 +7091,12 @@ let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
 
 // === Agent Stats ===
 
-function requestAgentStats(agentId) {
+let _statsIncludeSandbox = false;
+
+function requestAgentStats(agentId, includeSandbox) {
+  if (includeSandbox !== undefined) _statsIncludeSandbox = includeSandbox;
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'getAgentStats', agentId }));
+    ws.send(JSON.stringify({ type: 'getAgentStats', agentId, includeSandbox: _statsIncludeSandbox }));
     showToast('Loading stats...', 'info');
   }
 }
@@ -7104,11 +7107,12 @@ function resetAgentLearning(agentId) {
   }
 }
 
-function showAgentStatsPanel(agentId, stats) {
+function showAgentStatsPanel(agentId, stats, includeSandbox) {
   // Find agent name
   const agent = myAgents.find(a => a.id === agentId) || gameState.agents.find(a => a.id === agentId);
   const name = agent ? agent.name : 'Agent';
   const emoji = agent ? agent.emoji : '';
+  const sandboxOn = !!includeSandbox;
 
   if (!stats || stats.handsPlayed === 0) {
     showToast(`${name} has no hand history yet`, 'info');
@@ -7172,6 +7176,10 @@ function showAgentStatsPanel(agentId, stats) {
     <div class="agent-stats-panel">
       <button class="stats-close" onclick="this.closest('.agent-stats-overlay').remove()">✕</button>
       <h3>${emoji} ${escapeHtml(name)} — Stats</h3>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:12px;cursor:pointer;user-select:none">
+        <input type="checkbox" ${sandboxOn ? 'checked' : ''} onchange="_statsIncludeSandbox=this.checked;this.closest('.agent-stats-overlay').remove();requestAgentStats('${agentId}')" style="accent-color:#8b5cf6;cursor:pointer">
+        Include Sandbox games
+      </label>
       <div class="stats-grid">
         <div class="stats-cell">
           <div class="label">Win Rate (showdown)</div>

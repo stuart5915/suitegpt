@@ -395,13 +395,15 @@ class SupabaseStore {
     }
   }
 
-  async getAgentHandHistory(agentId, limit = 200) {
-    const { data, error } = await this.supabase
+  async getAgentHandHistory(agentId, limit = 200, includeSandbox = false) {
+    let query = this.supabase
       .from('poker_hand_history')
       .select('*')
       .eq('agent_id', agentId)
       .order('created_at', { ascending: false })
       .limit(limit);
+    if (!includeSandbox) query = query.neq('room_id', 'sandbox');
+    const { data, error } = await query;
     if (error) { console.error(`[SupabaseStore] getAgentHandHistory failed:`, error.message); return []; }
     return data || [];
   }

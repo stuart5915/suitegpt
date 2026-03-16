@@ -687,8 +687,8 @@ wss.on('connection', (ws) => {
         // === Agent Stats ===
         case 'getAgentStats': {
           if (!requireAuth(client, ws)) break;
-          const stats = await rooms.computeAgentStats(msg.agentId);
-          ws.send(JSON.stringify({ type: 'agentStats', agentId: msg.agentId, data: stats }));
+          const stats = await rooms.computeAgentStats(msg.agentId, !!msg.includeSandbox);
+          ws.send(JSON.stringify({ type: 'agentStats', agentId: msg.agentId, data: stats, includeSandbox: !!msg.includeSandbox }));
           break;
         }
 

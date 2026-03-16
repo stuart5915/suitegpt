@@ -144,6 +144,8 @@ class RoomManager {
             a.chips = 10000;
           }
         }
+        // Persist sandbox hand history too (for stats/learning)
+        this._persistHandHistory(table);
       } else {
         this._updateBackingValues(table);
         this._runAutoTopUp(table);
@@ -582,9 +584,9 @@ class RoomManager {
 
   // === Agent Stats ===
 
-  async computeAgentStats(agentId) {
+  async computeAgentStats(agentId, includeSandbox = false) {
     if (!this.store.getAgentHandHistory) return null;
-    const rows = await this.store.getAgentHandHistory(agentId, 200);
+    const rows = await this.store.getAgentHandHistory(agentId, 200, includeSandbox);
     if (!rows || rows.length === 0) return { handsPlayed: 0 };
 
     const hands = rows;
