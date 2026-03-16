@@ -505,7 +505,18 @@ async function handleTreasury(chatId) {
             ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
         } catch (e) {}
 
-        // 4. Council allocation
+        // 4. CLAWS holdings of inclawbate.base.eth
+        const treasuryRaw = TREASURY_WALLET.replace('0x', '').toLowerCase();
+        await tDelay(200);
+        const walletClaws = await rpc(CLAWS_ADDRESS, balData(TREASURY_WALLET));
+        await tDelay(200);
+        const stakedClaws = await rpc(STAKING_CONTRACT, balData(TREASURY_WALLET));
+        await tDelay(200);
+        const earnedData = '0x008cc262000000000000000000000000' + treasuryRaw;
+        const unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
+
+        // 5. Council allocation
         let councilWeights = null;
         try {
             const host = 'www.inclawbate.com';
@@ -540,6 +551,17 @@ async function handleTreasury(chatId) {
         msg += `CLAWS/ETH LP: ${fmtUsd(lpValue)}\n`;
         msg += `ETH: ${ethBalance.toFixed(4)} (${fmtUsd(ethValue)})\n`;
         msg += `Funding Rate: $${DAILY_FUNDING}/day\n\n`;
+
+        if (totalClaws > 0) {
+            const totalClawsValue = totalClaws * price;
+            msg += '🦞 <b>inclawbate.base.eth CLAWS</b>\n';
+            msg += `Wallet: ${fmtB(walletClaws)}\n`;
+            msg += `Staked: ${fmtB(stakedClaws)}\n`;
+            msg += `Unclaimed: ${fmtB(unclaimedClaws)}\n`;
+            msg += `Total: ${fmtB(totalClaws)}`;
+            if (totalClawsValue > 0) msg += ` (${fmtUsd(totalClawsValue)})`;
+            msg += '\n\n';
+        }
 
         msg += '⚖️ <b>Council Allocation ($' + DAILY_FUNDING + '/day)</b>\n';
         if (councilWeights) {

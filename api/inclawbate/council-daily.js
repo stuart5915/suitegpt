@@ -164,14 +164,35 @@ async function fetchTreasury(clawsPrice) {
             const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
             ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
         } catch (e) { /* ETH price unavailable */ }
+        await delay(200);
+
+        // 3. CLAWS in treasury wallet
+        const walletClaws = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(TREASURY_WALLET_RAW));
+        await delay(200);
+
+        // 4. Treasury staked position: balanceOf(stakingContract, treasuryWallet)
+        //    Selector: 0x70a08231 + padded address
+        const stakedClaws = await rpcRead(STAKING_CONTRACT, clawsBalanceOfData(TREASURY_WALLET_RAW));
+        await delay(200);
+
+        // 5. Unclaimed rewards: earned(treasuryWallet)
+        //    earned(address) selector: 0x008cc262
+        const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
+        const unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
 
         const ethValue = ethBalance * ethPrice;
+        const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
 
         return {
             ethBalance,
             ethPrice,
             ethValue: Math.round(ethValue),
             basisVault: BASIS_VAULT_VALUE,
+            walletClaws,
+            stakedClaws,
+            unclaimedClaws,
+            totalClaws,
+            totalClawsValue: totalClaws * clawsPrice,
         };
     } catch (e) {
         return null;
@@ -373,7 +394,7 @@ function getDateStr() {
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<i>Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</i>\n\n`;
+    msg += `<i>Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/state</i>\n\n`;
 
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
@@ -422,6 +443,16 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
         }
         msg += `Funding Rate: $${TREASURY_FUNDING_RATE}/day\n`;
+        // CLAWS holdings of inclawbate.base.eth
+        if (treasury.totalClaws > 0) {
+            msg += `\n<b>🦞 inclawbate.base.eth CLAWS</b>\n`;
+            msg += `Wallet: ${formatNum(treasury.walletClaws)}\n`;
+            msg += `Staked: ${formatNum(treasury.stakedClaws)}\n`;
+            msg += `Unclaimed: ${formatNum(treasury.unclaimedClaws)}\n`;
+            msg += `Total: ${formatNum(treasury.totalClaws)}`;
+            if (treasury.totalClawsValue > 0) msg += ` (${formatUsd(treasury.totalClawsValue)})`;
+            msg += `\n`;
+        }
     }
 
     // Allocation — council vs community
@@ -432,7 +463,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
         msg += `\n<b>🗳 Community</b> (${allocation.voterCount} vote${allocation.voterCount !== 1 ? 's' : ''})\n`;
         msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.community[i]}%`).join(' · ') + `\n`;
-        msg += `<i>Vote: inclawbate.com/how-it-works</i>\n`;
+        msg += `<i>Vote: inclawbate.com/state</i>\n`;
     }
 
     // Focus / Incubations / Backlog
@@ -466,39 +497,53 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let tweet = `🦞 CLAWS Daily | ${date}\n\n`;
 
+    // Price + market
     if (claws) {
-        const arrow = claws.change24h >= 0 ? '↑' : '↓';
-        tweet += `💰 ${formatPrice(claws.price)}`;
-        tweet += ` (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
+        tweet += `💰 ${formatPrice(claws.price)} (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
+        tweet += `MCap: ${formatUsd(claws.mcap)} | Liq: ${formatUsd(claws.liquidity)}\n`;
     }
 
+    // Supply
     if (supply) {
         tweet += `🔒 ${supply.lockedPct}% locked (${supply.stakedPct}% staked + ${supply.lpPct}% LP)`;
         if (supply.apy > 0) tweet += ` | ${supply.apy.toFixed(0)}% APY`;
         tweet += `\n`;
     }
 
+    // Treasury
     if (treasury?.total) {
         const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-        tweet += `🏦 Treasury: ${formatUsd(treasury.total)}${treasuryChange ? ' (' + (treasuryChange.diff >= 0 ? '+' : '') + formatUsd(treasuryChange.diff) + ')' : ''}\n`;
+        tweet += `\n🏦 Treasury: ${formatUsd(treasury.total)}${treasuryChange ? ' (' + (treasuryChange.diff >= 0 ? '+' : '') + formatUsd(treasuryChange.diff) + ')' : ''}\n`;
+        if (treasury.totalClaws > 0) {
+            tweet += `CLAWS held: ${formatNum(treasury.totalClaws)} (${formatUsd(treasury.totalClawsValue)})\n`;
+        }
+        tweet += `Funding: $${TREASURY_FUNDING_RATE}/day\n`;
     }
 
+    // Allocation
     if (allocation) {
         if (allocation.council) {
-            const top3 = BUCKET_IDS.map((id, i) => ({ label: BUCKET_LABELS[id], pct: allocation.council[i] }))
-                .sort((a, b) => b.pct - a.pct).slice(0, 3);
-            tweet += `⚖️ ${top3.map(r => r.label + ' ' + r.pct + '%').join(' · ')}\n`;
+            const active = BUCKET_IDS.map((id, i) => ({ label: BUCKET_LABELS[id], pct: allocation.council[i] }))
+                .filter(r => r.pct > 0).sort((a, b) => b.pct - a.pct);
+            tweet += `\n⚖️ Council allocation:\n`;
+            active.forEach(r => {
+                const dollars = (TREASURY_FUNDING_RATE * r.pct / 100).toFixed(0);
+                tweet += `${r.label} ${r.pct}% ($${dollars}) `;
+            });
+            tweet += `\n`;
         }
         tweet += `🗳 ${allocation.voterCount} community votes\n`;
     }
 
-    tweet += `\n`;
-
-    if (tasks.focus.length) {
-        tweet += `🔥 ${tasks.focus[0]}\n`;
-    }
+    // Incubations
     if (tasks.incubations.length) {
-        tweet += `🦞 ${tasks.incubations.length} incubations\n`;
+        tweet += `\n🦞 Incubations (${tasks.incubations.length}):\n`;
+        tasks.incubations.forEach(t => { tweet += `- ${t}\n`; });
+    }
+
+    // Focus
+    if (tasks.focus.length) {
+        tweet += `\n🔥 Focus: ${tasks.focus.join(', ')}\n`;
     }
 
     tweet += `\ninclawbate.com/state`;
@@ -547,6 +592,11 @@ export default async function handler(req, res) {
             ethPrice: treasuryRaw?.ethPrice || 0,
             ethValue: Math.round(ethValue),
             basisVault,
+            walletClaws: treasuryRaw?.walletClaws || 0,
+            stakedClaws: treasuryRaw?.stakedClaws || 0,
+            unclaimedClaws: treasuryRaw?.unclaimedClaws || 0,
+            totalClaws: treasuryRaw?.totalClaws || 0,
+            totalClawsValue: treasuryRaw?.totalClawsValue || 0,
         };
 
         // Fetch yesterday's snapshot for day-over-day comparison
