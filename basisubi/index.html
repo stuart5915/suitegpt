@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basis — Mirror the Best LPs on Aerodrome</title>
-    <meta name="description" content="Deposit USDC and automatically mirror top Aerodrome LP positions. Same range, same yield — zero management. Built on Base.">
-    <meta property="og:title" content="Basis — Mirror the Best LPs on Aerodrome">
-    <meta property="og:description" content="Deposit USDC. Mirror a pro LP's range automatically. Earn concentrated liquidity yield without managing a position.">
+    <title>Basis — Explore Aerodrome LP Positions on Base</title>
+    <meta name="description" content="Find and explore concentrated liquidity positions on Aerodrome. Paste any wallet to see their ETH/USDC LP ranges on Base.">
+    <meta property="og:title" content="Basis — Explore Aerodrome LP Positions on Base">
+    <meta property="og:description" content="Find concentrated liquidity positions on Aerodrome. Paste any wallet address to see LP ranges, ticks, and yield data on Base.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://basisubi.com">
     <meta name="twitter:card" content="summary_large_image">
@@ -1888,7 +1888,7 @@
         <div class="nav-inner">
             <a href="#" class="nav-brand">Basis <span style="font-size:0.65em; font-weight:400; color:var(--text-dim); margin-left:6px;">by <span style="color:var(--accent-bright)">Inclawbate</span></span></a>
             <ul class="nav-links">
-                <li><a href="#mirror" style="color:var(--green);">Vault</a></li>
+                <li><a href="#mirror" style="color:var(--green);">Find Positions</a></li>
                 <li><a href="#tracker">Track LP</a></li>
                 <li><a href="#how">How It Works</a></li>
                 <li><a href="#learn">Learn</a></li>
@@ -1898,73 +1898,26 @@
         </div>
     </nav>
 
-    <!-- ═══ MIRROR VAULT ═══ -->
+    <!-- ═══ POSITION FINDER ═══ -->
     <section class="mirror-section" id="mirror" style="padding-top: 90px;">
         <div class="container">
 
             <div class="mirror-hero-card fade-in">
                 <div class="mirror-top">
                     <div class="mirror-title-row">
-                        <div class="mirror-title">Mirror Vault</div>
-                        <div class="mirror-badges">
-                            <span class="mirror-badge erc4626">ERC-4626</span>
-                            <span class="mirror-badge live" id="mv-badge-status">Loading...</span>
-                        </div>
+                        <div class="mirror-title">Find LP Positions</div>
                     </div>
-                    <div class="mirror-desc">Deposit USDC into any mirror vault. The vault copies a pro LP's tick range on Aerodrome &mdash; when they rebalance, the vault follows. Same yield, no management.</div>
+                    <div class="mirror-desc">Paste any wallet address to see their Aerodrome ETH/USDC concentrated liquidity positions on Base.</div>
 
-                    <!-- Vault address input -->
-                    <div style="margin-top:16px; margin-bottom:8px;">
+                    <!-- Wallet input -->
+                    <div class="mirror-tracked" id="mv-tracked-section" style="margin-top:16px;">
                         <div class="mirror-input-row">
                             <div class="mirror-input-wrap">
-                                <input type="text" class="mirror-input" id="mv-vault-address" placeholder="0x... paste a mirror vault address" spellcheck="false" autocomplete="off" style="font-size:0.82rem;">
-                            </div>
-                            <button class="mirror-submit" onclick="mvLoadVault()" style="background:linear-gradient(135deg,var(--accent),var(--cyan));">Load Vault</button>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
-                            <span style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim);">or</span>
-                            <button onclick="openMirrorCreateModal()" style="background:none; border:1px solid var(--border); color:var(--cyan); font-family:var(--mono); font-size:0.72rem; padding:5px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--border)'">Create New Vault</button>
-                        </div>
-                    </div>
-
-                    <!-- Stats grid -->
-                    <div class="mirror-stats-grid" id="mv-stats-grid">
-                        <div class="mirror-stat">
-                            <div class="mirror-stat-label">Total Assets</div>
-                            <div class="mirror-stat-value" id="mv-total-assets">$--</div>
-                        </div>
-                        <div class="mirror-stat">
-                            <div class="mirror-stat-label">Share Price</div>
-                            <div class="mirror-stat-value cyan" id="mv-share-price">--</div>
-                        </div>
-                        <div class="mirror-stat">
-                            <div class="mirror-stat-label">Deposit Cap</div>
-                            <div class="mirror-stat-value" id="mv-deposit-cap">$--</div>
-                        </div>
-                        <div class="mirror-stat">
-                            <div class="mirror-stat-label">Mirror Count</div>
-                            <div class="mirror-stat-value green" id="mv-mirror-count">--</div>
-                            <div class="mirror-stat-sub" id="mv-perf-fee"></div>
-                        </div>
-                    </div>
-
-                    <!-- Track a position — input any wallet -->
-                    <div class="mirror-tracked" id="mv-tracked-section">
-                        <div class="mirror-tracked-header">
-                            <div>
-                                <div class="mirror-tracked-label">Track a Position</div>
-                                <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;">Paste any wallet address to preview their Aerodrome ETH/USDC LP position</div>
-                            </div>
-                        </div>
-
-                        <!-- Wallet input -->
-                        <div class="mirror-input-row" style="margin-top:14px;">
-                            <div class="mirror-input-wrap">
-                                <input type="text" class="mirror-input" id="mv-track-address" placeholder="0x... wallet address to mirror" spellcheck="false" autocomplete="off" style="padding-right:16px; font-size:0.82rem;">
+                                <input type="text" class="mirror-input" id="mv-track-address" placeholder="0x... wallet address" spellcheck="false" autocomplete="off" style="padding-right:16px; font-size:0.82rem;">
                             </div>
                             <button class="mirror-submit" id="mv-track-btn" onclick="mirrorTrackLookup()" style="background:linear-gradient(135deg,var(--accent),var(--cyan));">Find Positions</button>
                         </div>
-                        <div style="text-align:center; font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin:-4px 0 8px;">or connect your wallet above to use your own address</div>
+                        <div style="text-align:center; font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:6px;">or connect your wallet above to use your own address</div>
                         <div class="mirror-status-msg" id="mv-track-status"></div>
 
                         <!-- Position results (populated by JS) -->
@@ -1997,136 +1950,10 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Deposit / Withdraw action tabs -->
-                <div class="mirror-actions" id="mv-actions">
-                    <!-- Your position (if connected + has shares) -->
-                    <div class="mirror-your-pos" id="mv-your-pos" style="display:none; margin:24px 32px 0;">
-                        <div class="mirror-your-pos-label">Your Position</div>
-                        <div class="mirror-your-pos-val" id="mv-your-value">$0.00</div>
-                        <div class="mirror-your-pos-shares" id="mv-your-shares">0 bmUSDC shares</div>
-                    </div>
-
-                    <div class="mirror-tabs">
-                        <button class="mirror-tab active" onclick="mirrorSwitchTab('deposit')" id="mv-tab-deposit">Deposit</button>
-                        <button class="mirror-tab" onclick="mirrorSwitchTab('withdraw')" id="mv-tab-withdraw">Withdraw</button>
-                    </div>
-
-                    <!-- Deposit tab -->
-                    <div class="mirror-tab-content active" id="mv-content-deposit">
-                        <div class="mirror-input-row">
-                            <div class="mirror-input-wrap">
-                                <input type="number" class="mirror-input" id="mv-deposit-amt" placeholder="0.00" min="0" step="any">
-                                <button class="mirror-input-max" id="mv-deposit-max" onclick="mirrorMaxDeposit()">MAX</button>
-                            </div>
-                            <button class="mirror-submit" id="mv-deposit-btn" onclick="mirrorDeposit()">Deposit USDC</button>
-                        </div>
-                        <div class="mirror-info-row">
-                            <span>USDC Balance</span>
-                            <span id="mv-usdc-bal">Connect wallet</span>
-                        </div>
-                        <div class="mirror-info-row">
-                            <span>You Receive</span>
-                            <span id="mv-deposit-receive">-- bmUSDC</span>
-                        </div>
-                        <div class="mirror-info-row">
-                            <span>Max Deposit</span>
-                            <span id="mv-max-deposit">--</span>
-                        </div>
-                        <div class="mirror-status-msg" id="mv-deposit-status"></div>
-                    </div>
-
-                    <!-- Withdraw tab -->
-                    <div class="mirror-tab-content" id="mv-content-withdraw">
-                        <div class="mirror-input-row">
-                            <div class="mirror-input-wrap">
-                                <input type="number" class="mirror-input" id="mv-withdraw-amt" placeholder="0.00" min="0" step="any">
-                                <button class="mirror-input-max" id="mv-withdraw-max" onclick="mirrorMaxWithdraw()">MAX</button>
-                            </div>
-                            <button class="mirror-submit withdraw-btn" id="mv-withdraw-btn" onclick="mirrorWithdraw()">Withdraw USDC</button>
-                        </div>
-                        <div class="mirror-info-row">
-                            <span>Your Shares</span>
-                            <span id="mv-shares-bal">Connect wallet</span>
-                        </div>
-                        <div class="mirror-info-row">
-                            <span>You Receive</span>
-                            <span id="mv-withdraw-receive">-- USDC</span>
-                        </div>
-                        <div class="mirror-status-msg" id="mv-withdraw-status"></div>
-                    </div>
-                </div>
             </div>
 
-            <!-- How Mirror Works mini-steps -->
-            <div class="mirror-how fade-in">
-                <div class="mirror-how-step">
-                    <div class="mirror-how-num">Step 1</div>
-                    <div class="mirror-how-icon">&#x1F4B0;</div>
-                    <div class="mirror-how-title">Deposit USDC</div>
-                    <div class="mirror-how-desc">Deposit any amount of USDC into the Mirror Vault. You receive bmUSDC shares representing your stake.</div>
-                </div>
-                <div class="mirror-how-step">
-                    <div class="mirror-how-num">Step 2</div>
-                    <div class="mirror-how-icon">&#x1F50D;</div>
-                    <div class="mirror-how-title">Vault Mirrors a Pro LP</div>
-                    <div class="mirror-how-desc">The vault reads a tracked LP&rsquo;s tick range on Aerodrome and places liquidity at the exact same range. When they move, the vault follows.</div>
-                </div>
-                <div class="mirror-how-step">
-                    <div class="mirror-how-num">Step 3</div>
-                    <div class="mirror-how-icon">&#x1F4C8;</div>
-                    <div class="mirror-how-title">Earn &amp; Withdraw</div>
-                    <div class="mirror-how-desc">Earn concentrated liquidity yield proportional to your deposit. Withdraw anytime &mdash; your bmUSDC redeems for USDC plus earned fees.</div>
-                </div>
-            </div>
         </div>
     </section>
-
-    <!-- ═══ CREATE MIRROR VAULT MODAL ═══ -->
-    <div class="mm-modal-overlay" id="mm-create-modal">
-        <div class="mm-modal">
-            <button class="mm-modal-close" onclick="closeMirrorCreateModal()">&times;</button>
-            <div class="mm-modal-title">Create Mirror Vault</div>
-            <div class="mm-modal-subtitle">Deploy a vault that mirrors an Aerodrome LP position. First vault per wallet is free.</div>
-
-            <div class="mm-field">
-                <label>Vault Name</label>
-                <input type="text" id="mm-create-name" placeholder="e.g. Whale Mirror ETH/USDC" maxlength="50">
-                <div class="mm-hint">3-50 characters. Shown in the marketplace.</div>
-            </div>
-
-            <div class="mm-field">
-                <label>Tracked Wallet</label>
-                <input type="text" id="mm-create-tracked" placeholder="0x... wallet address to mirror" spellcheck="false">
-                <div class="mm-hint">The wallet whose Aerodrome LP position this vault will copy.</div>
-                <button class="mm-sort-btn" style="margin-top:8px;" onclick="mmLookupPositions()">Find Positions</button>
-                <div class="mm-position-pick" id="mm-positions-list"></div>
-            </div>
-
-            <div class="mm-field" id="mm-token-id-field" style="display:none;">
-                <label>Selected Position Token ID</label>
-                <input type="text" id="mm-create-token-id" placeholder="Auto-filled from selection" readonly>
-            </div>
-
-            <div class="mm-field">
-                <label>Deposit Cap (USDC)</label>
-                <input type="number" id="mm-create-cap" placeholder="50000" min="100" step="1" value="50000">
-                <div class="mm-hint">Min $100. Max total USDC this vault will accept.</div>
-            </div>
-
-            <div class="mm-field">
-                <label>Description (optional)</label>
-                <textarea id="mm-create-desc" placeholder="Describe your vault strategy, why you track this position, etc."></textarea>
-            </div>
-
-            <div id="mm-burn-notice" style="display:none; background:rgba(255,180,50,0.08); border:1px solid rgba(255,180,50,0.2); border-radius:10px; padding:12px; margin-bottom:16px;">
-                <div style="font-family:var(--mono); font-size:0.72rem; color:#ffb432;">This is your 2nd+ vault. Creating requires burning <strong id="mm-burn-amount">1,000</strong> BASIS tokens.</div>
-            </div>
-
-            <button class="mm-modal-submit" onclick="mmCreateVault()">Deploy Mirror Vault</button>
-            <div class="mm-modal-status" id="mm-create-status"></div>
-        </div>
-    </div>
 
     <!-- ═══ HOW IT WORKS ═══ -->
     <section class="how-it-works" id="how">
@@ -2473,288 +2300,9 @@
     </section>
 
     <!-- ═══ VAULT MARKETPLACE ═══ -->
-    <section class="marketplace-section" id="marketplace">
-        <div class="container">
-            <div class="fade-in" style="text-align:center; margin-bottom:40px;">
-                <div class="section-label">Vault Marketplace</div>
-                <h2 class="section-title">Pick a vault. Deposit. Earn.</h2>
-                <p class="section-desc" style="margin:0 auto;">Each vault is managed by a different strategist. Browse their track records, see exactly how they allocate, and deposit into the ones you trust.</p>
-            </div>
+    <!-- (Old marketplace section removed — position finder only) -->
 
-            <!-- Sort & Create Bar -->
-            <div class="mp-sort-bar fade-in">
-                <button class="mp-sort-btn active" onclick="mpSort('apy')" id="mp-sort-apy">APY</button>
-                <button class="mp-sort-btn" onclick="mpSort('tvl')" id="mp-sort-tvl">TVL</button>
-                <button class="mp-sort-btn" onclick="mpSort('active')" id="mp-sort-active">Most Active</button>
-                <button class="mp-sort-btn" onclick="mpSort('newest')" id="mp-sort-newest">Newest</button>
-                <span style="font-family:var(--mono); font-size:0.72rem; color:var(--text-dim);" id="mp-count">0 vaults</span>
-                <button class="mp-create-btn" onclick="openCreateVaultModal()">+ Create Vault</button>
-            </div>
-
-            <!-- Vault Grid -->
-            <div class="mp-grid fade-in" id="mp-vault-grid">
-                <div class="mp-empty" id="mp-empty">
-                    No vaults yet. Be the first vault manager.<br>
-                    <button class="mp-create-btn" style="margin-top:16px;" onclick="openCreateVaultModal()">Create Your Vault</button>
-                </div>
-            </div>
-
-            <!-- Vault Detail Panel (shows when a card is clicked) -->
-            <div class="mp-detail" id="mp-detail">
-                <div class="mp-detail-header">
-                    <div>
-                        <div class="mp-detail-title" id="mp-d-name">Vault Name</div>
-                        <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-secondary);" id="mp-d-manager">Manager: 0x...</div>
-                    </div>
-                    <button class="mp-detail-close" onclick="closeVaultDetail()">&times;</button>
-                </div>
-
-                <!-- Est APY hero -->
-                <div style="text-align:center; padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:16px;">
-                    <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Estimated APY</div>
-                    <div style="font-family:var(--mono); font-size:2rem; font-weight:700;" id="mp-d-apy">0%</div>
-                    <div style="font-size:0.68rem; color:var(--text-secondary); margin-top:2px;" id="mp-d-desc"></div>
-                </div>
-
-                <!-- Performance stats -->
-                <div class="mp-detail-stats">
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">TVL</div>
-                        <div class="mp-card-stat-value" id="mp-d-tvl">$0</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">7d</div>
-                        <div class="mp-card-stat-value" id="mp-d-7d">0%</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">30d</div>
-                        <div class="mp-card-stat-value" id="mp-d-30d">0%</div>
-                    </div>
-                    <div class="mp-detail-stat">
-                        <div class="mp-card-stat-label">Fee</div>
-                        <div class="mp-card-stat-value" id="mp-d-fee">0%</div>
-                    </div>
-                </div>
-
-                <!-- ═══ CURRENT VAULT PARAMETERS ═══ -->
-                <div style="background:var(--surface); border:1px solid var(--border-accent); border-radius:12px; padding:16px; margin-bottom:16px;">
-                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--accent-bright); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Current Parameters</div>
-
-                    <!-- Allocation -->
-                    <div style="margin-bottom:12px;">
-                        <div class="mp-card-alloc" id="mp-d-alloc" style="height:12px; margin-bottom:6px;"></div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px;">
-                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
-                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--accent-bright); text-transform:uppercase;">LP</div>
-                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-lp">0%</div>
-                            </div>
-                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
-                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--green); text-transform:uppercase;">Long</div>
-                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-long">0%</div>
-                            </div>
-                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
-                                <div style="font-family:var(--mono); font-size:0.58rem; color:#ff6450; text-transform:uppercase;">Short</div>
-                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-short">0%</div>
-                            </div>
-                            <div style="text-align:center; padding:6px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
-                                <div style="font-family:var(--mono); font-size:0.58rem; color:var(--text-dim); text-transform:uppercase;">Hold</div>
-                                <div style="font-family:var(--mono); font-size:1rem; font-weight:700; color:var(--text);" id="mp-d-alloc-hold">0%</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- LP Range -->
-                    <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-                        <div style="font-family:var(--mono); font-size:0.62rem; color:var(--cyan); text-transform:uppercase; flex-shrink:0;">LP Range</div>
-                        <div style="font-family:var(--mono); font-size:0.9rem; font-weight:600; color:var(--text);" id="mp-d-lp-range">Standard &#177;2%</div>
-                        <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-left:auto;" id="mp-d-lp-ticks">400 ticks</div>
-                    </div>
-
-                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:8px;" id="mp-d-updated">Last updated: --</div>
-                </div>
-
-                <!-- ═══ CONFIG CHANGE HISTORY ═══ -->
-                <div style="margin-bottom:16px;">
-                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Parameter History</div>
-                    <div id="mp-d-history" style="max-height:200px; overflow-y:auto; scrollbar-width:thin;">
-                        <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); padding:12px; text-align:center;">No changes recorded yet</div>
-                    </div>
-                </div>
-
-                <!-- Deposit/Withdraw -->
-                <div class="mp-deposit-row">
-                    <div class="mp-deposit-input">
-                        <label style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); display:block; margin-bottom:4px;">Deposit USDC</label>
-                        <input type="number" id="mp-d-amount" placeholder="100" style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:var(--mono); font-size:0.85rem; width:100%;">
-                    </div>
-                    <button class="mp-deposit-btn" onclick="mpDeposit()">Deposit</button>
-                    <button class="mp-withdraw-btn" onclick="mpWithdraw()">Withdraw</button>
-                </div>
-                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); margin-top:8px;" id="mp-d-position">Your position: 0 shares ($0.00)</div>
-
-                <!-- Manager Dashboard (only visible to vault manager) -->
-                <div class="mgr-dash" id="mgr-dash">
-                    <div class="mgr-dash-title">Manager Dashboard</div>
-
-                    <!-- Adjust Allocation -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Adjust Allocation</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field">
-                                <label>LP %</label>
-                                <input type="number" id="mgr-lp" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Long %</label>
-                                <input type="number" id="mgr-long" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Short %</label>
-                                <input type="number" id="mgr-short" value="0" min="0" max="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Hold %</label>
-                                <input type="number" id="mgr-hold" value="0" min="0" max="100">
-                            </div>
-                        </div>
-                        <div style="font-family:var(--mono); font-size:0.62rem; margin-top:6px;" id="mgr-alloc-total">Total: 0%</div>
-                        <div class="mgr-row" style="margin-top:10px;">
-                            <button class="mgr-btn" onclick="mgrRebalance()">Rebalance On-Chain</button>
-                            <button class="mgr-btn mgr-btn-secondary" onclick="mgrSaveConfig()">Save Config (Off-Chain)</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-alloc-status"></div>
-                    </div>
-
-                    <!-- LP Range Configuration -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">LP Range Configuration</div>
-                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Controls how concentrated the LP position is. Tighter range = more fees but more impermanent loss risk.</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field" style="flex:2;">
-                                <label>Range Width (ticks)</label>
-                                <input type="number" id="mgr-lp-range" value="400" min="100" max="4000" step="100">
-                            </div>
-                            <div class="mgr-field">
-                                <label>Slippage (bps)</label>
-                                <input type="number" id="mgr-slippage" value="50" min="10" max="500" step="10">
-                            </div>
-                            <button class="mgr-btn" onclick="mgrSetLPParams()" style="align-self:end;">Update LP Params</button>
-                        </div>
-                        <div class="lp-range-presets" style="margin-top:8px;">
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(200, this)">Tight &#177;1%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(400, this)">Standard &#177;2%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(800, this)">Wide &#177;4%</button>
-                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(1600, this)">Ultra Wide &#177;8%</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-lp-status"></div>
-                    </div>
-
-                    <!-- Vault Settings -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Vault Settings</div>
-                        <div class="mgr-row">
-                            <div class="mgr-field" style="flex:2;">
-                                <label>Deposit Cap (USDC)</label>
-                                <input type="number" id="mgr-cap" value="50000" min="100">
-                            </div>
-                            <button class="mgr-btn" onclick="mgrSetCap()">Update Cap</button>
-                        </div>
-                        <div class="mgr-row" style="margin-top:12px;">
-                            <button class="mgr-btn" onclick="mgrCollectFees()">Collect Performance Fees</button>
-                            <button class="mgr-btn mgr-btn-danger" onclick="mgrEmergencyExit()">Emergency Exit All</button>
-                        </div>
-                        <div class="mgr-status" id="mgr-settings-status"></div>
-                    </div>
-
-                    <!-- Config Change Log -->
-                    <div class="mgr-panel">
-                        <div class="mgr-panel-label">Config Change Log</div>
-                        <div class="mgr-log" id="mgr-log">
-                            <div class="mgr-log-empty">No changes recorded yet</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ CREATE VAULT MODAL ═══ -->
-    <div class="mp-modal-overlay" id="mp-create-modal">
-        <div class="mp-modal">
-            <button class="mp-modal-close" onclick="closeCreateVaultModal()">&times;</button>
-            <div class="mp-modal-title">Create Your Vault</div>
-            <div class="mp-modal-subtitle">Deploy a new vault with your own brain strategy. Depositors earn returns, you earn performance fees.</div>
-
-            <div class="mp-field">
-                <label>Vault Name</label>
-                <input type="text" id="mp-c-name" placeholder="Alpha Brain Vault" maxlength="40">
-            </div>
-            <div class="mp-field">
-                <label>Description</label>
-                <textarea id="mp-c-desc" placeholder="Describe your strategy in a few sentences..."></textarea>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                <div class="mp-field">
-                    <label>Performance Fee (%)</label>
-                    <input type="number" id="mp-c-fee" value="10" min="0" max="30" step="1">
-                    <div class="mp-hint">Max 30%. Charged on profits above high-water mark.</div>
-                </div>
-                <div class="mp-field">
-                    <label>Deposit Cap (USDC)</label>
-                    <input type="number" id="mp-c-cap" value="50000" min="100" step="100">
-                    <div class="mp-hint">Min $100. You can increase later.</div>
-                </div>
-            </div>
-            <div class="mp-field">
-                <label>Manager Name (optional)</label>
-                <input type="text" id="mp-c-manager-name" placeholder="Anonymous" maxlength="30">
-            </div>
-
-            <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:8px;">
-                <div style="font-family:var(--mono); font-size:0.7rem; color:var(--accent-bright); margin-bottom:8px;">BRAIN CONFIGURATION</div>
-                <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Set your initial allocation targets. You can change these anytime via the keeper/API.</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">LP %</label>
-                        <input type="number" id="mp-c-lp" value="30" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Long %</label>
-                        <input type="number" id="mp-c-long" value="20" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Short %</label>
-                        <input type="number" id="mp-c-short" value="10" min="0" max="100">
-                    </div>
-                    <div class="mp-field" style="margin-bottom:0;">
-                        <label style="font-size:0.62rem;">Hold %</label>
-                        <input type="number" id="mp-c-hold" value="40" min="0" max="100">
-                    </div>
-                </div>
-                <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-top:6px;" id="mp-c-alloc-total">Total: 100%</div>
-
-                <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
-                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); margin-bottom:6px;">LP RANGE WIDTH</div>
-                    <div style="font-size:0.68rem; color:var(--text-dim); margin-bottom:8px;">How concentrated the LP position is. Tighter = more fees but more rebalancing. Wider = fewer fees but stays in range.</div>
-                    <div class="lp-range-presets">
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(200, this)">Tight (&#177;1%)</button>
-                        <button type="button" class="lp-range-preset active" onclick="setLPRange(400, this)">Standard (&#177;2%)</button>
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(800, this)">Wide (&#177;4%)</button>
-                        <button type="button" class="lp-range-preset" onclick="setLPRange(1600, this)">Ultra Wide (&#177;8%)</button>
-                    </div>
-                    <input type="hidden" id="mp-c-lp-range" value="400">
-                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:4px;">Tick width: <span id="mp-c-lp-range-display">400</span> (&#177;<span id="mp-c-lp-range-pct">2</span>%)</div>
-                </div>
-            </div>
-
-            <div class="mp-modal-actions">
-                <button class="mp-modal-cancel" onclick="closeCreateVaultModal()">Cancel</button>
-                <button class="mp-modal-submit" id="mp-c-submit" onclick="createVault()">Deploy Vault (0.001 ETH)</button>
-            </div>
-            <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:10px; text-align:center;" id="mp-c-status"></div>
-        </div>
-    </div>
-
+            <!-- (Vault detail panel + manager dashboard + create modal removed) -->
 <!-- ═══ LP TRACKER ═══ -->
     <section class="tracker-section" id="tracker">
         <div class="container">
@@ -8012,16 +7560,8 @@
             if (e.key === 'Enter') mirrorTrackLookup();
         });
 
-        // Tab switching
-        window.mirrorSwitchTab = function(tab) {
-            document.getElementById('mv-tab-deposit').classList.toggle('active', tab === 'deposit');
-            document.getElementById('mv-tab-withdraw').classList.toggle('active', tab === 'withdraw');
-            document.getElementById('mv-content-deposit').classList.toggle('active', tab === 'deposit');
-            document.getElementById('mv-content-withdraw').classList.toggle('active', tab === 'withdraw');
-        };
-
-        // Load vault data (read-only, no wallet needed)
-        async function loadMirrorVault() {
+        // (Vault load/deposit/withdraw/marketplace UI removed — page is position finder only)
+        async function loadMirrorVault() { return; /* no-op — vault UI removed */
             if (!MIRROR_VAULT_ADDR) {
                 document.getElementById('mv-badge-status').textContent = 'Not Deployed';
                 document.getElementById('mv-badge-status').className = 'mirror-badge';
@@ -8322,14 +7862,23 @@
         };
     })();
 
-    // ═══ MIRROR MARKETPLACE JS ═══
+    // ═══ MIRROR MARKETPLACE JS (disabled — position finder only) ═══
     (function() {
         var MIRROR_MP_API = '/api/basis/mirror-marketplace';
         var mmVaults = [];
         var mmCurrentSort = 'tvl';
 
-        // ── Load vaults from API ──
-        window.loadMirrorMarketplace = async function(sort) {
+        // ── Load vaults from API (no-op — marketplace UI removed) ──
+        window.loadMirrorMarketplace = async function(sort) { return; };
+        window.renderMirrorGrid = function() { return; };
+        window.openMirrorCreateModal = function() {};
+        window.closeMirrorCreateModal = function() {};
+        window.mmCreateVault = async function() {};
+        window.mmDeleteVault = async function() {};
+        window.mmOpenVault = function() {};
+        window.mmQuickDeposit = function() {};
+        /* Original marketplace code below disabled:
+        window.loadMirrorMarketplace_DISABLED = async function(sort) {
             if (sort) mmCurrentSort = sort;
             try {
                 var resp = await fetch(MIRROR_MP_API + '?sort=' + mmCurrentSort);
@@ -8790,6 +8339,7 @@
 
         // Load on page load
         loadMirrorMarketplace();
+        */
     })();
 
     // ═══ GLOBAL NAV WALLET ═══
@@ -8822,7 +8372,7 @@
             var short = addr.slice(0, 6) + '...' + addr.slice(-4);
             btn.textContent = short; btn.classList.add('connected'); btn.disabled = false;
             window._navWalletAddress = addr;
-            if (typeof renderMirrorGrid === 'function') renderMirrorGrid();
+            // (marketplace grid removed — position finder only)
             var tkBtn = document.getElementById('tk-connect-btn');
             if (tkBtn) { tkBtn.textContent = short; tkBtn.classList.add('connected'); }
         } catch(e) {
