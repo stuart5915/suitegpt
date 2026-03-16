@@ -32,30 +32,7 @@
         }
         .hub-page { max-width: 860px; margin: 0 auto; padding: calc(var(--nav-height) + var(--space-lg)) var(--space-lg) var(--space-3xl); position: relative; z-index: 1; }
 
-        /* ═══ ZONE 1: PROFILE BAR ═══ */
-        .hub-profile {
-            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
-            border-radius: 20px; padding: var(--space-lg); margin-bottom: var(--space-lg);
-            animation: fadeUp 0.5s ease both;
-        }
-        .hub-profile-inner { display: flex; align-items: center; gap: var(--space-md); }
-        .hub-avatar {
-            width: 52px; height: 52px; border-radius: 16px;
-            background: linear-gradient(135deg, hsla(9,52%,54%,0.15), hsla(270,60%,60%,0.15));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; color: var(--text-dim); flex-shrink: 0;
-            border: 1px solid var(--border-subtle);
-        }
-        .hub-profile-info { flex: 1; min-width: 0; }
-        .hub-address { font-family: var(--font-mono); font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
-        .hub-summary { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
-        .hub-connect-btn {
-            padding: 8px 20px; background: var(--accent-gradient); border: none;
-            border-radius: var(--radius-md); color: #fff; font-family: var(--font-body);
-            font-size: 0.82rem; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s;
-        }
-        .hub-connect-btn:hover { opacity: 0.9; }
-        .hub-connect-btn.connected { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+        /* ═══ ZONE 1: (profile bar removed — wallet connect in nav) ═══ */
         .portfolio-chip .hub-portfolio-count {
             font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
             background: var(--accent-gradient); color: #fff; padding: 1px 6px;
@@ -945,18 +922,6 @@
 <div class="hub-bg-overlay"></div>
 
 <div class="hub-page">
-    <!-- ═══ ZONE 1: PROFILE BAR ═══ -->
-    <section class="hub-profile" id="hubProfile">
-        <div class="hub-profile-inner">
-            <div class="hub-avatar" id="hubAvatar">?</div>
-            <div class="hub-profile-info">
-                <div class="hub-address" id="hubAddress">Connect wallet to see your workspace</div>
-                <div class="hub-summary" id="hubSummary"></div>
-            </div>
-            <button class="hub-connect-btn" id="hubConnectBtn" onclick="hubConnect()">Connect Wallet</button>
-        </div>
-    </section>
-
     <!-- ═══ AGENT PRESENCE CARDS ═══ -->
     <section class="inclaw-presence" id="presenceCards">
         <div class="inclaw-platforms-label">The Inclawbator &mdash; Talk to it anywhere</div>
@@ -1612,42 +1577,17 @@ var API = '/api/inclawbate';
 // HUB — WORKSPACE + CHAT
 // ══════════════════════════════════════
 
-// ── Profile bar ──
+// ── Profile (wallet auth triggers workspace load) ──
 function hubRenderProfile() {
     var auth = getAuth();
-    var avatar = document.getElementById('hubAvatar');
-    var addr = document.getElementById('hubAddress');
-    var summary = document.getElementById('hubSummary');
-    var btn = document.getElementById('hubConnectBtn');
-    if (!auth || !auth.wallet) {
-        avatar.textContent = '?';
-        addr.textContent = 'Connect wallet to see your workspace';
-        summary.textContent = '';
-        btn.textContent = 'Connect Wallet';
-        btn.className = 'hub-connect-btn';
-        btn.onclick = hubConnect;
-        return;
-    }
-    var w = auth.wallet;
-    avatar.textContent = w.slice(2, 4).toUpperCase();
-    addr.textContent = w.slice(0, 6) + '\u2026' + w.slice(-4);
-    btn.textContent = 'Disconnect';
-    btn.className = 'hub-connect-btn connected';
-    btn.onclick = function() { if (typeof disconnectWallet === 'function') disconnectWallet(); };
-    hubLoadWorkspace(w);
-}
-
-function hubConnect() {
-    if (typeof navWalletConnect === 'function') navWalletConnect();
-    else if (typeof window.showWalletSelector === 'function') window.showWalletSelector();
+    if (!auth || !auth.wallet) return;
+    hubLoadWorkspace(auth.wallet);
 }
 
 // ── Workspace data ──
 var _hubData = { tokens: [], apps: [], agents: [], vaults: [] };
 
 async function hubLoadWorkspace(wallet) {
-    var summary = document.getElementById('hubSummary');
-    summary.textContent = 'Loading...';
 
     // Build apps query using all available identifiers (like dashboard does)
     var auth = getAuth();
@@ -1691,7 +1631,7 @@ function hubRenderSummary() {
     if (_hubData.agents.length) parts.push(_hubData.agents.length + ' Agent' + (_hubData.agents.length > 1 ? 's' : ''));
     if (_hubData.vaults.length) parts.push(_hubData.vaults.length + ' Vault' + (_hubData.vaults.length > 1 ? 's' : ''));
     var el = document.getElementById('hubSummary');
-    el.textContent = parts.length ? parts.join(' \u00B7 ') : '';
+    if (el) el.textContent = parts.length ? parts.join(' \u00B7 ') : '';
     // Show/hide portfolio chip
     var btn = document.getElementById('hubPortfolioBtn');
     var countEl = document.getElementById('hubPortfolioCount');
@@ -1705,7 +1645,14 @@ function hubRenderSummary() {
 
 function togglePortfolio() {
     var panel = document.getElementById('hubPortfolioPanel');
-    panel.classList.toggle('open');
+    var isOpen = panel.classList.contains('open');
+    if (isOpen) {
+        closeAllPanels(); // restores flywheel
+    } else {
+        closeAllPanels();
+        hideFlywheel();
+        panel.classList.add('open');
+    }
 }
 
 function hubRenderCards() {
@@ -2193,10 +2140,20 @@ function closeAllPanels() {
     document.getElementById('disperseIframe').src = '';
     document.getElementById('schedulePanel').style.display = 'none';
     document.getElementById('scheduleIframe').src = '';
+    document.getElementById('hubPortfolioPanel').classList.remove('open');
+    // Restore flywheel default view
+    var fw = document.getElementById('flywheelSection');
+    if (fw) fw.style.display = '';
+}
+
+function hideFlywheel() {
+    var fw = document.getElementById('flywheelSection');
+    if (fw) fw.style.display = 'none';
 }
 
 function showLaunchPanel() {
     closeAllPanels();
+    hideFlywheel();
     document.getElementById('launchPanel').style.display = 'block';
     document.getElementById('launchPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -2205,6 +2162,7 @@ function closeLaunchPanel() { closeAllPanels(); }
 
 function showDispersePanel() {
     closeAllPanels();
+    hideFlywheel();
     var panel = document.getElementById('dispersePanel');
     var iframe = document.getElementById('disperseIframe');
     iframe.src = '/inclawbate/inclawbator.html?embed=1&tool=disperse';
@@ -2221,6 +2179,7 @@ function closeDispersePanel() { closeAllPanels(); }
 
 function showSchedulePanel() {
     closeAllPanels();
+    hideFlywheel();
     var panel = document.getElementById('schedulePanel');
     var iframe = document.getElementById('scheduleIframe');
     iframe.src = '/schedule';
@@ -2232,6 +2191,7 @@ function closeSchedulePanel() { closeAllPanels(); }
 
 function showEmbedPanel(tool, title) {
     closeAllPanels();
+    hideFlywheel();
     var panel = document.getElementById('dispersePanel');
     var iframe = document.getElementById('disperseIframe');
     panel.querySelector('.launch-panel-header span').innerHTML = '&#128184; ' + (title || tool);
@@ -2797,11 +2757,7 @@ async function handleSolanaDeploy() {
 
     // Elements
     var chatSection = document.querySelector('.hub-chat-section');
-    var heroSection = document.getElementById('heroSection');
-    var quickActions = document.querySelector('.hub-actions');
     var marketingSection = document.getElementById('marketingSection');
-    var profileBar = document.getElementById('hubProfile');
-
     var flywheelSection = document.getElementById('flywheelSection');
     var presenceCards = document.getElementById('presenceCards');
     var inclawbatorsSection = document.getElementById('inclawbatorsSection');
@@ -2809,8 +2765,6 @@ async function handleSolanaDeploy() {
     if (isAgentsPage) {
         // /agents — show marketing agents only, hide everything else
         if (chatSection) chatSection.style.display = 'none';
-        if (heroSection) heroSection.style.display = 'none';
-        if (quickActions) quickActions.style.display = 'none';
         if (flywheelSection) flywheelSection.style.display = 'none';
         if (presenceCards) presenceCards.style.display = 'none';
         if (inclawbatorsSection) inclawbatorsSection.style.display = 'none';
@@ -2916,7 +2870,7 @@ function openDashboard(pid) {
     // Hide list, show dashboard
     document.getElementById('panel-myAgents').style.display='none';
     document.getElementById('tabBar').style.display='none';
-    document.getElementById('heroSection').style.display='none';
+    var _hs = document.getElementById('heroSection'); if (_hs) _hs.style.display='none';
     document.getElementById('dashboard').classList.add('open');
 
     renderDashboard();
@@ -2929,7 +2883,7 @@ function closeDashboard() {
     document.getElementById('dashboard').classList.remove('open');
     document.getElementById('panel-myAgents').style.display='block';
     document.getElementById('tabBar').style.display='flex';
-    document.getElementById('heroSection').style.display='block';
+    var _hs = document.getElementById('heroSection'); if (_hs) _hs.style.display='block';
     _selectedAgent=null;
     loadAgents();
 }
