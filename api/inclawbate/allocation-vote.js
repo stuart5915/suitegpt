@@ -22,7 +22,7 @@ const STAKING_CONTRACTS = [
 ];
 const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const COUNCIL_ROW_KEY = 'council';
-const BASE_RPC = 'https://mainnet.base.org';
+const BASE_RPC = 'https://base.llamarpc.com';
 
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
 
@@ -33,7 +33,8 @@ async function rpcCall(to, data) {
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] })
     });
     const json = await res.json();
-    return BigInt(json.result || '0x0');
+    if (json.error || !json.result) return BigInt(0);
+    return BigInt(json.result);
 }
 
 async function getClawsBalance(address) {
@@ -41,7 +42,7 @@ async function getClawsBalance(address) {
         const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
         const balanceOfData = '0x70a08231' + paddedAddr;
 
-        // Parallel calls: wallet balance + staked in each contract (skip earned — small amounts)
+        // Parallel: wallet balance + staked in each contract
         const results = await Promise.all([
             rpcCall(CLAWS_ADDRESS, balanceOfData).catch(() => BigInt(0)),
             ...STAKING_CONTRACTS.map(c => rpcCall(c, balanceOfData).catch(() => BigInt(0)))
@@ -105,7 +106,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     // GET — return synthesis + individual votes + council allocation
-    // Refreshes on-chain CLAWS balances for all voters so weights stay accurate
+    // ?refresh=true triggers a one-time on-chain balance refresh for all voters
     if (req.method === 'GET') {
         try {
             const { data: allRows } = await supabase
@@ -113,29 +114,32 @@ export default async function handler(req, res) {
                 .select('wallet_address, weights, claws_balance, updated_at')
                 .order('claws_balance', { ascending: false });
 
-            // Separate council row from community votes
             const councilRow = (allRows || []).find(v => v.wallet_address === COUNCIL_ROW_KEY);
-            const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
+            let communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
 
-            // Refresh on-chain balances in parallel (3 RPC calls per voter, all concurrent)
-            const refreshed = await Promise.all(communityVotes.map(async (v) => {
-                try {
-                    const freshBalance = await getClawsBalance(v.wallet_address);
-                    // Update DB in background if balance changed
-                    if (freshBalance !== v.claws_balance) {
-                        supabase.from('allocation_votes')
-                            .update({ claws_balance: freshBalance })
-                            .eq('wallet_address', v.wallet_address)
-                            .then(() => {});
+            // Optional: refresh on-chain balances when ?refresh=true
+            if (req.query.refresh === 'true') {
+                const refreshed = [];
+                for (const v of communityVotes) {
+                    try {
+                        const freshBalance = await getClawsBalance(v.wallet_address);
+                        if (freshBalance !== '0') {
+                            await supabase.from('allocation_votes')
+                                .update({ claws_balance: freshBalance })
+                                .eq('wallet_address', v.wallet_address);
+                            refreshed.push({ ...v, claws_balance: freshBalance });
+                        } else {
+                            refreshed.push(v);
+                        }
+                    } catch {
+                        refreshed.push(v);
                     }
-                    return { ...v, claws_balance: freshBalance };
-                } catch {
-                    return v; // fallback to stored balance on error
                 }
-            }));
+                communityVotes = refreshed;
+            }
 
-            const result = computeSynthesis(refreshed);
-            const voters = refreshed.map(v => ({
+            const result = computeSynthesis(communityVotes);
+            const voters = communityVotes.map(v => ({
                 address: v.wallet_address,
                 weights: v.weights,
                 claws_balance: v.claws_balance,
