@@ -704,15 +704,26 @@
         }
         .approve-all-btn:hover { background:rgba(34,197,94,0.2);border-color:#4ade80; }
 
-        /* ── Image prompt ── */
+        /* ── Image prompt (collapsible) ── */
         .sched-img-prompt {
-            margin-top:6px;padding:6px 8px;background:rgba(99,102,241,0.06);
+            margin-top:6px;background:rgba(99,102,241,0.06);
             border:1px dashed rgba(99,102,241,0.25);border-radius:var(--radius-sm);
             font-size:0.72rem;color:var(--text-secondary);line-height:1.4;
-            display:flex;align-items:flex-start;gap:6px;
+            overflow:hidden;
         }
+        .sched-img-prompt-toggle {
+            display:flex;align-items:center;justify-content:space-between;gap:6px;
+            padding:6px 8px;cursor:pointer;user-select:none;
+        }
+        .sched-img-prompt-toggle:hover { background:rgba(99,102,241,0.06); }
+        .sched-img-prompt-label { font-weight:700;color:var(--accent-primary);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px; }
+        .sched-img-prompt-arrow { font-size:0.6rem;color:var(--text-dim);transition:transform 0.2s; }
+        .sched-img-prompt.open .sched-img-prompt-arrow { transform:rotate(180deg); }
+        .sched-img-prompt-body {
+            display:none;padding:0 8px 6px;
+        }
+        .sched-img-prompt.open .sched-img-prompt-body { display:flex;gap:6px;align-items:flex-start; }
         .sched-img-prompt-text { flex:1;min-width:0;word-break:break-word; }
-        .sched-img-prompt-label { font-weight:700;color:var(--accent-primary);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px; }
         .sched-img-prompt-actions { display:flex;gap:4px;flex-shrink:0;margin-top:1px; }
         .sched-img-prompt-btn {
             width:22px;height:22px;border-radius:4px;border:1px solid var(--border-subtle);
@@ -733,11 +744,72 @@
         .autofill-btn:disabled { opacity:0.5;cursor:not-allowed; }
 
         @media (max-width: 600px) {
-            .sched-section { padding: var(--space-md); }
-            .sched-day { min-width: 54px; padding: 6px 10px; }
-            .x-feed-section { padding: var(--space-md); }
+            .schedule-page { padding: 10px 8px !important; }
+            .sched-section { padding: var(--space-sm); }
+            .sched-day { min-width: 46px; padding: 5px 8px; }
+            .sched-day-date { font-size: 0.82rem; }
+            .sched-day-name { font-size: 0.6rem; }
+            .x-feed-section { padding: var(--space-sm); }
             .pillar-week { gap:3px; }
-            .pillar-day-chip { min-width:66px;padding:5px 8px; }
+            .pillar-day-chip { min-width:56px;padding:4px 6px;font-size:0.6rem; }
+            .sched-slot { padding:8px 8px;gap:6px;flex-wrap:wrap; }
+            .sched-time { width:auto;font-size:0.72rem; }
+            .sched-content-name { font-size:0.76rem; }
+            .sched-content-angle { font-size:0.68rem; }
+            .sched-draft-actions { flex-wrap:wrap;gap:4px; }
+            .sched-draft-btn { padding:3px 7px;font-size:0.62rem; }
+            .sched-slot-thumb { width:40px;height:40px; }
+            .sched-img-prompt { font-size:0.65rem; }
+            .sched-book { padding:var(--space-md); }
+            .sched-theme-hint { padding:8px 10px; }
+            .sched-theme-emoji { font-size:1.1rem; }
+            .sched-theme-name { font-size:0.75rem; }
+            .sched-theme-desc { font-size:0.7rem; }
+            .sched-theme-angle { font-size:0.65rem;padding:3px 8px; }
+            .sched-admin-banner { padding:10px 12px; }
+            .sched-pipe-step { padding:4px 8px;font-size:0.65rem; }
+            .sched-pipe-step strong { font-size:0.68rem; }
+            .sched-pipe-step span { font-size:0.6rem; }
+            .sched-pipe-icon { font-size:0.9rem; }
+            .sched-legend { gap:8px; }
+            .sched-legend-item { font-size:0.6rem; }
+            .sched-header h2 { font-size:1rem; }
+            .sched-imgprompt-result { font-size:0.7rem; }
+            .sched-imgprompt-result pre { font-size:0.65rem; }
+            .review-card { padding:8px; }
+            /* Draft modal mobile */
+            .draft-modal-overlay { padding:10px; }
+            .draft-modal { padding:var(--space-md);max-height:90vh;overflow-y:auto; }
+            .draft-modal textarea { min-height:80px;font-size:0.82rem; }
+            .draft-modal-emoji { width:28px;height:28px;font-size:0.95rem; }
+            .draft-modal-insert { font-size:0.62rem;padding:3px 8px; }
+            .draft-modal-pillar { font-size:0.68rem;padding:6px 10px; }
+            .draft-modal-pillar-desc { display:none; }
+            .draft-modal-tips { gap:4px; }
+            .draft-modal-tip { font-size:0.6rem;padding:2px 6px; }
+            .draft-modal-imgprompt-result pre { font-size:0.65rem; }
+            /* Booking form mobile */
+            .sched-field textarea { font-size:0.82rem;min-height:50px; }
+            .sched-imgprompt-btn { font-size:0.68rem;padding:5px 10px; }
+            /* X feed mobile */
+            .x-feed-header { flex-wrap:wrap;gap:8px; }
+            .x-feed-header h2 { font-size:0.95rem; }
+            .x-tweet { gap:8px; }
+            .x-tweet-text { font-size:0.78rem; }
+            .x-tweet-avatar { width:30px;height:30px; }
+        }
+        @media (max-width: 380px) {
+            .sched-account-tab { padding:8px 8px;gap:6px; }
+            .sched-account-tab-name { font-size:0.72rem; }
+            .sched-account-tab-desc { font-size:0.6rem; }
+            .sched-account-tab-avatar { font-size:1rem; }
+            .sched-day { min-width:40px;padding:4px 6px; }
+            .sched-day-date { font-size:0.75rem; }
+            .sched-time { font-size:0.65rem; }
+            .draft-modal-emoji-row { gap:0; }
+            .draft-modal-emoji { width:26px;height:26px;font-size:0.85rem; }
+            .sched-draft-actions { gap:3px; }
+            .sched-draft-btn { padding:2px 5px;font-size:0.58rem; }
         }
     </style>
 </head>
@@ -1263,12 +1335,17 @@
                 var slotOpts = booked.tweet_options || {};
                 // Show image prompt only for drafts (not yet approved)
                 if (slotOpts.image_prompt && isDraft) {
-                    html += '<div class="sched-img-prompt" onclick="event.stopPropagation()">';
-                    html += '<div class="sched-img-prompt-text"><div class="sched-img-prompt-label">Image Prompt</div>' + escHtml(slotOpts.image_prompt) + '</div>';
+                    html += '<div class="sched-img-prompt" id="imgPrompt_' + booked.id + '" onclick="event.stopPropagation()">';
+                    html += '<div class="sched-img-prompt-toggle" onclick="this.parentElement.classList.toggle(\'open\')">';
+                    html += '<span class="sched-img-prompt-label">Image Prompt</span>';
+                    html += '<span class="sched-img-prompt-arrow">&#x25BC;</span>';
+                    html += '</div>';
+                    html += '<div class="sched-img-prompt-body">';
+                    html += '<div class="sched-img-prompt-text">' + escHtml(slotOpts.image_prompt) + '</div>';
                     html += '<div class="sched-img-prompt-actions">';
                     html += '<button class="sched-img-prompt-btn" onclick="window._copyImgPrompt(this,\'' + booked.id + '\')" title="Copy prompt">&#x1F4CB;</button>';
                     html += '<button class="sched-img-prompt-btn" onclick="window._regenImgPrompt(\'' + booked.id + '\')" title="New prompt">&#x21BB;</button>';
-                    html += '</div></div>';
+                    html += '</div></div></div>';
                 }
                 html += '</div>';
 
