@@ -5119,16 +5119,17 @@ function applyServerState(data) {
 const handHistoryCache = [];
 let _prevRunning = false;
 let _prevRound = 0;
+let _prevPhase = '';
 let _replayingHand = null; // null = live, index = viewing past hand
 let _handEndFreeze = false; // true during 3s post-hand showdown pause
 let _handEndFreezeTimer = null;
 let _freezeSnapshot = null; // saved community cards + agents for showdown display
 
 function detectHandComplete(data) {
-  // Initialize on first update so we don't false-trigger
-  if (_prevRound === 0) { _prevRound = data.round; _prevRunning = data.running; return; }
-  const justEnded = data.lastWinner && data.phase === 'waiting' && data.round !== _prevRound;
+  // Detect hand end: phase transitions TO 'waiting' with a winner set
+  const justEnded = data.lastWinner && data.phase === 'waiting' && _prevPhase !== '' && _prevPhase !== 'waiting';
   _prevRunning = data.running;
+  _prevPhase = data.phase;
 
   if (justEnded) {
     _prevRound = data.round;
