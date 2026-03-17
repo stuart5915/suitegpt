@@ -5685,17 +5685,16 @@ function _renderActionTooltip(agentId) {
       if (!streetMap[a.street]) { streetMap[a.street] = []; streets.push(a.street); }
       streetMap[a.street].push(a);
     }
+    let runningTotal = 0;
     for (const st of streets) {
       const acts = streetMap[st].map(a => {
         const lbl = a.label || a.type;
         return `<span style="color:${_actionColor(a.type)}">${escapeHtml(lbl)}</span>`;
       }).join(' <span style="color:#555">→</span> ');
-      html += `<div style="margin-bottom:2px"><span style="color:#ccc;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">${st}:</span> ${acts}</div>`;
-    }
-    // Total invested
-    const total = actions.reduce((s, a) => s + (a.amount || 0), 0);
-    if (total > 0) {
-      html += `<div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.08);font-weight:700;color:#e2e8f0;font-size:12px">Total: ${total.toLocaleString()}</div>`;
+      const streetTotal = streetMap[st].reduce((s, a) => s + (a.amount || 0), 0);
+      runningTotal += streetTotal;
+      const totalTag = runningTotal > 0 ? ` <span style="color:#888;font-size:11px">(${runningTotal.toLocaleString()})</span>` : '';
+      html += `<div style="margin-bottom:2px"><span style="color:#ccc;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">${st}:</span> ${acts}${totalTag}</div>`;
     }
     if (result) {
       const rColor = result === 'win' ? '#22c55e' : result === 'fold' ? '#ef4444' : '#ef4444';
