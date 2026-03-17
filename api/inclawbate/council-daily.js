@@ -517,7 +517,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
 
     // Price
     if (claws) {
-        tweet += `💰 ${formatPrice(claws.price)} (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
+        tweet += `💰 ${formatPrice(claws.price)}\n`;
     }
 
     // Staking — the money shot
@@ -538,7 +538,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
         tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
     }
 
-    tweet += `\ninclawbate.com/state`;
+    tweet += `\ninclawbate.com/how-it-works`;
 
     return tweet;
 }
