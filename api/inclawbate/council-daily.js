@@ -79,6 +79,7 @@ async function fetchClawsPrice() {
 const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
 const TREASURY_FUNDING_RATE = 100; // $/day — update when funding changes
+const BASESCAN_API_KEY = 'C6WMY6JWVYDGI9QZBEDNUH86E7A5PIZACC';
 
 async function rpcRead(to, data) {
     try {
@@ -144,6 +145,26 @@ async function fetchStakingAndLP() {
 
 const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
 const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
+
+async function fetchStakerCount() {
+    try {
+        // Get CLAWS transfer events TO the staking contract — each unique sender is a staker
+        const url = `https://api.basescan.org/api?module=account&action=tokentx&contractaddress=${CLAWS_ADDRESS}&address=${STAKING_CONTRACT}&apikey=${BASESCAN_API_KEY}&page=1&offset=10000`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.status !== '1' || !data.result) return 0;
+        // Transfers TO staking contract = stakes. Count unique senders.
+        const stakers = new Set();
+        for (const tx of data.result) {
+            if (tx.to.toLowerCase() === STAKING_CONTRACT.toLowerCase()) {
+                stakers.add(tx.from.toLowerCase());
+            }
+        }
+        return stakers.size;
+    } catch (e) {
+        return 0;
+    }
+}
 
 async function fetchTreasury(clawsPrice) {
     try {
@@ -508,10 +529,10 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     return msg;
 }
 
-function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
+function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stakerCount) {
     const date = getDateStr();
     const price = claws?.price || 0;
-    let tweet = `🦞 CLAWS Daily | ${date}\n\n`;
+    let tweet = `🦞 $CLAWS Daily | ${date}\n\n`;
 
     // Price
     if (claws) {
@@ -521,14 +542,15 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     // Staking — the money shot
     if (supply) {
         tweet += `\n📊 Staking Rewards\n`;
-        tweet += `Current Rate: ${formatNum(supply.dailyRewards)} CLAWS/day\n`;
+        tweet += `Current Rate: ${formatNum(supply.dailyRewards)} $CLAWS/day\n`;
         if (price > 0) {
             const annualUsd = supply.dailyRewards * 365 * price;
             tweet += `~${formatUsd(annualUsd)} USD/year in rewards\n`;
         }
         tweet += `Value Staked: ~${formatUsd(supply.staked * price)}\n`;
         if (supply.apy > 0) tweet += `APY: ${supply.apy.toFixed(0)}%\n`;
-        tweet += `\n🔒 ${supply.lockedPct}% out of circulation\n`;
+        if (stakerCount > 0) tweet += `Stakers: ${stakerCount}\n`;
+        tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
 
     // Incubations — count only
@@ -590,15 +612,18 @@ export default async function handler(req, res) {
             totalClawsValue: treasuryRaw?.totalClawsValue || 0,
         };
 
-        // Fetch yesterday's snapshot for day-over-day comparison
-        const yesterday = await fetchYesterdaySnapshot();
+        // Fetch staker count + yesterday's snapshot
+        const [stakerCount, yesterday] = await Promise.all([
+            fetchStakerCount(),
+            fetchYesterdaySnapshot()
+        ]);
 
         // Save today's snapshot
         await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
 
         // Build messages
         const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday);
-        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday);
+        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount);
 
         // Post to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
