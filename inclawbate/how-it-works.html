@@ -1538,6 +1538,33 @@
 
     var allVoters = [];
 
+    /* Recompute weighted synthesis from voter data (client-side) */
+    function recomputeSynthesis() {
+        if (!allVoters.length) return;
+        var totalWeight = BigInt(0);
+        var sums = buckets.map(function() { return BigInt(0); });
+        allVoters.forEach(function(v) {
+            var bal = BigInt(v.claws_balance || '0');
+            var w = bal > BigInt(0) ? bal : BigInt(1);
+            totalWeight += w;
+            buckets.forEach(function(b, i) {
+                sums[i] += BigInt(v.weights[b.id] || 0) * w;
+            });
+        });
+        if (totalWeight === BigInt(0)) return;
+        synthesis = buckets.map(function(_, i) {
+            return Number(sums[i] / totalWeight);
+        });
+        /* Normalize to 100 */
+        var total = synthesis.reduce(function(a, b) { return a + b; }, 0);
+        if (total > 0 && total !== 100) {
+            var scale = 100 / total;
+            synthesis = synthesis.map(function(v) { return Math.round(v * scale); });
+            var adjTotal = synthesis.reduce(function(a, b) { return a + b; }, 0);
+            if (adjTotal !== 100) synthesis[0] += (100 - adjTotal);
+        }
+    }
+
     /* Fetch live synthesis + voters from API, then refresh balances via proxy */
     function fetchSynthesis() {
         fetch(VOTE_API)
@@ -1563,6 +1590,8 @@
                                         var bal = bData.balances[v.address.toLowerCase()];
                                         if (bal && bal !== '0') v.claws_balance = bal;
                                     });
+                                    recomputeSynthesis();
+                                    renderSynthBar();
                                     renderVoters();
                                 }
                             })
