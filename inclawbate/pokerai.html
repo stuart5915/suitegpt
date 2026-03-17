@@ -4369,6 +4369,7 @@
           <button class="vault-preset" onclick="setDepositAmount(25)">$25</button>
           <button class="vault-preset" onclick="setDepositAmount(100)">$100</button>
         </div>
+        <div id="onchainWalletBal" style="display:none;font-size:11px;color:var(--text-secondary);text-align:center;margin-bottom:6px">Wallet: <span id="onchainWalletBalAmt" style="color:var(--accent-gold);font-weight:700">--</span></div>
         <button class="vault-btn deposit-btn" id="depositBtn" onclick="doDeposit()">
           Deposit USDC
         </button>
@@ -6374,6 +6375,7 @@ function switchVaultCurrency(currency) {
   }
   updateDepositPreview();
   updateWithdrawPreview();
+  fetchOnchainWalletBalance();
 }
 
 function updateVaultDisplay() {
@@ -6395,6 +6397,28 @@ function updateVaultDisplay() {
   const agentChips = isPokerai ? pokeraiAgentChips : usdcAgentChips;
   const vac = document.getElementById('vaultAgentChips');
   if (vac) vac.textContent = agentChips > 0 ? `${formatChips(agentChips)} chips in agents · sit out to withdraw` : '';
+}
+
+async function fetchOnchainWalletBalance() {
+  const el = document.getElementById('onchainWalletBal');
+  const amtEl = document.getElementById('onchainWalletBalAmt');
+  if (!el || !amtEl) return;
+  const wallet = getWallet();
+  if (!wallet || !window.ethereum) { el.style.display = 'none'; return; }
+  const tokenAddr = _vaultCurrency === 'pokerai' ? POKERAI_TOKEN_ADDRESS : USDC_ADDRESS;
+  const decimals = _vaultCurrency === 'pokerai' ? 18 : 6;
+  const symbol = _vaultCurrency === 'pokerai' ? '$POKERAI' : 'USDC';
+  el.style.display = 'block';
+  amtEl.textContent = '...';
+  try {
+    const data = '0x70a08231' + '000000000000000000000000' + wallet.address.slice(2);
+    const result = await window.ethereum.request({ method: 'eth_call', params: [{ to: tokenAddr, data }, 'latest'] });
+    const raw = BigInt(result);
+    const bal = Number(raw) / (10 ** decimals);
+    amtEl.textContent = bal.toLocaleString(undefined, { maximumFractionDigits: decimals === 18 ? 2 : 2 }) + ' ' + symbol;
+  } catch (e) {
+    amtEl.textContent = 'unable to read';
+  }
 }
 
 function openVaultPokerai(tab) {
