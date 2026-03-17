@@ -1331,6 +1331,8 @@ class PokerEngine {
       totalDeposited: lobbyAgent.totalDeposited || lobbyAgent.chipStack,
       totalCashedOut: lobbyAgent.totalCashedOut || 0,
       autoEvents: lobbyAgent.autoEvents || [],
+      sessionStartTime: lobbyAgent.sessionStartTime || null,
+      currency: lobbyAgent.currency || null,
       handsWon: lobbyAgent.handsWon,
       handsPlayed: lobbyAgent.handsPlayed,
       biggestPot: lobbyAgent.biggestPot,
@@ -1432,7 +1434,12 @@ class PokerEngine {
       handsWon: agent.handsWon,
       handsPlayed: agent.handsPlayed,
       biggestPot: agent.biggestPot,
-      _realChipStack: agent._realChipStack  // preserve for sandbox restore
+      _realChipStack: agent._realChipStack,  // preserve for sandbox restore
+      currency: agent.currency || null,
+      totalDeposited: agent.totalDeposited || agent.baseChips,
+      totalCashedOut: agent.totalCashedOut || 0,
+      autoEvents: agent.autoEvents || [],
+      sessionStartTime: agent.sessionStartTime || null
     };
 
     const originalBot = this.replacedBots.get(agent.id);
