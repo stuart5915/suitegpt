@@ -438,6 +438,10 @@
         }
         .gig-submit:hover:not(:disabled) { opacity: 0.85; }
         .gig-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+        .hc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+        .hc-stat { background: var(--bg-surface); border-radius: 8px; padding: 8px 10px; }
+        .hc-stat-label { font-family: var(--font-mono); font-size: 0.55rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 2px; }
+        .hc-stat-val { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
         .gig-status { font-size: 0.72rem; color: var(--text-dim); margin-top: 8px; text-align: center; }
         .gig-divider {
             display: flex; align-items: center; gap: 10px; margin: 18px 0 12px;
@@ -1431,12 +1435,12 @@
         </div>
     </section>
 
-    <!-- ═══ MARKETING AGENTS (hidden — content moves to inline panel) ═══ -->
-    <section class="hub-collapsible" id="marketingSection" style="display:none">
+    <!-- ═══ MARKETING AGENTS ═══ -->
+    <section class="hub-collapsible open" id="marketingSection">
         <button class="hub-collapsible-toggle" onclick="toggleMarketingSection()">
             <span>&#x1F916; Marketing Agents</span>
             <span class="hub-toggle-desc">AI auto-posting to X &mdash; free forever</span>
-            <span class="hub-toggle-arrow" id="marketingArrow">&#9654;</span>
+            <span class="hub-toggle-arrow" id="marketingArrow">&#9660;</span>
         </button>
         <div class="hub-collapsible-body" id="marketingBody">
 
@@ -1448,13 +1452,13 @@
     </section>
 
     <div class="ag-tabs" id="tabBar">
-        <button class="ag-tab active" data-tab="myAgents">My Agents</button>
-        <button class="ag-tab" data-tab="explore">Explore</button>
+        <button class="ag-tab" data-tab="myAgents">My Agents</button>
+        <button class="ag-tab active" data-tab="explore">Explore</button>
         <button class="ag-tab" data-tab="ecosystem">Ecosystem</button>
     </div>
 
     <!-- ═══ MY AGENTS LIST ═══ -->
-    <div class="ag-panel active" id="panel-myAgents">
+    <div class="ag-panel" id="panel-myAgents">
         <div id="stateSignIn" style="display:none">
             <div class="onboard">
                 <h2>Auto-post to X with AI</h2>
@@ -1603,7 +1607,7 @@
     </div>
 
     <!-- ═══ EXPLORE TAB ═══ -->
-    <div class="ag-panel" id="panel-explore">
+    <div class="ag-panel active" id="panel-explore">
         <div id="exploreContent"><div class="empty-state">Loading active agents...</div></div>
     </div>
 
@@ -2261,13 +2265,89 @@ async function runHealthCheck() {
     var btn = document.getElementById('healthRunBtn');
     var result = document.getElementById('healthResult');
     btn.disabled = true; btn.textContent = 'Checking...';
-    result.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.78rem;padding:12px;">Pulling live data...</div>';
+    result.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.78rem;padding:12px;">Pulling live data from DexScreener...</div>';
 
-    // Send to the chat agent so it runs health_check tool and gives a full response
-    var prompt = 'Run a health check on token ' + addr;
-    chatSendMessage(prompt);
+    try {
+        // Fetch directly from DexScreener — no AI needed
+        var dexRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr);
+        var dexData = await dexRes.json();
+        var pairs = (dexData.pairs || []).filter(function(p) { return p.chainId === 'base' || p.chainId === 'solana'; });
+
+        if (!pairs.length) {
+            result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
+                '<div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);margin-bottom:8px;">No data found</div>' +
+                '<p style="font-size:0.78rem;color:var(--text-dim);margin:0;">No trading pairs found on DexScreener for this address. The token may not be listed yet, or the address might be incorrect.</p></div>';
+            btn.disabled = false; btn.textContent = 'Run Health Check';
+            return;
+        }
+
+        var top = pairs[0];
+        var price = top.priceUsd || 'N/A';
+        var change = top.priceChange ? top.priceChange.h24 : null;
+        var vol24 = top.volume ? top.volume.h24 : 0;
+        var liq = top.liquidity ? top.liquidity.usd : 0;
+        var fdv = top.fdv || 0;
+        var name = top.baseToken ? top.baseToken.name : 'Unknown';
+        var symbol = top.baseToken ? top.baseToken.symbol : '???';
+
+        var changeColor = change > 0 ? '#4ade80' : change < 0 ? '#f87171' : 'var(--text-dim)';
+        var changeStr = change !== null ? (change > 0 ? '+' : '') + Number(change).toFixed(2) + '%' : 'N/A';
+
+        var suggestions = [];
+        if (vol24 < 100) suggestions.push('Volume is very low — consider promoting your token or adding liquidity');
+        if (liq < 1000) suggestions.push('Liquidity is thin — consider adding more LP to reduce slippage');
+        if (change !== null && change < -20) suggestions.push('Price dropped significantly — engage your community and highlight upcoming developments');
+        if (!suggestions.length) suggestions.push('Looking healthy! Keep building and engaging your community.');
+
+        // Also try staking stats
+        var stakingHtml = '';
+        try {
+            var stakingRes = await fetch('/api/inclawbate/staking');
+            var stakingData = await stakingRes.json();
+            if (stakingData.treasury) {
+                var st = stakingData.treasury;
+                stakingHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">' +
+                    '<div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);margin-bottom:8px;">Staking</div>' +
+                    '<div class="hc-grid">' +
+                    '<div class="hc-stat"><div class="hc-stat-label">Stakers</div><div class="hc-stat-val">' + (st.total_stakers || 0) + '</div></div>' +
+                    '<div class="hc-stat"><div class="hc-stat-label">TVL</div><div class="hc-stat-val">$' + _fmtNum(st.tvl_usd || 0) + '</div></div>' +
+                    '<div class="hc-stat"><div class="hc-stat-label">APY</div><div class="hc-stat-val">' + (st.estimated_apy || 'N/A') + '%</div></div>' +
+                    '</div></div>';
+            }
+        } catch(e) {}
+
+        result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+                '<div style="font-weight:800;font-size:1rem;color:var(--text-primary);">$' + escH(symbol) + '</div>' +
+                '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">' + escH(name) + '</div>' +
+            '</div>' +
+            '<div class="hc-grid">' +
+                '<div class="hc-stat"><div class="hc-stat-label">Price</div><div class="hc-stat-val">$' + price + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">24h</div><div class="hc-stat-val" style="color:' + changeColor + '">' + changeStr + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">Volume</div><div class="hc-stat-val">$' + _fmtNum(vol24) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">Liquidity</div><div class="hc-stat-val">$' + _fmtNum(liq) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">FDV</div><div class="hc-stat-val">$' + _fmtNum(fdv) + '</div></div>' +
+            '</div>' +
+            stakingHtml +
+            '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">' +
+                '<div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);margin-bottom:6px;">Suggestions</div>' +
+                suggestions.map(function(s) {
+                    return '<div style="font-size:0.75rem;color:var(--text-secondary);padding:3px 0;">• ' + escH(s) + '</div>';
+                }).join('') +
+            '</div>' +
+        '</div>';
+    } catch(e) {
+        result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
+            '<div style="font-weight:800;font-size:0.9rem;color:#f87171;margin-bottom:4px;">Error</div>' +
+            '<p style="font-size:0.78rem;color:var(--text-dim);margin:0;">Failed to fetch token data. Please check the address and try again.</p></div>';
+    }
     btn.disabled = false; btn.textContent = 'Run Health Check';
-    result.innerHTML = '<div style="text-align:center;color:#4ade80;font-size:0.78rem;padding:12px;">Check the chat below for your health report.</div>';
+}
+
+function _fmtNum(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Number(n).toFixed(2);
 }
 
 // ── Inclawbators gig panel ──
@@ -4395,6 +4475,7 @@ async function loadExplore(){
 
 // ── Boot ──
 loadAgents();
+loadExplore();
 </script>
 </body>
 </html>
