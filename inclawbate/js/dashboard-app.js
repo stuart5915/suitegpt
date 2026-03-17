@@ -1876,18 +1876,24 @@ async function openFundModal(poolAddr, poolName, projectId) {
     let clawsBalance = 0;
     let clawsPrice = buyState.clawsPrice || 0;
     const balData = STAKING_USER_SEL.balanceOf + pad32(wallet);
+    let _dbgSource = 'none';
+    let _dbgRaw = '?';
+    let _dbgErr = '';
     try {
         // Try injected provider first (most reliable inside wallet browsers like Coinbase)
         if (provider) {
             try {
                 const result = await provider.request({ method: 'eth_call', params: [{ to: CLAWS_ADDRESS, data: balData }, 'latest'] });
-                if (result && result !== '0x') clawsBalance = fromWei(safeHex(result));
-            } catch (e) { /* fall through to public RPC */ }
+                _dbgRaw = result;
+                if (result && result !== '0x') { clawsBalance = fromWei(safeHex(result)); _dbgSource = 'provider'; }
+            } catch (e) { _dbgErr = 'provider:' + (e.message || e.code || 'unknown'); }
         }
         // Fallback to public RPCs if provider failed
         if (clawsBalance === 0) {
             const balHex = await rpcCall(CLAWS_ADDRESS, balData);
+            _dbgRaw = balHex;
             clawsBalance = fromWei(balHex);
+            if (clawsBalance > 0) _dbgSource = 'rpc';
         }
         if (!clawsPrice) {
             const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
@@ -1916,6 +1922,7 @@ async function openFundModal(poolAddr, poolName, projectId) {
             <span class="fund-modal-balance-label">Your CLAWS Balance</span>
             <span class="fund-modal-balance-val">${fmt(Math.floor(clawsBalance))}</span>
         </div>
+        <div style="font-size:10px;color:#666;padding:2px 16px;word-break:break-all">dbg: addr=${wallet.slice(0,10)} src=${_dbgSource} raw=${String(_dbgRaw).slice(0,20)} ${_dbgErr}</div>
         <div class="fund-modal-field">
             <label class="fund-modal-label">Amount</label>
             <div class="fund-modal-input-wrap">
