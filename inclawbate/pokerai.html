@@ -5692,10 +5692,15 @@ function _renderActionTooltip(agentId) {
       }).join(' <span style="color:#555">→</span> ');
       html += `<div style="margin-bottom:2px"><span style="color:#ccc;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">${st}:</span> ${acts}</div>`;
     }
+    // Total invested
+    const total = actions.reduce((s, a) => s + (a.amount || 0), 0);
+    if (total > 0) {
+      html += `<div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.08);font-weight:700;color:#e2e8f0;font-size:12px">Total: ${total.toLocaleString()}</div>`;
+    }
     if (result) {
       const rColor = result === 'win' ? '#22c55e' : result === 'fold' ? '#ef4444' : '#ef4444';
       const rLabel = result === 'win' ? 'Win' : result === 'fold' ? 'Fold' : 'Loss';
-      html += `<div style="margin-top:3px;font-weight:700;color:${rColor}">${rLabel}</div>`;
+      html += `<div style="font-weight:700;color:${rColor}">${rLabel}</div>`;
     }
   }
 
