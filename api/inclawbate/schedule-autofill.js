@@ -404,8 +404,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const { error } = await supabase
                 .from('agent_schedule')
                 .update({ tweet_options: opts, status: newStatus })
-                .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill');
+                .eq('id', slot_id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true, status: newStatus });
         }
