@@ -13,7 +13,7 @@ const BASESCAN_KEY = 'C6WMY6JWVYDGI9QZBEDNUH86E7A5PIZACC';
 // These are always included for inclawbate.base.eth (0x91B5C0D07859CFeAfEB67d9694121CD741F049bd)
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const KNOWN_TOKENS = [
-    { addr: '0x7ca47b141639b893c6782823c0b219f872056379', name: 'CLAWS', symbol: 'CLAWS', fee_bps: 10000, platform: 'clanker' },
+    { addr: '0x7ca47b141639b893c6782823c0b219f872056379', name: 'CLAWS', symbol: 'CLAWS', fee_bps: 10000, platform: 'self-deployed' },
     { addr: '0x623a5cfc2e2e04957373a9f45b2b2beeabf82b07', name: 'PokerAI', symbol: 'POKERAI', fee_bps: 7500, platform: 'clanker' },
     { addr: '0xb0b6e0e9da530f68d713cc03a813b506205ac808', name: 'inCLAWNCH', symbol: 'INCLAWNCH', fee_bps: 10000, platform: 'clanker' },
     { addr: '0x9f15f27e0a28d1d521211ed17fb42901e8a7a972', name: 'stu', symbol: 'STU', fee_bps: 2000, platform: 'clanker' },
