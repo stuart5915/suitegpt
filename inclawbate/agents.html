@@ -1163,6 +1163,18 @@
             <iframe id="scheduleIframe" src="" style="width:100%;border:none;min-height:600px;background:transparent"></iframe>
         </div>
 
+        <!-- ═══ MARKETING AGENTS PANEL ═══ -->
+        <div class="launch-panel" id="marketingPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F916; Marketing Agents</span>
+                <button class="launch-panel-close" onclick="closeMarketingPanel()">&times;</button>
+            </div>
+            <div style="padding:4px 0;">
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 var(--space-md);padding:0 16px;">Create AI agents that auto-post to your X account. Set a schedule, preview posts, and let them run on autopilot. Free forever.</p>
+                <div id="marketingPanelContent"></div>
+            </div>
+        </div>
+
         <!-- ═══ INCLAWBATORS PANEL ═══ -->
         <div class="launch-panel" id="inclawbatorsPanel" style="display:none">
             <div class="launch-panel-header">
@@ -1397,8 +1409,8 @@
         </div>
     </section>
 
-    <!-- ═══ MARKETING AGENTS (collapsible) ═══ -->
-    <section class="hub-collapsible" id="marketingSection">
+    <!-- ═══ MARKETING AGENTS (hidden — content moves to inline panel) ═══ -->
+    <section class="hub-collapsible" id="marketingSection" style="display:none">
         <button class="hub-collapsible-toggle" onclick="toggleMarketingSection()">
             <span>&#x1F916; Marketing Agents</span>
             <span class="hub-toggle-desc">AI auto-posting to X &mdash; free forever</span>
@@ -1945,12 +1957,7 @@ async function chatSendMessage(text) {
             fillLaunchForm(data.tool_args);
         }
         if (data.function_called === 'setup_x_agent') {
-            var ms = document.getElementById('marketingSection');
-            if (ms) {
-                ms.style.display = '';
-                if (!ms.classList.contains('open')) ms.classList.add('open');
-                ms.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            showMarketingPanel();
         }
         if (data.function_called === 'browse_inclawbators' || data.function_called === 'hire_inclawbator') {
             showInclawbatorsPanel();
@@ -2001,12 +2008,8 @@ var CHIP_ACTIONS = {
         action: function() { showSchedulePanel(); }
     },
     'Set up an AI agent for my project': {
-        reply: 'Scroll down to create your AI agent &mdash; it auto-posts on X, engages your community, and grows your project.',
-        action: function() {
-            closeAllPanels();
-            var ms = document.getElementById('marketingSection');
-            if (ms) { ms.style.display = ''; if (!ms.classList.contains('open')) ms.classList.add('open'); ms.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-        }
+        reply: 'Opening Marketing Agents &mdash; create an AI that auto-posts to X for your project.',
+        action: function() { showMarketingPanel(); }
     },
     'How is my project doing? Run a health check': {
         reply: 'To run a health check I need your token address. Type it in the chat and I\'ll pull analytics from DexScreener, staking stats, and project status.',
@@ -2136,6 +2139,7 @@ function closeAllPanels() {
     document.getElementById('inclawbatorsPanel').style.display = 'none';
     document.getElementById('myGigsPanel').style.display = 'none';
     document.getElementById('openGigsPanel').style.display = 'none';
+    document.getElementById('marketingPanel').style.display = 'none';
     document.getElementById('hubPortfolioPanel').classList.remove('open');
     // Restore flywheel default view
     var fw = document.getElementById('flywheelSection');
@@ -2184,6 +2188,25 @@ function showSchedulePanel() {
 }
 
 function closeSchedulePanel() { closeAllPanels(); }
+
+var _marketingPanelLoaded = false;
+function showMarketingPanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('marketingPanel');
+    if (!panel) return;
+    // Move marketing section content into the panel on first open
+    if (!_marketingPanelLoaded) {
+        var src = document.getElementById('marketingBody');
+        var dest = document.getElementById('marketingPanelContent');
+        if (src && dest) { dest.appendChild(src); src.style.display = 'block'; }
+        _marketingPanelLoaded = true;
+    }
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeMarketingPanel() { closeAllPanels(); }
 
 // ── Inclawbators gig panel ──
 var _gigCat = '';
