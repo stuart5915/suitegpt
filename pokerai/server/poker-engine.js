@@ -144,6 +144,9 @@ function _parsePrompt(agent) {
   else if (/\bfold\b.*\b(low|bad|weak|trash|junk|don.?t have|without)\b/.test(prompt)) { mods.foldBoost += 15; mods.raiseBoost -= 5; }
   if (/\b(only|just).*(premium|high|strong|good|pocket pair|big pair)\b/.test(prompt)) { mods.foldBoost += 15; mods.preflopTight = true; }
   if (/\b(high.?card|pocket.?pair|high.?pocket|big.?card)\b/.test(prompt)) { mods.preflopTight = true; }
+  if (/\bfold\b.*\bpreflop\b/.test(prompt) || /\bpreflop\b.*\bfold\b/.test(prompt)) { mods.preflopTight = true; mods.foldBoost += 10; }
+  if (/\b(50%|half|50 percent)\b.*\bfold\b/.test(prompt) || /\bfold\b.*\b(50%|half)\b/.test(prompt)) { mods.foldBoost += 15; }
+  if (/\bfold immediately\b/.test(prompt)) { mods.foldBoost += 15; }
 
   // Loose keywords
   if (/\b(loose|wide range|play everything|call station|never fold|don.?t fold)\b/.test(prompt)) { mods.foldBoost -= 20; mods.strengthBoost += 0.1; }
@@ -250,9 +253,9 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 
   // If can't afford to call, either all-in or fold
   if (toCall >= agent.chips) {
-    // neverAllIn: call (commit remaining chips) instead of folding if hand is decent or pot odds are good
+    // neverAllIn: only commit remaining chips with a strong hand
     if (rules.neverAllIn && promptMods.allInBoost <= 0) {
-      if (strength > 0.35 || (pot > 0 && agent.chips <= pot * 0.3)) {
+      if (strength > 0.55 || (strength > 0.4 && pot > 0 && agent.chips <= pot * 0.2)) {
         return { type: 'call', label: `Call ${agent.chips} (all chips)`, amount: agent.chips };
       }
       return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
@@ -298,9 +301,17 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
       decision = { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
     }
   }
-  // Never All-In also prevents oversized calls (>50% of stack) with weak hands
-  if (rules.neverAllIn && decision.type === 'call' && toCall > agent.chips * 0.5 && strength < 0.55) {
-    decision = { type: 'fold', label: 'Fold (too much risk)', amount: 0 };
+  // Never All-In: prevent oversized calls and any play that commits entire stack with weak hand
+  if (rules.neverAllIn) {
+    const commitPct = (decision.amount || 0) / agent.chips;
+    // Fold if calling/raising >50% of stack with a weak hand
+    if ((decision.type === 'call' || decision.type === 'raise') && commitPct > 0.5 && strength < 0.55) {
+      decision = { type: 'fold', label: 'Fold (too much risk)', amount: 0 };
+    }
+    // Fold if calling/raising would leave us with <20% of stack and hand isn't strong
+    if ((decision.type === 'call' || decision.type === 'raise') && commitPct > 0.8 && strength < 0.65) {
+      decision = { type: 'fold', label: 'Fold (protect stack)', amount: 0 };
+    }
   }
 
   // === RULE: Slow Play — sometimes trap with strong (but not monster) hands ===
