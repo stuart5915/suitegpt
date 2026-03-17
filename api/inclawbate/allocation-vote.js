@@ -22,29 +22,35 @@ const STAKING_CONTRACTS = [
 ];
 const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const COUNCIL_ROW_KEY = 'council';
-const BASE_RPC = 'https://base.llamarpc.com';
+const BASE_RPCS = [
+    'https://base.llamarpc.com',
+    'https://mainnet.base.org',
+    'https://base.meowrpc.com'
+];
 
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
 
 async function rpcCall(to, data) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    try {
-        const res = await fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }),
-            signal: controller.signal
-        });
-        clearTimeout(timeout);
-        const json = await res.json();
-        if (json.error || !json.result || json.result === '0x') return BigInt(0);
-        return BigInt(json.result);
-    } catch (err) {
-        clearTimeout(timeout);
-        console.error('RPC error for', to, err.message);
-        return BigInt(0);
+    for (const rpc of BASE_RPCS) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        try {
+            const res = await fetch(rpc, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }),
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            const json = await res.json();
+            if (json.error || !json.result || json.result === '0x') continue;
+            return BigInt(json.result);
+        } catch (err) {
+            clearTimeout(timeout);
+            console.error('RPC error for', to, 'via', rpc, err.message);
+        }
     }
+    return BigInt(0);
 }
 
 async function getClawsBalance(address) {
@@ -111,41 +117,32 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     // GET — return synthesis + individual votes + council allocation
-    // ?refresh=true triggers a one-time on-chain balance refresh for all voters
     if (req.method === 'GET') {
         try {
+            // Admin refresh: POST ?refresh=admin to re-fetch all on-chain balances
+            if (req.query.refresh === 'admin') {
+                const { data: rows } = await supabase
+                    .from('allocation_votes')
+                    .select('wallet_address, claws_balance')
+                    .neq('wallet_address', COUNCIL_ROW_KEY);
+                const results = [];
+                for (const v of (rows || [])) {
+                    const fresh = await getClawsBalance(v.wallet_address);
+                    await supabase.from('allocation_votes')
+                        .update({ claws_balance: fresh })
+                        .eq('wallet_address', v.wallet_address);
+                    results.push({ address: v.wallet_address, old: v.claws_balance, new: fresh });
+                }
+                return res.status(200).json({ refreshed: results });
+            }
+
             const { data: allRows } = await supabase
                 .from('allocation_votes')
                 .select('wallet_address, weights, claws_balance, updated_at')
                 .order('claws_balance', { ascending: false });
 
             const councilRow = (allRows || []).find(v => v.wallet_address === COUNCIL_ROW_KEY);
-            let communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
-
-            // Optional: refresh on-chain balances when ?refresh=true
-            if (req.query.refresh === 'true') {
-                const refreshed = [];
-                for (const v of communityVotes) {
-                    try {
-                        const freshBalance = await getClawsBalance(v.wallet_address);
-                        if (freshBalance !== '0') {
-                            const { error: updateErr } = await supabase.from('allocation_votes')
-                                .update({ claws_balance: freshBalance })
-                                .eq('wallet_address', v.wallet_address);
-                            if (updateErr) {
-                                console.error('DB update failed for', v.wallet_address, updateErr);
-                            }
-                            refreshed.push({ ...v, claws_balance: freshBalance });
-                        } else {
-                            refreshed.push(v);
-                        }
-                    } catch (e) {
-                        console.error('Refresh error for', v.wallet_address, e);
-                        refreshed.push(v);
-                    }
-                }
-                communityVotes = refreshed;
-            }
+            const communityVotes = (allRows || []).filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
 
             const result = computeSynthesis(communityVotes);
             const voters = communityVotes.map(v => ({
