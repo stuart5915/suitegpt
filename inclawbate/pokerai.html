@@ -6673,21 +6673,30 @@ async function doDepositPokerai() {
       btn.disabled = false; btn.innerHTML = 'Deposit POKERAI'; return;
     }
 
-    // Approve if needed
+    // Check if vault is paused
+    const vault = new ethers.Contract(POKERAI_VAULT_ADDRESS, [
+      'function deposit(uint256 tokenAmount)',
+      'function paused() view returns (bool)'
+    ], signer);
+    const isPaused = await vault.paused().catch(() => false);
+    if (isPaused) {
+      showToast('POKERAI vault is currently paused. Try again later.', 'error');
+      btn.disabled = false; btn.innerHTML = 'Deposit POKERAI'; return;
+    }
+
+    // Approve if needed — use max approval so users only approve once
     const allowance = await token.allowance(signerAddr, POKERAI_VAULT_ADDRESS);
     if (allowance < tokenAmount) {
       btn.innerHTML = '<span class="spinner"></span>Approve POKERAI...';
-      document.getElementById('depositNote').textContent = 'Step 1/2: Approve POKERAI spending';
-      const approveTx = await token.approve(POKERAI_VAULT_ADDRESS, tokenAmount);
+      document.getElementById('depositNote').textContent = 'Step 1/2: Approve POKERAI spending (one-time)';
+      const maxApproval = ethers.MaxUint256;
+      const approveTx = await token.approve(POKERAI_VAULT_ADDRESS, maxApproval);
       await approveTx.wait();
     }
 
     // Deposit to vault
     btn.innerHTML = '<span class="spinner"></span>Depositing...';
     document.getElementById('depositNote').textContent = 'Step 2/2: Confirm the deposit';
-    const vault = new ethers.Contract(POKERAI_VAULT_ADDRESS, [
-      'function deposit(uint256 tokenAmount)'
-    ], signer);
     const tx = await vault.deposit(tokenAmount);
     btn.innerHTML = '<span class="spinner"></span>Confirming...';
     document.getElementById('depositNote').textContent = 'Waiting for confirmation on Base...';
@@ -6700,8 +6709,10 @@ async function doDepositPokerai() {
     closeVault();
   } catch (e) {
     console.error('POKERAI deposit failed:', e);
-    const reason = e.reason || e.message || 'Transaction failed';
-    showToast(reason.length > 60 ? reason.slice(0, 60) + '...' : reason, 'error');
+    let reason = e.reason || e.shortMessage || e.message || 'Transaction failed';
+    if (reason.includes('user rejected') || reason.includes('ACTION_REJECTED')) reason = 'Transaction cancelled';
+    else if (reason.includes('execution reverted')) reason = 'Transaction failed — make sure you have enough POKERAI and ETH for gas on Base';
+    showToast(reason.length > 80 ? reason.slice(0, 80) + '...' : reason, 'error');
     document.getElementById('depositNote').textContent = 'Deposits POKERAI on Base and credits chips 1:1';
   }
 
