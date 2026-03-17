@@ -138,9 +138,12 @@ function _parsePrompt(agent) {
   if (/\b(very aggressive|hyper.?aggress|ultra.?aggress|max aggress)\b/.test(prompt)) mods.raiseBoost += 20;
   else if (/\b(aggressive|aggro|attack|pressure|bet big|bet heavy|raise.?a.?lot)\b/.test(prompt)) mods.raiseBoost += 10;
 
-  // Passive / tight keywords
+  // Passive / tight / fold keywords
   if (/\b(very tight|super tight|ultra tight|nit)\b/.test(prompt)) { mods.foldBoost += 20; mods.raiseBoost -= 10; }
   else if (/\b(tight|careful|cautious|conservative|passive|patient)\b/.test(prompt)) { mods.foldBoost += 10; mods.raiseBoost -= 5; }
+  else if (/\bfold\b.*\b(low|bad|weak|trash|junk|don.?t have|without)\b/.test(prompt)) { mods.foldBoost += 15; mods.raiseBoost -= 5; }
+  if (/\b(only|just).*(premium|high|strong|good|pocket pair|big pair)\b/.test(prompt)) { mods.foldBoost += 15; mods.preflopTight = true; }
+  if (/\b(high.?card|pocket.?pair|high.?pocket|big.?card)\b/.test(prompt)) { mods.preflopTight = true; }
 
   // Loose keywords
   if (/\b(loose|wide range|play everything|call station|never fold|don.?t fold)\b/.test(prompt)) { mods.foldBoost -= 20; mods.strengthBoost += 0.1; }
@@ -220,14 +223,17 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
   if (promptMods.riverBluff && communityCards.length === 5) strength += 0.12;
   strength = Math.min(0.95, Math.max(0.05, strength));
 
-  // === RULE: Tight Preflop — fold weak hands preflop (disabled in heads-up, never fold free checks) ===
-  if (rules.tightPreflop && communityCards.length === 0 && !headsUp && toCall > 0) {
+  // === RULE: Tight Preflop — fold weak hands preflop (never fold free checks) ===
+  if ((rules.tightPreflop || promptMods.preflopTight) && communityCards.length === 0 && toCall > 0) {
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
     const paired = c1 === c2;
     const highCard = Math.max(c1, c2);
+    const lowCard = Math.min(c1, c2);
     const suited = agent.hand[0].suit === agent.hand[1].suit;
-    // Only play: pairs, suited connectors 9+, any face card combo, A-x suited
-    const playable = paired || (highCard >= 14 && suited) || (highCard >= 11 && Math.min(c1, c2) >= 10) || (highCard >= 13 && Math.min(c1, c2) >= 9);
+    // Only play: pairs, suited A-x, two face cards, K-9+ suited
+    // In heads-up: also allow any suited, any A-x, connected 7+
+    let playable = paired || (highCard >= 14 && suited) || (highCard >= 11 && lowCard >= 10) || (highCard >= 13 && lowCard >= 9);
+    if (headsUp) playable = playable || suited || highCard >= 14 || (highCard >= 9 && Math.abs(highCard - lowCard) <= 2);
     if (!playable) {
       return { type: 'fold', label: 'Fold (tight)', amount: 0 };
     }
@@ -291,6 +297,10 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     } else {
       decision = { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
     }
+  }
+  // Never All-In also prevents oversized calls (>50% of stack) with weak hands
+  if (rules.neverAllIn && decision.type === 'call' && toCall > agent.chips * 0.5 && strength < 0.55) {
+    decision = { type: 'fold', label: 'Fold (too much risk)', amount: 0 };
   }
 
   // === RULE: Slow Play — sometimes trap with strong (but not monster) hands ===
@@ -374,19 +384,23 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
     return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   }
 
+  // Dynamic fold threshold: higher foldPct = tighter (higher strength needed to call)
+  // foldPct 0 → threshold 0.25, foldPct 60 → threshold 0.45, foldPct 100 → threshold 0.55
+  const foldThreshold = 0.25 + (agent.foldPct || 30) * 0.003;
+
   if (agent.style === 'aggressive') {
     if (strength > 0.4 && r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.25 || r < 10) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > Math.max(0.25, foldThreshold - 0.1)) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
-    if (strength > 0.5 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.4) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > foldThreshold + 0.1 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > foldThreshold) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
     if (r < agent.bluffPct * 0.4 && agent.chips > raiseAmt) return { type: 'raise', label: `Bluff Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.3 || r < 20) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > Math.max(0.25, foldThreshold - 0.05)) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'mathematical') {
@@ -404,7 +418,7 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
   }
   // balanced
   if (strength > 0.5 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-  if (strength > 0.35 || r < 10) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+  if (strength > foldThreshold) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   return { type: 'fold', label: 'Fold', amount: 0 };
 }
 
