@@ -1168,6 +1168,20 @@
             <iframe id="scheduleIframe" src="" style="width:100%;border:none;min-height:600px;background:transparent"></iframe>
         </div>
 
+        <!-- ═══ FEE REPORT PANEL ═══ -->
+        <div class="launch-panel" id="feeReportPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F4B0; Fee Report</span>
+                <button class="launch-panel-close" onclick="closeFeePanel()">&times;</button>
+            </div>
+            <div class="gig-panel-body">
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 var(--space-md);">See how much WETH your tokens have earned from trading fees. Connect your wallet to load your report.</p>
+                <div id="feeReportContent">
+                    <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem;">Connect your wallet to see your fee report.</div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ HEALTH CHECK PANEL ═══ -->
         <div class="launch-panel" id="healthCheckPanel" style="display:none">
             <div class="launch-panel-header">
@@ -1319,6 +1333,7 @@
                 <button class="chat-prompt-chip" data-prompt="I want to promote my project on Inclawbate's X">&#x1F4E3; Promote</button>
                 <button class="chat-prompt-chip" data-prompt="Set up an AI agent for my project">&#x1F916; X agent</button>
                 <button class="chat-prompt-chip" data-prompt="How is my project doing? Run a health check">&#x1F4CA; Health check</button>
+                <button class="chat-prompt-chip" data-prompt="Show my fee earnings">&#x1F4B0; My earnings</button>
             </div>
             <div class="chip-group">
                 <span class="chip-group-label">Hire</span>
@@ -2064,6 +2079,10 @@ var CHIP_ACTIONS = {
     'Show me staking stats and APY': {
         reply: 'Opening staking stats...',
         action: function() { closeAllPanels(); window.open('/stake', '_blank'); }
+    },
+    'Show my fee earnings': {
+        reply: 'Loading your fee report...',
+        action: function() { showFeePanel(); }
     }
 };
 
@@ -2164,6 +2183,7 @@ function closeAllPanels() {
     document.getElementById('openGigsPanel').style.display = 'none';
     document.getElementById('marketingPanel').style.display = 'none';
     document.getElementById('healthCheckPanel').style.display = 'none';
+    document.getElementById('feeReportPanel').style.display = 'none';
     document.getElementById('hubPortfolioPanel').classList.remove('open');
     // Restore flywheel default view
     var fw = document.getElementById('flywheelSection');
@@ -2256,6 +2276,84 @@ function showHealthPanel() {
 }
 
 function closeHealthPanel() { closeAllPanels(); }
+
+// ── Fee report panel ──
+function showFeePanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('feeReportPanel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadFeeReport();
+}
+
+function closeFeePanel() { closeAllPanels(); }
+
+async function loadFeeReport() {
+    var content = document.getElementById('feeReportContent');
+    var wallet = '';
+    try {
+        var prof = JSON.parse(localStorage.getItem('inclawbate_profile') || '{}');
+        wallet = prof.wallet_address || '';
+    } catch(e) {}
+    if (!wallet) {
+        content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem;">Connect your wallet first to see your fee earnings.</div>';
+        return;
+    }
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.78rem;">Loading fee data from chain...</div>';
+
+    try {
+        var res = await fetch('/api/inclawbate/fee-report?wallet=' + encodeURIComponent(wallet));
+        var data = await res.json();
+        if (data.error) {
+            content.innerHTML = '<div style="text-align:center;padding:20px;color:#f87171;font-size:0.82rem;">' + escH(data.error) + '</div>';
+            return;
+        }
+
+        var html = '';
+
+        // Summary card
+        html += '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);margin-bottom:12px;">';
+        html += '<div style="font-weight:800;font-size:1rem;color:var(--text-primary);margin-bottom:12px;">Your Earnings</div>';
+        html += '<div class="hc-grid">';
+        html += '<div class="hc-stat"><div class="hc-stat-label">Pending WETH</div><div class="hc-stat-val">' + (data.pending_weth || 0) + ' ETH</div></div>';
+        html += '<div class="hc-stat"><div class="hc-stat-label">Pending USD</div><div class="hc-stat-val" style="color:#4ade80">$' + _fmtNum(data.pending_usd || 0) + '</div></div>';
+        html += '<div class="hc-stat"><div class="hc-stat-label">Est. Daily</div><div class="hc-stat-val">$' + _fmtNum(data.total_daily_usd || 0) + '</div></div>';
+        html += '<div class="hc-stat"><div class="hc-stat-label">Projects</div><div class="hc-stat-val">' + (data.total_projects || 0) + '</div></div>';
+        html += '</div>';
+
+        if (data.pending_weth > 0) {
+            html += '<div style="margin-top:12px;text-align:center;">';
+            html += '<a href="/dashboard#tokens" style="display:inline-block;padding:8px 20px;background:var(--accent-gradient);color:#fff;border-radius:999px;font-size:0.78rem;font-weight:700;text-decoration:none;">Claim on Dashboard</a>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        // Per-token breakdown
+        if (data.tokens && data.tokens.length) {
+            html += '<div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);margin:12px 0 8px;">Per-Token Breakdown</div>';
+            data.tokens.forEach(function(t) {
+                html += '<div style="background:var(--bg-card);border-radius:10px;padding:12px;border:1px solid var(--border-subtle);margin-bottom:8px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                html += '<div><span style="font-weight:800;color:var(--text-primary);">$' + escH(t.token_symbol) + '</span> <span style="font-size:0.72rem;color:var(--text-dim);">' + escH(t.token_name) + '</span></div>';
+                html += '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">' + t.fee_split_pct + '% fee share</div>';
+                html += '</div>';
+                html += '<div style="display:flex;gap:16px;margin-top:8px;font-family:var(--font-mono);font-size:0.72rem;">';
+                html += '<div><span style="color:var(--text-dim);">24h Vol:</span> <span style="color:var(--text-secondary);">$' + _fmtNum(t.volume_24h) + '</span></div>';
+                html += '<div><span style="color:var(--text-dim);">Est/day:</span> <span style="color:#4ade80;">$' + _fmtNum(t.estimated_daily_usd) + '</span></div>';
+                html += '</div>';
+                html += '</div>';
+            });
+        } else {
+            html += '<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:0.78rem;">No active tokens found. <a href="javascript:void(0)" onclick="showLaunchPanel()" style="color:var(--lobster-400);">Launch your first token</a> to start earning.</div>';
+        }
+
+        content.innerHTML = html;
+    } catch(e) {
+        content.innerHTML = '<div style="text-align:center;padding:20px;color:#f87171;font-size:0.82rem;">Failed to load fee data. Try again.</div>';
+    }
+}
 
 async function runHealthCheck() {
     var addr = (document.getElementById('healthTokenAddr').value || '').trim();
