@@ -604,6 +604,48 @@
 
         renderWallet();
 
+        // Verify stored wallet matches the actual connected provider account.
+        // Fixes stale sessions where localStorage has an old wallet address
+        // (e.g. Coinbase Wallet switching accounts or caching old sessions).
+        (async function() {
+            try {
+                var storedProfile = null;
+                try { storedProfile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null'); } catch(e) {}
+                if (!storedProfile || !storedProfile.wallet_address) return;
+                if (!localStorage.getItem('inclawbate_token')) return;
+
+                // Wait for wallet provider
+                var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+                if (!eth && window._awaitProvider) eth = await window._awaitProvider();
+                if (!eth) return;
+
+                // Silent check — no popup, just reads already-connected accounts
+                var accounts = await eth.request({ method: 'eth_accounts' });
+                if (!accounts || accounts.length === 0) return;
+
+                var current = accounts[0].toLowerCase();
+                var stored = storedProfile.wallet_address.toLowerCase();
+
+                if (current !== stored) {
+                    console.log('[nav-auth] Wallet mismatch: stored=' + stored.slice(0,10) + ' actual=' + current.slice(0,10) + ' — re-authing');
+                    var resp = await fetch('/api/inclawbate/wallet-connect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address: accounts[0] })
+                    });
+                    var data = await resp.json();
+                    if (data.success) {
+                        localStorage.setItem('inclawbate_token', data.token);
+                        localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+                        localStorage.setItem('_stake_wallet', accounts[0]);
+                        localStorage.setItem('connectedWallet', accounts[0]);
+                        document.cookie = 'inclawbate_token=' + encodeURIComponent(data.token) + '; path=/; max-age=2592000; SameSite=Lax';
+                        renderWallet();
+                    }
+                }
+            } catch(e) { console.log('[nav-auth] Wallet verify error:', e.message); }
+        })();
+
         // Auto-reconnect: if no inclawbate session but Privy has one, re-auth
         if (!localStorage.getItem('inclawbate_token') && window.PrivyAuth) {
             window.PrivyAuth.getExistingSession().then(function(address) {
