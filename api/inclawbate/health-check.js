@@ -18,17 +18,30 @@ async function rpcRead(to, data) {
     } catch (e) { return 0; }
 }
 
+async function storageRead(contract, slot) {
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getStorageAt', params: [contract, slot, 'latest'], id: 1 })
+        });
+        const result = await res.json();
+        if (result.error || !result.result || result.result === '0x') return 0;
+        return Number(BigInt(result.result)) / 1e18;
+    } catch (e) { return 0; }
+}
+
 function balanceOfData(addr) {
     return '0x70a08231000000000000000000000000' + addr.replace('0x', '').toLowerCase();
 }
 
 async function fetchClawsStaking(clawsPrice) {
     try {
-        // Total CLAWS in staking contract
+        // Total CLAWS in staking contract (balanceOf = eth_call)
         const contractTotal = await rpcRead(CLAWS_ADDRESS, balanceOfData(CLAWS_STAKING));
-        // Storage slot 6 = _totalSupply (user-staked amount, Synthetix layout)
-        const userStaked = await rpcRead(CLAWS_STAKING, '0x0000000000000000000000000000000000000000000000000000000000000006');
-        // rewardRate() — slot 0x7b0a47ee
+        // Storage slot 6 = _totalSupply (user-staked amount, Synthetix layout) — must use eth_getStorageAt
+        const userStaked = await storageRead(CLAWS_STAKING, '0x6');
+        // rewardRate() function call
         const rewardRate = await rpcRead(CLAWS_STAKING, '0x7b0a47ee');
 
         const dailyRewards = rewardRate * 86400;
