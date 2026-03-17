@@ -167,6 +167,73 @@
             background: var(--seafoam-400);
         }
 
+        /* ── Quick Tools Grid ── */
+        .tools-quick {
+            margin-bottom: var(--space-3xl);
+        }
+        .tools-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+        }
+        .tool-card-v2 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 20px 12px 16px;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tool-card-v2:hover {
+            transform: translateY(-3px);
+            border-color: var(--lobster-400);
+            box-shadow: 0 6px 24px -4px hsla(9, 52%, 56%, 0.18);
+        }
+        .tool-card-v2.active {
+            border-color: var(--lobster-400);
+            background: hsla(9, 52%, 56%, 0.06);
+            box-shadow: 0 0 0 3px hsla(9, 52%, 56%, 0.12);
+        }
+        .tqc-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+        .tqc-label {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+        }
+        .tqc-hint {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 0.02em;
+        }
+        @media (max-width: 700px) {
+            .tools-quick-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .tool-card-v2 {
+                padding: 16px 8px 12px;
+            }
+            .tqc-icon { font-size: 1.3rem; }
+            .tqc-label { font-size: 0.78rem; }
+            .tqc-hint { font-size: 0.6rem; }
+        }
+        @media (max-width: 400px) {
+            .tools-quick-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         /* ── Flywheel ── */
         @property --fw-angle {
             syntax: '<angle>';
@@ -543,25 +610,28 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 12px 16px;
-            border-radius: var(--radius-md, 10px);
-            border: 2px solid var(--border-default);
-            background: transparent;
+            padding: 14px 16px;
+            min-height: 48px;
+            border-radius: var(--radius-lg, 12px);
+            border: 2px solid var(--border-subtle);
+            background: var(--bg-elevated);
             color: var(--text-secondary);
             font-family: var(--font-display);
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s, color 0.2s;
+            transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
         .chain-btn:hover {
             border-color: rgba(99, 102, 241, 0.4);
-            background: rgba(99, 102, 241, 0.05);
+            background: rgba(99, 102, 241, 0.06);
         }
         .chain-btn.selected {
             border-color: #6366f1;
             background: rgba(99, 102, 241, 0.1);
             color: var(--text-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
         .chain-btn svg {
             flex-shrink: 0;
@@ -624,21 +694,25 @@
         }
         .allocation-tier {
             flex: 1;
-            min-width: 70px;
-            padding: 10px 6px;
+            min-width: 60px;
+            min-height: 44px;
+            padding: 12px 8px;
             text-align: center;
             background: var(--bg-elevated);
             border: 1.5px solid var(--border-subtle);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-lg, 12px);
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
         }
         .allocation-tier:hover {
             border-color: var(--border-default);
+            transform: translateY(-1px);
         }
         .allocation-tier.selected {
             border-color: var(--lobster-400);
             background: hsla(9, 52%, 56%, 0.08);
+            box-shadow: 0 0 0 3px hsla(9, 52%, 56%, 0.1);
         }
         .allocation-tier-pct {
             font-family: var(--font-display);
@@ -690,6 +764,79 @@
             border: 1px solid hsla(40, 70%, 55%, 0.15);
             border-radius: var(--radius-md);
             line-height: 1.45;
+        }
+
+        /* ── Incubation Tier Cards ── */
+        .inc-tier-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: var(--space-md);
+        }
+        .inc-tier-card {
+            padding: 16px 14px;
+            border: 2px solid var(--border-default);
+            border-radius: var(--radius-lg, 12px);
+            cursor: pointer;
+            text-align: center;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 48px;
+        }
+        .inc-tier-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+        .inc-tier-card.selected {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .inc-tier-name {
+            display: block;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .inc-tier-desc {
+            display: block;
+            font-family: var(--font-body);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* ── Mobile drawer refinements ── */
+        @media (max-width: 520px) {
+            .tool-drawer-inner {
+                width: 96%;
+                max-height: 90vh;
+                padding: var(--space-lg);
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .chain-selector {
+                flex-wrap: wrap;
+            }
+            .chain-btn {
+                min-width: calc(50% - 4px);
+                flex: 1 1 calc(50% - 4px);
+            }
+            .allocation-tiers {
+                gap: 6px;
+            }
+            .allocation-tier {
+                min-width: 50px;
+            }
+            .inc-tier-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Success state */
@@ -1517,6 +1664,7 @@
             gap: 6px;
             font-family: var(--font-display);
             font-weight: 700;
+            min-height: 40px;
             font-size: 0.85rem;
             color: var(--lobster-300);
             text-decoration: none;
@@ -2021,7 +2169,7 @@
                 token launch, staking, app building, and promotion. Follow the steps below to go live.
             </p>
             <div class="hero-actions">
-                <a href="#journey" class="hero-cta" style="text-decoration:none">
+                <a href="#tools-quick" class="hero-cta" style="text-decoration:none">
                     Start Building &darr;
                 </a>
                 <button id="walletConnectBtn" class="hero-cta" style="background:var(--bg-elevated);color:var(--text-primary);box-shadow:none;border:1px solid var(--border-default);font-size:0.88rem;padding:12px 24px;">
@@ -2032,6 +2180,44 @@
                     <span class="wallet-addr"></span>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- ═══ Quick Tools Grid ═══ -->
+    <section class="tools-quick section" id="tools-quick">
+        <p class="section-label">Tools</p>
+        <h2 class="section-title">What do you want to do?</h2>
+        <div class="tools-quick-grid">
+            <button class="tool-card-v2" data-tool="launch">
+                <span class="tqc-icon">&#128640;</span>
+                <span class="tqc-label">Launch Token</span>
+                <span class="tqc-hint">Base &middot; Solana &middot; Cardano</span>
+            </button>
+            <button class="tool-card-v2" data-tool="pool">
+                <span class="tqc-icon">&#128184;</span>
+                <span class="tqc-label">Stake Pool</span>
+                <span class="tqc-hint">Free &mdash; just gas</span>
+            </button>
+            <button class="tool-card-v2" data-tool="incubate">
+                <span class="tqc-icon">&#129438;</span>
+                <span class="tqc-label">Incubation</span>
+                <span class="tqc-hint">Dev &amp; marketing help</span>
+            </button>
+            <button class="tool-card-v2" data-tool="agent">
+                <span class="tqc-icon">&#129302;</span>
+                <span class="tqc-label">AI Agent</span>
+                <span class="tqc-hint">Auto-post on X</span>
+            </button>
+            <button class="tool-card-v2" data-tool="disperse">
+                <span class="tqc-icon">&#128176;</span>
+                <span class="tqc-label">Disperse</span>
+                <span class="tqc-hint">Swap &amp; multi-send</span>
+            </button>
+            <a href="/build" class="tool-card-v2" data-tool="build" style="text-decoration:none">
+                <span class="tqc-icon">&#128736;</span>
+                <span class="tqc-label">Build App</span>
+                <span class="tqc-hint">AI app builder</span>
+            </a>
         </div>
     </section>
 
@@ -2341,15 +2527,15 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Choose your tier</label>
-                <div id="incTierCards" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:var(--space-md);">
-                    <div class="inc-tier-card selected" data-tier="incubation" onclick="window.IncApp.selectTier('incubation')" style="padding:14px; border:2px solid #6366f1; border-radius:12px; cursor:pointer; text-align:center; background:rgba(99,102,241,0.08); transition: border-color 0.2s, background 0.2s;">
-                        <div style="font-weight:700; color:var(--text-primary); font-size:0.9rem; margin-bottom:4px;">Incubation</div>
-                        <div style="color:var(--text-dim); font-size:0.72rem; line-height:1.4;">One-time build &mdash; app, fix, or custom feature. We'll quote after review.</div>
-                    </div>
-                    <div class="inc-tier-card" data-tier="super" onclick="window.IncApp.selectTier('super')" style="padding:14px; border:2px solid var(--border-default); border-radius:12px; cursor:pointer; text-align:center; transition: border-color 0.2s, background 0.2s;">
-                        <div style="font-weight:700; color:var(--text-primary); font-size:0.9rem; margin-bottom:4px;">Super Incubation</div>
-                        <div style="color:var(--text-dim); font-size:0.72rem; line-height:1.4;">Ongoing dev partnership &mdash; continuous updates, new features, dedicated support.</div>
-                    </div>
+                <div id="incTierCards" class="inc-tier-grid">
+                    <button class="inc-tier-card selected" data-tier="incubation" onclick="window.IncApp.selectTier('incubation')">
+                        <span class="inc-tier-name">Incubation</span>
+                        <span class="inc-tier-desc">One-time build &mdash; app, fix, or custom feature. We'll quote after review.</span>
+                    </button>
+                    <button class="inc-tier-card" data-tier="super" onclick="window.IncApp.selectTier('super')">
+                        <span class="inc-tier-name">Super Incubation</span>
+                        <span class="inc-tier-desc">Ongoing dev partnership &mdash; continuous updates, new features, dedicated support.</span>
+                    </button>
                 </div>
             </div>
             <div class="form-group">
@@ -2611,7 +2797,7 @@
                         Every buy &amp; sell has a 1% fee: 80% goes to you, 20% grows the CLAWS LP.
                         Your token is live and trading instantly.
                     </p>
-                    <a href="/tools?open=launch" class="journey-step-cta">Launch Token &rarr;</a>
+                    <a href="javascript:void(0)" onclick="openToolDrawer('launch')" class="journey-step-cta">Launch Token &rarr;</a>
                 </div>
             </div>
 
@@ -2623,7 +2809,7 @@
                         Give your holders a reason to hold. Staking pools auto-distribute CLAWS rewards to stakers &mdash;
                         passive income from day one. Deploying a pool is free (just gas).
                     </p>
-                    <a href="/tools?open=pool" class="journey-step-cta">Create Stake Pool &rarr;</a>
+                    <a href="javascript:void(0)" onclick="openToolDrawer('pool')" class="journey-step-cta">Create Stake Pool &rarr;</a>
                 </div>
             </div>
 
@@ -2649,7 +2835,7 @@
                         get discovered by users, and unlock incubation support &mdash; marketing help,
                         development, and an AI agent.
                     </p>
-                    <a href="/tools?open=incubate" class="journey-step-cta">Request Incubation &rarr;</a>
+                    <a href="javascript:void(0)" onclick="openToolDrawer('incubate')" class="journey-step-cta">Request Incubation &rarr;</a>
                 </div>
             </div>
 
