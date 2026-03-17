@@ -1,5 +1,24 @@
 // Inclawbate — Nav: Mobile Menu + Wallet Connect + Wallet Selector Modal
 
+// ?reset param: nuke all cached wallet/auth state (for stuck sessions)
+(function() {
+    if (new URLSearchParams(window.location.search).has('reset')) {
+        ['inclawbate_token','inclawbate_profile','connectedWallet','_stake_wallet','privy_login_info'].forEach(function(k) {
+            try { localStorage.removeItem(k); } catch(e) {}
+        });
+        try {
+            Object.keys(localStorage).forEach(function(k) {
+                if (k.startsWith('wc@') || k.startsWith('walletconnect') || k.startsWith('@walletconnect')) localStorage.removeItem(k);
+            });
+        } catch(e) {}
+        document.cookie = 'inclawbate_token=; path=/; max-age=0';
+        // Strip ?reset from URL and reload clean
+        var url = new URL(window.location);
+        url.searchParams.delete('reset');
+        window.location.replace(url.toString());
+    }
+})();
+
 // EIP-6963 polyfill: discover wallets (Base Wallet, MetaMask, Rabby, etc.)
 // If window.ethereum is missing, assign the first discovered provider so all code works.
 (function() {
