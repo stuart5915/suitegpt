@@ -24,7 +24,7 @@ const VALID_HOURS = [1, 13, 16, 19, 22]; // Peak X engagement: 9AM, 12PM, 3PM, 6
 
 const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 // Editors can edit/cancel slots but NOT approve/reject
-const EDITOR_WALLETS = [];
+const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655']; // @FreefoRaLLey
 
 // ── Slot sanitizer ──
 
