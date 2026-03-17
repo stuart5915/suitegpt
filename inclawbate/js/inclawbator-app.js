@@ -246,19 +246,22 @@ async function connectWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Auto-connect: mobile inside wallet browser, or desktop with 1 provider / legacy
-    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+    // Always show wallet selector so user can verify which account connects.
+    // Fixes Coinbase Wallet multi-account issue where wrong wallet auto-loads.
+    if (window.showWalletSelector) {
+        var selected = await window.showWalletSelector();
+        if (selected && selected.provider) eth = selected.provider;
+        else if (selected && selected.address) {
+            state.wallet = selected.address.toLowerCase();
+            state.isAdmin = state.wallet === SUPER_ADMIN;
+            return;
+        }
+    } else if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
         eth = window.ethereum || window.phantom.ethereum;
     } else if (!isMobile && providers.length === 1) {
         eth = providers[0].provider;
-    } else if (!isMobile && providers.length > 1) {
-        // Prefer MetaMask when multiple EVM providers detected (e.g. MetaMask + Phantom)
-        var mm = providers.find(function(p) { return p.info && p.info.name === 'MetaMask'; });
-        eth = mm ? mm.provider : (window.showWalletSelector ? await window.showWalletSelector() : providers[0].provider);
     } else if (!isMobile && providers.length === 0 && window.ethereum) {
         eth = window.ethereum;
-    } else if (window.showWalletSelector) {
-        eth = await window.showWalletSelector();
     } else {
         eth = window.ethereum;
     }

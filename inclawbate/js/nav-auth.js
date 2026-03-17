@@ -454,11 +454,17 @@
                 });
             } catch(e) {}
             // Revoke wallet permissions so the picker shows again on next connect
-            var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
-            if (eth) {
+            // Try all discovered providers (MetaMask, Coinbase, etc.)
+            var allProviders = [];
+            if (window.ethereum) allProviders.push(window.ethereum);
+            if (window.phantom && window.phantom.ethereum && window.phantom.ethereum !== window.ethereum) allProviders.push(window.phantom.ethereum);
+            (window._eip6963Providers || []).forEach(function(p) {
+                if (p.provider && allProviders.indexOf(p.provider) === -1) allProviders.push(p.provider);
+            });
+            for (var i = 0; i < allProviders.length; i++) {
                 try {
-                    await eth.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
-                } catch(e) { /* Not all wallets support this */ }
+                    await allProviders[i].request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
+                } catch(e) { /* Not all wallets support this — Coinbase Wallet may ignore it */ }
             }
             renderWallet();
             window.location.reload();

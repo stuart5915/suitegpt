@@ -371,7 +371,7 @@ function stakeModal(opts) {
     });
 }
 
-function stakeToast(msg, type) {
+function stakeToast(msg, type, duration) {
     var container = document.getElementById('stakeToastContainer');
     if (!container) return;
     var toast = document.createElement('div');
@@ -383,7 +383,7 @@ function stakeToast(msg, type) {
     setTimeout(function() {
         toast.classList.add('hiding');
         setTimeout(function() { toast.remove(); }, 300);
-    }, 4000);
+    }, duration || 4000);
 }
 
 
@@ -1023,14 +1023,9 @@ async function connectPoolWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Auto-connect: mobile inside wallet browser, or desktop with 1 provider / legacy
-    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-        eth = window.ethereum || window.phantom.ethereum;
-    } else if (!isMobile && providers.length === 1) {
-        eth = providers[0].provider;
-    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-        eth = window.ethereum || window.phantom.ethereum;
-    } else if (window.showWalletSelector) {
+    // Always show wallet selector so user can verify which account connects.
+    // Fixes Coinbase Wallet multi-account issue where wrong wallet auto-loads.
+    if (window.showWalletSelector) {
         var selected = await window.showWalletSelector();
         if (selected && selected.provider) eth = selected.provider;
         else if (selected && selected.address) {
@@ -1042,6 +1037,13 @@ async function connectPoolWallet() {
             }
             return selected.address;
         }
+    } else if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        // Fallback if wallet selector unavailable
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
     }
 
     // Last resort: open WalletKit modal if no provider found
@@ -1140,6 +1142,11 @@ async function fetchPoolUserData(addr, pool, key) {
         document.getElementById('posEarned').innerHTML = fmt(earnedAmount) + ' ' + earnedTicker;
     } else {
         document.getElementById('poolPositionSection').classList.remove('visible');
+    }
+
+    // Hint if wallet has zero balance + zero staked (likely wrong account connected)
+    if (walletBalance === 0 && stakedAmount === 0 && earnedAmount === 0) {
+        stakeToast('0 ' + pool.ticker + ' found. Wrong wallet? Switch your active account in your wallet app settings, then reconnect.', 'info', 8000);
     }
 
     // Also refresh stats
@@ -2282,22 +2289,34 @@ async function init() {
         }
     });
 
-    // Listen for MetaMask account switches
-    if (window.ethereum && window.ethereum.on) {
-        window.ethereum.on('accountsChanged', function(accounts) {
-            if (accounts.length > 0) {
-                walletAddr = accounts[0];
-                try {
-                    localStorage.setItem('_stake_wallet', walletAddr);
-                    localStorage.setItem('connectedWallet', walletAddr);
-                } catch(e) {}
-                if (currentPoolKey && POOLS[currentPoolKey]) {
-                    onPoolWalletConnected(walletAddr, POOLS[currentPoolKey], currentPoolKey);
+    // Listen for account switches on all available providers (MetaMask, Coinbase, etc.)
+    function listenAccountChanges(provider) {
+        if (provider && typeof provider.on === 'function') {
+            provider.on('accountsChanged', function(accounts) {
+                if (accounts.length > 0) {
+                    walletAddr = accounts[0];
+                    _connectedProvider = provider;
+                    try {
+                        localStorage.setItem('_stake_wallet', walletAddr);
+                        localStorage.setItem('connectedWallet', walletAddr);
+                    } catch(e) {}
+                    if (currentPoolKey && POOLS[currentPoolKey]) {
+                        onPoolWalletConnected(walletAddr, POOLS[currentPoolKey], currentPoolKey);
+                    }
+                    window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: walletAddr } }));
+                } else {
+                    // User disconnected all accounts
+                    disconnectPoolWallet();
                 }
-                window.dispatchEvent(new CustomEvent('navAuthChanged', { detail: { wallet: walletAddr } }));
-            }
-        });
+            });
+        }
     }
+    // Listen on window.ethereum
+    listenAccountChanges(window.ethereum);
+    // Also listen on each EIP-6963 discovered provider (catches Coinbase, Base Wallet, etc.)
+    (window._eip6963Providers || []).forEach(function(p) {
+        if (p.provider !== window.ethereum) listenAccountChanges(p.provider);
+    });
 
     // Listen for popstate
     window.addEventListener('popstate', routeApp);
