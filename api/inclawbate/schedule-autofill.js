@@ -11,6 +11,8 @@ const supabase = createClient(
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+// Editors can generate, edit, delete drafts — but NOT approve/reject
+const EDITOR_WALLETS = [];
 const VALID_HOURS = [1, 13, 16, 19, 22];
 
 // Content pillars by day of week (0=Sun)
@@ -313,19 +315,18 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             }
         }
 
-        // ── Admin-only actions below ──
-
-        // Auth check — admin only
+        // ── Auth check — admin or editor ──
         const authHeader = req.headers.authorization;
         const cronSecret = process.env.CRON_SECRET;
         let isAdmin = false;
+        let isEditor = false;
 
-        // Allow cron auth
+        // Allow cron auth (admin level)
         if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
             isAdmin = true;
         }
 
-        // Allow admin wallet via JWT (same auth as agent-schedule.js)
+        // Check wallet role via JWT
         if (!isAdmin && authHeader?.startsWith('Bearer ')) {
             try {
                 const { authenticateRequest } = await import('./x-callback.js');
@@ -336,14 +337,14 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
                         .select('wallet_address')
                         .eq('id', user.sub)
                         .single();
-                    if (profile && ADMIN_WALLETS.includes(profile.wallet_address?.toLowerCase())) {
-                        isAdmin = true;
-                    }
+                    const w = profile?.wallet_address?.toLowerCase();
+                    if (w && ADMIN_WALLETS.includes(w)) isAdmin = true;
+                    else if (w && EDITOR_WALLETS.includes(w)) isEditor = true;
                 }
             } catch(e) {}
         }
 
-        if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
+        if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required' });
 
         if (action === 'generate') {
             const account = req.body.account || 'inclawbator';
@@ -363,6 +364,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'approve') {
+            if (!isAdmin) return res.status(403).json({ error: 'Only admin can approve tweets' });
             const { slot_id } = req.body;
             const { error } = await supabase
                 .from('agent_schedule')
@@ -562,6 +564,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'approve_all') {
+            if (!isAdmin) return res.status(403).json({ error: 'Only admin can approve tweets' });
             const { date: approveDate, account: approveAccount } = req.body;
             if (!approveDate) return res.status(400).json({ error: 'date required' });
             const dayStart = approveDate + 'T00:00:00Z';

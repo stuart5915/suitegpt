@@ -922,6 +922,11 @@
     'use strict';
 
     var FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+    var EDITOR_WALLETS = [];
+
+    function _isAdmin() { return FREE_WALLETS.indexOf(_userWallet) !== -1; }
+    function _isEditor() { return EDITOR_WALLETS.indexOf(_userWallet) !== -1; }
+    function _hasEditAccess() { return _isAdmin() || _isEditor(); }
 
     var INCLAWBATOR_PILLARS = [
         { name: 'Weekly Recap',        emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next', angles: ['What launched this week', 'Stats that surprised you', 'Sneak peek at next week', 'Biggest win this week'] },
@@ -1066,19 +1071,19 @@
         var badge = document.getElementById('pillarImageBadge');
         badge.style.display = p.needsImage ? 'inline-block' : 'none';
 
-        // Show admin controls
-        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        // Show editor/admin controls
+        var canEdit = _hasEditAccess();
         var btn = document.getElementById('autofillBtn');
-        btn.style.display = isAdmin ? 'inline-flex' : 'none';
+        btn.style.display = canEdit ? 'inline-flex' : 'none';
         var adminBanner = document.getElementById('adminBanner');
-        if (adminBanner) adminBanner.style.display = isAdmin ? '' : 'none';
+        if (adminBanner) adminBanner.style.display = canEdit ? '' : 'none';
 
-        // Show approve-all button if there are draft slots
+        // Show approve-all button only for admin (not editors)
         var hasDrafts = _schedSlots.some(function(s) {
             return s.booked_by_wallet === 'system-autofill' && (s.status === 'needs_review' || s.status === 'needs_image');
         });
         var approveBtn = document.getElementById('approveAllBtn');
-        approveBtn.style.display = (isAdmin && hasDrafts) ? 'inline-flex' : 'none';
+        approveBtn.style.display = (_isAdmin() && hasDrafts) ? 'inline-flex' : 'none';
     }
 
     function renderDayStrip() {
@@ -1196,7 +1201,6 @@
                 html += '</div>';
 
                 var hasImage = !!slotOpts.image_url;
-                var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
 
                 // Image area — always show thumbnail if image attached
                 if (hasImage) {
@@ -1216,14 +1220,18 @@
                     html += '<span class="sched-tag sched-tag--draft">review</span>';
                 }
 
-                // Admin actions
-                if (isAdmin && !isPast && !isPosted) {
+                // Admin/editor actions
+                if (_hasEditAccess() && !isPast && !isPosted) {
                     html += '<div class="sched-draft-actions">';
-                    if (isDraft) {
-                        html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
-                    } else if (isScheduled) {
-                        html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
+                    // Approve/unapprove — admin only
+                    if (_isAdmin()) {
+                        if (isDraft) {
+                            html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
+                        } else if (isScheduled) {
+                            html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
+                        }
                     }
+                    // Edit, regen, delete — admin + editors
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')" title="Edit tweet text">\u270E;</button>';
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._regenSlot(\'' + booked.id + '\')" title="Regenerate tweet">\u21BB</button>';
                     html += '<button class="sched-draft-btn sched-draft-btn--delete" onclick="event.stopPropagation();window._deleteSlot(\'' + booked.id + '\')" title="Delete this draft">\u2715</button>';
@@ -1484,7 +1492,8 @@
             return;
         }
 
-        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
+        var isAdmin = _isAdmin();
+        var canEdit = _hasEditAccess();
         var tweetText = (document.getElementById('schedBookTweet').value || '').trim();
         if (!tweetText) {
             document.getElementById('schedBookError').textContent = 'Write your tweet first';
@@ -1492,8 +1501,8 @@
             return;
         }
 
-        // Enforce max 3 active bookings per user (admins exempt)
-        if (!isAdmin) {
+        // Enforce max 3 active bookings per user (admins/editors exempt)
+        if (!canEdit) {
             var activeBookings = _schedSlots.filter(function(s) {
                 return s.booked_by_wallet === _userWallet && (s.status === 'scheduled' || s.status === 'pending_review') && new Date(s.scheduled_at) > new Date();
             });
@@ -2002,12 +2011,11 @@
         });
     };
 
-    // ── Admin Review Queue ──
+    // ── Review Queue (visible to admin + editors) ──
     async function loadReviewQueue() {
         var section = document.getElementById('reviewQueueSection');
         if (!section) return;
-        var isAdmin = FREE_WALLETS.indexOf(_userWallet) !== -1;
-        if (!isAdmin) { section.style.display = 'none'; return; }
+        if (!_hasEditAccess()) { section.style.display = 'none'; return; }
 
         try {
             var resp = await fetch('/api/inclawbate/agent-schedule?pending=true&account=' + _activeAccount);
@@ -2024,6 +2032,7 @@
 
             var list = document.getElementById('reviewQueueList');
             list.innerHTML = '';
+            var admin = _isAdmin();
 
             pending.forEach(function(s) {
                 var slotTime = new Date(s.scheduled_at);
@@ -2033,18 +2042,23 @@
                     ? '<img src="' + escHtml(s.project_logo) + '" alt="">'
                     : logoChar;
 
+                var actionsHtml = '';
+                if (admin) {
+                    actionsHtml = '<div class="review-card-actions">'
+                        + '<button class="review-btn review-btn--approve" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'approve\')">Approve</button>'
+                        + '<button class="review-btn review-btn--reject" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'reject\')">Reject</button>'
+                        + '</div>';
+                }
+
                 var card = document.createElement('div');
                 card.className = 'review-card';
                 card.innerHTML = '<div class="review-card-header">'
                     + '<div class="review-card-logo">' + logoHtml + '</div>'
-                    + '<div class="review-card-name">' + escHtml(s.project_name || 'Project') + '</div>'
+                    + '<div class="review-card-name">' + escHtml(s.project_name || 'Community') + '</div>'
                     + '<div class="review-card-time">' + timeStr + '</div>'
                     + '</div>'
                     + '<div class="review-card-text">' + escHtml(s.tweet_text || '(no text)') + '</div>'
-                    + '<div class="review-card-actions">'
-                    + '<button class="review-btn review-btn--approve" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'approve\')">Approve</button>'
-                    + '<button class="review-btn review-btn--reject" data-id="' + s.id + '" onclick="window._reviewSlot(\'' + s.id + '\',\'reject\')">Reject</button>'
-                    + '</div>';
+                    + actionsHtml;
                 list.appendChild(card);
             });
         } catch(e) {
