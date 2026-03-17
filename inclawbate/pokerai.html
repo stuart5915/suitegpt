@@ -683,6 +683,25 @@
   .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.5); box-shadow: 0 0 10px rgba(59,130,246,0.3); }
   .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.5); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
 
+  #hand-action-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    background: rgba(10, 10, 20, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Rajdhani', monospace, sans-serif;
+    font-size: 12px;
+    color: #ddd;
+    max-width: 280px;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    line-height: 1.4;
+  }
+
   /* Hand Timeline */
   .hand-timeline {
     display: flex;
@@ -4511,6 +4530,9 @@ setInterval(fetchVaultForApy, 60000);
 let activeRoom = 'sandbox';
 let _spotlightAgentId = null;
 let _lastHandCount = 0;
+let _handActions = {}; // agentId → [{street, type, amount}]
+let _handResults = {}; // agentId → 'win' | 'loss' | 'fold'
+let _hoveredAgentId = null; // currently hovered agent for live tooltip updates
 
 let gameState = {
   running: false,
@@ -4633,16 +4655,35 @@ function handleMessage(msg) {
       applyServerState(msg.data);
       break;
 
-    case 'action':
+    case 'action': {
       showActionBubble(msg.data.agentId, { type: msg.data.action, label: msg.data.label });
+      // Track action for hand history tooltip
+      const ccLen = (gameState.communityCards || []).filter(c => c).length;
+      const street = ccLen === 0 ? 'Preflop' : ccLen === 3 ? 'Flop' : ccLen === 4 ? 'Turn' : 'River';
+      if (!_handActions[msg.data.agentId]) _handActions[msg.data.agentId] = [];
+      _handActions[msg.data.agentId].push({ street, type: msg.data.action, amount: msg.data.amount || 0, label: msg.data.label });
+      if (msg.data.action === 'fold') _handResults[msg.data.agentId] = 'fold';
+      // Live-update tooltip if hovering this agent
+      if (_hoveredAgentId === msg.data.agentId) _renderActionTooltip(msg.data.agentId);
       break;
+    }
 
     case 'log':
       addLog(msg.data.html);
       break;
 
     case 'handResult':
-      // handled via gameState update
+      // Track win/loss for tooltip
+      if (msg.data && msg.data.winnerId) {
+        for (const aid of Object.keys(_handActions)) {
+          if (!_handResults[aid] || _handResults[aid] !== 'fold') {
+            _handResults[aid] = aid === msg.data.winnerId ? 'win' : 'loss';
+          }
+        }
+        if (!_handActions[msg.data.winnerId]) _handActions[msg.data.winnerId] = [];
+        _handResults[msg.data.winnerId] = 'win';
+        if (_hoveredAgentId) _renderActionTooltip(_hoveredAgentId);
+      }
       break;
 
     case 'poolEvent':
@@ -4973,6 +5014,8 @@ function applyServerState(data) {
   // Pick a new random spotlight agent each hand
   if (data.handsPlayed !== _lastHandCount && data.agents && data.agents.length > 1) {
     _lastHandCount = data.handsPlayed;
+    _handActions = {};
+    _handResults = {};
     const wallet = getWallet();
     const others = data.agents.filter(a => {
       const isMine = wallet && a.walletAddress === wallet.address;
@@ -5047,6 +5090,17 @@ function detectHandComplete(data) {
 
   if (justEnded && data.round !== _prevRound) {
     _prevRound = data.round;
+
+    // Mark win/loss for hand action tooltips
+    if (data.lastWinner) {
+      for (const aid of Object.keys(_handActions)) {
+        if (!_handResults[aid] || _handResults[aid] !== 'fold') {
+          _handResults[aid] = aid === data.lastWinner ? 'win' : 'loss';
+        }
+      }
+      _handResults[data.lastWinner] = 'win';
+      if (_hoveredAgentId) _renderActionTooltip(_hoveredAgentId);
+    }
 
     // Find winner agent
     const winnerAgent = data.agents.find(a => a.id === data.lastWinner);
@@ -5549,6 +5603,10 @@ function renderTableSeats() {
     `;
     felt.appendChild(seat);
 
+    // Hand action tooltip on hover
+    seat.addEventListener('mouseenter', () => { _hoveredAgentId = agent.id; _renderActionTooltip(agent.id); });
+    seat.addEventListener('mouseleave', () => { _hoveredAgentId = null; _hideActionTooltip(); });
+
     if (i === gameState.dealerIndex && gameState.running) {
       const db = document.createElement('div');
       db.className = 'dealer-btn';
@@ -5594,6 +5652,82 @@ function _reapplyBubbles() {
   for (const [agentId, b] of _activeBubbles) {
     if (b.expiry <= now) { _activeBubbles.delete(agentId); continue; }
     _applyBubble(agentId);
+  }
+}
+
+// ============================================================
+// HAND ACTION TOOLTIP (hover on agent avatar)
+// ============================================================
+function _renderActionTooltip(agentId) {
+  let tooltip = document.getElementById('hand-action-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'hand-action-tooltip';
+    document.body.appendChild(tooltip);
+  }
+  const seat = document.getElementById(`seat-${agentId}`);
+  if (!seat) { _hideActionTooltip(); return; }
+
+  const actions = _handActions[agentId] || [];
+  const result = _handResults[agentId];
+  const agent = gameState.agents.find(a => a.id === agentId);
+  const name = agent ? agent.name : agentId;
+
+  let html = `<div style="font-weight:700;color:#a5b4fc;margin-bottom:4px;font-size:13px">${escapeHtml(name.length > 16 ? name.slice(0,16) : name)}</div>`;
+
+  if (actions.length === 0 && !result) {
+    html += `<div style="color:#888;font-style:italic">No actions yet</div>`;
+  } else {
+    // Group by street
+    const streets = [];
+    const streetMap = {};
+    for (const a of actions) {
+      if (!streetMap[a.street]) { streetMap[a.street] = []; streets.push(a.street); }
+      streetMap[a.street].push(a);
+    }
+    for (const st of streets) {
+      const acts = streetMap[st].map(a => {
+        const lbl = a.label || a.type;
+        return `<span style="color:${_actionColor(a.type)}">${escapeHtml(lbl)}</span>`;
+      }).join(' <span style="color:#555">→</span> ');
+      html += `<div style="margin-bottom:2px"><span style="color:#ccc;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">${st}:</span> ${acts}</div>`;
+    }
+    if (result) {
+      const rColor = result === 'win' ? '#22c55e' : result === 'fold' ? '#ef4444' : '#ef4444';
+      const rLabel = result === 'win' ? 'Win' : result === 'fold' ? 'Fold' : 'Loss';
+      html += `<div style="margin-top:3px;font-weight:700;color:${rColor}">${rLabel}</div>`;
+    }
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+
+  // Position above the seat
+  const rect = seat.getBoundingClientRect();
+  const ttRect = tooltip.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - ttRect.width / 2;
+  let top = rect.top - ttRect.height - 8;
+  // Keep on screen
+  if (left < 4) left = 4;
+  if (left + ttRect.width > window.innerWidth - 4) left = window.innerWidth - ttRect.width - 4;
+  if (top < 4) top = rect.bottom + 8; // flip below if no room above
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+function _hideActionTooltip() {
+  const tooltip = document.getElementById('hand-action-tooltip');
+  if (tooltip) tooltip.style.display = 'none';
+}
+
+function _actionColor(type) {
+  switch (type) {
+    case 'raise': case 'bet': return '#f5c542';
+    case 'call': return '#22c55e';
+    case 'fold': return '#ef4444';
+    case 'check': return '#3b82f6';
+    case 'allin': return '#a855f7';
+    default: return '#ccc';
   }
 }
 
