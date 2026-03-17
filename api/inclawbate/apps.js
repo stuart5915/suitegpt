@@ -198,6 +198,35 @@ export default async function handler(req, res) {
                 if (!isSuperAdmin(user) || !req.query.show_hidden) {
                     query = query.or('moderated.is.null,moderated.eq.false');
                 }
+
+                // Only show apps from inclawbators (visible in /inclawbators directory)
+                if (req.query.inclawbators_only !== 'false') {
+                    const { data: profiles } = await supabase
+                        .from('human_profiles')
+                        .select('x_handle, wallet_address, tagline, skills')
+                        .not('x_handle', 'is', null);
+                    // Council wallets — always included
+                    const COUNCIL_WALLETS = new Set([
+                        '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+                        '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
+                        '0x496f68438493eb1cc632f7cec6634f042c95e333',
+                        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'
+                    ]);
+                    if (profiles && profiles.length > 0) {
+                        // Seed with known council handles (may not have profiles)
+                        const handles = new Set(['artstu', 'itsEvilDuck', '0xgrante']);
+                        profiles.forEach(p => {
+                            if (!p.x_handle) return;
+                            const isCouncil = COUNCIL_WALLETS.has((p.wallet_address || '').toLowerCase());
+                            const hasTagline = p.tagline && p.tagline.trim().length > 0 && p.tagline.trim().toLowerCase() !== 'none';
+                            const hasSkills = p.skills && p.skills.length > 0;
+                            if (isCouncil || hasTagline || hasSkills) handles.add(p.x_handle);
+                        });
+                        if (handles.size > 0) {
+                            query = query.in('creator_x_handle', [...handles]);
+                        }
+                    }
+                }
             }
 
             // Featured filter
