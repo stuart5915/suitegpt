@@ -18,6 +18,78 @@
     <link rel="stylesheet" href="/styles/components.css">
     <link rel="stylesheet" href="/styles/dashboard.css">
     <style>
+        /* ── Improved Connect Banner ── */
+        .dash-connect-banner {
+            background: linear-gradient(135deg, hsla(9, 52%, 56%, 0.06), hsla(172, 32%, 48%, 0.04));
+            border: 1px solid hsla(9, 52%, 56%, 0.15);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl) var(--space-xl);
+        }
+        .dash-connect-inner {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        .dash-connect-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+        .dash-connect-title {
+            font-family: var(--font-display, var(--font-body));
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        /* ── Quick Actions ── */
+        .dash-quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .dash-quick-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-align: center;
+            white-space: nowrap;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+        .dash-quick-btn:hover {
+            border-color: var(--lobster-300);
+            color: var(--text-primary);
+            background: hsla(9, 52%, 56%, 0.04);
+        }
+        @media (max-width: 480px) {
+            .dash-quick-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+        }
+
+        /* ── Improved Empty States ── */
+        .empty-icon {
+            font-size: 1.8rem;
+            margin-bottom: var(--space-xs);
+            opacity: 0.6;
+        }
+        .empty-hint {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
         /* ── Dashboard Tab Bar ── */
         .dash-tab-bar {
             display: flex;
@@ -55,7 +127,20 @@
         }
         .overview-section.tab-hidden { display: none !important; }
         @media (max-width: 600px) {
-            .dash-tab { font-size: 0.7rem; padding: 8px 2px; }
+            .dash-tab-bar {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .dash-tab-bar::-webkit-scrollbar { display: none; }
+            .dash-tab {
+                font-size: 0.72rem;
+                padding: 10px 12px;
+                flex: 0 0 auto;
+                min-width: auto;
+            }
         }
 
         /* Buy Credits (shared with Build Studio) */
@@ -286,7 +371,13 @@
         <div class="dash-overview-inner">
             <!-- Connect banner (shown when not authenticated) -->
             <div id="connectBanner" class="dash-connect-banner hidden">
-                <span class="dash-connect-text">Connect your wallet to see your apps, credits, and projects.</span>
+                <div class="dash-connect-inner">
+                    <div class="dash-connect-icon">&#129438;</div>
+                    <div>
+                        <div class="dash-connect-title">Welcome to Inclawbate</div>
+                        <span class="dash-connect-text">Connect your wallet to see your tokens, apps, staking positions, and credits.</span>
+                    </div>
+                </div>
                 <button class="btn btn-primary btn-sm" onclick="window.navWalletConnect && window.navWalletConnect()">Connect Wallet</button>
             </div>
             <div id="overviewProfileCard" class="overview-profile-card">
@@ -302,13 +393,23 @@
                 <button class="dash-tab" data-tab="insights">Insights</button>
                 <button class="dash-tab" data-tab="incubation">Incubation</button>
             </div>
+            <div id="quickActions" class="dash-quick-actions" style="display:none">
+                <a href="/inclawbator" class="dash-quick-btn">&#128640; Launch Token</a>
+                <a href="/build" class="dash-quick-btn">&#128736; Build App</a>
+                <a href="/stake" class="dash-quick-btn">&#128176; Stake</a>
+                <a href="/schedule" class="dash-quick-btn">&#128197; Schedule</a>
+            </div>
             <div class="overview-section" id="overviewProjects" data-section="projects">
                 <div class="overview-section-header">
                     <h3>Your Projects</h3>
                     <button type="button" class="overview-section-action" id="createProjectBtn" style="background:none;border:1px solid var(--lobster-300);color:var(--lobster-300);cursor:pointer;padding:4px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;">+ Create Project</button>
                 </div>
                 <div id="projectsList">
-                    <div class="overview-empty"><p>No projects yet. Bundle your app, token, and socials into one project.</p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#128230;</div>
+                        <p>No projects yet.</p>
+                        <p class="empty-hint">Bundle your app, token, and socials into one project to track everything in one place.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewApps" data-section="apps">
@@ -317,7 +418,11 @@
                     <a href="/apps" class="overview-section-action">View all</a>
                 </div>
                 <div id="overviewAppList">
-                    <div class="overview-empty"><p>No apps yet. <a href="/apps">Build your first app</a></p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#128736;</div>
+                        <p>No apps yet.</p>
+                        <p class="empty-hint"><a href="/build">Build your first app</a> with AI — no code needed.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewSavedApps" data-section="apps">
@@ -326,7 +431,11 @@
                     <a href="/projects" class="overview-section-action">Browse more</a>
                 </div>
                 <div id="savedAppsList">
-                    <div class="overview-empty"><p>No saved apps yet. <a href="/projects">Browse apps to save</a></p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#128278;</div>
+                        <p>No saved apps yet.</p>
+                        <p class="empty-hint"><a href="/apps">Browse the app store</a> and save your favorites.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewApplications" data-section="incubation">
@@ -335,7 +444,11 @@
                     <a href="/inclawbator#incubate" class="overview-section-action">Apply</a>
                 </div>
                 <div id="applicationList">
-                    <div class="overview-empty"><p>No applications yet. <a href="/inclawbator#incubate">Request incubation</a></p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#129438;</div>
+                        <p>No applications yet.</p>
+                        <p class="empty-hint"><a href="/inclawbator">Request incubation</a> — get dev help, marketing, and an AI agent for your project.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="adminPendingSection" data-section="incubation" style="display:none">
@@ -406,7 +519,11 @@
                     <a href="/inclawbator#launch" class="overview-section-action">Launch Token</a>
                 </div>
                 <div id="tokenList">
-                    <div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#128640;</div>
+                        <p>No tokens yet.</p>
+                        <p class="empty-hint"><a href="/inclawbator">Launch your first token</a> on Base, Solana, or Cardano.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewMyStaking" data-section="staking">
@@ -419,7 +536,11 @@
                     <a href="/stake" class="overview-section-action">View all pools</a>
                 </div>
                 <div id="myStakingPositionsList">
-                    <div class="overview-empty"><p>Loading...</p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#128176;</div>
+                        <p>No staking positions yet.</p>
+                        <p class="empty-hint"><a href="/stake">Explore staking pools</a> to start earning rewards.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewStaking" data-section="staking">
@@ -428,7 +549,11 @@
                     <a href="/inclawbator#pool" class="overview-section-action">Create Pool</a>
                 </div>
                 <div id="stakingPoolList">
-                    <div class="overview-empty"><p>Loading...</p></div>
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#127793;</div>
+                        <p>No staking pools yet.</p>
+                        <p class="empty-hint"><a href="/inclawbator">Create a staking pool</a> for your token — free, just gas.</p>
+                    </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewInsights" data-section="insights">
@@ -464,17 +589,21 @@
                 <div class="insights-activity" id="insightsActivity">
                     <h4 style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:var(--space-sm)">Your Apps Performance</h4>
                     <div id="insAppsList" class="insights-apps-list">
-                        <div class="overview-empty"><p>Loading...</p></div>
+                        <div class="overview-empty"><p>No app data yet.</p></div>
                     </div>
                 </div>
             </div>
             <div class="overview-section" id="overviewAgents" data-section="agents">
                 <div class="overview-section-header">
                     <h3>AI Agents</h3>
+                    <a href="/inclawbator" class="overview-section-action">Create Agent</a>
                 </div>
-                <div style="text-align:center;padding:var(--space-xl)">
-                    <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:var(--space-md)">Manage your AI posting agents, connect X accounts, and schedule @inclawbator slots.</p>
-                    <a href="/agents" style="display:inline-block;padding:10px 28px;background:var(--accent-gradient);border-radius:var(--radius-md);color:#fff;font-weight:700;font-size:0.88rem;text-decoration:none;transition:opacity 0.15s">Go to Agents</a>
+                <div id="agentsList">
+                    <div class="overview-empty">
+                        <div class="empty-icon">&#129302;</div>
+                        <p>No agents yet.</p>
+                        <p class="empty-hint">Create an AI agent to auto-post on X for your project. <a href="/schedule">View schedule</a></p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -293,7 +293,7 @@ function renderProfileCard(profile) {
 function renderAppCards(apps) {
     const container = document.getElementById('overviewAppList');
     if (!apps.length) {
-        container.innerHTML = '<div class="overview-empty"><p>No apps yet. <a href="/apps">Build your first app</a></p></div>';
+        container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128736;</div><p>No apps yet.</p><p class="empty-hint"><a href="/build">Build your first app</a> with AI — no code needed.</p></div>';
         return;
     }
 
@@ -502,7 +502,7 @@ async function loadSavedApps() {
         const json = await res.json();
         const apps = json.apps || [];
         if (!apps.length) {
-            container.innerHTML = '<div class="overview-empty"><p>No saved apps yet. <a href="/projects">Browse apps to save</a></p></div>';
+            container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128278;</div><p>No saved apps yet.</p><p class="empty-hint"><a href="/apps">Browse the app store</a> and save your favorites.</p></div>';
             return;
         }
         container.innerHTML = '';
@@ -598,7 +598,7 @@ async function loadProjects() {
                 appContainer.appendChild(renderProjectCard(p));
             }
         } else {
-            appContainer.innerHTML = '<div class="overview-empty"><p>No applications yet. <a href="/inclawbator#incubate">Request incubation</a></p></div>';
+            appContainer.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#129438;</div><p>No applications yet.</p><p class="empty-hint"><a href="/inclawbator">Request incubation</a> — dev help, marketing, and an AI agent.</p></div>';
         }
 
         // Render tokens
@@ -619,7 +619,7 @@ async function loadProjects() {
         const knownAddrs = all.filter(p => p.token_address).map(p => p.token_address);
         discoverClankerTokens(wallet, knownAddrs);
         if (tokens.length === 0) {
-            tokenContainer.innerHTML = '<div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
+            tokenContainer.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128640;</div><p>No tokens yet.</p><p class="empty-hint"><a href="/inclawbator">Launch your first token</a> on Base, Solana, or Cardano.</p></div>';
         }
     } catch (e) {
         // silent
@@ -1271,7 +1271,7 @@ async function loadMyStakingPositions() {
 
     const auth = getStoredAuth();
     if (!auth || !auth.profile?.wallet_address) {
-        container.innerHTML = '<div class="overview-empty"><p>Connect your wallet to see staking positions</p></div>';
+        container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128176;</div><p>No staking positions yet.</p><p class="empty-hint"><a href="/stake">Explore staking pools</a> to start earning rewards.</p></div>';
         return;
     }
 
@@ -1334,7 +1334,7 @@ async function loadMyStakingPositions() {
     });
 
     if (positions.length === 0) {
-        container.innerHTML = '<div class="overview-empty"><p>No staking positions. <a href="/stake">Explore pools</a></p></div>';
+        container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128176;</div><p>No staking positions.</p><p class="empty-hint"><a href="/stake">Explore staking pools</a> to start earning rewards.</p></div>';
         _myPositions = [];
         const actionsEl = document.getElementById('mysActions');
         if (actionsEl) actionsEl.style.display = 'none';
@@ -1586,7 +1586,7 @@ async function loadStakingPools() {
     const profile = auth.profile;
     const wallet = profile.wallet_address;
     if (!wallet) {
-        container.innerHTML = '<div class="overview-empty"><p>Connect a wallet to see your staking pools.</p></div>';
+        container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#127793;</div><p>No staking pools yet.</p><p class="empty-hint"><a href="/inclawbator">Create a staking pool</a> for your token.</p></div>';
         return;
     }
 
@@ -1596,7 +1596,7 @@ async function loadStakingPools() {
         const projects = (data.projects || []).filter(p => p.staking_address && p.status === 'active');
 
         if (projects.length === 0) {
-            container.innerHTML = '<div class="overview-empty"><p>No staking pools yet. <a href="/inclawbator#pool">Create one</a></p></div>';
+            container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#127793;</div><p>No staking pools yet.</p><p class="empty-hint"><a href="/inclawbator">Create a staking pool</a> for your token — free, just gas.</p></div>';
             return;
         }
 
@@ -3045,7 +3045,7 @@ async function loadUserProjects() {
         });
 
         if (!projects.length) {
-            container.innerHTML = '<div class="overview-empty"><p>No projects yet. Bundle your app, token, and socials into one project.</p></div>';
+            container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#128230;</div><p>No projects yet.</p><p class="empty-hint">Bundle your app, token, and socials into one project to track everything.</p></div>';
             return;
         }
 
@@ -3406,6 +3406,10 @@ function init() {
         return;
     }
 
+    // Show quick actions for authenticated users
+    var qa = document.getElementById('quickActions');
+    if (qa) qa.style.display = '';
+
     // Fetch fresh profile
     const profile = auth.profile;
     fetch(`/api/inclawbate/humans?handle=${profile.x_handle}`)
@@ -3676,7 +3680,7 @@ async function loadAgents() {
 
     var auth = getStoredAuth();
     if (!auth || !auth.profile || !auth.profile.wallet_address) {
-        container.innerHTML = '<div class="overview-empty"><p>Connect your wallet to see your agents.</p></div>';
+        container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#129302;</div><p>No agents yet.</p><p class="empty-hint">Create an AI agent to auto-post on X for your project.</p></div>';
         return;
     }
 
@@ -3687,7 +3691,7 @@ async function loadAgents() {
         _agentProjects = projects;
 
         if (!projects.length) {
-            container.innerHTML = '<div class="overview-empty"><p>No agents yet.</p><button onclick="openCreateAgent()" style="margin-top:8px;padding:10px 24px;background:var(--accent-gradient);border:none;border-radius:var(--radius-md);color:#fff;font-family:var(--font-body);font-size:0.88rem;font-weight:700;cursor:pointer">Create Your First Agent</button></div>';
+            container.innerHTML = '<div class="overview-empty"><div class="empty-icon">&#129302;</div><p>No agents yet.</p><p class="empty-hint">Create an AI agent to auto-post on X.</p><button onclick="openCreateAgent()" style="margin-top:10px;padding:10px 24px;background:var(--accent-gradient);border:none;border-radius:var(--radius-md);color:#fff;font-family:var(--font-body);font-size:0.88rem;font-weight:700;cursor:pointer">Create Your First Agent</button></div>';
             return;
         }
 
