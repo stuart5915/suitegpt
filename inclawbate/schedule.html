@@ -431,17 +431,89 @@
         .draft-modal-overlay.open { display:flex; }
         .draft-modal {
             background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);
-            padding:var(--space-lg);width:100%;max-width:480px;animation:fadeUp 0.2s ease both;
+            padding:var(--space-lg);width:100%;max-width:520px;animation:fadeUp 0.2s ease both;
         }
-        .draft-modal h3 { font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:var(--space-sm); }
+        .draft-modal h3 { font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--text-primary);margin:0; }
+        .draft-modal-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md); }
+        .draft-modal-close { background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;padding:4px;line-height:1; }
+        .draft-modal-close:hover { color:var(--text-primary); }
+
+        /* Pillar context */
+        .draft-modal-pillar {
+            display:flex;align-items:center;gap:8px;padding:8px 12px;
+            background:rgba(232,121,85,0.06);border:1px solid rgba(232,121,85,0.15);
+            border-radius:var(--radius-md);margin-bottom:var(--space-md);font-size:0.75rem;
+        }
+        .draft-modal-pillar-emoji { font-size:1.1rem; }
+        .draft-modal-pillar-name { font-weight:700;color:var(--lobster-400); }
+        .draft-modal-pillar-desc { color:var(--text-dim);margin-left:4px; }
+
         .draft-modal textarea {
-            width:100%;min-height:100px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            width:100%;min-height:110px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);
             border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.88rem;
             line-height:1.5;resize:vertical;box-sizing:border-box;
         }
         .draft-modal textarea:focus { border-color:var(--lobster-400);outline:none; }
-        .draft-modal-charcount { text-align:right;font-size:0.7rem;color:var(--text-dim);margin-top:4px; }
-        .draft-modal-charcount.over { color:#f87171; }
+
+        /* Char count bar */
+        .draft-modal-charbar { display:flex;align-items:center;gap:8px;margin-top:6px; }
+        .draft-modal-charbar-track { flex:1;height:3px;background:var(--bg-elevated);border-radius:2px;overflow:hidden; }
+        .draft-modal-charbar-fill { height:100%;background:var(--lobster-400);border-radius:2px;transition:width 0.15s; }
+        .draft-modal-charbar-fill.warn { background:#fbbf24; }
+        .draft-modal-charbar-fill.over { background:#f87171; }
+        .draft-modal-charcount { font-size:0.7rem;color:var(--text-dim);white-space:nowrap; }
+        .draft-modal-charcount.over { color:#f87171;font-weight:700; }
+
+        /* Quick emoji row */
+        .draft-modal-emoji-row { display:flex;gap:2px;flex-wrap:wrap;margin-top:8px; }
+        .draft-modal-emoji {
+            width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+            border-radius:6px;border:none;background:transparent;cursor:pointer;font-size:1.1rem;
+            transition:background 0.12s;
+        }
+        .draft-modal-emoji:hover { background:rgba(232,121,85,0.12); }
+
+        /* Quick insert chips */
+        .draft-modal-inserts { display:flex;flex-wrap:wrap;gap:5px;margin-top:8px; }
+        .draft-modal-insert {
+            font-size:0.68rem;padding:4px 10px;border-radius:20px;
+            background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            color:var(--text-secondary);cursor:pointer;transition:all 0.12s;font-family:var(--font-mono);
+        }
+        .draft-modal-insert:hover { border-color:var(--lobster-400);color:var(--text-primary); }
+
+        /* Tips */
+        .draft-modal-tips {
+            display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;
+            border-top:1px solid var(--border-subtle);
+        }
+        .draft-modal-tip {
+            font-size:0.65rem;padding:3px 8px;border-radius:4px;
+            background:rgba(99,102,241,0.08);color:var(--text-dim);
+        }
+
+        /* Image prompt in modal */
+        .draft-modal-imgprompt {
+            margin-top:10px;display:flex;align-items:center;gap:6px;
+        }
+        .draft-modal-imgprompt-btn {
+            font-size:0.72rem;padding:5px 12px;border-radius:var(--radius-md);
+            border:1px dashed rgba(232,121,85,0.35);background:transparent;
+            color:var(--lobster-400);font-weight:700;cursor:pointer;transition:all 0.12s;
+        }
+        .draft-modal-imgprompt-btn:hover { background:rgba(232,121,85,0.08);border-color:var(--lobster-400); }
+        .draft-modal-imgprompt-btn:disabled { opacity:0.5;cursor:not-allowed; }
+        .draft-modal-imgprompt-result {
+            display:none;margin-top:8px;padding:8px 10px;background:var(--bg-elevated);
+            border:1px solid var(--border-subtle);border-radius:var(--radius-md);
+            font-size:0.72rem;color:var(--text-secondary);line-height:1.4;position:relative;
+        }
+        .draft-modal-imgprompt-result pre { margin:0;white-space:pre-wrap;word-wrap:break-word;font-family:var(--font-mono);font-size:0.7rem; }
+        .draft-modal-imgprompt-copy {
+            position:absolute;top:4px;right:4px;padding:2px 7px;border:none;border-radius:4px;
+            background:rgba(232,121,85,0.15);color:var(--lobster-400);font-size:0.65rem;font-weight:700;cursor:pointer;
+        }
+
         .draft-modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-md); }
         .draft-modal-btn {
             padding:8px 20px;border-radius:var(--radius-md);font-family:var(--font-display);
@@ -1853,12 +1925,79 @@
 
     var _editingSlotId = null;
 
+    var QUICK_EMOJIS = ['\u{1F99E}', '\u{1F525}', '\u{1F680}', '\u{1F4CA}', '\u{26D3}\uFE0F', '\u{1F4A1}', '\u{1F3B0}', '\u{2728}', '\u{1F477}', '\u{1F30A}', '\u{1F4B0}', '\u{1F3AF}', '\u{1F40B}', '\u{1F916}', '\u{2705}'];
+    var QUICK_INSERTS = [
+        { label: 'inclawbate.com', text: 'inclawbate.com' },
+        { label: '$CLAWS', text: '$CLAWS' },
+        { label: 'stake', text: 'inclawbate.com/staking' },
+        { label: 'apps', text: 'inclawbate.com/apps' },
+        { label: 'skills', text: 'inclawbate.com/skills' },
+        { label: 'PokerAI', text: 'pokerai.app' },
+        { label: 'build', text: 'inclawbate.com/build' },
+    ];
+
     window._editDraft = function(slotId) {
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
         _editingSlotId = slotId;
         var ta = document.getElementById('draftModalText');
         ta.value = slot.tweet_text || '';
+
+        // Populate pillar context
+        if (_selectedDay) {
+            var dow = _selectedDay.getUTCDay();
+            var pillar = activePillars()[dow];
+            if (pillar) {
+                document.getElementById('draftModalPillar').style.display = 'flex';
+                document.getElementById('draftModalPillarEmoji').textContent = pillar.emoji;
+                document.getElementById('draftModalPillarName').textContent = pillar.name;
+                document.getElementById('draftModalPillarDesc').textContent = '\u2014 ' + pillar.desc;
+            } else {
+                document.getElementById('draftModalPillar').style.display = 'none';
+            }
+        }
+
+        // Populate emoji row
+        var emojiRow = document.getElementById('draftModalEmojis');
+        emojiRow.innerHTML = '';
+        QUICK_EMOJIS.forEach(function(em) {
+            var btn = document.createElement('button');
+            btn.className = 'draft-modal-emoji';
+            btn.textContent = em;
+            btn.type = 'button';
+            btn.onclick = function() {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                ta.value = ta.value.substring(0, start) + em + ta.value.substring(end);
+                ta.selectionStart = ta.selectionEnd = start + em.length;
+                ta.focus();
+                updateDraftCount();
+            };
+            emojiRow.appendChild(btn);
+        });
+
+        // Populate quick inserts
+        var insertsRow = document.getElementById('draftModalInserts');
+        insertsRow.innerHTML = '';
+        QUICK_INSERTS.forEach(function(item) {
+            var chip = document.createElement('span');
+            chip.className = 'draft-modal-insert';
+            chip.textContent = item.label;
+            chip.onclick = function() {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                var before = ta.value.substring(0, start);
+                var spaceBefore = before.length && before[before.length - 1] !== ' ' ? ' ' : '';
+                ta.value = before + spaceBefore + item.text + ' ' + ta.value.substring(end);
+                ta.selectionStart = ta.selectionEnd = start + spaceBefore.length + item.text.length + 1;
+                ta.focus();
+                updateDraftCount();
+            };
+            insertsRow.appendChild(chip);
+        });
+
+        // Reset image prompt
+        document.getElementById('draftModalImgResult').style.display = 'none';
+        document.getElementById('draftModalImgText').textContent = '';
+
         updateDraftCount();
         document.getElementById('draftModal').classList.add('open');
         setTimeout(function() { ta.focus(); }, 100);
@@ -1905,11 +2044,54 @@
         _editingSlotId = null;
     };
 
+    window._draftGenImagePrompt = async function() {
+        var tweetText = (document.getElementById('draftModalText').value || '').trim();
+        if (!tweetText) { alert('Write tweet text first'); return; }
+        var btn = document.getElementById('draftModalImgBtn');
+        btn.disabled = true; btn.innerHTML = '&#9203; Generating...';
+        document.getElementById('draftModalImgResult').style.display = 'none';
+
+        var pillarName = '';
+        if (_selectedDay) {
+            var dow = _selectedDay.getUTCDay();
+            var p = activePillars()[dow];
+            if (p) pillarName = p.name;
+        }
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate_image_prompt', tweet_text: tweetText, account: _activeAccount, pillar: pillarName })
+            });
+            var data = await resp.json();
+            if (data.error) throw new Error(data.error);
+            document.getElementById('draftModalImgText').textContent = data.image_prompt;
+            document.getElementById('draftModalImgResult').style.display = 'block';
+        } catch(e) { alert('Failed: ' + e.message); }
+        finally { btn.disabled = false; btn.innerHTML = '&#127912; Generate Image Prompt'; }
+    };
+
+    window._draftCopyImgPrompt = function() {
+        var text = document.getElementById('draftModalImgText').textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = document.querySelector('.draft-modal-imgprompt-copy');
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+        });
+    };
+
     window.updateDraftCount = function() {
         var len = (document.getElementById('draftModalText').value || '').length;
         var el = document.getElementById('draftModalCount');
         el.textContent = len + '/280';
         el.className = 'draft-modal-charcount' + (len > 280 ? ' over' : '');
+        var bar = document.getElementById('draftModalBar');
+        if (bar) {
+            var pct = Math.min(len / 280 * 100, 100);
+            bar.style.width = pct + '%';
+            bar.className = 'draft-modal-charbar-fill' + (len > 260 && len <= 280 ? ' warn' : '') + (len > 280 ? ' over' : '');
+        }
     };
 
     window.saveDraftModal = async function() {
@@ -2187,9 +2369,49 @@
 <!-- Draft Edit Modal -->
 <div class="draft-modal-overlay" id="draftModal">
     <div class="draft-modal">
-        <h3>Edit Draft Tweet</h3>
+        <div class="draft-modal-header">
+            <h3>Edit Draft Tweet</h3>
+            <button class="draft-modal-close" onclick="closeDraftModal()">&times;</button>
+        </div>
+
+        <!-- Pillar context -->
+        <div class="draft-modal-pillar" id="draftModalPillar">
+            <span class="draft-modal-pillar-emoji" id="draftModalPillarEmoji"></span>
+            <span class="draft-modal-pillar-name" id="draftModalPillarName"></span>
+            <span class="draft-modal-pillar-desc" id="draftModalPillarDesc"></span>
+        </div>
+
         <textarea id="draftModalText" maxlength="280" placeholder="Write tweet..."></textarea>
-        <div class="draft-modal-charcount" id="draftModalCount">0/280</div>
+
+        <!-- Char bar -->
+        <div class="draft-modal-charbar">
+            <div class="draft-modal-charbar-track"><div class="draft-modal-charbar-fill" id="draftModalBar"></div></div>
+            <div class="draft-modal-charcount" id="draftModalCount">0/280</div>
+        </div>
+
+        <!-- Quick emojis -->
+        <div class="draft-modal-emoji-row" id="draftModalEmojis"></div>
+
+        <!-- Quick inserts -->
+        <div class="draft-modal-inserts" id="draftModalInserts"></div>
+
+        <!-- Tips -->
+        <div class="draft-modal-tips">
+            <span class="draft-modal-tip">No @mentions</span>
+            <span class="draft-modal-tip">Keep it conversational</span>
+            <span class="draft-modal-tip">280 chars max</span>
+            <span class="draft-modal-tip">Links count as chars</span>
+        </div>
+
+        <!-- Image prompt -->
+        <div class="draft-modal-imgprompt">
+            <button type="button" class="draft-modal-imgprompt-btn" id="draftModalImgBtn" onclick="window._draftGenImagePrompt()">&#127912; Generate Image Prompt</button>
+        </div>
+        <div class="draft-modal-imgprompt-result" id="draftModalImgResult">
+            <button type="button" class="draft-modal-imgprompt-copy" onclick="window._draftCopyImgPrompt()">Copy</button>
+            <pre id="draftModalImgText"></pre>
+        </div>
+
         <div class="draft-modal-actions">
             <button class="draft-modal-btn draft-modal-btn--cancel" onclick="closeDraftModal()">Cancel</button>
             <button class="draft-modal-btn draft-modal-btn--save" id="draftModalSave" onclick="saveDraftModal()">Save</button>
