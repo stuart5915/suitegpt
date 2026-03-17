@@ -144,6 +144,9 @@ const INCLAWBATE_STYLE_EXAMPLES = [
     `the treasury grew again this week. every app, every stake, every poker hand. it all feeds the engine.`,
     `gm. the future of building is typing what you want and hitting enter. inclawbate.com`,
     `no VC. no board. no roadmap decided by people who don't build. just builders and users. that's inclawbate.`,
+    // Formatted style (with line breaks)
+    `Imagine turning your wildest ideas into full crypto projects... in DAYS.\n\nLaunch an app + token + staking pool - all in ONE platform\n\n@inclawbate makes it happen:\n-Describe your vision\n-AI builds & deploys it\n-You focus on building\n\nStart here inclawbate.com`,
+    `the perpetual engine, explained:\n\n1. builders create apps\n2. apps generate revenue\n3. revenue feeds the treasury\n4. treasury rewards builders\n5. repeat forever\n\nno VCs. no exit. just value flowing.\n\ninclawbate.com`,
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
@@ -348,7 +351,8 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
 
         if (action === 'generate') {
             const account = req.body.account || 'inclawbator';
-            return await generateDrafts(req, res, date, account);
+            const style = req.body.style || 'mixed';
+            return await generateDrafts(req, res, date, account, style);
         }
 
         if (action === 'delete_slot') {
@@ -605,6 +609,9 @@ const STYLE_EXAMPLES = [
     `ser the app store of the future is being built on base and it's called inclawbate. not alpha, just facts.`,
     // Thread-starter style
     `built ClawCard in weeks, not months. inclawbate handled the code while i focused on the product. if you're sitting on an idea, stop waiting.`,
+    // Formatted with line breaks
+    `what inclawbate actually does:\n\n-you describe an app idea\n-AI builds it in minutes\n-it's live instantly with a real URL\n-you earn from it\n\nno code. no waiting. no gatekeepers.\n\ntry it: inclawbate.com/build`,
+    `the app store of the future isn't controlled by Apple or Google.\n\nit's built by regular people.\nwith AI.\non-chain.\n\n100+ apps live. growing daily.\n\ninclawbate.com`,
 ];
 
 // Fetch real platform stats for accurate content
@@ -676,7 +683,42 @@ async function fetchPlatformContext() {
     return results;
 }
 
-async function generateDrafts(req, res, targetDate, account) {
+// Style-specific instructions for tweet generation
+const STYLE_INSTRUCTIONS = {
+    mixed: `FORMAT VARIETY (CRITICAL — follow this distribution):
+- 1-2 tweets: SHORT one-liners (under 100 chars). Punchy, meme energy. Example: "gm. the future of app development is typing what you want and hitting enter."
+- 1-2 tweets: MEDIUM length (100-180 chars). Hook + detail. Example: "someone just built a full staking dashboard on inclawbate in 10 minutes. no code. just vibes."
+- 1-2 tweets: LONG FORMATTED (200-280 chars) with LINE BREAKS (\\n). Use bullet points (-), numbered lists, or stacked lines for visual impact. Include a CTA at the end. Example:
+"what inclawbate actually does:\\n\\n-you describe an app idea\\n-AI builds it in minutes\\n-it's live instantly\\n-you earn from it\\n\\nno code. no waiting.\\n\\ninclawbate.com/build"
+
+IMPORTANT: The long formatted tweets MUST use \\n for line breaks. They should look like structured posts with clear visual hierarchy. Vary which slots get which format.`,
+
+    punchy: `FORMAT: ALL tweets must be SHORT one-liners (under 120 chars preferred).
+- Meme energy, degen vibes, hot takes
+- One strong thought per tweet
+- No line breaks needed
+- Examples: "gm. the future is typing what you want and hitting enter." / "100+ apps. zero devs needed. inclawbate."`,
+
+    formatted: `FORMAT: ALL tweets must be LONG FORMATTED posts (200-280 chars) with LINE BREAKS (\\n).
+- Use \\n for line breaks between sections
+- Use bullet points (-) or numbered lists for structure
+- Include a hook/opener, body content, and a CTA/closer
+- Visual hierarchy matters — make it scannable
+- Example:
+"the perpetual engine, explained:\\n\\n1. builders create apps\\n2. apps generate revenue\\n3. revenue feeds the treasury\\n4. treasury rewards builders\\n5. repeat forever\\n\\nno VCs. no exit.\\n\\ninclawbate.com"
+
+CRITICAL: Every tweet MUST have multiple \\n line breaks. No single-line tweets.`,
+
+    engagement: `FORMAT: ALL tweets must be ENGAGEMENT-focused — designed to get replies and quote tweets.
+- Ask a direct question to the audience
+- Use "this or that" / "hot take" / "unpopular opinion" formats
+- Controversial but fun takes about building, DeFi, crypto
+- End with something that begs for a response
+- Can be short OR formatted — vary it
+- Examples: "hot take: 90% of crypto projects would ship faster if they used AI to build instead of hiring devs. agree or disagree?" / "what's the one app you wish existed in crypto?\\n\\nwe'll build the best one live.\\n\\nseriously — drop it below."`,
+};
+
+async function generateDrafts(req, res, targetDate, account, style) {
     account = account || 'inclawbator';
     const cfg = getAccountConfig(account);
     const date = targetDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -714,9 +756,10 @@ async function generateDrafts(req, res, targetDate, account) {
 
     // Pick random style examples for variety
     const shuffled = [...cfg.styleExamples].sort(() => Math.random() - 0.5);
-    const exampleBlock = shuffled.slice(0, 4).map((e, i) => `${i + 1}. "${e}"`).join('\n');
+    const exampleBlock = shuffled.slice(0, 5).map((e, i) => `${i + 1}. "${e}"`).join('\n');
     const sceneHint = cfg.sceneHints[pillar.name] || 'Use the brand mascot in a relevant pose for the content.';
     const narrativeScenesList = (cfg.narrativeScenes[pillar.name] || []).join('\n- ');
+    const styleGuide = STYLE_INSTRUCTIONS[style] || STYLE_INSTRUCTIONS.mixed;
 
     // Generate ALL tweets in one batch call for consistency + speed
     const batchPrompt = `${cfg.identity}
@@ -735,22 +778,23 @@ REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 TODAY'S PILLAR: ${pillar.name}
 Description: ${pillar.desc}
 
-STYLE EXAMPLES (match this vibe — short, punchy, crypto-native):
+STYLE EXAMPLES (match this vibe — crypto-native, authentic, no corporate speak):
 ${exampleBlock}
 
+${styleGuide}
+
 RULES:
-- Each tweet MUST be under 280 characters (STRICT — count carefully)
+- Each tweet MUST be under 280 characters (STRICT — count carefully, including \\n line breaks which each count as 1 char)
 - No hashtags ever
 - No "excited to announce", "thrilled", "game-changing", or any corporate speak
 - No em dashes (—)
 - No quotation marks around the tweet
 - Lowercase is fine, even preferred for casual tweets
-- Mix up formats: questions, one-liners, hot takes, mini-stories, stats
 - NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
 - NEVER use vague filler like "various", "popular ones", "top apps" without naming them. Either use specific app names from the data above, or don't mention apps at all. Be concrete or be general about the platform — never vaguely in between.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
-- Each tweet should feel DIFFERENT from the others — vary length, tone, structure
+- Each tweet should feel DIFFERENT from the others — vary tone and structure
 
 Generate ${emptyHours.length} tweets. For EACH tweet, write a matching image prompt that visually represents THAT SPECIFIC tweet's content.
 
@@ -786,8 +830,8 @@ Output ONLY the numbered entries. Nothing else.`;
             },
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
-                max_tokens: 1500,
-                temperature: 0.9,
+                max_tokens: (style === 'formatted' || style === 'mixed') ? 2500 : 1500,
+                temperature: style === 'punchy' ? 1.0 : 0.9,
                 messages: [{ role: 'user', content: batchPrompt }]
             })
         });
@@ -799,13 +843,19 @@ Output ONLY the numbered entries. Nothing else.`;
 
         const rawText = data.choices?.[0]?.message?.content || '';
         // Parse TWEET/IMAGE pairs from batch response
+        // Supports multi-line tweets with \n line breaks
         const entries = [];
         const blocks = rawText.split(/\n*\d+[\.\)]\s*/);
         for (const block of blocks) {
-            const tweetMatch = block.match(/TWEET:\s*(.+)/i);
+            // Match TWEET: ... up to IMAGE: (multiline capture)
+            const tweetMatch = block.match(/TWEET:\s*([\s\S]*?)(?=\nIMAGE:|\n*$)/i);
             const imageMatch = block.match(/IMAGE:\s*(.+)/i);
             if (tweetMatch) {
-                const tweet = tweetMatch[1].replace(/^["']|["']$/g, '').trim();
+                let tweet = tweetMatch[1].replace(/^["']|["']$/g, '').trim();
+                // Convert literal \n in AI output to actual newlines
+                tweet = tweet.replace(/\\n/g, '\n');
+                // Clean up excessive blank lines (3+ newlines → 2)
+                tweet = tweet.replace(/\n{3,}/g, '\n\n');
                 const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
                 if (tweet.length > 0 && tweet.length <= 280) {
                     entries.push({ tweet, imagePrompt });
@@ -841,7 +891,7 @@ Output ONLY the numbered entries. Nothing else.`;
                     tone: 'default',
                     status,
                     tweet_text: tweetText,
-                    tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage, image_prompt: imagePrompt },
+                    tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage, image_prompt: imagePrompt, style: style || 'mixed' },
                     account,
                 })
                 .select()

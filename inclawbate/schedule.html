@@ -675,8 +675,9 @@
         .review-btn--reject:hover { background:rgba(239,68,68,0.3); }
         .sched-draft-text {
             font-size:0.75rem;color:var(--text-secondary);line-height:1.4;
-            margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;
+            margin-top:4px;display:-webkit-box;-webkit-line-clamp:4;
             -webkit-box-orient:vertical;overflow:hidden;font-style:italic;
+            white-space:pre-wrap;word-break:break-word;
         }
         .sched-draft-actions { display:flex;gap:6px;flex-shrink:0; }
         .sched-draft-btn {
@@ -733,7 +734,7 @@
         .sched-img-prompt-btn:hover { border-color:var(--accent-primary);color:var(--accent-primary);background:rgba(99,102,241,0.08); }
         .sched-img-prompt-btn.copied { border-color:#4ade80;color:#4ade80; }
 
-        /* ── Auto-fill button ── */
+        /* ── Generate buttons ── */
         .autofill-btn {
             display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
             border-radius:var(--radius-md);border:1px solid var(--border-subtle);
@@ -742,6 +743,31 @@
         }
         .autofill-btn:hover { border-color:var(--lobster-400);color:var(--lobster-300); }
         .autofill-btn:disabled { opacity:0.5;cursor:not-allowed; }
+        .gen-dropdown { position:relative;display:inline-block; }
+        .gen-dropdown-toggle {
+            display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+            border-radius:var(--radius-md);border:1px solid var(--border-subtle);
+            background:var(--bg-elevated);color:var(--text-dim);font-size:0.75rem;
+            font-weight:600;cursor:pointer;transition:all 0.15s;
+        }
+        .gen-dropdown-toggle:hover { border-color:var(--lobster-400);color:var(--lobster-300); }
+        .gen-dropdown-menu {
+            display:none;position:absolute;top:100%;left:0;margin-top:4px;
+            background:var(--bg-card);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-md);padding:4px;z-index:100;min-width:220px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.4);
+        }
+        .gen-dropdown.open .gen-dropdown-menu { display:block; }
+        .gen-dropdown-item {
+            display:flex;align-items:center;gap:8px;padding:8px 12px;border:none;
+            background:none;color:var(--text-secondary);font-size:0.75rem;
+            cursor:pointer;border-radius:var(--radius-sm);width:100%;text-align:left;
+            transition:all 0.15s;font-weight:500;
+        }
+        .gen-dropdown-item:hover { background:rgba(99,102,241,0.08);color:var(--text-primary); }
+        .gen-dropdown-item-icon { font-size:1rem;width:20px;text-align:center; }
+        .gen-dropdown-item-label { flex:1; }
+        .gen-dropdown-item-desc { font-size:0.62rem;color:var(--text-dim);font-weight:400; }
 
         @media (max-width: 600px) {
             .schedule-page { padding: 10px 8px !important; }
@@ -758,7 +784,10 @@
             .sched-content { flex-basis:calc(100% - 70px); }
             .sched-content-name { font-size:0.76rem; }
             .sched-content-angle { font-size:0.7rem; }
-            .sched-draft-text { font-size:0.78rem;-webkit-line-clamp:3; }
+            .sched-draft-text { font-size:0.78rem;-webkit-line-clamp:4; }
+            .gen-dropdown-menu { right:0;left:auto; }
+            .gen-dropdown-item { padding:10px 12px;font-size:0.78rem; }
+            .gen-dropdown-item-desc { font-size:0.65rem; }
             /* Actions — full-width row, bigger touch targets */
             .sched-draft-actions { width:100%;flex-wrap:wrap;gap:6px;margin-top:2px; }
             .sched-draft-btn { padding:8px 14px;font-size:0.72rem;min-height:36px;display:inline-flex;align-items:center;justify-content:center; }
@@ -927,9 +956,41 @@
             <h2>Content Schedule</h2>
             <div style="display:flex;align-items:center;gap:8px">
                 <div class="sched-header-meta">Free &middot; max 3 active</div>
-                <button type="button" class="autofill-btn" id="autofillBtn" style="display:none" onclick="window._autofillDay()">
-                    &#x2728; Auto-fill empty slots
-                </button>
+                <div class="gen-dropdown" id="genDropdown" style="display:none">
+                    <button type="button" class="gen-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        &#x2728; Generate &#x25BE;
+                    </button>
+                    <div class="gen-dropdown-menu">
+                        <button class="gen-dropdown-item" onclick="window._autofillDay('mixed')">
+                            <span class="gen-dropdown-item-icon">&#x1F3B2;</span>
+                            <span>
+                                <span class="gen-dropdown-item-label">Mixed</span><br>
+                                <span class="gen-dropdown-item-desc">Short + medium + formatted posts</span>
+                            </span>
+                        </button>
+                        <button class="gen-dropdown-item" onclick="window._autofillDay('punchy')">
+                            <span class="gen-dropdown-item-icon">&#x26A1;</span>
+                            <span>
+                                <span class="gen-dropdown-item-label">Punchy</span><br>
+                                <span class="gen-dropdown-item-desc">Short meme-like one-liners</span>
+                            </span>
+                        </button>
+                        <button class="gen-dropdown-item" onclick="window._autofillDay('formatted')">
+                            <span class="gen-dropdown-item-icon">&#x1F4CB;</span>
+                            <span>
+                                <span class="gen-dropdown-item-label">Formatted</span><br>
+                                <span class="gen-dropdown-item-desc">Structured posts with line breaks + CTAs</span>
+                            </span>
+                        </button>
+                        <button class="gen-dropdown-item" onclick="window._autofillDay('engagement')">
+                            <span class="gen-dropdown-item-icon">&#x1F525;</span>
+                            <span>
+                                <span class="gen-dropdown-item-label">Engagement</span><br>
+                                <span class="gen-dropdown-item-desc">Questions, hot takes, reply bait</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
                 <button type="button" class="approve-all-btn" id="approveAllBtn" style="display:none" onclick="window._approveAll()">
                     &#x2713; Approve all
                 </button>
@@ -1231,8 +1292,8 @@
 
         // Show editor/admin controls
         var canEdit = _hasEditAccess();
-        var btn = document.getElementById('autofillBtn');
-        btn.style.display = canEdit ? 'inline-flex' : 'none';
+        var genDd = document.getElementById('genDropdown');
+        genDd.style.display = canEdit ? 'inline-block' : 'none';
         var adminBanner = document.getElementById('adminBanner');
         if (adminBanner) adminBanner.style.display = canEdit ? '' : 'none';
 
@@ -1817,21 +1878,27 @@
 
     // ── Auto-fill & draft management ──
 
-    window._autofillDay = async function() {
+    window._autofillDay = async function(style) {
+        style = style || 'mixed';
         var auth = getAuth();
         if (!auth || !auth.token) { alert('Sign in first'); return; }
         if (!_selectedDay) return;
 
-        var btn = document.getElementById('autofillBtn');
-        btn.disabled = true;
-        btn.textContent = '\u2728 Generating...';
+        // Close dropdown
+        var dd = document.getElementById('genDropdown');
+        dd.classList.remove('open');
+
+        var toggle = dd.querySelector('.gen-dropdown-toggle');
+        toggle.disabled = true;
+        var styleLabels = { mixed: 'Mixed', punchy: 'Punchy', formatted: 'Formatted', engagement: 'Engagement' };
+        toggle.innerHTML = '&#x2728; Generating ' + (styleLabels[style] || '') + '...';
 
         var dayStr = _selectedDay.toISOString().split('T')[0];
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                body: JSON.stringify({ action: 'generate', date: dayStr, account: _activeAccount })
+                body: JSON.stringify({ action: 'generate', date: dayStr, account: _activeAccount, style: style })
             });
             var data = await resp.json();
             if (data.error) { alert(data.error); return; }
@@ -1840,14 +1907,14 @@
             if (data.drafts && data.drafts.length) {
                 data.drafts.forEach(function(d) { _schedSlots.push(d); });
                 renderSlots(_selectedDay);
-                updatePillarBanner(_selectedDay); // Refresh approve-all visibility
+                updatePillarBanner(_selectedDay);
             }
-            alert('Generated ' + (data.generated || 0) + ' drafts for ' + (data.pillar || 'today') + '. Review them, add images, then approve.');
+            alert('Generated ' + (data.generated || 0) + ' ' + (styleLabels[style] || '') + ' drafts for ' + (data.pillar || 'today') + '.');
         } catch(e) {
             alert('Failed to generate: ' + e.message);
         } finally {
-            btn.disabled = false;
-            btn.textContent = '\u2728 Auto-fill empty slots';
+            toggle.disabled = false;
+            toggle.innerHTML = '&#x2728; Generate &#x25BE;';
         }
     };
 
@@ -2223,6 +2290,12 @@
         var dm = document.getElementById('draftModal');
         if (dm) dm.addEventListener('click', function(e) {
             if (e.target === this) closeDraftModal();
+        });
+
+        // Close generate dropdown on click outside
+        document.addEventListener('click', function(e) {
+            var dd = document.getElementById('genDropdown');
+            if (dd && !dd.contains(e.target)) dd.classList.remove('open');
         });
     });
 
