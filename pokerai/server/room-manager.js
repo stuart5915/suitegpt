@@ -1515,6 +1515,7 @@ class RoomManager {
           rules: saved.rules || {},
           prompt: saved.prompt || '',
           pnl: 0,
+          currency: saved.currency || null,
           status: 'lobby'
         });
       }

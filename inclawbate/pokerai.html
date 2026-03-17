@@ -2262,12 +2262,18 @@
     color: var(--accent-gold);
   }
   .room-tab.pokerai-tab {
-    opacity: 0.5;
-    cursor: default;
-    border-style: dashed;
+    cursor: pointer;
+    border-color: rgba(52,208,88,0.2);
   }
   .room-tab.pokerai-tab:hover {
-    border-color: rgba(52,208,88,0.4);
+    border-color: #34d058;
+  }
+  .room-tab.pokerai-tab.active {
+    border-color: #34d058;
+    background: rgba(52,208,88,0.08);
+  }
+  .room-tab.pokerai-tab.active .room-tab-name {
+    color: #34d058;
   }
   .sandbox-pick {
     border-color: var(--accent-green) !important;
@@ -6888,20 +6894,22 @@ async function doDeposit() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
     closeVault();
-    // Auto-sync balance after deposit — poll every 2s until credited
+    // Auto-sync balance after deposit — poll every 2s until credited (up to 60s)
     let _usdcSynced = false;
+    const _balBefore = walletBalance;
     const _syncUsdc = () => { if (!_usdcSynced) checkDepositBalance(); };
     const _onUsdcCredited = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        if (msg.type === 'depositConfirmed' || (msg.type === 'walletBalance' && msg.data)) {
+        // Only stop polling when we get a depositConfirmed OR balance actually increased
+        if (msg.type === 'depositConfirmed' || (msg.type === 'checkDepositResult' && msg.data && msg.data.credited > 0)) {
           _usdcSynced = true;
           if (ws) ws.removeEventListener('message', _onUsdcCredited);
         }
       } catch {}
     };
     if (ws) ws.addEventListener('message', _onUsdcCredited);
-    for (let t = 2000; t <= 30000; t += 2000) setTimeout(_syncUsdc, t);
+    for (let t = 2000; t <= 60000; t += 3000) setTimeout(_syncUsdc, t);
   } catch (e) {
     console.error('Deposit failed:', e);
     const reason = e.reason || e.message || 'Transaction failed';
@@ -7036,7 +7044,14 @@ function refreshBalance() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'checkDepositPokerai' }));
   }
-  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 3000);
+  // Retry after 5s in case RPC returned stale data on first try
+  setTimeout(() => {
+    checkDepositBalance();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'checkDepositPokerai' }));
+    }
+  }, 5000);
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '↻'; } }, 6000);
 }
 
 async function doWithdraw() {
@@ -7686,7 +7701,7 @@ function renderMyAgents() {
           </div>
         </div>
         <div class="compact-stats">
-          <div class="compact-chips">${formatChips(agent.chips)}</div>
+          <div class="compact-chips">${agent.currency === 'pokerai' ? '<img src="/inclawbate/assets/pokerai-logo.png" style="width:11px;height:11px;vertical-align:-1px;margin-right:1px">' : '💲'}${formatChips(agent.chips)}</div>
           <div class="compact-pnl" style="color:${pnlColor}">${agent.roomId === 'sandbox' ? 'FREE' : pnlSign + pnl.toLocaleString()}</div>
         </div>
         <div class="compact-actions" onclick="event.stopPropagation()">
@@ -7745,7 +7760,7 @@ function renderMyAgents() {
           </div>
           <div style="text-align:right">
             ${agent.chipStack > 0
-              ? `<div style="font-family:'Rajdhani';font-size:28px;font-weight:800;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div><div style="font-size:11px;color:var(--text-muted)">chips</div>`
+              ? `<div style="font-family:'Rajdhani';font-size:28px;font-weight:800;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div><div style="font-size:11px;color:var(--text-muted)">${agent.currency === 'pokerai' ? '<img src="/inclawbate/assets/pokerai-logo.png" style="width:12px;height:12px;vertical-align:-1px;margin-right:2px">$POKERAI' : '💲 USDC'} chips</div>`
               : `<div style="font-size:13px;color:var(--text-muted)">Ready to play</div>`}
           </div>
         </div>
@@ -7774,10 +7789,15 @@ function renderMyAgents() {
         <!-- Fund panel (shown when agent has no chips) -->
         <div id="fundPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(245,197,66,0.3);border-radius:10px;padding:10px">
           <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's chip stack:</div>
-          <div style="display:flex;gap:4px;margin-bottom:8px">
-            <button id="fundCurrUsdc-${agent.id}" onclick="switchFundCurrency('${agent.id}','usdc')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary)">💲 USDC</button>
-            <button id="fundCurrPokerai-${agent.id}" onclick="switchFundCurrency('${agent.id}','pokerai')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted)"><img src="/inclawbate/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">POKERAI</button>
-          </div>
+          ${agent.chipStack > 0 && agent.currency
+            ? `<div style="display:flex;gap:4px;margin-bottom:8px">
+                <div style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;text-align:center;background:rgba(245,197,66,0.1);border:1px solid rgba(245,197,66,0.3);color:var(--accent-gold)">${agent.currency === 'pokerai' ? '<img src="/inclawbate/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">$POKERAI' : '💲 USDC'} (locked — withdraw to switch)</div>
+              </div>`
+            : `<div style="display:flex;gap:4px;margin-bottom:8px">
+                <button id="fundCurrUsdc-${agent.id}" onclick="switchFundCurrency('${agent.id}','usdc')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary)">💲 USDC</button>
+                <button id="fundCurrPokerai-${agent.id}" onclick="switchFundCurrency('${agent.id}','pokerai')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted)"><img src="/inclawbate/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">POKERAI</button>
+              </div>`
+          }
           <div style="font-size:9px;color:#f5c542;margin-bottom:4px;opacity:0.8">⚠️ Your agent plays hands automatically once joined to a table. You can withdraw chips anytime.</div>
           <div style="font-size:9px;color:#34d058;margin-bottom:6px">🔥 Earning <span class="pokerai-apy-value">---</span> APY in $POKERAI rewards</div>
           <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
@@ -7788,18 +7808,18 @@ function renderMyAgents() {
           <div id="fundBalLabel-${agent.id}" style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> USDC chips</div>
         </div>
         <!-- Withdraw panel (partial withdraw) -->
-        <div id="withdrawPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
-          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Withdraw chips to wallet:</div>
+        <div id="withdrawPanel-${agent.id}" data-currency="${agent.currency || 'usdc'}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Withdraw ${agent.currency === 'pokerai' ? '<img src="/inclawbate/assets/pokerai-logo.png" style="width:12px;height:12px;vertical-align:-2px;margin-right:2px">$POKERAI' : '💲 USDC'} chips to wallet:</div>
           <div id="withdrawPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input type="number" id="withdrawAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
             <button onclick="confirmWithdraw('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">WITHDRAW</button>
           </div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Agent stack: <span style="color:var(--accent-gold)">${agent.chipStack.toLocaleString()}</span> chips</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Agent stack: <span style="color:var(--accent-gold)">${agent.chipStack.toLocaleString()}</span> ${agent.currency === 'pokerai' ? '$POKERAI' : 'USDC'} chips</div>
         </div>
         <!-- Room picker (shown when agent is funded — money tables only) -->
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake</div>
+          ${agent.currency !== 'pokerai' ? `<div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake</div>
           <div class="room-picker" style="margin-bottom:10px">
             <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','micro')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Micro</span>
@@ -7813,8 +7833,8 @@ function renderMyAgents() {
               <span class="pick-label">High</span>
               <span class="pick-sub">625/1250 blinds</span>
             </button>
-          </div>
-          <div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px"><img src="/inclawbate/assets/pokerai-logo.png" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px">$POKERAI · 2.5% Rake</div>
+          </div>` : ''}
+          ${agent.currency === 'pokerai' ? `<div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px"><img src="/inclawbate/assets/pokerai-logo.png" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px">$POKERAI · 2.5% Rake</div>
           <div class="room-picker">
             <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','pokerai_micro')" style="border-color:rgba(52,208,88,0.3)">
               <span class="pick-label">Micro</span>
@@ -7828,7 +7848,7 @@ function renderMyAgents() {
               <span class="pick-label">High</span>
               <span class="pick-sub">625/1250 blinds</span>
             </button>
-          </div>
+          </div>` : ''}
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
       </div>`;
@@ -8029,6 +8049,11 @@ function toggleFundPanel(agentId) {
     _openFundPanel = agentId;
     _openRoomPicker = null;
     _openWithdrawPanel = null;
+    // Auto-lock to agent's existing currency if funded
+    const agent = myAgents.find(a => a.id === agentId);
+    if (agent && agent.chipStack > 0 && agent.currency) {
+      _fundPanelCurrency[agentId] = agent.currency;
+    }
   }
   _applyOpenPanels();
 }
@@ -8062,7 +8087,16 @@ function _applyOpenPanels() {
   document.querySelectorAll('[id^="fundPanel-"]').forEach(el => {
     const id = el.id.replace('fundPanel-', '');
     el.style.display = (id === _openFundPanel) ? 'block' : 'none';
-    if (id === _openFundPanel) _populateFundPresets(id);
+    if (id === _openFundPanel) {
+      _populateFundPresets(id);
+      // Update balance label for locked currency
+      const balLabel = document.getElementById('fundBalLabel-' + id);
+      if (balLabel) {
+        const curr = _getFundCurrency(id);
+        const bal = curr === 'pokerai' ? pokeraiWalletBalance : walletBalance;
+        balLabel.innerHTML = 'Balance: <span class="wallet-balance" style="color:var(--accent-gold)">' + bal.toLocaleString() + '</span> ' + (curr === 'pokerai' ? '$POKERAI' : 'USDC') + ' chips';
+      }
+    }
   });
   // Show/hide withdraw panels
   document.querySelectorAll('[id^="withdrawPanel-"]').forEach(el => {
@@ -8151,7 +8185,8 @@ function defundAgent(agentId, amount) {
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  const msg = { type: 'defundAgent', agentId, currency: getActiveCurrency() };
+  const agent = myAgents.find(a => a.id === agentId);
+  const msg = { type: 'defundAgent', agentId, currency: (agent && agent.currency) || 'usdc' };
   if (amount) msg.amount = amount;
   ws.send(JSON.stringify(msg));
 }
@@ -8175,7 +8210,7 @@ function _populateWithdrawPresets(agentId) {
     const amt = p.pct === 1 ? stack : Math.floor(stack * p.pct / 500) * 500; // round down to 500
     if (amt <= 0) return '';
     const chipLabel = amt >= 1000 ? (amt / 1000).toFixed(amt % 1000 === 0 ? 0 : 1) + 'K' : amt;
-    const currency = getActiveCurrency();
+    const currency = agent.currency || 'usdc';
     const valueLabel = currency === 'pokerai' ? amt.toLocaleString() + ' POKERAI' : '$' + (amt / 10000).toFixed(2);
     const isSelected = amt === savedAmt;
     const borderStyle = isSelected ? 'border-color:var(--accent-red);color:var(--accent-red)' : '';
@@ -8205,7 +8240,8 @@ function confirmWithdraw(agentId) {
   if (amount > agent.chipStack) { showToast(`Agent only has ${agent.chipStack.toLocaleString()} chips`, 'error'); return; }
 
   defundAgent(agentId, amount);
-  showToast(`Withdrawing ${amount.toLocaleString()} chips...`, 'info');
+  const currLabel = agent.currency === 'pokerai' ? '$POKERAI' : 'USDC';
+  showToast(`Withdrawing ${amount.toLocaleString()} ${currLabel} chips...`, 'info');
   _openWithdrawPanel = null;
   _applyOpenPanels();
 }

@@ -510,8 +510,6 @@ class PokerEngine {
   }
 
   async playHand() {
-    this.round++;
-    this.handsPlayed++;
     this.pot = 0;
     this.phase = 'preflop';
     this.lastWinner = null;
@@ -616,6 +614,10 @@ class PokerEngine {
       if (this._onHandComplete) this._onHandComplete();
       return;
     }
+
+    // Only count as a real hand when 2+ players are active
+    this.round++;
+    this.handsPlayed++;
 
     // Rotate dealer (skip folded/bust agents)
     this.dealerIndex = this._nextActive(this.dealerIndex);
