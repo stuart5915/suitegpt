@@ -1262,13 +1262,31 @@ async function initChainServices() {
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
         console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (${usdcRaw / 1e6} USDC)`);
         try {
-          await rooms.store.addBalance(walletAddress, chips);
-          await rooms.store.recordTransaction(walletAddress, 'deposit', usdcRaw, chips);
-          console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
+          // Deduplicate: compare on-chain gross deposits vs total credits in DB
+          // Only credit the DIFFERENCE to avoid double-crediting replayed events
+          const stats = await chain.playerStats(walletAddress);
+          const onChainTotal = Math.floor((Number(stats[0]) * 10000) / 1e6);
+          const dbCredited = rooms.store.getTotalDepositedChips
+            ? await rooms.store.getTotalDepositedChips(walletAddress)
+            : 0;
+          const diff = onChainTotal - dbCredited;
+          if (diff < 100) {
+            console.log(`[Chain] Deposit event for ${walletAddress} already credited (on-chain: ${onChainTotal}, db: ${dbCredited}) — skipping`);
+            // Still notify client to refresh balance in case it's stale
+            for (const [ws, client] of clients) {
+              if (client.walletAddress === walletAddress && ws.readyState === 1) {
+                sendBalance(ws, walletAddress);
+              }
+            }
+            return;
+          }
+          await rooms.store.addBalance(walletAddress, diff);
+          await rooms.store.recordTransaction(walletAddress, 'deposit', Math.floor(diff / 10000 * 1e6), diff);
+          console.log(`[Chain] Credited ${diff} chips to ${walletAddress} (on-chain: ${onChainTotal}, was: ${dbCredited})`);
           for (const [ws, client] of clients) {
             if (client.walletAddress === walletAddress && ws.readyState === 1) {
               sendBalance(ws, walletAddress);
-              ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, usdcAmount: chips / 10000 } }));
+              ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: diff, usdcAmount: diff / 10000 } }));
             }
           }
         } catch (e) {
@@ -1303,12 +1321,30 @@ async function initChainServices() {
         tokenChain.onDeposit = async (walletAddress, chips, tokenRaw) => {
           console.log(`[TokenChain] Deposit event: ${walletAddress} → ${chips} chips (${chips} POKERAI)`);
           try {
-            await rooms.store.addBalance(walletAddress, chips, 'pokerai');
-            await rooms.store.recordTransaction(walletAddress, 'deposit_pokerai', tokenRaw, chips);
+            // Deduplicate: compare on-chain gross deposits vs total credits in DB
+            // Only credit the DIFFERENCE to avoid double-crediting replayed events
+            const stats = await tokenChain.getPlayerDepositStats(walletAddress);
+            const onChainTotal = Math.floor(Number(stats.deposited)); // 1 token = 1 chip
+            const dbCredited = rooms.store.getTotalDepositedPokeraiChips
+              ? await rooms.store.getTotalDepositedPokeraiChips(walletAddress)
+              : 0;
+            const diff = onChainTotal - dbCredited;
+            if (diff < 1) {
+              console.log(`[TokenChain] Deposit event for ${walletAddress} already credited (on-chain: ${onChainTotal}, db: ${dbCredited}) — skipping`);
+              for (const [ws, cl] of clients) {
+                if (cl.walletAddress === walletAddress && ws.readyState === 1) {
+                  sendBalance(ws, walletAddress);
+                }
+              }
+              return;
+            }
+            await rooms.store.addBalance(walletAddress, diff, 'pokerai');
+            await rooms.store.recordTransaction(walletAddress, 'deposit_pokerai', tokenRaw, diff);
+            console.log(`[TokenChain] Credited ${diff} chips to ${walletAddress} (on-chain: ${onChainTotal}, was: ${dbCredited})`);
             for (const [ws, cl] of clients) {
               if (cl.walletAddress === walletAddress && ws.readyState === 1) {
                 sendBalance(ws, walletAddress);
-                ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, token: 'POKERAI' } }));
+                ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: diff, token: 'POKERAI' } }));
               }
             }
           } catch (e) {
