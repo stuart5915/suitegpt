@@ -1860,12 +1860,35 @@ async function openFundModal(poolAddr, poolName, projectId) {
     const wallet = auth.profile.wallet_address;
     if (!wallet) { alert('No wallet connected.'); return; }
 
-    // Fetch CLAWS balance + price in parallel
+    // Ensure we're on Base before reading balance
+    const provider = window.ethereum || (window.phantom && window.phantom.ethereum);
+    if (provider) {
+        try {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        } catch (e) {
+            if (e.code === 4902) {
+                try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); } catch (e2) {}
+            }
+        }
+    }
+
+    // Fetch CLAWS balance — try provider first (works in wallet browsers), then public RPCs
     let clawsBalance = 0;
     let clawsPrice = buyState.clawsPrice || 0;
+    const balData = STAKING_USER_SEL.balanceOf + pad32(wallet);
     try {
-        const balHex = await rpcCall(CLAWS_ADDRESS, STAKING_USER_SEL.balanceOf + pad32(wallet));
-        clawsBalance = fromWei(balHex);
+        // Try injected provider first (most reliable inside wallet browsers like Coinbase)
+        if (provider) {
+            try {
+                const result = await provider.request({ method: 'eth_call', params: [{ to: CLAWS_ADDRESS, data: balData }, 'latest'] });
+                if (result && result !== '0x') clawsBalance = fromWei(safeHex(result));
+            } catch (e) { /* fall through to public RPC */ }
+        }
+        // Fallback to public RPCs if provider failed
+        if (clawsBalance === 0) {
+            const balHex = await rpcCall(CLAWS_ADDRESS, balData);
+            clawsBalance = fromWei(balHex);
+        }
         if (!clawsPrice) {
             const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
             const data = await resp.json();
