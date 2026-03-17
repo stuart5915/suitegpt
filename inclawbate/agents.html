@@ -1163,6 +1163,27 @@
             <iframe id="scheduleIframe" src="" style="width:100%;border:none;min-height:600px;background:transparent"></iframe>
         </div>
 
+        <!-- ═══ HEALTH CHECK PANEL ═══ -->
+        <div class="launch-panel" id="healthCheckPanel" style="display:none">
+            <div class="launch-panel-header">
+                <span>&#x1F4CA; Health Check</span>
+                <button class="launch-panel-close" onclick="closeHealthPanel()">&times;</button>
+            </div>
+            <div class="gig-panel-body">
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 var(--space-md);">Enter a token address to pull live analytics &mdash; price, volume, liquidity, staking stats, and actionable suggestions.</p>
+                <div class="gig-field">
+                    <label>Token Address</label>
+                    <input class="gig-input" id="healthTokenAddr" placeholder="0x..." maxlength="66">
+                </div>
+                <div id="healthTokenPicks" style="display:none;margin-bottom:var(--space-md);">
+                    <div style="font-family:var(--font-mono);font-size:0.55rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px;">Your tokens</div>
+                    <div id="healthTokenList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+                </div>
+                <button class="gig-submit" id="healthRunBtn" onclick="runHealthCheck()">Run Health Check</button>
+                <div id="healthResult" style="margin-top:var(--space-md);"></div>
+            </div>
+        </div>
+
         <!-- ═══ MARKETING AGENTS PANEL ═══ -->
         <div class="launch-panel" id="marketingPanel" style="display:none">
             <div class="launch-panel-header">
@@ -2012,9 +2033,8 @@ var CHIP_ACTIONS = {
         action: function() { showMarketingPanel(); }
     },
     'How is my project doing? Run a health check': {
-        reply: 'To run a health check I need your token address. Type it in the chat and I\'ll pull analytics from DexScreener, staking stats, and project status.',
-        chatReply: true,
-        action: function() { closeAllPanels(); }
+        reply: 'Opening health check &mdash; enter your token address and I\'ll pull live analytics.',
+        action: function() { showHealthPanel(); }
     },
     'Post a gig request': {
         reply: 'Post a gig request &mdash; describe what you need and inclawbators will apply. Design, dev, marketing, content &mdash; name it.',
@@ -2140,6 +2160,7 @@ function closeAllPanels() {
     document.getElementById('myGigsPanel').style.display = 'none';
     document.getElementById('openGigsPanel').style.display = 'none';
     document.getElementById('marketingPanel').style.display = 'none';
+    document.getElementById('healthCheckPanel').style.display = 'none';
     document.getElementById('hubPortfolioPanel').classList.remove('open');
     // Restore flywheel default view
     var fw = document.getElementById('flywheelSection');
@@ -2207,6 +2228,46 @@ function showMarketingPanel() {
 }
 
 function closeMarketingPanel() { closeAllPanels(); }
+
+// ── Health check panel ──
+function showHealthPanel() {
+    closeAllPanels();
+    hideFlywheel();
+    var panel = document.getElementById('healthCheckPanel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('healthResult').innerHTML = '';
+    // Auto-populate from portfolio tokens
+    var picks = document.getElementById('healthTokenPicks');
+    var list = document.getElementById('healthTokenList');
+    if (_hubData && _hubData.tokens && _hubData.tokens.length) {
+        list.innerHTML = _hubData.tokens.map(function(t) {
+            return '<button class="gig-cat" onclick="document.getElementById(\'healthTokenAddr\').value=\'' + (t.address || '') + '\';this.classList.add(\'active\')">' + escH(t.symbol || t.name || 'Token') + '</button>';
+        }).join('');
+        picks.style.display = '';
+    } else {
+        picks.style.display = 'none';
+    }
+    setTimeout(function() { document.getElementById('healthTokenAddr').focus(); }, 200);
+}
+
+function closeHealthPanel() { closeAllPanels(); }
+
+async function runHealthCheck() {
+    var addr = (document.getElementById('healthTokenAddr').value || '').trim();
+    if (!addr) { document.getElementById('healthTokenAddr').focus(); return; }
+    var btn = document.getElementById('healthRunBtn');
+    var result = document.getElementById('healthResult');
+    btn.disabled = true; btn.textContent = 'Checking...';
+    result.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.78rem;padding:12px;">Pulling live data...</div>';
+
+    // Send to the chat agent so it runs health_check tool and gives a full response
+    var prompt = 'Run a health check on token ' + addr;
+    chatSendMessage(prompt);
+    btn.disabled = false; btn.textContent = 'Run Health Check';
+    result.innerHTML = '<div style="text-align:center;color:#4ade80;font-size:0.78rem;padding:12px;">Check the chat below for your health report.</div>';
+}
 
 // ── Inclawbators gig panel ──
 var _gigCat = '';
