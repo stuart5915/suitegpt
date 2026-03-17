@@ -523,22 +523,25 @@
     // Profile completeness score — higher = more useful profile
     function profileScore(p) {
         var score = 0;
-        if (p.tagline) score += 3;
-        if (p.bio) score += 2;
-        if (p.skills && p.skills.length) score += 2;
-        if (p.portfolio_links && p.portfolio_links.length) score += 2;
-        if (p.contact_method) score += 1;
+        if (p.tagline && p.tagline.trim() && p.tagline !== 'None') score += 3;
+        if (p.skills && p.skills.length) score += 3 + Math.min(p.skills.length, 5);
+        if (p.bio && p.bio.trim() && p.bio !== 'None' && p.bio.trim().length > 20) score += 2;
+        if (p.portfolio_links && p.portfolio_links.length) score += 3;
+        if (p.contact_method) score += 2;
         if (p.x_avatar_url) score += 1;
         if (p.display_name || p.x_name) score += 1;
-        if (p.tokens_launched) score += 1;
-        if (p.apps_built) score += 1;
-        if (p.hire_count) score += 1;
+        if (p.tokens_launched) score += 2;
+        if (p.apps_built) score += 2;
+        if (p.hire_count) score += 2;
         return score;
     }
 
     // Is a profile "complete enough" to show?
+    // Must have a real tagline OR skills — bio alone is not enough (too much spam)
     function isUsefulProfile(p) {
-        return !!(p.tagline || (p.skills && p.skills.length) || p.bio);
+        var hasTagline = p.tagline && p.tagline.trim() && p.tagline !== 'None';
+        var hasSkills = p.skills && p.skills.length > 0;
+        return !!(hasTagline || hasSkills);
     }
 
     function fetchProfiles() {
