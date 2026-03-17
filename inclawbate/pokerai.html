@@ -7777,15 +7777,10 @@ function renderMyAgents() {
         <!-- Fund panel (shown when agent has no chips) -->
         <div id="fundPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(245,197,66,0.3);border-radius:10px;padding:10px">
           <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's chip stack:</div>
-          ${agent.chipStack > 0 && agent.currency
-            ? `<div style="display:flex;gap:4px;margin-bottom:8px">
-                <div style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;text-align:center;background:rgba(245,197,66,0.1);border:1px solid rgba(245,197,66,0.3);color:var(--accent-gold)">${agent.currency === 'pokerai' ? '<img src="/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">$POKERAI' : '💲 USDC'} (locked — withdraw to switch)</div>
-              </div>`
-            : `<div style="display:flex;gap:4px;margin-bottom:8px">
-                <button id="fundCurrUsdc-${agent.id}" onclick="switchFundCurrency('${agent.id}','usdc')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary)">💲 USDC</button>
-                <button id="fundCurrPokerai-${agent.id}" onclick="switchFundCurrency('${agent.id}','pokerai')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted)"><img src="/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">POKERAI</button>
-              </div>`
-          }
+          <div style="display:flex;gap:4px;margin-bottom:8px">
+            <button id="fundCurrUsdc-${agent.id}" onclick="switchFundCurrency('${agent.id}','usdc')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:${!agent.currency || agent.currency === 'usdc' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)'};border:1px solid ${!agent.currency || agent.currency === 'usdc' ? 'rgba(99,102,241,0.3)' : 'var(--border)'};color:${!agent.currency || agent.currency === 'usdc' ? 'var(--accent-primary)' : 'var(--text-muted)'}">💲 USDC</button>
+            <button id="fundCurrPokerai-${agent.id}" onclick="switchFundCurrency('${agent.id}','pokerai')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;border-radius:6px;cursor:pointer;transition:all 0.2s;background:${agent.currency === 'pokerai' ? 'rgba(52,208,88,0.15)' : 'rgba(255,255,255,0.04)'};border:1px solid ${agent.currency === 'pokerai' ? 'rgba(52,208,88,0.3)' : 'var(--border)'};color:${agent.currency === 'pokerai' ? '#34d058' : 'var(--text-muted)'}"><img src="/assets/pokerai-logo.png" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px">POKERAI</button>
+          </div>
           <div style="font-size:9px;color:#f5c542;margin-bottom:4px;opacity:0.8">⚠️ Your agent plays hands automatically once joined to a table. You can withdraw chips anytime.</div>
           <div style="font-size:9px;color:#34d058;margin-bottom:6px">🔥 Earning <span class="pokerai-apy-value">---</span> APY in $POKERAI rewards</div>
           <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
@@ -8127,6 +8122,16 @@ const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
 const _fundPanelCurrency = {}; // per-agent fund currency selection
 
 function switchFundCurrency(agentId, currency) {
+  // If agent has chips in a different currency, auto-withdraw first
+  const agent = myAgents.find(a => a.id === agentId);
+  if (agent && agent.chipStack > 0 && agent.currency && agent.currency !== currency) {
+    const oldLabel = agent.currency === 'pokerai' ? '$POKERAI' : 'USDC';
+    const newLabel = currency === 'pokerai' ? '$POKERAI' : 'USDC';
+    if (!confirm(`This agent has ${agent.chipStack.toLocaleString()} ${oldLabel} chips. Withdraw them to switch to ${newLabel}?`)) return;
+    // Auto-withdraw all chips, then switch currency
+    ws.send(JSON.stringify({ type: 'defundAgent', agentId, amount: agent.chipStack }));
+    showToast(`Withdrawing ${agent.chipStack.toLocaleString()} ${oldLabel} chips...`, 'info');
+  }
   _fundPanelCurrency[agentId] = currency;
   const uBtn = document.getElementById('fundCurrUsdc-' + agentId);
   const pBtn = document.getElementById('fundCurrPokerai-' + agentId);
@@ -8136,9 +8141,9 @@ function switchFundCurrency(agentId, currency) {
     uBtn.style.color = currency === 'usdc' ? 'var(--accent-primary)' : 'var(--text-muted)';
   }
   if (pBtn) {
-    pBtn.style.background = currency === 'pokerai' ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)';
-    pBtn.style.borderColor = currency === 'pokerai' ? 'rgba(139,92,246,0.3)' : 'var(--border)';
-    pBtn.style.color = currency === 'pokerai' ? 'hsl(263,70%,68%)' : 'var(--text-muted)';
+    pBtn.style.background = currency === 'pokerai' ? 'rgba(52,208,88,0.15)' : 'rgba(255,255,255,0.04)';
+    pBtn.style.borderColor = currency === 'pokerai' ? 'rgba(52,208,88,0.3)' : 'var(--border)';
+    pBtn.style.color = currency === 'pokerai' ? '#34d058' : 'var(--text-muted)';
   }
   _populateFundPresets(agentId);
   // Update balance label
