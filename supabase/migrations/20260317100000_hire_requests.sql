@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS hire_requests (
     target_wallet text NOT NULL,
 
     -- Request details
-    description text NOT NULL CHECK (char_length(description) BETWEEN 10 AND 500),
+    description text NOT NULL CHECK (char_length(description) BETWEEN 3 AND 500),
     budget_claws integer,
     requester_contact text NOT NULL CHECK (char_length(requester_contact) BETWEEN 2 AND 100),
 

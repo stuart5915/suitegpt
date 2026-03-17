@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     // Validate
     if (!target_wallet) return res.status(400).json({ error: 'target_wallet required' });
-    if (!description || description.trim().length < 10) return res.status(400).json({ error: 'Description must be at least 10 characters' });
+    if (!description || description.trim().length < 3) return res.status(400).json({ error: 'Description required' });
     if (description.trim().length > 500) return res.status(400).json({ error: 'Description too long (max 500)' });
     if (!contact || contact.trim().length < 2) return res.status(400).json({ error: 'Contact info required' });
     if (contact.trim().length > 100) return res.status(400).json({ error: 'Contact too long' });
