@@ -475,7 +475,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
         msg += `\n<b>🗳 Community</b> (${allocation.voterCount} vote${allocation.voterCount !== 1 ? 's' : ''})\n`;
         msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.community[i]}%`).join(' · ') + `\n`;
-        msg += `<i>Vote: inclawbate.com/state</i>\n`;
+        msg += `<a href="https://www.inclawbate.com/how-it-works">Vote: inclawbate.com/how-it-works</a>\n`;
     }
 
     // Focus / Incubations / Backlog
