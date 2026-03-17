@@ -28,7 +28,7 @@ const BASE_RPCS = [
     'https://base.meowrpc.com'
 ];
 
-const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy', 'council-comp'];
+const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy'];
 
 async function rpcCall(to, data) {
     for (const rpc of BASE_RPCS) {
