@@ -228,14 +228,14 @@ async function fetchTasks() {
     const [doneRes, focusRes, incubationRes, responsibilityRes, todoRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('content').eq('category', 'incubation').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content, author').eq('category', 'incubation').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content, author').eq('category', 'responsibility').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
         focus: (focusRes.data || []).map(r => r.content),
-        incubations: (incubationRes.data || []).map(r => r.content),
+        incubations: (incubationRes.data || []).map(r => ({ content: r.content, author: r.author })),
         responsibilities: (responsibilityRes.data || []).map(r => ({ content: r.content, author: r.author })),
         backlog: (todoRes.data || []).map(r => r.content)
     };
@@ -510,7 +510,21 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 
     if (tasks.incubations.length) {
         msg += `\n<b>🦞 Incubations</b> (${tasks.incubations.length})\n`;
-        tasks.incubations.forEach(t => { msg += `• ${esc(t)}\n`; });
+        // Sort: unowned first, then owned. Strip " - inclawbate" etc. from content.
+        const owned = [];
+        const unowned = [];
+        for (const inc of tasks.incubations) {
+            const name = inc.content.replace(/\s*-\s*(?:inclawbate|@\w+)$/i, '').trim();
+            const author = inc.author || '';
+            const hasOwner = author && author !== 'admin' && author !== '@StuartDeFi';
+            if (hasOwner) {
+                owned.push(`• ${esc(name)} — ${esc(author)}`);
+            } else {
+                unowned.push(`• ${esc(name)} — <i>needs owner</i>`);
+            }
+        }
+        unowned.forEach(l => { msg += l + '\n'; });
+        owned.forEach(l => { msg += l + '\n'; });
     }
 
     if (tasks.responsibilities.length) {
