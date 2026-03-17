@@ -414,7 +414,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'regenerate_slot') {
-            const { slot_id } = req.body;
+            const { slot_id, style: regenStyle } = req.body;
             if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
 
             // Get the existing slot
@@ -432,6 +432,21 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const pillarName = opts.pillar || (slotAccount === 'inclawbate' ? 'Ecosystem Update' : 'Incubation CTA');
             const angle = opts.angle || 'general';
             const pillar = cfg.pillars.find(p => p.name === pillarName) || cfg.pillars[cfg.pillars.length - 1];
+            const oldTweet = slot.tweet_text || '';
+
+            // Fetch sibling tweets for this day to avoid repetition
+            const slotDate = new Date(slot.scheduled_at);
+            const dayStart = slotDate.toISOString().split('T')[0] + 'T00:00:00Z';
+            const dayEnd = new Date(new Date(dayStart).getTime() + 86400000).toISOString();
+            const { data: siblings } = await supabase
+                .from('agent_schedule')
+                .select('tweet_text')
+                .gte('scheduled_at', dayStart)
+                .lt('scheduled_at', dayEnd)
+                .eq('account', slotAccount)
+                .neq('id', slot_id)
+                .in('status', ['scheduled', 'needs_review', 'needs_image']);
+            const siblingTexts = (siblings || []).map(s => s.tweet_text).filter(Boolean);
 
             // Fetch real platform context
             const ctx = await fetchPlatformContext();
@@ -440,31 +455,58 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const sceneHint = cfg.sceneHints[pillar.name] || '';
             const narrativeScene = (cfg.narrativeScenes[pillar.name] || [])[Math.floor(Math.random() * (cfg.narrativeScenes[pillar.name] || ['']).length)] || '';
 
-            const prompt = `${cfg.identity} Generate ONE tweet.
+            // Pick style — use stored style, passed style, or random
+            const chosenStyle = regenStyle || opts.style || ['mixed', 'punchy', 'formatted', 'engagement'][Math.floor(Math.random() * 4)];
+            const styleGuide = STYLE_INSTRUCTIONS[chosenStyle] || '';
+
+            // Pick random style examples
+            const shuffled = [...cfg.styleExamples].sort(() => Math.random() - 0.5);
+            const exampleBlock = shuffled.slice(0, 3).map((e, i) => `${i + 1}. "${e}"`).join('\n');
+
+            const prompt = `${cfg.identity}
+
+Generate ONE tweet that is COMPLETELY DIFFERENT from the rejected version below.
+
+REJECTED (DO NOT write anything similar to this):
+"${oldTweet}"
+
+${siblingTexts.length ? 'OTHER TWEETS TODAY (do NOT repeat these ideas or phrasings):\n' + siblingTexts.map(t => '- "' + t.slice(0, 100) + '"').join('\n') + '\n' : ''}
 
 Pillar: ${pillar.name} — ${pillar.desc}
 Angle: ${angle}
 
 Real data (use ONLY these numbers):
 - ${ctx.totalApps}+ apps on inclawbate
-- Popular apps: ${topAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
-- Recent apps: ${recentAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
+- Popular apps: ${topAppList || '(not available — do NOT reference specific apps)'}
+- Recent apps: ${recentAppList || '(not available — do NOT reference specific apps)'}
 - Token: $CLAWS on Base, website: inclawbate.com
+- App builder: inclawbate.com/build
+- Staking: inclawbate.com/stake
+- PokerAI: pokerai.app
+- Tools: inclawbate.com/tools
 
-Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-native casual tone, varied format. NEVER mention any person's name, handle, or username. Talk about the platform, apps, and what's possible — not who built what. NEVER use vague filler like "various" or "popular ones" — either name specific apps from the data or don't mention apps at all.
+STYLE EXAMPLES (match this vibe):
+${exampleBlock}
+
+${styleGuide ? styleGuide + '\n' : ''}
+
+RULES:
+- Under 280 characters (STRICT — \\n line breaks count as 1 char each)
+- MUST be completely different from the rejected tweet — different angle, different structure, different words
+- No hashtags, no corporate speak, no em dashes
+- No @mentions, no names
+- Lowercase preferred, crypto-native casual tone
+- Can use \\n for line breaks if doing a formatted/structured tweet
+- NEVER use vague filler like "various" or "popular ones"
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 ${sceneHint ? 'BASE SCENE (adapt to tweet content): ' + sceneHint : ''}
+${narrativeScene ? 'NARRATIVE INSPIRATION: ' + narrativeScene : ''}
 
-NARRATIVE INSPIRATION (use elements from this scene to make the image richer and more specific):
-${narrativeScene || 'Use the brand mascot in a relevant pose.'}
-
-The image must visually match what the tweet talks about. If it mentions an app, show the lobster with that app. If it shouts out a builder, show the lobster building. Always feature the 3D lobster mascot. Draw from the narrative scene above for specific locations, characters, and props.
-
-Output in this format:
-TWEET: [the tweet]
-IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal lighting, specific to the tweet content, incorporating narrative elements]`;
+Output format:
+TWEET: [the tweet — can include \\n for line breaks]
+IMAGE: [2-3 sentence prompt]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -472,16 +514,19 @@ IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal l
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
-                        max_tokens: 500,
-                        temperature: 0.95,
+                        max_tokens: 800,
+                        temperature: 1.0,
                         messages: [{ role: 'user', content: prompt }]
                     })
                 });
                 const data = await resp.json();
                 const raw = (data.choices?.[0]?.message?.content || '').trim();
-                const tweetMatch = raw.match(/TWEET:\s*(.+)/i);
+                // Multiline TWEET capture (up to IMAGE:)
+                const tweetMatch = raw.match(/TWEET:\s*([\s\S]*?)(?=\nIMAGE:|\n*$)/i);
                 const imageMatch = raw.match(/IMAGE:\s*(.+)/i);
                 let tweetText = tweetMatch ? tweetMatch[1].replace(/^["']|["']$/g, '').trim() : raw.replace(/^["']|["']$/g, '').replace(/^\d+[\.\)]\s*/, '').trim();
+                // Convert literal \n to actual newlines
+                tweetText = tweetText.replace(/\\n/g, '\n').replace(/\n{3,}/g, '\n\n');
                 const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
 
                 if (!tweetText || tweetText.length > 280) {
@@ -489,7 +534,7 @@ IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal l
                 }
 
                 const newStatus = pillar.needsImage ? 'needs_image' : 'needs_review';
-                const newOpts = { ...opts, image_prompt: imagePrompt };
+                const newOpts = { ...opts, image_prompt: imagePrompt, style: chosenStyle };
                 const { data: updated, error } = await supabase
                     .from('agent_schedule')
                     .update({ tweet_text: tweetText, status: newStatus, tweet_options: newOpts })

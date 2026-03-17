@@ -2006,6 +2006,10 @@
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
 
+        // Pick a random style for variety
+        var styles = ['mixed', 'punchy', 'formatted', 'engagement'];
+        var randomStyle = styles[Math.floor(Math.random() * styles.length)];
+
         // Show regenerating state
         slot._regen = true;
         renderSlots(_selectedDay);
@@ -2014,7 +2018,7 @@
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                body: JSON.stringify({ action: 'regenerate_slot', slot_id: slotId })
+                body: JSON.stringify({ action: 'regenerate_slot', slot_id: slotId, style: randomStyle })
             });
             var data = await resp.json();
             if (data.error) { alert(data.error); return; }
