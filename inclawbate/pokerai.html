@@ -5111,6 +5111,7 @@ let _prevRound = 0;
 let _replayingHand = null; // null = live, index = viewing past hand
 let _handEndFreeze = false; // true during 3s post-hand showdown pause
 let _handEndFreezeTimer = null;
+let _freezeSnapshot = null; // saved community cards + agents for showdown display
 
 function detectHandComplete(data) {
   const justEnded = _prevRunning && !data.running && data.lastWinner;
@@ -5180,13 +5181,22 @@ function detectHandComplete(data) {
 
     renderTimeline();
 
-    // Freeze display for 3s so cards stay visible + show winner popup
+    // Freeze display for 3s — save snapshot so showdown reveals all cards
     _handEndFreeze = true;
+    _freezeSnapshot = {
+      communityCards: [...(data.communityCards || [])],
+      agents: data.agents.map(a => ({ ...a, hand: a.hand ? [...a.hand] : null })),
+      pot: handSnapshot.pot || data.pot || 0,
+      lastWinner: data.lastWinner
+    };
     if (_handEndFreezeTimer) clearTimeout(_handEndFreezeTimer);
     const potDisplay = handSnapshot.pot > 0 ? handSnapshot.pot.toLocaleString() : '';
     _showHandWinnerPopup(handSnapshot.winnerEmoji, handSnapshot.winnerName, potDisplay);
+    // Do one render now so showdown state displays immediately
+    renderFullState();
     _handEndFreezeTimer = setTimeout(() => {
       _handEndFreeze = false;
+      _freezeSnapshot = null;
       _hideHandWinnerPopup();
       renderFullState();
     }, 3000);
@@ -5456,13 +5466,15 @@ function renderFullState() {
   const needsMore = gameState.agents.length === 1;
   document.getElementById('roundNum').textContent = isEmpty ? '-' : gameState.round;
   document.getElementById('handsPlayed').textContent = isEmpty ? '-' : gameState.handsPlayed;
-  document.getElementById('phaseDisplay').textContent = isEmpty ? 'Empty' : needsMore ? 'Waiting...' : capitalize(gameState.phase);
-  document.getElementById('potDisplay').textContent = isEmpty ? '-' : gameState.pot.toLocaleString();
-  document.getElementById('potChips').textContent = isEmpty ? '' : `POT: ${gameState.pot.toLocaleString()}`;
+  const freezePot = _handEndFreeze && _freezeSnapshot ? _freezeSnapshot.pot : 0;
+  document.getElementById('phaseDisplay').textContent = isEmpty ? 'Empty' : needsMore ? 'Waiting...' : _handEndFreeze ? 'Showdown' : capitalize(gameState.phase);
+  document.getElementById('potDisplay').textContent = isEmpty ? '-' : (_handEndFreeze ? freezePot : gameState.pot).toLocaleString();
+  document.getElementById('potChips').textContent = isEmpty ? '' : `POT: ${(_handEndFreeze ? freezePot : gameState.pot).toLocaleString()}`;
 
-  // Community cards
+  // Community cards — use freeze snapshot during showdown pause
+  const ccSource = _handEndFreeze && _freezeSnapshot ? _freezeSnapshot.communityCards : gameState.communityCards;
   for (let i = 0; i < 5; i++) {
-    const card = gameState.communityCards[i] || null;
+    const card = ccSource[i] || null;
     renderCommunityCard(i, card);
   }
 
@@ -5575,14 +5587,27 @@ function renderTableSeats() {
     let pocketHTML = '';
     const isSpotlight = agent.id === _spotlightAgentId;
     const showCards = isMyAgent || isSpotlight;
-    if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded && showCards) {
+
+    // During showdown freeze: reveal ALL agents' cards from snapshot
+    const freezeAgent = _handEndFreeze && _freezeSnapshot ? _freezeSnapshot.agents.find(a => a.id === agent.id) : null;
+    const showdownHand = freezeAgent && freezeAgent.hand && freezeAgent.hand.length === 2 && !freezeAgent.folded ? freezeAgent.hand : null;
+    const isActive = gameState.running || _handEndFreeze;
+
+    if (showdownHand && _handEndFreeze) {
+      // Showdown: show all non-folded agents' cards face-up
+      const c1 = showdownHand[0], c2 = showdownHand[1];
+      pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
+        <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
+        <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
+      </div>`;
+    } else if (agent.hand && agent.hand.length === 2 && isActive && !agent.folded && showCards) {
       const c1 = agent.hand[0], c2 = agent.hand[1];
       const spotlightGlow = isSpotlight && !isMyAgent ? 'box-shadow:0 0 8px rgba(245,197,66,0.4);' : '';
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
         <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;${spotlightGlow}"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
         <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;${spotlightGlow}"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
       </div>`;
-    } else if ((agent.hasCards || agent.hand) && gameState.running && !agent.folded) {
+    } else if ((agent.hasCards || agent.hand) && isActive && !agent.folded) {
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
