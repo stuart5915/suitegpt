@@ -6888,9 +6888,20 @@ async function doDeposit() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
     closeVault();
-    // Auto-sync balance after deposit (server event listener + manual reconcile fallback)
-    setTimeout(() => { checkDepositBalance(); }, 3000);
-    setTimeout(() => { checkDepositBalance(); }, 8000);
+    // Auto-sync balance after deposit — poll every 2s until credited
+    let _usdcSynced = false;
+    const _syncUsdc = () => { if (!_usdcSynced) checkDepositBalance(); };
+    const _onUsdcCredited = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'depositConfirmed' || (msg.type === 'walletBalance' && msg.data)) {
+          _usdcSynced = true;
+          if (ws) ws.removeEventListener('message', _onUsdcCredited);
+        }
+      } catch {}
+    };
+    if (ws) ws.addEventListener('message', _onUsdcCredited);
+    for (let t = 2000; t <= 30000; t += 2000) setTimeout(_syncUsdc, t);
   } catch (e) {
     console.error('Deposit failed:', e);
     const reason = e.reason || e.message || 'Transaction failed';
@@ -6974,10 +6985,28 @@ async function doDepositPokerai() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips...';
     closeVault();
-    // Auto-sync POKERAI balance after deposit
-    const _syncPokerai = () => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'checkDepositPokerai' })); };
-    setTimeout(_syncPokerai, 3000);
-    setTimeout(_syncPokerai, 8000);
+    // Auto-sync POKERAI balance after deposit — poll until credited
+    let _depositSynced = false;
+    const _syncPokerai = () => {
+      if (_depositSynced) return;
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'checkDepositPokerai' }));
+    };
+    const _onCredited = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'checkDepositPokeraiResult' && msg.data && msg.data.credited > 0) {
+          _depositSynced = true;
+          ws.removeEventListener('message', _onCredited);
+        }
+        if (msg.type === 'depositConfirmed') {
+          _depositSynced = true;
+          ws.removeEventListener('message', _onCredited);
+        }
+      } catch {}
+    };
+    if (ws) ws.addEventListener('message', _onCredited);
+    // Poll every 2s for up to 30s
+    for (let t = 2000; t <= 30000; t += 2000) setTimeout(_syncPokerai, t);
   } catch (e) {
     console.error('POKERAI deposit failed:', e);
     let reason = e.reason || e.shortMessage || e.message || 'Transaction failed';
