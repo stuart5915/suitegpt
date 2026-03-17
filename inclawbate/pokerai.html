@@ -4509,6 +4509,9 @@ setInterval(fetchVaultForApy, 60000);
 // GAME STATE (populated from server)
 // ============================================================
 let activeRoom = 'sandbox';
+let _spotlightAgentId = null;
+let _lastHandCount = 0;
+
 let gameState = {
   running: false,
   round: 0,
@@ -4967,6 +4970,16 @@ function applyServerState(data) {
   gameState.agents = data.agents;
   gameState.round = data.round;
   gameState.handsPlayed = data.handsPlayed;
+  // Pick a new random spotlight agent each hand
+  if (data.handsPlayed !== _lastHandCount && data.agents && data.agents.length > 1) {
+    _lastHandCount = data.handsPlayed;
+    const wallet = getWallet();
+    const others = data.agents.filter(a => {
+      const isMine = wallet && a.walletAddress === wallet.address;
+      return !isMine && a.hand && a.hand.length === 2 && !a.folded;
+    });
+    _spotlightAgentId = others.length > 0 ? others[Math.floor(Math.random() * others.length)].id : null;
+  }
   gameState.pot = data.pot;
   gameState.phase = data.phase;
   gameState.communityCards = data.communityCards;
@@ -5440,13 +5453,16 @@ function renderTableSeats() {
     const cgap = isMyAgent ? 4 : 2;
 
     let pocketHTML = '';
-    if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded) {
+    const isSpotlight = agent.id === _spotlightAgentId;
+    const showCards = isMyAgent || isSpotlight;
+    if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded && showCards) {
       const c1 = agent.hand[0], c2 = agent.hand[1];
+      const spotlightGlow = isSpotlight && !isMyAgent ? 'box-shadow:0 0 8px rgba(245,197,66,0.4);' : '';
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
-        <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
-        <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
+        <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;${spotlightGlow}"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
+        <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;${spotlightGlow}"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
       </div>`;
-    } else if (agent.hasCards && gameState.running && !agent.folded) {
+    } else if ((agent.hasCards || agent.hand) && gameState.running && !agent.folded) {
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
@@ -5516,7 +5532,7 @@ function renderTableSeats() {
     const sidePocket = pocketHTML ? pocketHTML.replace('class="seat-pocket"', `class="seat-pocket${sideClass}"`) : '';
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
-      ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
+      ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : isSpotlight && !agent.folded && gameState.running ? '<div class="my-agent-label" style="background:rgba(245,197,66,0.85);color:#000">PEEKING</div>' : ''}
       <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
            title="${escapeHtml(agent.name)}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
