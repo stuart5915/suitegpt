@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
     const user = authenticateRequest(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+    if (!GROQ_API_KEY) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
 
     const { project_id } = req.body || {};
     if (!project_id) return res.status(400).json({ error: 'project_id required' });

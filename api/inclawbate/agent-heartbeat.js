@@ -16,10 +16,10 @@ const supabase = createClient(
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const DAILY_POST_CAP = 40; // global cap across all agents
 const SHARED_DAILY_CAP = 12; // max posts/day on shared @inclawbator account
-const CREDIT_COST = 10; // base cost same as Haiku in build studio
+const CREDIT_COST = 10; // base cost
 
 // Admin wallets that bypass credit checks
 const FREE_CREDIT_WALLETS = [
@@ -287,8 +287,8 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    if (!ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+    if (!GROQ_API_KEY) {
+        return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
     }
 
     try {

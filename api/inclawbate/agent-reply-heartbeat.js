@@ -1,7 +1,7 @@
 // Inclawbate — Agent Auto-Reply Heartbeat (cron every 15 min)
 // For each agent with auto_reply enabled:
 //   1. Poll X mentions since last seen
-//   2. Generate reply via Claude Haiku
+//   2. Generate reply via Groq (Llama 3.3 70B) — free
 //   3. Post reply to X
 //   4. Log in agent_replies table
 
@@ -14,7 +14,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MAX_REPLIES_PER_RUN = 3;     // max replies per heartbeat run (spread them out)
 const DEFAULT_DAILY_LIMIT = 10;    // default daily reply cap
 const MENTION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // ignore mentions older than 12h
@@ -73,7 +73,7 @@ async function fetchMentions(xUserId, sinceId, accessToken) {
     };
 }
 
-// ── Generate a reply using Claude Haiku ──
+// ── Generate a reply using Groq (Llama 3.3 70B) — free ──
 
 async function generateReply(mention, project) {
     const tone = project.agent_tone || 'chill';
@@ -101,26 +101,27 @@ Rules:
 - If they ask a genuine question about the project, answer helpfully
 - Output ONLY the reply text, nothing else`;
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01'
+            'Authorization': `Bearer ${GROQ_API_KEY}`
         },
         body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'llama-3.3-70b-versatile',
             max_tokens: 200,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: `Their tweet:\n"${mention.text}"\n\nWrite your reply:` }]
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Their tweet:\n"${mention.text}"\n\nWrite your reply:` }
+            ]
         })
     });
 
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Claude API error');
+    if (!resp.ok) throw new Error(data.error?.message || 'Groq API error');
 
-    let text = (data.content?.[0]?.text || '').trim();
-    // Remove quotes if Claude wrapped it
+    let text = (data.choices?.[0]?.message?.content || '').trim();
+    // Remove quotes if model wrapped it
     if (text.startsWith('"') && text.endsWith('"')) text = text.slice(1, -1);
     return text;
 }
@@ -293,8 +294,8 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    if (!ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+    if (!GROQ_API_KEY) {
+        return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
     }
 
     try {

@@ -1,7 +1,8 @@
 // Shared agent tweet generation utilities
 // Prefixed with _ so Vercel does not expose as API route
+// Uses Groq (Llama 3.3 70B) — free, no Anthropic cost
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 export const TONE_DESCRIPTIONS = {
     hype: 'High energy, bullish, uses exclamation marks. Excited but not cringey.',
@@ -91,24 +92,25 @@ ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name n
 - Output ONLY the tweet text, nothing else
 - Be creative, varied, and authentic${customRules}`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01'
+            'Authorization': `Bearer ${GROQ_API_KEY}`
         },
         body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'llama-3.3-70b-versatile',
             max_tokens: 300,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: `Today's content angle: ${pillar}\n\nWrite a tweet:` }]
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Today's content angle: ${pillar}\n\nWrite a tweet:` }
+            ]
         })
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Claude API error');
+    if (!response.ok) throw new Error(data.error?.message || 'Groq API error');
 
-    let text = (data.content?.[0]?.text || '').trim();
+    let text = (data.choices?.[0]?.message?.content || '').trim();
     return { text, content_angle: pillar };
 }
