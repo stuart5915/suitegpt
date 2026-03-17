@@ -5624,15 +5624,15 @@ function renderTableSeats() {
         <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
         <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
       </div>`;
-    } else if (agent.hand && agent.hand.length === 2 && isActive && !agent.folded && tvReveal) {
-      // Turn/River: reveal all hands face-up (TV broadcast style)
+    } else if (agent.hand && agent.hand.length === 2 && isActive && !agent.folded && (tvReveal || isMyAgent)) {
+      // Your agents: always face-up. Others: revealed on turn+river (TV broadcast style)
       const c1 = agent.hand[0], c2 = agent.hand[1];
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
         <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
         <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
       </div>`;
     } else if ((agent.hasCards || agent.hand) && isActive && !agent.folded) {
-      // Preflop/Flop: all cards face-down
+      // Preflop/Flop: other agents' cards face-down
       pocketHTML = `<div class="seat-pocket" style="gap:${cgap}px">
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
         <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
