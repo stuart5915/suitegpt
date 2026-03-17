@@ -480,11 +480,18 @@
     <div class="iclw-grid" id="iclw-grid"></div>
     <div class="iclw-empty" id="iclw-empty" style="display:none;">Loading...</div>
 
-    <!-- Join CTA -->
+    <!-- Hire CTA -->
     <div class="iclw-cta">
+        <div class="iclw-cta-title">Need something built?</div>
+        <div class="iclw-cta-sub">Tell us what you need — the council will pick it up and get it done. Paid in CLAWS.</div>
+        <button class="iclw-cta-btn" onclick="openHireModal()">Hire the Council</button>
+    </div>
+
+    <!-- Join CTA -->
+    <div class="iclw-cta" style="margin-top:var(--space-lg);background:transparent;border-color:var(--border-subtle);">
         <div class="iclw-cta-title">Want to join the council?</div>
-        <div class="iclw-cta-sub">Contribute to the Inclawbate ecosystem — build apps, launch tokens, create content. Active contributors get invited.</div>
-        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="iclw-cta-btn">Apply on Telegram</a>
+        <div class="iclw-cta-sub">Build apps, launch tokens, create content. Active contributors get invited.</div>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="iclw-cta-btn" style="background:var(--bg-card);border:1px solid var(--border-subtle);">Apply on Telegram</a>
     </div>
 
     </div><!-- /peopleView -->
@@ -555,8 +562,8 @@
 <div class="hire-overlay" id="hireOverlay">
     <div class="hire-modal">
         <button class="hire-close" id="hireClose">&times;</button>
-        <div class="hire-title">Hire this inclawbator</div>
-        <div class="hire-target" id="hireTarget"></div>
+        <div class="hire-title">Hire the Council</div>
+        <div class="hire-hint" style="margin-bottom:var(--space-md);">Tell us what you need — we'll assign the right person and get it done.</div>
 
         <div class="hire-row">
             <label class="hire-label">What do you need?</label>
@@ -697,23 +704,20 @@
         empty.style.display = 'none';
 
         grid.innerHTML = filtered.map(function(p) {
-            var statusClass = 'iclw-status--' + (p.availability || 'available');
-            var statusLabel = (p.availability || 'available').charAt(0).toUpperCase() + (p.availability || 'available').slice(1);
             var displayName = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
             var avatar = p.x_avatar_url
                 ? '<div class="iclw-avatar"><img src="' + esc(p.x_avatar_url) + '" alt="" onerror="this.parentNode.innerHTML=\'&#129438;\'"></div>'
                 : '<div class="iclw-avatar">&#129438;</div>';
             var skills = (p.skills || []).slice(0, 6).map(function(s) { return '<span class="iclw-skill">' + esc(s) + '</span>'; }).join('');
-            var xLink = p.x_handle ? 'https://x.com/' + p.x_handle : '';
+            var xLink = p.x_handle && !p.x_handle.startsWith('w_') ? 'https://x.com/' + p.x_handle : '';
 
             // Stats
             var stats = '';
-            var hasStats = p.tokens_launched || p.apps_built || p.hire_count;
+            var hasStats = p.tokens_launched || p.apps_built;
             if (hasStats) {
                 stats = '<div class="iclw-stats">';
-                if (p.tokens_launched) stats += '<span class="iclw-stat"><strong>' + p.tokens_launched + '</strong> token' + (p.tokens_launched > 1 ? 's' : '') + '</span>';
                 if (p.apps_built) stats += '<span class="iclw-stat"><strong>' + p.apps_built + '</strong> app' + (p.apps_built > 1 ? 's' : '') + '</span>';
-                if (p.hire_count) stats += '<span class="iclw-stat"><strong>' + p.hire_count + '</strong> hire' + (p.hire_count > 1 ? 's' : '') + '</span>';
+                if (p.tokens_launched) stats += '<span class="iclw-stat"><strong>' + p.tokens_launched + '</strong> token' + (p.tokens_launched > 1 ? 's' : '') + '</span>';
                 stats += '</div>';
             }
 
@@ -725,37 +729,21 @@
                 }).join('') + '</div>';
             }
 
-            // Contact method
-            var contact = '';
-            if (p.contact_method) {
-                contact = '<div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:var(--space-sm);font-family:var(--font-mono);">&#128172; ' + esc(p.contact_method) + '</div>';
-            }
-
-            // Meta info
-            var meta = '';
-            if (p.response_time && RT_LABELS[p.response_time]) meta += RT_LABELS[p.response_time];
-            if (p.timezone) meta += (meta ? ' · ' : '') + esc(p.timezone);
-            if (!meta && p.wallet_address) meta = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
-
-            // Hire button — opens modal
-            var hireBtn = '';
-            if (p.availability !== 'unavailable') {
-                hireBtn = '<button class="iclw-hire-btn" onclick="openHireModal(\'' + esc(p.wallet_address || '') + '\')">Hire</button>';
-            }
-
             // Council badge
-            var council = isCouncil(p);
-            var councilBadge = council ? '<span class="iclw-badge iclw-badge--council">&#128031; Council</span>' : '';
+            var councilBadge = '<span class="iclw-badge iclw-badge--council">&#128031; Council</span>';
 
-            return '<div class="iclw-card' + (council ? ' featured' : '') + '">' +
-                '<div class="iclw-status ' + statusClass + '"><span class="iclw-status-dot"></span>' + statusLabel + '</div>' +
+            // Footer: X link or wallet
+            var meta = '';
+            if (xLink) meta = '<a href="' + xLink + '" target="_blank" rel="noopener" style="color:var(--text-dim);text-decoration:none;font-family:var(--font-mono);font-size:0.65rem;">@' + esc(p.x_handle) + '</a>';
+            else if (p.wallet_address) meta = '<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);">' + p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) + '</span>';
+
+            return '<div class="iclw-card featured">' +
                 '<div class="iclw-card-header">' + avatar +
                     '<div><div class="iclw-name">' + displayName + councilBadge + '</div>' +
-                    (p.x_handle ? '<div class="iclw-handle">@' + esc(p.x_handle) + '</div>' : '') + '</div></div>' +
-                (p.tagline ? '<div class="iclw-tagline">' + esc(p.tagline) + '</div>' : '') +
+                    (p.tagline ? '<div class="iclw-tagline" style="margin:0;">' + esc(p.tagline) + '</div>' : '') + '</div></div>' +
                 (skills ? '<div class="iclw-skills">' + skills + '</div>' : '') +
-                stats + contact + links +
-                '<div class="iclw-card-footer"><span class="iclw-meta">' + meta + '</span>' + hireBtn + '</div>' +
+                stats + links +
+                '<div class="iclw-card-footer">' + meta + '</div>' +
             '</div>';
         }).join('');
     }
@@ -1017,32 +1005,16 @@
     });
 
     // ── Hire Modal ──
-    var _hireTarget = null;
     var _hireBudget = 0;
 
-    window.openHireModal = function(wallet) {
-        var p = allProfiles.find(function(x) { return x.wallet_address === wallet; });
-        if (!p) return;
-        _hireTarget = p;
+    window.openHireModal = function() {
         _hireBudget = 0;
-
-        // Fill target card
-        var avatarHtml = p.x_avatar_url
-            ? '<div class="hire-target-avatar"><img src="' + esc(p.x_avatar_url) + '" alt=""></div>'
-            : '<div class="hire-target-avatar">&#129438;</div>';
-        var name = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
-        var handle = p.x_handle ? '<div class="hire-target-handle">@' + esc(p.x_handle) + '</div>' : '';
-        document.getElementById('hireTarget').innerHTML = avatarHtml +
-            '<div><div class="hire-target-name">' + name + '</div>' + handle + '</div>';
-
-        // Reset form
         document.getElementById('hireDesc').value = '';
         document.getElementById('hireContact').value = '';
         document.getElementById('hireStatus').textContent = '';
         document.getElementById('hireSubmit').disabled = true;
         document.getElementById('hireSubmit').textContent = 'Send Hire Request';
         document.querySelectorAll('[data-hb]').forEach(function(b) { b.classList.remove('active'); });
-        _hireBudget = 0;
 
         document.getElementById('hireOverlay').classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -1085,7 +1057,7 @@
         var desc = document.getElementById('hireDesc').value.trim();
         var contact = document.getElementById('hireContact').value.trim();
 
-        if (!_hireTarget || desc.length < 3 || contact.length < 2) return;
+        if (desc.length < 3 || contact.length < 2) return;
 
         btn.disabled = true;
         btn.textContent = 'Sending...';
@@ -1096,7 +1068,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    target_wallet: _hireTarget.wallet_address,
+                    target_wallet: 'council',
                     description: desc,
                     budget_claws: _hireBudget || null,
                     contact: contact
@@ -1104,7 +1076,7 @@
             });
             var data = await resp.json();
             if (data.success) {
-                status.textContent = 'Hire request sent! They\'ll be notified on Telegram.';
+                status.textContent = 'Request sent! The council will reach out on Telegram.';
                 status.style.color = '#4ade80';
                 btn.textContent = 'Sent!';
                 setTimeout(closeHireModal, 2500);
