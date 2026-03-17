@@ -328,6 +328,8 @@ wss.on('connection', (ws) => {
             } else {
               const walletBal = rooms.getWalletBalance(addr).balance || 0;
               const agentChips = rooms.getChipsInPlay(addr) || 0;
+              // Always send fresh balance so client stays in sync
+              sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
               console.log(`[CheckDeposit] ${addr} OK — on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited}, wallet: ${walletBal}, agents: ${agentChips}`);
             }
@@ -655,6 +657,7 @@ wss.on('connection', (ws) => {
               ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: credit } }));
               console.log(`[CheckDepositPokerai] Credited ${credit} POKERAI chips to ${addr}`);
             } else {
+              sendBalance(ws, addr);
               ws.send(JSON.stringify({ type: 'checkDepositPokeraiResult', data: { credited: 0, message: 'POKERAI balance is correct' } }));
             }
           } catch (e) {
