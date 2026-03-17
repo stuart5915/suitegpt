@@ -512,30 +512,30 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 
 function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
+    const price = claws?.price || 0;
     let tweet = `🦞 CLAWS Daily | ${date}\n\n`;
 
-    // Price + key stats on one tight block
+    // Price
     if (claws) {
         tweet += `💰 ${formatPrice(claws.price)} (${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}%)\n`;
     }
+
+    // Staking — the money shot
     if (supply) {
-        tweet += `🔒 ${supply.lockedPct}% locked | ${supply.apy > 0 ? supply.apy.toFixed(0) + '% APY' : ''}\n`;
-    }
-    if (treasury?.total) {
-        tweet += `🏦 ${formatUsd(treasury.total)} treasury | $${TREASURY_FUNDING_RATE}/day funding\n`;
-    }
-    if (allocation?.voterCount) {
-        tweet += `🗳 ${allocation.voterCount} community votes\n`;
+        tweet += `\n📊 Staking Rewards\n`;
+        tweet += `Current Rate: ${formatNum(supply.dailyRewards)} CLAWS/day\n`;
+        if (price > 0) {
+            const annualUsd = supply.dailyRewards * 365 * price;
+            tweet += `Annual Value: ~${formatUsd(annualUsd)}\n`;
+        }
+        tweet += `Value Staked: ~${formatUsd(supply.staked * price)}\n`;
+        if (supply.apy > 0) tweet += `APY: ${supply.apy.toFixed(0)}%\n`;
+        tweet += `\n🔒 ${supply.lockedPct}% out of circulation\n`;
     }
 
-    // Incubations — just names, keeps it punchy
+    // Incubations — count only
     if (tasks.incubations.length) {
-        tweet += `\n🦞 ${tasks.incubations.length} incubations:\n`;
-        tasks.incubations.forEach(t => {
-            // Extract just the domain/name part before the dash
-            const name = t.split(' - ')[0].trim();
-            tweet += `${name}\n`;
-        });
+        tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
     }
 
     tweet += `\ninclawbate.com/state`;
