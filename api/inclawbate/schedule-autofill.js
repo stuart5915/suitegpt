@@ -112,6 +112,109 @@ const NARRATIVE_SCENES = {
     ],
 };
 
+// @inclawbate (company) content pillars — brand, vision, product, ecosystem
+const INCLAWBATE_PILLARS = [
+    { name: 'Weekly Recap',          emoji: '\u{1F4CA}', needsImage: true,  desc: 'What shipped this week, platform numbers, treasury updates, what\'s coming next' },
+    { name: 'Product Highlight',     emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one product — PokerAI, staking, app builder, tools, skills marketplace, vaults' },
+    { name: 'Builder Story',         emoji: '\u{1F477}', needsImage: false, desc: 'Spotlight a builder, an app they shipped, or a community contribution' },
+    { name: 'Brand & Vision',        emoji: '\u{1F30A}', needsImage: true,  desc: 'The perpetual engine, the Telos mission, why Inclawbate exists, DAO governance, long-term vision' },
+    { name: 'Education',             emoji: '\u{1F4A1}', needsImage: false, desc: 'How DeFi works, how Inclawbate works, staking explained, yield mechanics, app builder tips' },
+    { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, memes with the lobster mascot, conversation starters, community vibes' },
+    { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones, ecosystem revenue' },
+];
+
+const INCLAWBATE_SLOT_ANGLES = {
+    'Weekly Recap':         ['shipped this week', 'top apps', 'community highlights', 'stats roundup', 'next week preview'],
+    'Product Highlight':    ['PokerAI update', 'staking system', 'app builder showcase', 'tools page', 'skills marketplace'],
+    'Builder Story':        ['app launch story', 'builder journey', 'community contribution', 'collaboration highlight', 'build challenge'],
+    'Brand & Vision':       ['the perpetual engine', 'Telos mission', 'why we build', 'long-term vision', 'manifesto moment'],
+    'Education':            ['DeFi basics', 'yield explained', 'staking walkthrough', 'app builder tutorial', 'CLAWS tokenomics'],
+    'Community Engagement': ['hot take poll', 'this or that', 'unpopular opinion', 'meme', 'lobster vibes'],
+    'Ecosystem Update':     ['treasury update', 'CLAWS numbers', 'TVL growth', 'new milestones', 'partner spotlight'],
+};
+
+const INCLAWBATE_STYLE_EXAMPLES = [
+    `we don't have employees. we have builders. anyone can build, everyone gets paid.`,
+    `inclawbate isn't a company. it's a perpetual engine. generate value, manage it, distribute it. forever.`,
+    `staking APY is live. deposit CLAWS, earn yield. no lockup, no tricks. inclawbate.com/stake`,
+    `PokerAI had its biggest week yet. more hands played, more rake recycled, more agents learning. the liquidity engine works.`,
+    `100+ apps live. all built by regular people using AI. no dev team needed. just an idea and inclawbate.com/build`,
+    `the treasury grew again this week. every app, every stake, every poker hand. it all feeds the engine.`,
+    `gm. the future of building is typing what you want and hitting enter. inclawbate.com`,
+    `no VC. no board. no roadmap decided by people who don't build. just builders and users. that's inclawbate.`,
+];
+
+const INCLAWBATE_SCENE_HINTS = {
+    'Weekly Recap': '3D lobster in "celebrator" pose on The Rooftop, looking over a glowing digital reef city. Holographic stats and app screens float around. Festive coral and teal confetti. Epic cinematic wide shot.',
+    'Product Highlight': '3D lobster in "presenter" pose at The Workshop, demonstrating a product on a large holographic display. Tools and prototypes visible. Coral neon glow from the screen, teal accent lighting.',
+    'Builder Story': '3D lobster in "builder" pose at a workstation inside The Workshop. Code screens and app UIs floating. Crab Engineer nearby. Dark moody atmosphere, volumetric fog.',
+    'Brand & Vision': '3D lobster in power pose on The Rooftop at night, looking up at a massive constellation forming the Inclawbate logo. Stars connect with teal lines. Epic, visionary, cinematic wide shot.',
+    'Education': '3D lobster in "presenter" pose, teaching The Shrimp Newbie with floating step-by-step panels. Clean dark background. Patient mentoring energy. Teal data flows.',
+    'Community Engagement': '3D lobster in "greeter" pose at The Lounge, surrounded by mini lobsters and Pufferfish. Neon-lit crypto bar, coral and teal signs. Party but productive energy.',
+    'Ecosystem Update': '3D lobster in "thinker" pose at The Vault, surrounded by orbiting token coins, charts trending up, treasury metrics. Gold and coral lighting. Data-driven energy.',
+};
+
+const INCLAWBATE_NARRATIVE_SCENES = {
+    'Weekly Recap': [
+        'The Vision — the lobster on The Rooftop at night, looking up at a constellation forming the Inclawbate logo. Visionary epic energy.',
+        'Hitting 100 Apps — The Arena packed. A massive holographic number glows above. Confetti. The lobster center stage, claws raised.',
+        'The Group Photo — all characters lined up: lobster center, mini lobsters, Crab Engineer, Octopus. Team photo energy.',
+    ],
+    'Product Highlight': [
+        'Shipping Day — the lobster holds up a freshly completed product like a trophy. The Crab Engineer gives thumbs-up.',
+        'The Workshop — holographic screens everywhere. The lobster demonstrates a feature to a crowd of mini lobsters.',
+        'The Arena — the lobster on stage presenting a product under spotlights. Holographic scoreboards and crowds watching.',
+    ],
+    'Builder Story': [
+        'The All-Nighter — 3 AM at The Workshop, dark except for one screen\'s glow. On screen: an app coming together.',
+        'Collaboration — two lobsters at adjacent workstations, teal data streams flowing between screens. They high-claw.',
+        'Teaching a Newbie — the lobster kneels to the Shrimp Newbie\'s level, showing how to build. Eyes light up.',
+    ],
+    'Brand & Vision': [
+        'The Origin — deep in the ocean, a glowing coral egg cracks open. A tiny lobster claw reaches out. Origin story.',
+        'The Portal — the lobster before a massive swirling coral-and-teal portal. A thriving ecosystem on the other side.',
+        'The Throne — lobster on a throne of stacked app icons and token coins. Workshop visible behind. "Built this from scratch."',
+        'The Army — mini lobsters marching forward, each carrying a tool. The main lobster leads. Coral banners flowing.',
+    ],
+    'Education': [
+        'Teaching a Newbie — the lobster gently showing the Shrimp how to use the platform. Patient mentoring.',
+        'The Octopus Multitasker juggling 8 tools while the lobster takes notes. Productivity energy.',
+        'The Workshop with clear diagrams and step-by-step panels floating in the air. Educational but cool.',
+    ],
+    'Community Engagement': [
+        'The Meetup — The Lounge packed with sea creatures. The lobster on stage. Community energy.',
+        'Meme War — two lobsters creating memes on holographic screens. Others voting. Competitive but fun.',
+        'GM Post — sunrise over the reef. Lobster on The Rooftop, coffee in claw. Fresh new day energy.',
+    ],
+    'Ecosystem Update': [
+        'Staking Zen — lobster meditating on a floating platform. Token coins orbiting. Yield arrows glowing upward.',
+        'Checking the Charts — at The Trading Floor. One claw holding phone with chart. Analytical.',
+        'Whale Watching — lobster and mini lobsters on The Rooftop as a massive whale swims overhead trailing teal sparkles.',
+    ],
+};
+
+// Helper: get config for an account
+function getAccountConfig(account) {
+    if (account === 'inclawbate') {
+        return {
+            pillars: INCLAWBATE_PILLARS,
+            slotAngles: INCLAWBATE_SLOT_ANGLES,
+            styleExamples: INCLAWBATE_STYLE_EXAMPLES,
+            sceneHints: INCLAWBATE_SCENE_HINTS,
+            narrativeScenes: INCLAWBATE_NARRATIVE_SCENES,
+            identity: `You are @inclawbate, the official company account for Inclawbate — the perpetual value engine built on Base. You speak as the brand itself. Your voice is confident, visionary, builder-first. You're not an agent or a bot — you're the company.`,
+        };
+    }
+    return {
+        pillars: PILLARS,
+        slotAngles: SLOT_ANGLES,
+        styleExamples: STYLE_EXAMPLES,
+        sceneHints: PILLAR_SCENE_HINTS,
+        narrativeScenes: NARRATIVE_SCENES,
+        identity: `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn.`,
+    };
+}
+
 // Pick a random narrative scene for a pillar
 function randomNarrativeScene(pillarName) {
     const scenes = NARRATIVE_SCENES[pillarName];
@@ -135,11 +238,13 @@ export default async function handler(req, res) {
 
     // GET — return pillars + drafts for a date
     if (req.method === 'GET') {
+        const account = req.query.account || 'inclawbator';
+        const cfg = getAccountConfig(account);
         const date = req.query.date;
-        if (!date) return res.json({ pillars: PILLARS });
+        if (!date) return res.json({ pillars: cfg.pillars });
 
         const dayOfWeek = new Date(date + 'T12:00:00Z').getUTCDay();
-        const pillar = PILLARS[dayOfWeek];
+        const pillar = cfg.pillars[dayOfWeek];
 
         // Fetch any auto-drafts for this date
         const dayStart = date + 'T00:00:00Z';
@@ -150,6 +255,7 @@ export default async function handler(req, res) {
             .gte('scheduled_at', dayStart)
             .lte('scheduled_at', dayEnd)
             .eq('booked_by_wallet', 'system-autofill')
+            .eq('account', account)
             .in('status', ['scheduled', 'needs_review', 'needs_image']);
 
         return res.json({ pillar, dayOfWeek, drafts: drafts || [] });
@@ -190,7 +296,8 @@ export default async function handler(req, res) {
         if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
 
         if (action === 'generate') {
-            return await generateDrafts(req, res, date);
+            const account = req.body.account || 'inclawbator';
+            return await generateDrafts(req, res, date, account);
         }
 
         if (action === 'delete_slot') {
@@ -264,17 +371,21 @@ export default async function handler(req, res) {
                 .single();
             if (!slot) return res.status(404).json({ error: 'Slot not found' });
 
+            const slotAccount = slot.account || 'inclawbator';
+            const cfg = getAccountConfig(slotAccount);
             const opts = slot.tweet_options || {};
-            const pillarName = opts.pillar || 'Incubation CTA';
+            const pillarName = opts.pillar || (slotAccount === 'inclawbate' ? 'Ecosystem Update' : 'Incubation CTA');
             const angle = opts.angle || 'general';
-            const pillar = PILLARS.find(p => p.name === pillarName) || PILLARS[6];
+            const pillar = cfg.pillars.find(p => p.name === pillarName) || cfg.pillars[cfg.pillars.length - 1];
 
             // Fetch real platform context
             const ctx = await fetchPlatformContext();
             const topAppList = ctx.topApps.map(a => `${a.name} (${a.view_count || 0} views)`).join(', ');
             const recentAppList = ctx.recentApps.slice(0, 8).map(a => a.name).join(', ');
+            const sceneHint = cfg.sceneHints[pillar.name] || '';
+            const narrativeScene = (cfg.narrativeScenes[pillar.name] || [])[Math.floor(Math.random() * (cfg.narrativeScenes[pillar.name] || ['']).length)] || '';
 
-            const prompt = `You are @inclawbator. Generate ONE tweet.
+            const prompt = `${cfg.identity} Generate ONE tweet.
 
 Pillar: ${pillar.name} — ${pillar.desc}
 Angle: ${angle}
@@ -289,10 +400,10 @@ Rules: under 280 chars, no hashtags, no corporate speak, no em dashes, crypto-na
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
-${PILLAR_SCENE_HINTS[pillar.name] ? 'BASE SCENE (adapt to tweet content): ' + PILLAR_SCENE_HINTS[pillar.name] : ''}
+${sceneHint ? 'BASE SCENE (adapt to tweet content): ' + sceneHint : ''}
 
 NARRATIVE INSPIRATION (use elements from this scene to make the image richer and more specific):
-${randomNarrativeScene(pillar.name) || 'Use the brand mascot in a relevant pose.'}
+${narrativeScene || 'Use the brand mascot in a relevant pose.'}
 
 The image must visually match what the tweet talks about. If it mentions an app, show the lobster with that app. If it shouts out a builder, show the lobster building. Always feature the 3D lobster mascot. Draw from the narrative scene above for specific locations, characters, and props.
 
@@ -350,14 +461,16 @@ IMAGE: [2-3 sentence prompt — 3D lobster mascot, dark background, coral+teal l
                 .single();
             if (!slot) return res.status(404).json({ error: 'Slot not found' });
 
+            const slotAccount = slot.account || 'inclawbator';
+            const cfg = getAccountConfig(slotAccount);
             const tweetText = slot.tweet_text || '';
             const opts = slot.tweet_options || {};
             const pillarName = opts.pillar || '';
-            const sceneHint = PILLAR_SCENE_HINTS[pillarName] || '';
-            const narrativeScene = randomNarrativeScene(pillarName);
+            const sceneHint = cfg.sceneHints[pillarName] || '';
+            const narrativeScene = (cfg.narrativeScenes[pillarName] || [])[Math.floor(Math.random() * (cfg.narrativeScenes[pillarName] || ['']).length)] || '';
             const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
-This image accompanies this specific tweet from @inclawbator:
+This image accompanies this specific tweet from @${slotAccount}:
 "${tweetText}"
 
 ${BRAND_IMAGE_CONTEXT}
@@ -399,7 +512,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'approve_all') {
-            const { date: approveDate } = req.body;
+            const { date: approveDate, account: approveAccount } = req.body;
             if (!approveDate) return res.status(400).json({ error: 'date required' });
             const dayStart = approveDate + 'T00:00:00Z';
             const nextDay = new Date(new Date(dayStart).getTime() + 2 * 86400000).toISOString();
@@ -407,6 +520,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
                 .from('agent_schedule')
                 .update({ status: 'scheduled' })
                 .eq('booked_by_wallet', 'system-autofill')
+                .eq('account', approveAccount || 'inclawbator')
                 .in('status', ['needs_review', 'needs_image'])
                 .gte('scheduled_at', dayStart)
                 .lt('scheduled_at', nextDay)
@@ -510,11 +624,13 @@ async function fetchPlatformContext() {
     return results;
 }
 
-async function generateDrafts(req, res, targetDate) {
+async function generateDrafts(req, res, targetDate, account) {
+    account = account || 'inclawbator';
+    const cfg = getAccountConfig(account);
     const date = targetDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const dayOfWeek = new Date(date + 'T12:00:00Z').getUTCDay();
-    const pillar = PILLARS[dayOfWeek];
-    const angles = SLOT_ANGLES[pillar.name] || ['general'];
+    const pillar = cfg.pillars[dayOfWeek];
+    const angles = cfg.slotAngles[pillar.name] || ['general'];
 
     // Check which slots are already booked
     const dayStart = date + 'T00:00:00Z';
@@ -524,6 +640,7 @@ async function generateDrafts(req, res, targetDate) {
         .select('scheduled_at, status')
         .gte('scheduled_at', dayStart)
         .lt('scheduled_at', nextDay)
+        .eq('account', account)
         .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image']);
 
     const bookedHours = new Set((existing || []).map(s => new Date(s.scheduled_at).getUTCHours()));
@@ -544,11 +661,13 @@ async function generateDrafts(req, res, targetDate) {
     ).join(', ');
 
     // Pick random style examples for variety
-    const shuffled = [...STYLE_EXAMPLES].sort(() => Math.random() - 0.5);
+    const shuffled = [...cfg.styleExamples].sort(() => Math.random() - 0.5);
     const exampleBlock = shuffled.slice(0, 4).map((e, i) => `${i + 1}. "${e}"`).join('\n');
+    const sceneHint = cfg.sceneHints[pillar.name] || 'Use the brand mascot in a relevant pose for the content.';
+    const narrativeScenesList = (cfg.narrativeScenes[pillar.name] || []).join('\n- ');
 
     // Generate ALL tweets in one batch call for consistency + speed
-    const batchPrompt = `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn.
+    const batchPrompt = `${cfg.identity}
 
 REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Total apps: ${ctx.totalApps}+
@@ -558,6 +677,8 @@ REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Website: inclawbate.com
 - App builder: inclawbate.com/build (AI builds apps, no code)
 - Staking: inclawbate.com/stake
+- PokerAI: pokerai.app (poker against AI, real USDC)
+- Tools: inclawbate.com/tools (50+ free tools)
 
 TODAY'S PILLAR: ${pillar.name}
 Description: ${pillar.desc}
@@ -585,10 +706,10 @@ IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 
 BASE SCENE for today's pillar (${pillar.name}) — adapt this to each tweet's specific content:
-${PILLAR_SCENE_HINTS[pillar.name] || 'Use the brand mascot in a relevant pose for the content.'}
+${sceneHint}
 
 NARRATIVE WORLD (use these scenes as inspiration — pull locations, characters, props, and moods to make each image vivid and unique):
-${(NARRATIVE_SCENES[pillar.name] || []).join('\n- ')}
+${narrativeScenesList}
 
 CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. Draw from the narrative scenes above for specific settings, supporting characters (Crab Engineer, Shrimp Newbie, Mini Lobsters, etc.), and locations (The Workshop, The Reef, The Lounge, etc.). Don't just repeat the same generic scene for every tweet.
 
@@ -669,6 +790,7 @@ Output ONLY the numbered entries. Nothing else.`;
                     status,
                     tweet_text: tweetText,
                     tweet_options: { pillar: pillar.name, angle, needs_image: pillar.needsImage, image_prompt: imagePrompt },
+                    account,
                 })
                 .select()
                 .single();

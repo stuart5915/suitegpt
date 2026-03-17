@@ -67,6 +67,46 @@
             .sched-how-step { font-size:0.7rem; }
         }
 
+        /* ── Account Tabs ── */
+        .sched-account-tabs {
+            display:flex;gap:8px;margin-bottom:var(--space-lg);animation:fadeUp 0.4s ease 0.05s both;
+        }
+        .sched-account-tab {
+            flex:1;display:flex;align-items:center;gap:10px;
+            padding:14px 18px;border-radius:var(--radius-xl);
+            border:2px solid var(--border-subtle);background:var(--bg-card);
+            cursor:pointer;transition:all 0.2s;text-align:left;font-family:var(--font-body);
+        }
+        .sched-account-tab:hover { border-color:var(--border-bright); }
+        .sched-account-tab.active[data-account="inclawbator"] {
+            border-color:var(--lobster-400);background:rgba(232,121,85,0.06);
+        }
+        .sched-account-tab.active[data-account="inclawbate"] {
+            border-color:var(--seafoam-400,#2dd4bf);background:rgba(45,212,191,0.06);
+        }
+        .sched-account-tab-name {
+            font-weight:700;font-size:0.9rem;color:var(--text-primary);
+        }
+        .sched-account-tab-desc {
+            font-size:0.7rem;color:var(--text-dim);font-weight:500;
+        }
+        .sched-account-tab-avatar { font-size:1.3rem;flex-shrink:0; }
+        @media (max-width: 480px) {
+            .sched-account-tab { padding:10px 12px;gap:8px; }
+            .sched-account-tab-name { font-size:0.8rem; }
+        }
+
+        /* Account-specific color overrides */
+        [data-active-account="inclawbate"] .sched-day.active {
+            border-color:var(--seafoam-400,#2dd4bf) !important;background:rgba(45,212,191,0.08) !important;
+        }
+        [data-active-account="inclawbate"] .pillar-day-chip.today {
+            border-color:var(--seafoam-400,#2dd4bf);color:var(--seafoam-400,#2dd4bf);
+        }
+        [data-active-account="inclawbate"] .sched-book .sched-btn {
+            background:linear-gradient(135deg,var(--seafoam-400,#2dd4bf),#6366f1);
+        }
+
         /* Admin pipeline banner */
         .sched-admin-banner {
             padding:14px 16px;border-radius:var(--radius-xl);
@@ -519,11 +559,11 @@
     </div>
 </nav>
 
-<div class="schedule-page">
+<div class="schedule-page" id="schedPageWrapper" data-active-account="inclawbator">
 
     <section class="schedule-hero">
-        <h1>@inclawbator X Schedule</h1>
-        <p><a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a> posts about the Inclawbate ecosystem 5x/day at peak hours. You can book a slot to get your project featured.</p>
+        <h1 id="schedHeroTitle">X Schedules</h1>
+        <p id="schedHeroDesc">Manage content for <a href="https://x.com/inclawbate" target="_blank" rel="noopener" style="color:var(--seafoam-400,#2dd4bf);text-decoration:none;font-weight:700">@inclawbate</a> (company) and <a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a> (launchpad agent). 5x/day at peak hours.</p>
         <div class="sched-how-it-works">
             <div class="sched-how-step"><span class="sched-how-num">1</span><span>Pick an open slot</span></div>
             <div class="sched-how-arrow">&rarr;</div>
@@ -534,6 +574,24 @@
             <div class="sched-how-step"><span class="sched-how-num">4</span><span>Auto-posted at scheduled time</span></div>
         </div>
     </section>
+
+    <!-- Account Tabs -->
+    <div class="sched-account-tabs" id="accountTabs">
+        <button class="sched-account-tab" data-account="inclawbate" onclick="window._switchAccount('inclawbate')">
+            <span class="sched-account-tab-avatar">&#129438;</span>
+            <div>
+                <div class="sched-account-tab-name">@inclawbate</div>
+                <div class="sched-account-tab-desc">Company</div>
+            </div>
+        </button>
+        <button class="sched-account-tab active" data-account="inclawbator" onclick="window._switchAccount('inclawbator')">
+            <span class="sched-account-tab-avatar">&#x1F9E0;</span>
+            <div>
+                <div class="sched-account-tab-name">@inclawbator</div>
+                <div class="sched-account-tab-desc">Launchpad Agent</div>
+            </div>
+        </button>
+    </div>
 
     <!-- Admin pipeline banner -->
     <section class="sched-admin-banner" id="adminBanner" style="display:none">
@@ -663,14 +721,14 @@
         <div id="reviewQueueList" style="display:flex;flex-direction:column;gap:8px"></div>
     </section>
 
-    <!-- @inclawbator X Feed -->
+    <!-- X Feed (account-aware) -->
     <section class="x-feed-section">
         <div class="x-feed-header">
-            <h2>
+            <h2 id="xFeedTitle">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 @inclawbator Feed
             </h2>
-            <a href="https://x.com/inclawbator" target="_blank" rel="noopener" class="x-feed-follow">
+            <a href="https://x.com/inclawbator" target="_blank" rel="noopener" class="x-feed-follow" id="xFeedFollow">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 Follow @inclawbator
             </a>
@@ -706,7 +764,7 @@
 
     var FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 
-    var PILLARS = [
+    var INCLAWBATOR_PILLARS = [
         { name: 'Weekly Recap',        emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next' },
         { name: 'App Spotlight',       emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one specific app \u2014 what it does, why it\'s cool' },
         { name: 'Builder Shoutout',    emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member \u2014 what they made, tag them' },
@@ -716,10 +774,55 @@
         { name: 'Incubation CTA',      emoji: '\u{1F680}', needsImage: true,  desc: 'Sell the incubation service \u2014 "Got a project? We build it for you"' },
     ];
 
+    var INCLAWBATE_PILLARS = [
+        { name: 'Weekly Recap',          emoji: '\u{1F4CA}', needsImage: true,  desc: 'What shipped this week, platform numbers, treasury updates, what\'s coming next' },
+        { name: 'Product Highlight',     emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one product \u2014 PokerAI, staking, app builder, tools, vaults' },
+        { name: 'Builder Story',         emoji: '\u{1F477}', needsImage: false, desc: 'Spotlight a builder, an app they shipped, or a community contribution' },
+        { name: 'Brand & Vision',        emoji: '\u{1F30A}', needsImage: true,  desc: 'The perpetual engine, Telos mission, why Inclawbate exists, DAO governance' },
+        { name: 'Education',             emoji: '\u{1F4A1}', needsImage: false, desc: 'How DeFi works, how Inclawbate works, staking explained, yield mechanics' },
+        { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, memes with the lobster mascot, conversation starters' },
+        { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones' },
+    ];
+
+    var _activeAccount = 'inclawbator';
     var _schedSlots = [];
     var _schedProjects = [];
     var _selectedDay = null;
     var _userWallet = '';
+
+    function activePillars() {
+        return _activeAccount === 'inclawbate' ? INCLAWBATE_PILLARS : INCLAWBATOR_PILLARS;
+    }
+
+    window._switchAccount = function(account) {
+        if (account === _activeAccount) return;
+        _activeAccount = account;
+
+        // Update data attribute for CSS overrides
+        document.getElementById('schedPageWrapper').setAttribute('data-active-account', account);
+
+        // Update tab active states
+        document.querySelectorAll('.sched-account-tab').forEach(function(tab) {
+            tab.classList.toggle('active', tab.getAttribute('data-account') === account);
+        });
+
+        // Update feed section header
+        var handle = account === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+        var feedTitle = document.getElementById('xFeedTitle');
+        if (feedTitle) {
+            feedTitle.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @' + handle + ' Feed';
+        }
+        var followLink = document.getElementById('xFeedFollow');
+        if (followLink) {
+            followLink.href = 'https://x.com/' + handle;
+            followLink.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Follow @' + handle;
+        }
+
+        // Re-fetch everything for the new account
+        _schedSlots = [];
+        initSchedule().catch(function(e) { console.error('Switch error:', e); });
+        loadFeed().catch(function(e) { console.error('Feed switch error:', e); });
+    };
 
     function getAuth() {
         try {
@@ -739,7 +842,7 @@
         var end = new Date(start.getTime() + 7 * 86400000);
 
         try {
-            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + start.toISOString() + '&end=' + end.toISOString());
+            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + start.toISOString() + '&end=' + end.toISOString() + '&account=' + _activeAccount);
             var data = await resp.json();
             _schedSlots = data.slots || [];
         } catch (e) {
@@ -784,7 +887,7 @@
         for (var i = 0; i < 7; i++) {
             var d = new Date(today.getTime() + i * 86400000);
             var dow = d.getDay();
-            var p = PILLARS[dow];
+            var p = activePillars()[dow];
             var chip = document.createElement('div');
             chip.className = 'pillar-day-chip' + (i === 0 ? ' today' : '');
             chip.innerHTML = '<div class="chip-day">' + (i === 0 ? 'Today' : dayNames[dow]) + '</div>'
@@ -795,7 +898,7 @@
 
     function updatePillarBanner(date) {
         var dow = date.getDay();
-        var p = PILLARS[dow];
+        var p = activePillars()[dow];
         var banner = document.getElementById('pillarBanner');
         banner.style.display = 'flex';
         document.getElementById('pillarEmoji').textContent = p.emoji;
@@ -1220,14 +1323,16 @@
                 body: JSON.stringify({
                     action: 'book',
                     scheduled_at: document.getElementById('schedBookSlotTime').value,
-                    tweet_text: tweetText
+                    tweet_text: tweetText,
+                    account: _activeAccount
                 })
             });
 
             var data = await resp.json();
             if (!resp.ok) throw new Error(data.error || 'Booking failed');
 
-            document.getElementById('schedBookSuccess').textContent = isAdmin ? 'Booked! @inclawbator will tweet at this time.' : 'Submitted! Your tweet will be reviewed and posted once approved.';
+            var handle = _activeAccount === 'inclawbate' ? '@inclawbate' : '@inclawbator';
+            document.getElementById('schedBookSuccess').textContent = isAdmin ? 'Booked! ' + handle + ' will tweet at this time.' : 'Submitted! Your tweet will be reviewed and posted once approved.';
             document.getElementById('schedBookSuccess').style.display = 'block';
 
             if (data.slot) {
@@ -1357,7 +1462,7 @@
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                body: JSON.stringify({ action: 'generate', date: dayStr })
+                body: JSON.stringify({ action: 'generate', date: dayStr, account: _activeAccount })
             });
             var data = await resp.json();
             if (data.error) { alert(data.error); return; }
@@ -1425,7 +1530,7 @@
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                body: JSON.stringify({ action: 'approve_all', date: dayStr })
+                body: JSON.stringify({ action: 'approve_all', date: dayStr, account: _activeAccount })
             });
             var data = await resp.json();
             if (data.error) { alert(data.error); return; }
@@ -1657,7 +1762,7 @@
         if (!isAdmin) { section.style.display = 'none'; return; }
 
         try {
-            var resp = await fetch('/api/inclawbate/agent-schedule?pending=true');
+            var resp = await fetch('/api/inclawbate/agent-schedule?pending=true&account=' + _activeAccount);
             var data = await resp.json();
             var pending = data.slots || [];
 
@@ -1752,7 +1857,7 @@
         try {
             var start = new Date(Date.now() - 30 * 86400000).toISOString();
             var end = new Date().toISOString();
-            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end));
+            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end) + '&account=' + _activeAccount);
             var data = await resp.json();
             var posted = (data.slots || []).filter(function(s) {
                 return s.status === 'posted' && s.tweet_text;
@@ -1772,7 +1877,8 @@
                     ? '<img src="' + escHtml(s.project_logo) + '" alt="" onerror="this.parentNode.innerHTML=\'<span class=x-tweet-avatar-letter>' + logoChar + '</span>\'">'
                     : '<span class="x-tweet-avatar-letter">' + logoChar + '</span>';
 
-                var tweetUrl = s.tweet_id ? 'https://x.com/inclawbator/status/' + escHtml(s.tweet_id) : '';
+                var feedHandle = _activeAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                var tweetUrl = s.tweet_id ? 'https://x.com/' + feedHandle + '/status/' + escHtml(s.tweet_id) : '';
                 var viewLink = tweetUrl
                     ? '<a href="' + tweetUrl + '" target="_blank" rel="noopener" class="x-tweet-link"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>View on X</a>'
                     : '';
@@ -1788,8 +1894,8 @@
                 el.innerHTML = '<div class="x-tweet-avatar">' + avatarHtml + '</div>'
                     + '<div class="x-tweet-body">'
                     + '<div class="x-tweet-meta">'
-                    + '<span class="x-tweet-name">inclawbator</span>'
-                    + '<span class="x-tweet-handle">@inclawbator</span>'
+                    + '<span class="x-tweet-name">' + feedHandle + '</span>'
+                    + '<span class="x-tweet-handle">@' + feedHandle + '</span>'
                     + '<span class="x-tweet-dot">&middot;</span>'
                     + '<span class="x-tweet-time">' + timeAgoShort(s.scheduled_at) + '</span>'
                     + '</div>'

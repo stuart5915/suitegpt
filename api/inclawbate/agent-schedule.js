@@ -45,6 +45,7 @@ function sanitizeSlot(s) {
         booked_by_wallet: s.booked_by_wallet,
         paid_amount: s.paid_amount || 0,
         tweet_options: s.tweet_options || {},
+        account: s.account || 'inclawbator',
     };
 }
 
@@ -62,6 +63,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         const start = req.query.start || new Date().toISOString();
         const end = req.query.end || new Date(Date.now() + MAX_DAYS_AHEAD * 86400000).toISOString();
+        const account = req.query.account || 'inclawbator';
 
         // Admin review queue
         if (req.query.pending === 'true') {
@@ -69,6 +71,7 @@ export default async function handler(req, res) {
                 .from('agent_schedule')
                 .select('*, projects(name, logo_url, slug, token_symbol)')
                 .eq('status', 'pending_review')
+                .eq('account', account)
                 .order('scheduled_at', { ascending: true });
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ slots: (data || []).map(sanitizeSlot) });
@@ -79,6 +82,7 @@ export default async function handler(req, res) {
             .select('*, projects(name, logo_url, slug, token_symbol)')
             .gte('scheduled_at', start)
             .lte('scheduled_at', end)
+            .eq('account', account)
             .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image', 'pending_review'])
             .order('scheduled_at', { ascending: true });
 
@@ -109,7 +113,8 @@ export default async function handler(req, res) {
 
         // ── Book a slot ──
         if (action === 'book') {
-            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options, tweet_text } = req.body;
+            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options, tweet_text, account: reqAccount } = req.body;
+            const bookAccount = ['inclawbator', 'inclawbate'].includes(reqAccount) ? reqAccount : 'inclawbator';
             const isAdmin = FREE_WALLETS.includes(wallet);
 
             if (!project_id || !scheduled_at) {
@@ -171,7 +176,8 @@ export default async function handler(req, res) {
                 catchphrase: (catchphrase || '').slice(0, 100) || null,
                 status: isAdmin ? 'scheduled' : 'pending_review',
                 paid_amount: paidClaws,
-                tweet_options: tweet_options || {}
+                tweet_options: tweet_options || {},
+                account: bookAccount,
             };
             if (tweet_text) insertData.tweet_text = tweet_text.trim();
             if (tx_hash) insertData.tx_hash = tx_hash;
