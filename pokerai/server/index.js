@@ -690,8 +690,20 @@ wss.on('connection', (ws) => {
         // === Agent Stats ===
         case 'getAgentStats': {
           if (!requireAuth(client, ws)) break;
-          const stats = await rooms.computeAgentStats(msg.agentId, !!msg.includeSandbox);
-          ws.send(JSON.stringify({ type: 'agentStats', agentId: msg.agentId, data: stats, includeSandbox: !!msg.includeSandbox }));
+          const sessionMode = msg.sessionMode || 'all';
+          const agent = rooms.findAgentAnywhere(msg.agentId, client.walletAddress);
+          const sessionStart = (sessionMode === 'session' && agent) ? (agent.sessionStartTime || null) : null;
+          const stats = await rooms.computeAgentStats(msg.agentId, !!msg.includeSandbox, sessionStart);
+          if (sessionStart && agent && stats) {
+            const events = (agent.autoEvents || []).filter(e => e.time >= sessionStart);
+            stats.refills = events.filter(e => e.type === 'topup').length;
+            stats.refillAmount = events.filter(e => e.type === 'topup').reduce((s, e) => s + (e.amount || 0), 0);
+            stats.cashOuts = events.filter(e => e.type === 'cashout').length;
+            stats.cashOutAmount = events.filter(e => e.type === 'cashout').reduce((s, e) => s + (e.amount || 0), 0);
+            stats.buyIn = agent.baseChips || 0;
+            stats.sessionDuration = Date.now() - sessionStart;
+          }
+          ws.send(JSON.stringify({ type: 'agentStats', agentId: msg.agentId, data: stats, includeSandbox: !!msg.includeSandbox, sessionMode }));
           break;
         }
 

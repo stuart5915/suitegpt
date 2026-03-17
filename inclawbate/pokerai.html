@@ -5005,7 +5005,15 @@ function handleMessage(msg) {
       break;
 
     case 'agentStats':
-      if (msg.data) showAgentStatsPanel(msg.agentId, msg.data, msg.includeSandbox);
+      if (msg.data) {
+        // Auto-fallback: if session mode returned 0 hands, retry with all-time
+        if (msg.sessionMode === 'session' && msg.data.handsPlayed === 0) {
+          _statsSessionMode = 'all';
+          requestAgentStats(msg.agentId, undefined, 'all');
+        } else {
+          showAgentStatsPanel(msg.agentId, msg.data, msg.includeSandbox, msg.sessionMode);
+        }
+      }
       break;
 
     case 'resetLearningResult':
@@ -7490,11 +7498,13 @@ let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
 // === Agent Stats ===
 
 let _statsIncludeSandbox = true;
+let _statsSessionMode = 'session';
 
-function requestAgentStats(agentId, includeSandbox) {
+function requestAgentStats(agentId, includeSandbox, sessionMode) {
   if (includeSandbox !== undefined) _statsIncludeSandbox = includeSandbox;
+  if (sessionMode !== undefined) _statsSessionMode = sessionMode;
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'getAgentStats', agentId, includeSandbox: _statsIncludeSandbox }));
+    ws.send(JSON.stringify({ type: 'getAgentStats', agentId, includeSandbox: _statsIncludeSandbox, sessionMode: _statsSessionMode }));
     showToast('Loading stats...', 'info');
   }
 }
@@ -7505,12 +7515,13 @@ function resetAgentLearning(agentId) {
   }
 }
 
-function showAgentStatsPanel(agentId, stats, includeSandbox) {
+function showAgentStatsPanel(agentId, stats, includeSandbox, sessionMode) {
   // Find agent name
   const agent = myAgents.find(a => a.id === agentId) || gameState.agents.find(a => a.id === agentId);
   const name = agent ? agent.name : 'Agent';
   const emoji = agent ? agent.emoji : '';
   const sandboxOn = !!includeSandbox;
+  const mode = sessionMode || _statsSessionMode || 'session';
 
   if (!stats || stats.handsPlayed === 0) {
     showToast(`${name} has no hand history yet`, 'info');
@@ -7519,6 +7530,20 @@ function showAgentStatsPanel(agentId, stats, includeSandbox) {
 
   const profitColor = stats.totalProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
   const profitSign = stats.totalProfit >= 0 ? '+' : '';
+
+  // Session summary row (only in session mode with session data)
+  const isSession = mode === 'session';
+  let sessionSummaryHtml = '';
+  if (isSession && stats.sessionDuration) {
+    const mins = Math.floor(stats.sessionDuration / 60000);
+    const durStr = mins >= 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins}m`;
+    const parts = [];
+    if (stats.buyIn) parts.push(`Buy-in: ${stats.buyIn.toLocaleString()}`);
+    if (stats.refills > 0) parts.push(`Refills: ${stats.refills} (+${stats.refillAmount.toLocaleString()})`);
+    if (stats.cashOuts > 0) parts.push(`Cash-outs: ${stats.cashOuts} (-${stats.cashOutAmount.toLocaleString()})`);
+    parts.push(`Duration: ${durStr}`);
+    sessionSummaryHtml = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(99,102,241,0.08);border-radius:8px;font-size:11px;color:var(--text-secondary)">${parts.map(p => `<span>${p}</span>`).join('<span style="color:rgba(255,255,255,0.15)">|</span>')}</div>`;
+  }
 
   // Hand distribution bar chart (CSS only)
   const distEntries = Object.entries(stats.handDistribution || {}).sort((a, b) => b[1] - a[1]);
@@ -7574,6 +7599,11 @@ function showAgentStatsPanel(agentId, stats, includeSandbox) {
     <div class="agent-stats-panel">
       <button class="stats-close" onclick="this.closest('.agent-stats-overlay').remove()">✕</button>
       <h3>${emoji} ${escapeHtml(name)} — Stats</h3>
+      <div style="display:flex;gap:4px;margin-bottom:12px">
+        <button onclick="_statsSessionMode='session';this.closest('.agent-stats-overlay').remove();requestAgentStats('${agentId}',undefined,'session')" style="padding:5px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all 0.2s;${isSession ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff' : 'background:rgba(255,255,255,0.06);color:var(--text-muted)'}">Last Session</button>
+        <button onclick="_statsSessionMode='all';this.closest('.agent-stats-overlay').remove();requestAgentStats('${agentId}',undefined,'all')" style="padding:5px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all 0.2s;${!isSession ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff' : 'background:rgba(255,255,255,0.06);color:var(--text-muted)'}">All Time</button>
+      </div>
+      ${sessionSummaryHtml}
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:12px;cursor:pointer;user-select:none">
         <input type="checkbox" ${sandboxOn ? 'checked' : ''} onchange="_statsIncludeSandbox=this.checked;this.closest('.agent-stats-overlay').remove();requestAgentStats('${agentId}')" style="accent-color:#8b5cf6;cursor:pointer">
         Include Sandbox games

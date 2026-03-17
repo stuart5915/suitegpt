@@ -584,12 +584,15 @@ class RoomManager {
 
   // === Agent Stats ===
 
-  async computeAgentStats(agentId, includeSandbox = false) {
+  async computeAgentStats(agentId, includeSandbox = false, sessionStartTime = null) {
     if (!this.store.getAgentHandHistory) return null;
     const rows = await this.store.getAgentHandHistory(agentId, 200, includeSandbox);
     if (!rows || rows.length === 0) return { handsPlayed: 0 };
 
-    const hands = rows;
+    const hands = sessionStartTime
+      ? rows.filter(h => new Date(h.created_at).getTime() >= sessionStartTime)
+      : rows;
+    if (hands.length === 0) return { handsPlayed: 0 };
     const wins = hands.filter(h => h.result === 'win');
     const losses = hands.filter(h => h.result === 'loss');
     const folds = hands.filter(h => h.result === 'fold');
@@ -726,6 +729,23 @@ class RoomManager {
         const agent = table.agents.find(a => a.id === agentId && a.isCustom);
         if (agent) return table;
       }
+    }
+    return null;
+  }
+
+  findAgentAnywhere(agentId, walletAddress) {
+    // Check table agents
+    for (const room of Object.values(this.rooms)) {
+      for (const table of room.tables) {
+        const agent = table.agents.find(a => a.id === agentId && a.isCustom);
+        if (agent) return agent;
+      }
+    }
+    // Check lobby agents
+    if (walletAddress) {
+      const lobby = this.lobbyAgents.get(walletAddress) || [];
+      const found = lobby.find(a => a.id === agentId);
+      if (found) return found;
     }
     return null;
   }
@@ -1121,6 +1141,8 @@ class RoomManager {
     // Track total invested/cashed-out for accurate P&L across auto top-ups/cash-outs
     lobbyAgent.totalDeposited = lobbyAgent.chipStack;
     lobbyAgent.totalCashedOut = 0;
+    // Track session start for per-session stats
+    lobbyAgent.sessionStartTime = Date.now();
     // Preserve autoEvents so max top-up limit count carries across table moves
     // Only reset if agent had no prior events (fresh join)
     if (!lobbyAgent.autoEvents) lobbyAgent.autoEvents = [];
@@ -1435,6 +1457,7 @@ class RoomManager {
               totalDeposited: a.totalDeposited || a.baseChips,
               totalCashedOut: a.totalCashedOut || 0,
               autoEvents: a.autoEvents || [],
+              sessionStartTime: a.sessionStartTime || null,
               currency: room.currency || 'usdc',
               status: 'playing',
               roomId: table.roomId,
@@ -1464,7 +1487,9 @@ class RoomManager {
         prompt: a.prompt || (a.traits && a.traits._prompt) || '',
         pnl: 0,
         currency: a.currency || null,
-        status: 'lobby'
+        status: 'lobby',
+        sessionStartTime: a.sessionStartTime || null,
+        autoEvents: a.autoEvents || []
       });
     }
 
