@@ -465,7 +465,6 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         if (treasury.basisVault > 0) {
             msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
         }
-        msg += `Funding Rate: $${TREASURY_FUNDING_RATE}/day\n`;
     }
 
     // Allocation — council vs community
