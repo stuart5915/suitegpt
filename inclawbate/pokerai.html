@@ -6640,6 +6640,9 @@ async function doDeposit() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
     closeVault();
+    // Auto-sync balance after deposit (server event listener + manual reconcile fallback)
+    setTimeout(() => { checkDepositBalance(); }, 3000);
+    setTimeout(() => { checkDepositBalance(); }, 8000);
   } catch (e) {
     console.error('Deposit failed:', e);
     const reason = e.reason || e.message || 'Transaction failed';
@@ -6723,6 +6726,10 @@ async function doDepositPokerai() {
     updateDepositPreview();
     document.getElementById('depositNote').textContent = 'Crediting chips...';
     closeVault();
+    // Auto-sync POKERAI balance after deposit
+    const _syncPokerai = () => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'checkDepositPokerai' })); };
+    setTimeout(_syncPokerai, 3000);
+    setTimeout(_syncPokerai, 8000);
   } catch (e) {
     console.error('POKERAI deposit failed:', e);
     let reason = e.reason || e.shortMessage || e.message || 'Transaction failed';
