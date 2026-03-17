@@ -35,9 +35,19 @@ export default async function handler(req, res) {
                 .select(PUBLIC_FIELDS)
                 .order('available_capacity', { ascending: false });
 
-            // Filter to profiles that have at least some content
+            // Council wallets — always shown
+            const COUNCIL = new Set([
+                '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+                '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
+                '0x496f68438493eb1cc632f7cec6634f042c95e333',
+                '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'
+            ]);
+
+            // Filter to profiles that have real content (tagline or skills) or are council
             const visible = (profiles || []).filter(p =>
-                (p.skills && p.skills.length > 0) || (p.bio && p.bio.length > 0) || (p.tagline && p.tagline.length > 0)
+                COUNCIL.has((p.wallet_address || '').toLowerCase()) ||
+                (p.skills && p.skills.length > 0) ||
+                (p.tagline && p.tagline.trim().length > 0 && p.tagline.trim().toLowerCase() !== 'none')
             );
 
             if (visible.length === 0) {
