@@ -174,27 +174,9 @@
         }
         .iclw-cta-btn:hover { opacity: 0.85; }
 
-        /* View tabs */
-        .iclw-view-tabs {
-            display: flex; justify-content: center; gap: 0; margin-bottom: var(--space-xl);
-            border-bottom: 1px solid var(--border-subtle); animation: fadeUp 0.5s var(--ease-smooth) 0.05s both;
-        }
-        .iclw-view-tab {
-            padding: 10px 24px; border: none; background: none; color: var(--text-dim);
-            font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
-            cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent;
-        }
-        .iclw-view-tab:hover { color: var(--text-primary); }
-        .iclw-view-tab.active { color: var(--lobster-400); border-bottom-color: var(--lobster-400); }
-        .iclw-view-tab .tab-count {
-            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
-            background: hsla(9,52%,54%,0.12); color: var(--lobster-400); padding: 1px 6px;
-            border-radius: 999px; margin-left: 6px;
-        }
 
         /* Gig section */
-        .iclw-gig-section { display: none; animation: fadeUp 0.25s ease both; }
-        .iclw-gig-section.active { display: block; }
+        .iclw-gig-section { animation: fadeUp 0.5s var(--ease-smooth) 0.15s both; }
         .iclw-gig-filters {
             display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
             margin-bottom: var(--space-lg);
@@ -233,6 +215,33 @@
         }
         .iclw-gig-post-cta p { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-sm); }
         .iclw-people-section { animation: fadeUp 0.5s var(--ease-smooth) 0.1s both; }
+
+        /* Section divider */
+        .iclw-divider {
+            display: flex; align-items: center; gap: 16px;
+            margin: var(--space-3xl) 0 var(--space-xl);
+            animation: fadeUp 0.5s var(--ease-smooth) 0.1s both;
+        }
+        .iclw-divider::before, .iclw-divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+        }
+        .iclw-divider-text {
+            font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .iclw-section-header {
+            text-align: center; margin-bottom: var(--space-lg);
+            animation: fadeUp 0.5s var(--ease-smooth) 0.12s both;
+        }
+        .iclw-section-header h2 {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 900;
+            color: var(--text-primary); margin-bottom: var(--space-xs);
+        }
+        .iclw-section-header p {
+            font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; margin: 0 auto;
+        }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 600px) {
@@ -276,65 +285,8 @@
         <p class="iclw-hero-sub">The freelance marketplace for the Inclawbate ecosystem. Post gigs, find work, hire talent — all paid in CLAWS.</p>
     </div>
 
-    <!-- View Tabs -->
-    <div class="iclw-view-tabs">
-        <button class="iclw-view-tab active" data-view="gigs" onclick="switchView('gigs')">Open Gigs <span class="tab-count" id="gigTabCount">0</span></button>
-        <button class="iclw-view-tab" data-view="people" onclick="switchView('people')">People</button>
-    </div>
-
-    <!-- Gigs View -->
-    <div class="iclw-gig-section active" id="gigsView">
-        <div class="iclw-gig-filters" id="gigCatFilters">
-            <button class="iclw-filter-btn active" data-gig-cat="all">All</button>
-            <button class="iclw-filter-btn" data-gig-cat="design">Design</button>
-            <button class="iclw-filter-btn" data-gig-cat="dev">Dev</button>
-            <button class="iclw-filter-btn" data-gig-cat="marketing">Marketing</button>
-            <button class="iclw-filter-btn" data-gig-cat="content">Content</button>
-            <button class="iclw-filter-btn" data-gig-cat="strategy">Strategy</button>
-        </div>
-        <div id="gigList"></div>
-
-        <!-- Inline gig form -->
-        <div class="iclw-gig-post-cta" id="gigFormWrap">
-            <p style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:4px;">Post a gig</p>
-            <p style="margin-bottom:var(--space-md);">Describe what you need — matching inclawbators get notified automatically.</p>
-            <div style="text-align:left;max-width:520px;margin:0 auto;">
-                <textarea id="pg-desc" placeholder="e.g. Design a logo for my token, write a smart contract, run a Twitter campaign..." maxlength="500" style="width:100%;padding:10px 12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.85rem;min-height:64px;resize:vertical;margin-bottom:8px;"></textarea>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="pg-cats">
-                    <button class="iclw-filter-btn" data-pc="design">Design</button>
-                    <button class="iclw-filter-btn" data-pc="dev">Dev</button>
-                    <button class="iclw-filter-btn" data-pc="marketing">Marketing</button>
-                    <button class="iclw-filter-btn" data-pc="content">Content</button>
-                    <button class="iclw-filter-btn" data-pc="strategy">Strategy</button>
-                    <button class="iclw-filter-btn" data-pc="other">Other</button>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                    <div>
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Budget (CLAWS)</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-budgets">
-                            <button class="iclw-filter-btn" data-pb="500">500</button>
-                            <button class="iclw-filter-btn" data-pb="1000">1K</button>
-                            <button class="iclw-filter-btn" data-pb="2500">2.5K</button>
-                            <button class="iclw-filter-btn" data-pb="5000">5K</button>
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Timeline</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-times">
-                            <button class="iclw-filter-btn" data-pt="asap">ASAP</button>
-                            <button class="iclw-filter-btn" data-pt="week">This week</button>
-                            <button class="iclw-filter-btn" data-pt="norush">No rush</button>
-                        </div>
-                    </div>
-                </div>
-                <button class="iclw-cta-btn" id="pg-submit" disabled style="width:100%;font-size:0.82rem;padding:10px;">Post Gig Request</button>
-                <div id="pg-status" style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;text-align:center;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- People View -->
-    <div class="iclw-people-section" id="peopleView" style="display:none">
+    <!-- ═══ PEOPLE DIRECTORY ═══ -->
+    <div class="iclw-people-section" id="peopleView">
 
     <!-- Edit Profile Panel -->
     <div class="iclw-edit-panel" id="edit-panel">
@@ -424,6 +376,67 @@
     </div>
 
     </div><!-- /peopleView -->
+
+    <!-- ═══ DIVIDER ═══ -->
+    <div class="iclw-divider">
+        <span class="iclw-divider-text">Open Gigs</span>
+    </div>
+
+    <!-- ═══ GIGS SECTION ═══ -->
+    <div class="iclw-gig-section" id="gigsView">
+        <div class="iclw-section-header">
+            <h2>Need something built?</h2>
+            <p>Post a gig request and matching inclawbators get notified. Browse open work below.</p>
+        </div>
+
+        <div class="iclw-gig-filters" id="gigCatFilters">
+            <button class="iclw-filter-btn active" data-gig-cat="all">All</button>
+            <button class="iclw-filter-btn" data-gig-cat="design">Design</button>
+            <button class="iclw-filter-btn" data-gig-cat="dev">Dev</button>
+            <button class="iclw-filter-btn" data-gig-cat="marketing">Marketing</button>
+            <button class="iclw-filter-btn" data-gig-cat="content">Content</button>
+            <button class="iclw-filter-btn" data-gig-cat="strategy">Strategy</button>
+        </div>
+        <div id="gigList"></div>
+
+        <!-- Inline gig form -->
+        <div class="iclw-gig-post-cta" id="gigFormWrap">
+            <p style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:4px;">Post a gig</p>
+            <p style="margin-bottom:var(--space-md);">Describe what you need — matching inclawbators get notified automatically.</p>
+            <div style="text-align:left;max-width:520px;margin:0 auto;">
+                <textarea id="pg-desc" placeholder="e.g. Design a logo for my token, write a smart contract, run a Twitter campaign..." maxlength="500" style="width:100%;padding:10px 12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.85rem;min-height:64px;resize:vertical;margin-bottom:8px;"></textarea>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="pg-cats">
+                    <button class="iclw-filter-btn" data-pc="design">Design</button>
+                    <button class="iclw-filter-btn" data-pc="dev">Dev</button>
+                    <button class="iclw-filter-btn" data-pc="marketing">Marketing</button>
+                    <button class="iclw-filter-btn" data-pc="content">Content</button>
+                    <button class="iclw-filter-btn" data-pc="strategy">Strategy</button>
+                    <button class="iclw-filter-btn" data-pc="other">Other</button>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Budget (CLAWS)</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-budgets">
+                            <button class="iclw-filter-btn" data-pb="500">500</button>
+                            <button class="iclw-filter-btn" data-pb="1000">1K</button>
+                            <button class="iclw-filter-btn" data-pb="2500">2.5K</button>
+                            <button class="iclw-filter-btn" data-pb="5000">5K</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Timeline</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pg-times">
+                            <button class="iclw-filter-btn" data-pt="asap">ASAP</button>
+                            <button class="iclw-filter-btn" data-pt="week">This week</button>
+                            <button class="iclw-filter-btn" data-pt="norush">No rush</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="iclw-cta-btn" id="pg-submit" disabled style="width:100%;font-size:0.82rem;padding:10px;">Post Gig Request</button>
+                <div id="pg-status" style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;text-align:center;"></div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <footer class="footer" style="text-align:center;padding:var(--space-xl);color:var(--text-dim);font-size:0.75rem;">
@@ -813,14 +826,6 @@
     });
 })();
 
-// Tab switching (outside IIFE so onclick works)
-function switchView(view) {
-    document.querySelectorAll('.iclw-view-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.view === view); });
-    document.getElementById('gigsView').style.display = view === 'gigs' ? 'block' : 'none';
-    if (view === 'gigs') document.getElementById('gigsView').classList.add('active');
-    else document.getElementById('gigsView').classList.remove('active');
-    document.getElementById('peopleView').style.display = view === 'people' ? '' : 'none';
-}
 </script>
 </body>
 </html>
