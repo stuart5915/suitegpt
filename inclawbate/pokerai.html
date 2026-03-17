@@ -6551,9 +6551,7 @@ function updateWalletUI() {
   const backingTotal = (myAgents || []).reduce((sum, a) => sum + (a.backingTotal || 0), 0);
   const totalUsdcChips = walletBalance + usdcAgentChips - backingTotal;
   const totalPokeraiChips = pokeraiWalletBalance + pokeraiAgentChips;
-  // Show active currency in header
   const isPokerai = isPokeraiRoom(activeRoom);
-  const displayBalance = isPokerai ? totalPokeraiChips : totalUsdcChips;
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
@@ -6568,26 +6566,16 @@ function updateWalletUI() {
   }
   const fb = document.getElementById('formBalance');
   if (fb) fb.textContent = (isPokerai ? pokeraiWalletBalance : walletBalance).toLocaleString();
+  // USDC card always shows USDC data
   const hb = document.getElementById('balUsdc');
-  if (hb) hb.textContent = formatChips(displayBalance);
-  // Subtitle: breakdown
+  if (hb) hb.textContent = formatChips(totalUsdcChips);
   const balUsdcSub = document.getElementById('balUsdcSub');
-  if (balUsdcSub) {
-    if (isPokerai) {
-      balUsdcSub.textContent = totalPokeraiChips.toLocaleString() + ' $POKERAI total';
-    } else {
-      balUsdcSub.textContent = '$' + (totalUsdcChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
-    }
-  }
+  if (balUsdcSub) balUsdcSub.textContent = '$' + (totalUsdcChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
   const balUsdcTotal = document.getElementById('balUsdcTotal');
   if (balUsdcTotal) {
-    if (isPokerai && pokeraiAgentChips > 0) {
-      balUsdcTotal.textContent = 'Wallet: ' + pokeraiWalletBalance.toLocaleString() + ' · Agents: ' + pokeraiAgentChips.toLocaleString();
-    } else if (!isPokerai && usdcAgentChips > 0) {
-      balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2);
-    } else {
-      balUsdcTotal.textContent = '';
-    }
+    balUsdcTotal.textContent = usdcAgentChips > 0
+      ? 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2)
+      : '';
   }
   // Update POKERAI chips card
   const pokeraiCard = document.getElementById('balPokeraiChipsCard');
