@@ -526,7 +526,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday) {
         tweet += `Current Rate: ${formatNum(supply.dailyRewards)} CLAWS/day\n`;
         if (price > 0) {
             const annualUsd = supply.dailyRewards * 365 * price;
-            tweet += `Annual Value: ~${formatUsd(annualUsd)}\n`;
+            tweet += `~${formatUsd(annualUsd)} USD/year in rewards\n`;
         }
         tweet += `Value Staked: ~${formatUsd(supply.staked * price)}\n`;
         if (supply.apy > 0) tweet += `APY: ${supply.apy.toFixed(0)}%\n`;
