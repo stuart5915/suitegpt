@@ -471,6 +471,11 @@
         <div id="edit-status" style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-sm);"></div>
     </div>
 
+    <!-- Edit your profile (council members only, shown via JS) -->
+    <div id="editProfileBar" style="display:none;text-align:right;margin-bottom:var(--space-sm);">
+        <button class="iclw-hire-btn" id="create-profile-btn" style="font-size:0.75rem;padding:6px 16px;">Edit Your Profile</button>
+    </div>
+
     <!-- Directory Grid -->
     <div class="iclw-grid" id="iclw-grid"></div>
     <div class="iclw-empty" id="iclw-empty" style="display:none;">Loading...</div>
@@ -607,6 +612,16 @@
         }
     } catch(e) {}
 
+    // Show edit button for logged-in council members
+    if (loggedInUser && loggedInUser.x_handle) {
+        var _h = loggedInUser.x_handle.toLowerCase();
+        var _councilHandles = ['artstu', 'itsevilduck', 'abhiontwt', '0xgrante'];
+        if (_councilHandles.indexOf(_h) !== -1) {
+            var bar = document.getElementById('editProfileBar');
+            if (bar) bar.style.display = '';
+        }
+    }
+
     function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
     function formatLink(url) {
@@ -626,9 +641,10 @@
         '0x91b5c0d07859cfeafeb67d9694121cd741f049bd': { name: 'Stuart', role: 'Founder' },
         '0x18b18e245122f4bda5f2ee4f25c702e05c241d49': { name: 'Red Foreman', role: 'Builder' },
         '0x496f68438493eb1cc632f7cec6634f042c95e333': { name: 'Manto', role: 'Strategy' },
-        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3': { name: '0xGRANT', role: 'Council' }
+        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3': { name: '0xGRANT', role: 'Council' },
+        '0xc2599f1009669f4cda7ac2493de06d450fc79ef9': { name: 'Abinav', role: 'Builder' }
     };
-    var COUNCIL_HANDLES = ['artstu', 'itsevilDuck', 'itsevilduck'];
+    var COUNCIL_HANDLES = ['artstu', 'itsevilDuck', 'itsevilduck', 'abhiontwt'];
 
     function isCouncil(p) {
         if (p.wallet_address && COUNCIL[p.wallet_address.toLowerCase()]) return true;

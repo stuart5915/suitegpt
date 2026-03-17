@@ -210,7 +210,8 @@ export default async function handler(req, res) {
                         '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
                         '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
                         '0x496f68438493eb1cc632f7cec6634f042c95e333',
-                        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'
+                        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
+                        '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
                     ]);
                     if (profiles && profiles.length > 0) {
                         // Seed with known council handles (may not have profiles)

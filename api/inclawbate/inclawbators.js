@@ -40,7 +40,8 @@ export default async function handler(req, res) {
                 '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
                 '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
                 '0x496f68438493eb1cc632f7cec6634f042c95e333',
-                '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'
+                '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
+                '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
             ]);
 
             // Filter to profiles that have real content (tagline or skills) or are council
@@ -71,16 +72,32 @@ export default async function handler(req, res) {
             });
 
             // Batch: apps built per wallet
-            const { data: appCounts } = await supabase
-                .from('user_apps')
-                .select('creator_wallet')
-                .in('creator_wallet', wallets)
-                .eq('is_public', true);
+            const handles = visible.map(p => p.x_handle).filter(Boolean);
+            const [{ data: appsByWallet }, { data: appsByHandle }] = await Promise.all([
+                supabase.from('user_apps').select('creator_wallet').in('creator_wallet', wallets).eq('is_public', true),
+                supabase.from('user_apps').select('creator_x_handle').in('creator_x_handle', handles).eq('is_public', true)
+            ]);
+
+            // Map handle → wallet for merging
+            const handleToWallet = {};
+            visible.forEach(p => {
+                if (p.x_handle && p.wallet_address) handleToWallet[p.x_handle.toLowerCase()] = p.wallet_address.toLowerCase();
+            });
 
             const appMap = {};
-            (appCounts || []).forEach(a => {
+            (appsByWallet || []).forEach(a => {
                 const w = a.creator_wallet?.toLowerCase();
                 if (w) appMap[w] = (appMap[w] || 0) + 1;
+            });
+            // Add handle-only apps (avoid double-counting)
+            const appByHandleCount = {};
+            (appsByHandle || []).forEach(a => {
+                const h = a.creator_x_handle?.toLowerCase();
+                if (h) appByHandleCount[h] = (appByHandleCount[h] || 0) + 1;
+            });
+            Object.entries(appByHandleCount).forEach(([h, count]) => {
+                const w = handleToWallet[h];
+                if (w && count > (appMap[w] || 0)) appMap[w] = count;
             });
 
             // Batch: CLAWS earned from hire conversations
