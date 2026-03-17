@@ -221,6 +221,75 @@
         .sched-book-close { background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.2rem;padding:4px;line-height:1; }
         .sched-book-close:hover { color:var(--text-primary); }
 
+        /* Theme hint in booking form */
+        .sched-theme-hint {
+            background: rgba(232,121,85,0.06);
+            border: 1px solid rgba(232,121,85,0.18);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: var(--space-md);
+        }
+        .sched-theme-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .sched-theme-emoji {
+            font-size: 1.4rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .sched-theme-name {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--lobster-400);
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .sched-theme-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+        .sched-theme-angles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .sched-theme-angle {
+            font-size: 0.72rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(232,121,85,0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .sched-theme-angle:hover {
+            border-color: var(--lobster-400);
+            color: var(--text-primary);
+            background: rgba(232,121,85,0.18);
+        }
+        [data-active-account="inclawbate"] .sched-theme-hint {
+            background: rgba(45,212,191,0.06);
+            border-color: rgba(45,212,191,0.18);
+        }
+        [data-active-account="inclawbate"] .sched-theme-name {
+            color: var(--seafoam-400);
+        }
+        [data-active-account="inclawbate"] .sched-theme-angle {
+            background: rgba(45,212,191,0.1);
+        }
+        [data-active-account="inclawbate"] .sched-theme-angle:hover {
+            border-color: var(--seafoam-400);
+            background: rgba(45,212,191,0.18);
+        }
+
         /* Project picker — cards instead of dropdown */
         .sched-projects { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-md); }
         .sched-proj {
@@ -671,6 +740,18 @@
                 <div class="sched-projects" id="schedProjectPicker"></div>
             </div>
 
+            <!-- Today's theme hint -->
+            <div class="sched-theme-hint" id="schedThemeHint" style="display:none">
+                <div class="sched-theme-header">
+                    <span class="sched-theme-emoji" id="schedThemeEmoji"></span>
+                    <div>
+                        <div class="sched-theme-name" id="schedThemeName"></div>
+                        <div class="sched-theme-desc" id="schedThemeDesc"></div>
+                    </div>
+                </div>
+                <div class="sched-theme-angles" id="schedThemeAngles"></div>
+            </div>
+
             <!-- User tweet text (non-admin) -->
             <div class="sched-field" id="schedUserFields">
                 <div class="sched-field-label">Write your tweet</div>
@@ -765,23 +846,23 @@
     var FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 
     var INCLAWBATOR_PILLARS = [
-        { name: 'Weekly Recap',        emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next' },
-        { name: 'App Spotlight',       emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one specific app \u2014 what it does, why it\'s cool' },
-        { name: 'Builder Shoutout',    emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member \u2014 what they made, tag them' },
-        { name: 'DeFi / CLAWS Update', emoji: '\u{26D3}',  needsImage: true,  desc: 'CLAWS price, staking stats, LP news, ecosystem numbers' },
-        { name: 'How-To / Tips',       emoji: '\u{1F4A1}', needsImage: false, desc: 'Tutorial or tip \u2014 "Did you know you can..." educational content' },
-        { name: 'Community Vibes',     emoji: '\u{1F525}', needsImage: true,  desc: 'Poll, hot take, meme, engagement bait \u2014 get people talking' },
-        { name: 'Incubation CTA',      emoji: '\u{1F680}', needsImage: true,  desc: 'Sell the incubation service \u2014 "Got a project? We build it for you"' },
+        { name: 'Weekly Recap',        emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next', angles: ['What launched this week', 'Stats that surprised you', 'Sneak peek at next week', 'Biggest win this week'] },
+        { name: 'App Spotlight',       emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one specific app \u2014 what it does, why it\'s cool', angles: ['Why this app matters', 'How to use it in 30 sec', 'Feature most people miss', 'Compare to the old way'] },
+        { name: 'Builder Shoutout',    emoji: '\u{1F477}', needsImage: false, desc: 'Highlight a builder or community member \u2014 what they made, tag them', angles: ['What they built', 'Their journey so far', 'Why their project is unique', 'What\'s next for them'] },
+        { name: 'DeFi / CLAWS Update', emoji: '\u{26D3}',  needsImage: true,  desc: 'CLAWS price, staking stats, LP news, ecosystem numbers', angles: ['Staking APR update', 'CLAWS price action', 'LP pool stats', 'Treasury health check'] },
+        { name: 'How-To / Tips',       emoji: '\u{1F4A1}', needsImage: false, desc: 'Tutorial or tip \u2014 "Did you know you can..." educational content', angles: ['How to stake CLAWS', 'How to publish an app', 'Pro tip you didn\'t know', 'Common mistake to avoid'] },
+        { name: 'Community Vibes',     emoji: '\u{1F525}', needsImage: true,  desc: 'Poll, hot take, meme, engagement bait \u2014 get people talking', angles: ['Hot take on DeFi', 'Poll: what should we build?', 'Meme about building on-chain', 'Unpopular opinion'] },
+        { name: 'Incubation CTA',      emoji: '\u{1F680}', needsImage: true,  desc: 'Sell the incubation service \u2014 "Got a project? We build it for you"', angles: ['Got an idea? We build it', 'From idea to launch in days', 'What incubation includes', 'Success story spotlight'] },
     ];
 
     var INCLAWBATE_PILLARS = [
-        { name: 'Weekly Recap',          emoji: '\u{1F4CA}', needsImage: true,  desc: 'What shipped this week, platform numbers, treasury updates, what\'s coming next' },
-        { name: 'Product Highlight',     emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one product \u2014 PokerAI, staking, app builder, tools, vaults' },
-        { name: 'Builder Story',         emoji: '\u{1F477}', needsImage: false, desc: 'Spotlight a builder, an app they shipped, or a community contribution' },
-        { name: 'Brand & Vision',        emoji: '\u{1F30A}', needsImage: true,  desc: 'The perpetual engine, Telos mission, why Inclawbate exists, DAO governance' },
-        { name: 'Education',             emoji: '\u{1F4A1}', needsImage: false, desc: 'How DeFi works, how Inclawbate works, staking explained, yield mechanics' },
-        { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, memes with the lobster mascot, conversation starters' },
-        { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones' },
+        { name: 'Weekly Recap',          emoji: '\u{1F4CA}', needsImage: true,  desc: 'What shipped this week, platform numbers, treasury updates, what\'s coming next', angles: ['This week\'s releases', 'Platform stats roundup', 'Treasury + TVL update', 'Coming next week'] },
+        { name: 'Product Highlight',     emoji: '\u{1F4F1}', needsImage: true,  desc: 'Deep dive on one product \u2014 PokerAI, staking, app builder, tools, vaults', angles: ['PokerAI deep dive', 'Staking vault breakdown', 'App builder walkthrough', 'New tool spotlight'] },
+        { name: 'Builder Story',         emoji: '\u{1F477}', needsImage: false, desc: 'Spotlight a builder, an app they shipped, or a community contribution', angles: ['Builder interview', 'App they shipped', 'Community contribution', 'From idea to live app'] },
+        { name: 'Brand & Vision',        emoji: '\u{1F30A}', needsImage: true,  desc: 'The perpetual engine, Telos mission, why Inclawbate exists, DAO governance', angles: ['Why we exist', 'The perpetual engine explained', 'DAO governance update', 'Long-term vision'] },
+        { name: 'Education',             emoji: '\u{1F4A1}', needsImage: false, desc: 'How DeFi works, how Inclawbate works, staking explained, yield mechanics', angles: ['How staking works', 'Yield mechanics 101', 'DeFi concept explained', 'How Inclawbate works'] },
+        { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, memes with the lobster mascot, conversation starters', angles: ['Poll for the community', 'Lobster meme moment', 'Hot take', 'What do you want us to build?'] },
+        { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones', angles: ['CLAWS numbers update', 'Growth milestone hit', 'New integration shipped', 'Ecosystem health check'] },
     ];
 
     var _activeAccount = 'inclawbator';
@@ -1204,6 +1285,40 @@
         document.getElementById('schedBookTime').textContent = 'Book ' + dateStr + ' at ' + timeStr;
         document.getElementById('schedBookSlotTime').value = slotTime.toISOString();
         document.getElementById('schedBookProject').value = '';
+
+        // Show today's theme hint
+        var dow = slotTime.getUTCDay();
+        var pillar = activePillars()[dow];
+        var hint = document.getElementById('schedThemeHint');
+        if (pillar) {
+            hint.style.display = 'block';
+            document.getElementById('schedThemeEmoji').textContent = pillar.emoji;
+            document.getElementById('schedThemeName').textContent = "Today's theme: " + pillar.name;
+            document.getElementById('schedThemeDesc').textContent = pillar.desc;
+            var anglesEl = document.getElementById('schedThemeAngles');
+            anglesEl.innerHTML = '';
+            (pillar.angles || []).forEach(function(angle) {
+                var chip = document.createElement('span');
+                chip.className = 'sched-theme-angle';
+                chip.textContent = angle;
+                chip.onclick = function() {
+                    var ta = document.getElementById('schedBookTweet');
+                    if (!ta.value.trim()) {
+                        ta.value = angle + ' — ';
+                        ta.focus();
+                        ta.setSelectionRange(ta.value.length, ta.value.length);
+                        updateBookCharCount();
+                    }
+                };
+                anglesEl.appendChild(chip);
+            });
+        } else {
+            hint.style.display = 'none';
+        }
+
+        // Update placeholder with account handle
+        var handle = _activeAccount === 'inclawbate' ? '@inclawbate' : '@inclawbator';
+        document.getElementById('schedBookTweet').placeholder = 'What do you want ' + handle + ' to post? Write the exact tweet...';
 
         // Everyone sees the same simple form — write your tweet
         document.getElementById('schedProjectField').style.display = 'none';
