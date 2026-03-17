@@ -1023,9 +1023,16 @@ async function connectPoolWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Always show wallet selector so user can verify which account connects.
-    // Fixes Coinbase Wallet multi-account issue where wrong wallet auto-loads.
-    if (window.showWalletSelector) {
+    // Mobile inside wallet browser: auto-connect the injected provider directly.
+    // Showing the selector here is wrong — it shows deep links/install links for wallets
+    // the user is already inside. The 0-balance toast below handles wrong-account cases.
+    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (window.showWalletSelector) {
         var selected = await window.showWalletSelector();
         if (selected && selected.provider) eth = selected.provider;
         else if (selected && selected.address) {
@@ -1037,13 +1044,6 @@ async function connectPoolWallet() {
             }
             return selected.address;
         }
-    } else if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-        // Fallback if wallet selector unavailable
-        eth = window.ethereum || window.phantom.ethereum;
-    } else if (!isMobile && providers.length === 1) {
-        eth = providers[0].provider;
-    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-        eth = window.ethereum || window.phantom.ethereum;
     }
 
     // Last resort: open WalletKit modal if no provider found

@@ -246,9 +246,13 @@ async function connectWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Always show wallet selector so user can verify which account connects.
-    // Fixes Coinbase Wallet multi-account issue where wrong wallet auto-loads.
-    if (window.showWalletSelector) {
+    // Mobile inside wallet browser: auto-connect the injected provider directly.
+    // Showing the selector here shows deep links/install links — wrong when already inside the wallet.
+    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length > 1 && window.showWalletSelector) {
         var selected = await window.showWalletSelector();
         if (selected && selected.provider) eth = selected.provider;
         else if (selected && selected.address) {
@@ -256,12 +260,11 @@ async function connectWallet() {
             state.isAdmin = state.wallet === SUPER_ADMIN;
             return;
         }
-    } else if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
-        eth = window.ethereum || window.phantom.ethereum;
-    } else if (!isMobile && providers.length === 1) {
-        eth = providers[0].provider;
     } else if (!isMobile && providers.length === 0 && window.ethereum) {
         eth = window.ethereum;
+    } else if (window.showWalletSelector) {
+        var selected2 = await window.showWalletSelector();
+        if (selected2 && selected2.provider) eth = selected2.provider;
     } else {
         eth = window.ethereum;
     }
@@ -1910,10 +1913,7 @@ function selectTier(tier) {
     selectedIncTier = tier;
     var cards = document.querySelectorAll('#incTierCards .inc-tier-card');
     cards.forEach(function(c) {
-        var isSel = c.dataset.tier === tier;
-        c.classList.toggle('selected', isSel);
-        c.style.borderColor = isSel ? '#6366f1' : '';
-        c.style.background = isSel ? 'rgba(99,102,241,0.08)' : '';
+        c.classList.toggle('selected', c.dataset.tier === tier);
     });
 }
 
