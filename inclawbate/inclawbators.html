@@ -20,7 +20,7 @@
         body { opacity: 1; }
         .iclw-page {
             max-width: 920px; margin: 0 auto;
-            padding: var(--space-lg) var(--space-lg) var(--space-3xl);
+            padding: calc(var(--nav-height, 60px) + var(--space-2xl)) var(--space-lg) var(--space-3xl);
             background:
                 radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
                 radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
@@ -35,10 +35,42 @@
         }
         .iclw-hero-sub { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; max-width: 560px; margin: 0 auto; }
 
+        /* Search */
+        .iclw-search {
+            max-width: 480px; margin: 0 auto var(--space-lg);
+            position: relative; animation: fadeUp 0.5s var(--ease-smooth) 0.05s both;
+        }
+        .iclw-search-input {
+            width: 100%; padding: 12px 16px 12px 42px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); color: var(--text-primary);
+            font-family: var(--font-body); font-size: 0.9rem;
+            transition: border-color 0.2s; outline: none;
+        }
+        .iclw-search-input:focus { border-color: var(--lobster-400); }
+        .iclw-search-input::placeholder { color: var(--text-dim); }
+        .iclw-search-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-dim); font-size: 0.9rem; pointer-events: none;
+        }
+        .iclw-result-count {
+            text-align: center; font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--text-dim); margin-bottom: var(--space-sm);
+        }
+
+        /* Show more */
+        .iclw-show-more {
+            display: block; width: 100%; max-width: 320px; margin: var(--space-lg) auto 0;
+            padding: 10px 24px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 999px; color: var(--text-secondary); font-family: var(--font-body);
+            font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .iclw-show-more:hover { border-color: var(--lobster-400); color: var(--lobster-400); }
+
         /* Filters */
         .iclw-filters {
             display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-            margin-bottom: var(--space-xl); animation: fadeUp 0.5s var(--ease-smooth) 0.1s both;
+            margin-bottom: var(--space-lg); animation: fadeUp 0.5s var(--ease-smooth) 0.1s both;
         }
         .iclw-filter-btn {
             padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-subtle);
@@ -353,6 +385,12 @@
         <div id="edit-status" style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-sm);"></div>
     </div>
 
+    <!-- Search -->
+    <div class="iclw-search">
+        <span class="iclw-search-icon">&#128269;</span>
+        <input type="text" class="iclw-search-input" id="iclw-search" placeholder="Search by name, skill, or keyword..." autocomplete="off">
+    </div>
+
     <!-- Filters -->
     <div class="iclw-filters">
         <button class="iclw-filter-btn active" data-filter="all">All</button>
@@ -364,9 +402,13 @@
         <button class="iclw-filter-btn" data-filter="content">Content</button>
     </div>
 
+    <!-- Result count -->
+    <div class="iclw-result-count" id="iclw-result-count"></div>
+
     <!-- Directory Grid -->
     <div class="iclw-grid" id="iclw-grid"></div>
-    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found yet. Be the first to create your profile.</div>
+    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found matching your search.</div>
+    <button class="iclw-show-more" id="iclw-show-more" style="display:none;" onclick="window._showMoreProfiles()">Show more</button>
 
     <!-- CTA -->
     <div class="iclw-cta">
@@ -449,6 +491,9 @@
     var API_SAVE = '/api/inclawbate/humans';
     var allProfiles = [];
     var currentFilter = 'all';
+    var searchQuery = '';
+    var VISIBLE_LIMIT = 6;
+    var showAll = false;
     var loggedInUser = null;
 
     // Check X login
@@ -475,18 +520,63 @@
 
     var RT_LABELS = { under_1h: '<1h', under_4h: '<4h', under_24h: '<24h', under_48h: '<48h' };
 
+    // Profile completeness score — higher = more useful profile
+    function profileScore(p) {
+        var score = 0;
+        if (p.tagline) score += 3;
+        if (p.bio) score += 2;
+        if (p.skills && p.skills.length) score += 2;
+        if (p.portfolio_links && p.portfolio_links.length) score += 2;
+        if (p.contact_method) score += 1;
+        if (p.x_avatar_url) score += 1;
+        if (p.display_name || p.x_name) score += 1;
+        if (p.tokens_launched) score += 1;
+        if (p.apps_built) score += 1;
+        if (p.hire_count) score += 1;
+        return score;
+    }
+
+    // Is a profile "complete enough" to show?
+    function isUsefulProfile(p) {
+        return !!(p.tagline || (p.skills && p.skills.length) || p.bio);
+    }
+
     function fetchProfiles() {
         fetch(API_LIST).then(function(r) { return r.json(); }).then(function(data) {
-            if (data.success) { allProfiles = data.inclawbators || []; renderGrid(); }
+            if (data.success) {
+                allProfiles = (data.inclawbators || []).sort(function(a, b) {
+                    return profileScore(b) - profileScore(a);
+                });
+                renderGrid();
+            }
         }).catch(function() {});
     }
+
+    window._showMoreProfiles = function() { showAll = true; renderGrid(); };
+
+    // Search handler
+    var _searchTimeout;
+    document.getElementById('iclw-search').addEventListener('input', function() {
+        clearTimeout(_searchTimeout);
+        var val = this.value;
+        _searchTimeout = setTimeout(function() {
+            searchQuery = val.trim().toLowerCase();
+            showAll = false;
+            renderGrid();
+        }, 200);
+    });
 
     function renderGrid() {
         var grid = document.getElementById('iclw-grid');
         var empty = document.getElementById('iclw-empty');
+        var showMoreBtn = document.getElementById('iclw-show-more');
+        var countEl = document.getElementById('iclw-result-count');
         if (!grid) return;
 
-        var filtered = allProfiles;
+        // Start with useful profiles only (unless searching — then search everything)
+        var filtered = searchQuery ? allProfiles : allProfiles.filter(isUsefulProfile);
+
+        // Apply filter
         if (currentFilter === 'available') {
             filtered = filtered.filter(function(p) { return p.availability === 'available'; });
         } else if (currentFilter !== 'all') {
@@ -498,10 +588,29 @@
             });
         }
 
-        if (filtered.length === 0) { grid.innerHTML = ''; empty.style.display = ''; return; }
+        // Apply search
+        if (searchQuery) {
+            filtered = filtered.filter(function(p) {
+                var haystack = [
+                    p.display_name, p.x_name, p.x_handle, p.tagline, p.bio,
+                    (p.skills || []).join(' '), p.contact_method
+                ].join(' ').toLowerCase();
+                return haystack.includes(searchQuery);
+            });
+        }
+
+        var totalCount = filtered.length;
+        if (totalCount === 0) { grid.innerHTML = ''; empty.style.display = ''; showMoreBtn.style.display = 'none'; countEl.textContent = ''; return; }
         empty.style.display = 'none';
 
-        grid.innerHTML = filtered.map(function(p) {
+        // Cap visible
+        var visible = showAll ? filtered : filtered.slice(0, VISIBLE_LIMIT);
+        var hasMore = totalCount > VISIBLE_LIMIT && !showAll;
+        showMoreBtn.style.display = hasMore ? 'block' : 'none';
+        if (hasMore) showMoreBtn.textContent = 'Show ' + (totalCount - VISIBLE_LIMIT) + ' more';
+        countEl.textContent = totalCount + ' inclawbator' + (totalCount !== 1 ? 's' : '') + (searchQuery || currentFilter !== 'all' ? ' found' : '');
+
+        grid.innerHTML = visible.map(function(p) {
             var statusClass = 'iclw-status--' + (p.availability || 'available');
             var statusLabel = (p.availability || 'available').charAt(0).toUpperCase() + (p.availability || 'available').slice(1);
             var displayName = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
@@ -562,11 +671,13 @@
     }
 
     // Filters
-    document.querySelectorAll('.iclw-filter-btn').forEach(function(btn) {
+    document.querySelectorAll('.iclw-filters .iclw-filter-btn').forEach(function(btn) {
+        if (!btn.dataset.filter) return;
         btn.addEventListener('click', function() {
-            document.querySelectorAll('.iclw-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.iclw-filters .iclw-filter-btn').forEach(function(b) { if (b.dataset.filter) b.classList.remove('active'); });
             btn.classList.add('active');
             currentFilter = btn.dataset.filter;
+            showAll = false;
             renderGrid();
         });
     });
