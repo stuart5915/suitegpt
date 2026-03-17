@@ -13,12 +13,11 @@ const BASESCAN_KEY = 'C6WMY6JWVYDGI9QZBEDNUH86E7A5PIZACC';
 // These are always included for inclawbate.base.eth (0x91B5C0D07859CFeAfEB67d9694121CD741F049bd)
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const KNOWN_TOKENS = [
-    { addr: '0x7ca47b141639b893c6782823c0b219f872056379', name: 'CLAWS', symbol: 'CLAWS', fee_bps: 10000 },
-    { addr: '0x623a5cfc2e2e04957373a9f45b2b2beeabf82b07', name: 'PokerAI', symbol: 'POKERAI', fee_bps: 7500 },
-    { addr: '0xa1f72459dfa10bad200ac160ecd78c6b77a747be', name: 'CLAWNCH', symbol: 'CLAWNCH', fee_bps: 10000 },
-    { addr: '0xb0b6e0e9da530f68d713cc03a813b506205ac808', name: 'inCLAWNCH', symbol: 'INCLAWNCH', fee_bps: 10000 },
-    { addr: '0x9f15f27e0a28d1d521211ed17fb42901e8a7a972', name: 'stu', symbol: 'STU', fee_bps: 2000 },
-    { addr: '0x30f5bcb8bda2b91430be93dbae08ac346884eb07', name: 'Salvation 4 Humanity', symbol: 'S4H', fee_bps: 10000 },
+    { addr: '0x7ca47b141639b893c6782823c0b219f872056379', name: 'CLAWS', symbol: 'CLAWS', fee_bps: 10000, platform: 'clanker' },
+    { addr: '0x623a5cfc2e2e04957373a9f45b2b2beeabf82b07', name: 'PokerAI', symbol: 'POKERAI', fee_bps: 7500, platform: 'clanker' },
+    { addr: '0xb0b6e0e9da530f68d713cc03a813b506205ac808', name: 'inCLAWNCH', symbol: 'INCLAWNCH', fee_bps: 10000, platform: 'clanker' },
+    { addr: '0x9f15f27e0a28d1d521211ed17fb42901e8a7a972', name: 'stu', symbol: 'STU', fee_bps: 2000, platform: 'clanker' },
+    { addr: '0x30f5bcb8bda2b91430be93dbae08ac346884eb07', name: 'Salvation 4 Humanity', symbol: 'S4H', fee_bps: 10000, platform: 'clanker' },
 ];
 
 const supabase = createClient(
@@ -121,12 +120,23 @@ export default async function handler(req, res) {
 
     // DB projects first (authoritative fee_split_bps)
     for (const p of dbProjects) {
-        if ((p.chain || 'base') === 'base' && p.token_address) {
+        const chain = p.chain || 'base';
+        if (chain === 'base' && p.token_address) {
             allTokens.set(p.token_address.toLowerCase(), {
                 name: p.token_name,
                 symbol: p.token_symbol,
                 fee_split_bps: p.fee_split_bps || 10000,
                 total_claimed: p.total_fees_claimed || 0,
+                platform: 'clanker',
+                source: 'project'
+            });
+        } else if (chain === 'solana' && p.token_address) {
+            allTokens.set(p.token_address.toLowerCase(), {
+                name: p.token_name,
+                symbol: p.token_symbol,
+                fee_split_bps: p.fee_split_bps || 8000,
+                total_claimed: p.total_fees_claimed || 0,
+                platform: 'bags',
                 source: 'project'
             });
         }
@@ -141,6 +151,7 @@ export default async function handler(req, res) {
                     symbol: t.symbol,
                     fee_split_bps: t.fee_bps,
                     total_claimed: 0,
+                    platform: t.platform || 'clanker',
                     source: 'ecosystem'
                 });
             }
@@ -155,6 +166,7 @@ export default async function handler(req, res) {
                 symbol: info.symbol,
                 fee_split_bps: 10000,
                 total_claimed: 0,
+                platform: 'clanker',
                 source: 'discovered'
             });
         }
@@ -178,6 +190,7 @@ export default async function handler(req, res) {
                 estimated_daily_eth: Math.round(dailyFeeEth * 1e8) / 1e8,
                 estimated_daily_usd: Math.round(dailyFeeUsd * 100) / 100,
                 total_claimed: info.total_claimed,
+                platform: info.platform || 'clanker',
                 source: info.source
             };
         })

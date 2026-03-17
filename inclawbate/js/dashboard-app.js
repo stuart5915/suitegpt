@@ -3329,7 +3329,6 @@ async function discoverClankerTokens(wallet, knownAddrs) {
         const ECOSYSTEM_TOKENS = [
             { addr: '0x7ca47b141639b893c6782823c0b219f872056379', name: 'CLAWS', symbol: 'CLAWS' },
             { addr: '0x623a5cfc2e2e04957373a9f45b2b2beeabf82b07', name: 'PokerAI', symbol: 'POKERAI' },
-            { addr: '0xa1f72459dfa10bad200ac160ecd78c6b77a747be', name: 'CLAWNCH', symbol: 'CLAWNCH' },
             { addr: '0xb0b6e0e9da530f68d713cc03a813b506205ac808', name: 'inCLAWNCH', symbol: 'INCLAWNCH' },
             { addr: '0x9f15f27e0a28d1d521211ed17fb42901e8a7a972', name: 'stu', symbol: 'STU' },
             { addr: '0x30f5bcb8bda2b91430be93dbae08ac346884eb07', name: 'Salvation 4 Humanity', symbol: 'S4H' }

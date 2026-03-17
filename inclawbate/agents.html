@@ -2334,9 +2334,13 @@ async function loadFeeReport() {
         if (data.tokens && data.tokens.length) {
             html += '<div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);margin:12px 0 8px;">Per-Token Breakdown</div>';
             data.tokens.forEach(function(t) {
+                var plat = (t.platform || 'clanker').toLowerCase();
+                var platBadge = plat === 'bags'
+                    ? '<span style="display:inline-block;padding:1px 6px;border-radius:999px;font-size:0.6rem;font-weight:700;font-family:var(--font-mono);background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.25);margin-left:6px;">BAGS</span>'
+                    : '<span style="display:inline-block;padding:1px 6px;border-radius:999px;font-size:0.6rem;font-weight:700;font-family:var(--font-mono);background:rgba(59,130,246,0.15);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);margin-left:6px;">Clanker</span>';
                 html += '<div style="background:var(--bg-card);border-radius:10px;padding:12px;border:1px solid var(--border-subtle);margin-bottom:8px;">';
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-                html += '<div><span style="font-weight:800;color:var(--text-primary);">$' + escH(t.token_symbol) + '</span> <span style="font-size:0.72rem;color:var(--text-dim);">' + escH(t.token_name) + '</span></div>';
+                html += '<div><span style="font-weight:800;color:var(--text-primary);">$' + escH(t.token_symbol) + '</span> <span style="font-size:0.72rem;color:var(--text-dim);">' + escH(t.token_name) + '</span>' + platBadge + '</div>';
                 html += '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">' + t.fee_split_pct + '% fee share</div>';
                 html += '</div>';
                 html += '<div style="display:flex;gap:16px;margin-top:8px;font-family:var(--font-mono);font-size:0.72rem;">';
