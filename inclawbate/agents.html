@@ -2268,12 +2268,19 @@ async function runHealthCheck() {
     result.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.78rem;padding:12px;">Pulling live data from DexScreener...</div>';
 
     try {
-        // Fetch directly from DexScreener — no AI needed
-        var dexRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr);
-        var dexData = await dexRes.json();
-        var pairs = (dexData.pairs || []).filter(function(p) { return p.chainId === 'base' || p.chainId === 'solana'; });
+        // Fetch via server-side proxy (avoids CORS, no AI/Groq needed)
+        var hcRes = await fetch('/api/inclawbate/health-check?address=' + encodeURIComponent(addr));
+        var hc = await hcRes.json();
 
-        if (!pairs.length) {
+        if (hc.error) {
+            result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
+                '<div style="font-weight:800;font-size:0.9rem;color:#f87171;margin-bottom:4px;">Error</div>' +
+                '<p style="font-size:0.78rem;color:var(--text-dim);margin:0;">' + escH(hc.error) + '</p></div>';
+            btn.disabled = false; btn.textContent = 'Run Health Check';
+            return;
+        }
+
+        if (!hc.token) {
             result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
                 '<div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);margin-bottom:8px;">No data found</div>' +
                 '<p style="font-size:0.78rem;color:var(--text-dim);margin:0;">No trading pairs found on DexScreener for this address. The token may not be listed yet, or the address might be incorrect.</p></div>';
@@ -2281,58 +2288,42 @@ async function runHealthCheck() {
             return;
         }
 
-        var top = pairs[0];
-        var price = top.priceUsd || 'N/A';
-        var change = top.priceChange ? top.priceChange.h24 : null;
-        var vol24 = top.volume ? top.volume.h24 : 0;
-        var liq = top.liquidity ? top.liquidity.usd : 0;
-        var fdv = top.fdv || 0;
-        var name = top.baseToken ? top.baseToken.name : 'Unknown';
-        var symbol = top.baseToken ? top.baseToken.symbol : '???';
-
+        var t = hc.token;
+        var change = t.change_24h;
         var changeColor = change > 0 ? '#4ade80' : change < 0 ? '#f87171' : 'var(--text-dim)';
         var changeStr = change !== null ? (change > 0 ? '+' : '') + Number(change).toFixed(2) + '%' : 'N/A';
 
-        var suggestions = [];
-        if (vol24 < 100) suggestions.push('Volume is very low — consider promoting your token or adding liquidity');
-        if (liq < 1000) suggestions.push('Liquidity is thin — consider adding more LP to reduce slippage');
-        if (change !== null && change < -20) suggestions.push('Price dropped significantly — engage your community and highlight upcoming developments');
-        if (!suggestions.length) suggestions.push('Looking healthy! Keep building and engaging your community.');
-
-        // Also try staking stats
         var stakingHtml = '';
-        try {
-            var stakingRes = await fetch('/api/inclawbate/staking');
-            var stakingData = await stakingRes.json();
-            if (stakingData.treasury) {
-                var st = stakingData.treasury;
-                stakingHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">' +
-                    '<div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);margin-bottom:8px;">Staking</div>' +
-                    '<div class="hc-grid">' +
-                    '<div class="hc-stat"><div class="hc-stat-label">Stakers</div><div class="hc-stat-val">' + (st.total_stakers || 0) + '</div></div>' +
-                    '<div class="hc-stat"><div class="hc-stat-label">TVL</div><div class="hc-stat-val">$' + _fmtNum(st.tvl_usd || 0) + '</div></div>' +
-                    '<div class="hc-stat"><div class="hc-stat-label">APY</div><div class="hc-stat-val">' + (st.estimated_apy || 'N/A') + '%</div></div>' +
-                    '</div></div>';
-            }
-        } catch(e) {}
+        if (hc.staking) {
+            var st = hc.staking;
+            stakingHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">' +
+                '<div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);margin-bottom:8px;">Staking</div>' +
+                '<div class="hc-grid">' +
+                '<div class="hc-stat"><div class="hc-stat-label">Stakers</div><div class="hc-stat-val">' + (st.total_stakers || 0) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">TVL</div><div class="hc-stat-val">$' + _fmtNum(st.tvl_usd || 0) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">APY</div><div class="hc-stat-val">' + (st.apy || 'N/A') + '%</div></div>' +
+                '</div></div>';
+        }
+
+        var suggestions = hc.suggestions || [];
 
         result.innerHTML = '<div style="background:var(--bg-card);border-radius:12px;padding:16px;border:1px solid var(--border-subtle);">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
-                '<div style="font-weight:800;font-size:1rem;color:var(--text-primary);">$' + escH(symbol) + '</div>' +
-                '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">' + escH(name) + '</div>' +
+                '<div style="font-weight:800;font-size:1rem;color:var(--text-primary);">$' + escH(t.symbol || '???') + '</div>' +
+                '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">' + escH(t.name || 'Unknown') + '</div>' +
             '</div>' +
             '<div class="hc-grid">' +
-                '<div class="hc-stat"><div class="hc-stat-label">Price</div><div class="hc-stat-val">$' + price + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">Price</div><div class="hc-stat-val">$' + (t.price || 'N/A') + '</div></div>' +
                 '<div class="hc-stat"><div class="hc-stat-label">24h</div><div class="hc-stat-val" style="color:' + changeColor + '">' + changeStr + '</div></div>' +
-                '<div class="hc-stat"><div class="hc-stat-label">Volume</div><div class="hc-stat-val">$' + _fmtNum(vol24) + '</div></div>' +
-                '<div class="hc-stat"><div class="hc-stat-label">Liquidity</div><div class="hc-stat-val">$' + _fmtNum(liq) + '</div></div>' +
-                '<div class="hc-stat"><div class="hc-stat-label">FDV</div><div class="hc-stat-val">$' + _fmtNum(fdv) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">Volume</div><div class="hc-stat-val">$' + _fmtNum(t.volume_24h || 0) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">Liquidity</div><div class="hc-stat-val">$' + _fmtNum(t.liquidity || 0) + '</div></div>' +
+                '<div class="hc-stat"><div class="hc-stat-label">FDV</div><div class="hc-stat-val">$' + _fmtNum(t.fdv || 0) + '</div></div>' +
             '</div>' +
             stakingHtml +
             '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">' +
                 '<div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);margin-bottom:6px;">Suggestions</div>' +
                 suggestions.map(function(s) {
-                    return '<div style="font-size:0.75rem;color:var(--text-secondary);padding:3px 0;">• ' + escH(s) + '</div>';
+                    return '<div style="font-size:0.75rem;color:var(--text-secondary);padding:3px 0;">&bull; ' + escH(s) + '</div>';
                 }).join('') +
             '</div>' +
         '</div>';
