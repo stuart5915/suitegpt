@@ -1,7 +1,8 @@
 // Generate AI marketing plan for a project
 // POST /api/inclawbate/generate-marketing
-// Free for all authenticated users (no credit deduction)
+// Costs 50 credits (Sonnet-tier). Admin wallet exempt.
 
+import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
@@ -9,7 +10,18 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
+const supabase = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+const FREE_CREDIT_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
+];
+
+const CREDIT_COST = 50;
 
 const SYSTEM_PROMPT = `You are a crypto marketing strategist who creates actionable launch plans for token projects.
 
@@ -43,10 +55,46 @@ export default async function handler(req, res) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Auth — JWT or API key
+    let profileId = null;
+    const user = authenticateRequest(req);
+    if (user) {
+        profileId = user.sub;
+    } else {
+        const apiKey = req.headers['x-api-key'];
+        if (apiKey) {
+            const { data } = await supabase
+                .from('human_profiles')
+                .select('id')
+                .eq('api_key', apiKey)
+                .single();
+            if (data) profileId = data.id;
+        }
+    }
+
+    if (!profileId) {
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    // Credit check
+    const { data: profile } = await supabase
+        .from('human_profiles')
+        .select('id, credits, wallet_address')
+        .eq('id', profileId)
+        .single();
+
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase());
+
+    if (!isAdmin) {
+        if ((profile?.credits || 0) < CREDIT_COST) {
+            return res.status(402).json({ error: 'Insufficient credits. Need ' + CREDIT_COST + ' credits.', credits: profile?.credits || 0 });
+        }
+    }
 
     const { projectName, tokenSymbol, uniqueValue, targetAudience } = req.body || {};
 
@@ -87,7 +135,17 @@ Generate a marketing plan:`;
         }
 
         const plan = data.content?.[0]?.text || '';
-        return res.status(200).json({ plan: plan.trim() });
+
+        // Deduct credits
+        let creditsRemaining = profile?.credits || 0;
+        if (!isAdmin) {
+            creditsRemaining = creditsRemaining - CREDIT_COST;
+            await supabase.from('human_profiles')
+                .update({ credits: creditsRemaining })
+                .eq('id', profile.id);
+        }
+
+        return res.status(200).json({ plan: plan.trim(), credits_remaining: creditsRemaining });
 
     } catch (err) {
         console.error('generate-marketing error:', err);

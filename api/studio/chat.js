@@ -7,7 +7,7 @@ export const config = { maxDuration: 300 };
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from '../inclawbate/x-callback.js';
-import { checkAngelHolder } from '../inclawbate/angel-check.js';
+// Angel free pass removed — only admin wallet gets free access
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -22,7 +22,7 @@ const supabase = createClient(
 const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
 ];
-const FREE_HANDLES = ['artstu'];
+// Only admin wallet is free — no handles, no angel pass
 
 const MODEL_TIERS = {
     gemini:   { provider: 'gemini',    model: 'gemini-2.5-flash',          credits: 0,   label: 'Gemini Flash', maxTokens: 65536 },
@@ -225,13 +225,7 @@ async function getProfile(profileId) {
 
 async function isAdmin(profile) {
     if (FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())) return true;
-    if (FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())) return true;
     return false;
-}
-
-async function isAngel(profile) {
-    if (!profile?.wallet_address) return false;
-    return await checkAngelHolder(profile.wallet_address);
 }
 
 function injectErrorHandler(html) {
@@ -459,7 +453,6 @@ export default async function handler(req, res) {
 
     const profile = profileId ? await getProfile(profileId) : null;
     const admin = await isAdmin(profile);
-    const angel = !admin && await isAngel(profile);
     const anonymous = !profileId;
 
     // Resolve model tier
@@ -468,9 +461,8 @@ export default async function handler(req, res) {
 
     let creditsRemaining = profile?.credits || 0;
 
-    // Credit gating — paid models require credits (anonymous must use free models)
-    // Angels get free access to all paid models including Opus
-    if (tier.credits > 0 && !admin && !angel) {
+    // Credit gating — paid models require credits. Only admin (inclawbate.base.eth) is free.
+    if (tier.credits > 0 && !admin) {
         if (anonymous) {
             return res.status(401).json({ error: 'Log in to use ' + tier.label + '. Or try a free model like Gemini Flash.' });
         }
@@ -500,7 +492,7 @@ export default async function handler(req, res) {
 
         if (!message || !message.trim()) {
             // Refund — no work done
-            if (!anonymous && !admin && !angel) {
+            if (!anonymous && !admin) {
                 await supabase.from('human_profiles')
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
@@ -838,7 +830,7 @@ export default async function handler(req, res) {
                 content: assistantText,
                 code: code,
                 tokens_used: tokensUsed,
-                credits_charged: (admin || angel) ? 0 : tier.credits
+                credits_charged: admin ? 0 : tier.credits
             });
 
             if (code) {
@@ -860,7 +852,7 @@ export default async function handler(req, res) {
             code: code,
             credits_remaining: creditsRemaining,
             tier_used: tierKey,
-            credits_charged: (admin || angel) ? 0 : tier.credits,
+            credits_charged: admin ? 0 : tier.credits,
             surcharge: 0
         }) + '\n\n');
 

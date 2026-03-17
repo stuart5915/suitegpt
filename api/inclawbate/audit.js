@@ -20,7 +20,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'
 ];
-const FREE_HANDLES = ['artstu'];
+// Only admin wallet is free
 
 const CREDIT_COST = 10;
 
@@ -118,8 +118,7 @@ export default async function handler(req, res) {
         .eq('id', profileId)
         .single();
 
-    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase());
 
     if (!isAdmin) {
         if ((profile?.credits || 0) < CREDIT_COST) {

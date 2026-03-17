@@ -4,7 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
-import { checkAngelHolder } from './angel-check.js';
+// Angel free pass removed — only admin wallet gets free access
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -21,8 +21,6 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
 ];
-const FREE_HANDLES = ['artstu'];
-
 const CREDIT_COST = 50; // Sonnet-tier
 
 const SYSTEM_PROMPTS = {
@@ -90,9 +88,7 @@ export default async function handler(req, res) {
         .eq('id', profileId)
         .single();
 
-    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())
-        || (profile?.wallet_address && await checkAngelHolder(profile.wallet_address));
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase());
 
     if (!isAdmin) {
         if ((profile?.credits || 0) < CREDIT_COST) {

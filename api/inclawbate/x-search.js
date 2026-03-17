@@ -22,7 +22,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
 ];
-const FREE_HANDLES = ['artstu'];
+// Only admin wallet is free — no handles
 
 // In-memory search cache (query hash → { results, timestamp })
 const searchCache = new Map();
@@ -54,8 +54,7 @@ export default async function handler(req, res) {
 
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
-    const isAdmin = FREE_CREDIT_WALLETS.includes(profile.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile.x_handle?.toLowerCase());
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile.wallet_address?.toLowerCase());
 
     const { action } = req.body;
 

@@ -5,7 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
-import { checkAngelHolder } from './angel-check.js';
+// Angel free pass removed — only admin wallet gets free access
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -53,17 +53,14 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Authentication required. Provide a JWT token or X-API-Key header.' });
     }
 
-    // Check credits before generating (admin wallet or @artstu bypasses)
+    // Check credits before generating (only admin wallet exempt)
     const { data: profile } = await supabase
         .from('human_profiles')
         .select('credits, wallet_address, x_handle')
         .eq('id', profileId)
         .single();
 
-    const FREE_HANDLES = ['artstu'];
-    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())
-        || (profile?.wallet_address && await checkAngelHolder(profile.wallet_address));
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase());
 
     const CREDIT_COST = 50; // Sonnet-tier
     if (!isAdmin) {
