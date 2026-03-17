@@ -125,6 +125,26 @@
         .iclw-status--unavailable .iclw-status-dot { background: #ef4444; }
         .iclw-status--unavailable { color: #ef4444; }
 
+        /* Featured / Council badge */
+        .iclw-card.featured { border-color: hsla(9, 52%, 54%, 0.3); }
+        .iclw-card.featured::after {
+            content: ''; position: absolute; inset: 0; border-radius: var(--radius-xl); pointer-events: none;
+            background: radial-gradient(ellipse at top right, hsla(9, 50%, 50%, 0.06), transparent 60%);
+        }
+        .iclw-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-family: var(--font-mono); font-size: 0.55rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 2px 8px; border-radius: 999px; margin-left: 6px; position: relative; z-index: 1;
+        }
+        .iclw-badge--council {
+            background: hsla(9, 52%, 54%, 0.12); color: var(--lobster-400);
+            border: 1px solid hsla(9, 52%, 54%, 0.2);
+        }
+        /* Hire button variants */
+        .iclw-hire-btn.tg { border-color: #0088cc; color: #0088cc; }
+        .iclw-hire-btn.tg:hover { background: #0088cc; color: #fff; }
+
         /* Stats row */
         .iclw-stats {
             display: flex; gap: 10px; margin-bottom: var(--space-sm);
@@ -520,9 +540,25 @@
 
     var RT_LABELS = { under_1h: '<1h', under_4h: '<4h', under_24h: '<24h', under_48h: '<48h' };
 
+    // Council members — always featured, sorted to top
+    var COUNCIL = {
+        '0x91b5c0d07859cfeafeb67d9694121cd741f049bd': { name: 'Stuart', role: 'Founder' },
+        '0x18b18e245122f4bda5f2ee4f25c702e05c241d49': { name: 'Red Foreman', role: 'Builder' },
+        '0x496f68438493eb1cc632f7cec6634f042c95e333': { name: 'Manto', role: 'Strategy' },
+        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3': { name: '0xGRANT', role: 'Council' }
+    };
+    var COUNCIL_HANDLES = ['artstu', 'itsevilDuck', 'itsevilduck'];
+
+    function isCouncil(p) {
+        if (p.wallet_address && COUNCIL[p.wallet_address.toLowerCase()]) return true;
+        if (p.x_handle && COUNCIL_HANDLES.some(function(h) { return h.toLowerCase() === (p.x_handle || '').toLowerCase(); })) return true;
+        return false;
+    }
+
     // Profile completeness score — higher = more useful profile
     function profileScore(p) {
         var score = 0;
+        if (isCouncil(p)) score += 100; // Council always on top
         if (p.tagline && p.tagline.trim() && p.tagline !== 'None') score += 3;
         if (p.skills && p.skills.length) score += 3 + Math.min(p.skills.length, 5);
         if (p.bio && p.bio.trim() && p.bio !== 'None' && p.bio.trim().length > 20) score += 2;
@@ -537,8 +573,9 @@
     }
 
     // Is a profile "complete enough" to show?
-    // Must have a real tagline OR skills — bio alone is not enough (too much spam)
+    // Council always shown. Others need real tagline or skills.
     function isUsefulProfile(p) {
+        if (isCouncil(p)) return true;
         var hasTagline = p.tagline && p.tagline.trim() && p.tagline !== 'None';
         var hasSkills = p.skills && p.skills.length > 0;
         return !!(hasTagline || hasSkills);
@@ -654,16 +691,26 @@
             if (p.timezone) meta += (meta ? ' · ' : '') + esc(p.timezone);
             if (!meta && p.wallet_address) meta = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
 
-            // Hire button
+            // Hire button — prefer TG if contact_method is a telegram link
             var hireBtn = '';
-            if (xLink && p.availability !== 'unavailable') {
-                hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire</a>';
+            var isTG = p.contact_method && (p.contact_method.indexOf('t.me/') !== -1 || p.contact_method.indexOf('telegram') !== -1);
+            if (p.availability !== 'unavailable') {
+                if (isTG) {
+                    var tgUrl = p.contact_method.indexOf('http') === 0 ? p.contact_method : 'https://' + p.contact_method;
+                    hireBtn = '<a href="' + esc(tgUrl) + '" target="_blank" rel="noopener" class="iclw-hire-btn tg">&#9992; Hire</a>';
+                } else if (xLink) {
+                    hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire</a>';
+                }
             }
 
-            return '<div class="iclw-card">' +
+            // Council badge
+            var council = isCouncil(p);
+            var councilBadge = council ? '<span class="iclw-badge iclw-badge--council">&#128031; Council</span>' : '';
+
+            return '<div class="iclw-card' + (council ? ' featured' : '') + '">' +
                 '<div class="iclw-status ' + statusClass + '"><span class="iclw-status-dot"></span>' + statusLabel + '</div>' +
                 '<div class="iclw-card-header">' + avatar +
-                    '<div><div class="iclw-name">' + displayName + '</div>' +
+                    '<div><div class="iclw-name">' + displayName + councilBadge + '</div>' +
                     (p.x_handle ? '<div class="iclw-handle">@' + esc(p.x_handle) + '</div>' : '') + '</div></div>' +
                 (p.tagline ? '<div class="iclw-tagline">' + esc(p.tagline) + '</div>' : '') +
                 (skills ? '<div class="iclw-skills">' + skills + '</div>' : '') +

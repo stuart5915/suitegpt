@@ -15,7 +15,7 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
-const PUBLIC_FIELDS = 'wallet_address,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,created_at';
+const PUBLIC_FIELDS = 'wallet_address,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,contact_method,created_at';
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
