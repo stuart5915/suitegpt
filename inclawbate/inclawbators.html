@@ -145,6 +145,73 @@
         .iclw-hire-btn.tg { border-color: #0088cc; color: #0088cc; }
         .iclw-hire-btn.tg:hover { background: #0088cc; color: #fff; }
 
+        /* Hire Modal */
+        .hire-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .hire-overlay.open { display: flex; }
+        .hire-modal {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-xl);
+            max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
+            animation: fadeUp 0.2s ease both; position: relative;
+        }
+        .hire-close {
+            position: absolute; top: 12px; right: 14px; background: none; border: none;
+            color: var(--text-dim); font-size: 1.2rem; cursor: pointer; line-height: 1;
+        }
+        .hire-close:hover { color: var(--text-primary); }
+        .hire-target {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; background: var(--bg-card); border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg); border: 1px solid var(--border-subtle);
+        }
+        .hire-target-avatar {
+            width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface);
+            border: 2px solid var(--border-subtle); display: flex; align-items: center;
+            justify-content: center; font-size: 1.2rem; overflow: hidden;
+        }
+        .hire-target-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .hire-target-name { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; }
+        .hire-target-handle { font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono); }
+        .hire-title { font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin-bottom: var(--space-md); }
+        .hire-label {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim);
+            margin-bottom: 4px; display: block;
+        }
+        .hire-row { margin-bottom: var(--space-md); }
+        .hire-input, .hire-textarea {
+            width: 100%; padding: 10px 12px; background: var(--bg-card);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            color: var(--text-primary); font-family: var(--font-body); font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+        .hire-input:focus, .hire-textarea:focus { border-color: var(--lobster-400); outline: none; }
+        .hire-textarea { min-height: 90px; resize: vertical; }
+        .hire-budget-row {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+        }
+        .hire-budget-btn {
+            padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: 999px; color: var(--text-secondary); font-family: var(--font-mono);
+            font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+        }
+        .hire-budget-btn:hover { border-color: var(--lobster-300); }
+        .hire-budget-btn.active { background: var(--lobster-400); border-color: var(--lobster-400); color: #fff; }
+        .hire-submit {
+            width: 100%; padding: 12px; background: var(--accent-gradient); border: none;
+            border-radius: 999px; color: #fff; font-family: var(--font-body);
+            font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+            margin-top: var(--space-sm);
+        }
+        .hire-submit:hover { opacity: 0.85; }
+        .hire-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .hire-hint { font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; }
+        .hire-status { font-size: 0.75rem; text-align: center; margin-top: var(--space-sm); }
+
         /* Stats row */
         .iclw-stats {
             display: flex; gap: 10px; margin-bottom: var(--space-sm);
@@ -500,6 +567,42 @@
     </div>
 </main>
 
+<!-- ═══ HIRE MODAL ═══ -->
+<div class="hire-overlay" id="hireOverlay">
+    <div class="hire-modal">
+        <button class="hire-close" id="hireClose">&times;</button>
+        <div class="hire-title">Hire this inclawbator</div>
+        <div class="hire-target" id="hireTarget"></div>
+
+        <div class="hire-row">
+            <label class="hire-label">What do you need?</label>
+            <textarea class="hire-textarea" id="hireDesc" placeholder="Describe the work — e.g. Design a logo for my token, build a landing page, run a Twitter campaign..." maxlength="500"></textarea>
+            <div class="hire-hint">Be specific so they can estimate time and cost</div>
+        </div>
+
+        <div class="hire-row">
+            <label class="hire-label">Budget (CLAWS) — optional</label>
+            <div class="hire-budget-row" id="hireBudgets">
+                <button class="hire-budget-btn" data-hb="0">Let them quote</button>
+                <button class="hire-budget-btn" data-hb="500">500</button>
+                <button class="hire-budget-btn" data-hb="1000">1K</button>
+                <button class="hire-budget-btn" data-hb="2500">2.5K</button>
+                <button class="hire-budget-btn" data-hb="5000">5K</button>
+                <button class="hire-budget-btn" data-hb="10000">10K</button>
+            </div>
+        </div>
+
+        <div class="hire-row">
+            <label class="hire-label">Your Telegram handle</label>
+            <input type="text" class="hire-input" id="hireContact" placeholder="@yourtelegram">
+            <div class="hire-hint">So they can reach you. Won't be shared publicly.</div>
+        </div>
+
+        <button class="hire-submit" id="hireSubmit" disabled>Send Hire Request</button>
+        <div class="hire-status" id="hireStatus"></div>
+    </div>
+</div>
+
 <footer class="footer" style="text-align:center;padding:var(--space-xl);color:var(--text-dim);font-size:0.75rem;">
     <p>&copy; 2026 Inclawbate. Anyone Can Build. Everyone Gets Paid.</p>
 </footer>
@@ -690,16 +793,10 @@
             if (p.timezone) meta += (meta ? ' · ' : '') + esc(p.timezone);
             if (!meta && p.wallet_address) meta = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
 
-            // Hire button — prefer TG if contact_method is a telegram link
+            // Hire button — opens modal
             var hireBtn = '';
-            var isTG = p.contact_method && (p.contact_method.indexOf('t.me/') !== -1 || p.contact_method.indexOf('telegram') !== -1);
             if (p.availability !== 'unavailable') {
-                if (isTG) {
-                    var tgUrl = p.contact_method.indexOf('http') === 0 ? p.contact_method : 'https://' + p.contact_method;
-                    hireBtn = '<a href="' + esc(tgUrl) + '" target="_blank" rel="noopener" class="iclw-hire-btn tg">&#9992; Hire</a>';
-                } else if (xLink) {
-                    hireBtn = '<a href="' + xLink + '" target="_blank" rel="noopener" class="iclw-hire-btn">Hire</a>';
-                }
+                hireBtn = '<button class="iclw-hire-btn" onclick="openHireModal(\'' + esc(p.wallet_address || '') + '\')">Hire</button>';
             }
 
             // Council badge
@@ -982,6 +1079,112 @@
         } catch(e) {
             status.textContent = 'Network error'; status.style.color = '#ef4444';
             btn.textContent = 'Post Gig Request'; btn.disabled = false;
+        }
+    });
+
+    // ── Hire Modal ──
+    var _hireTarget = null;
+    var _hireBudget = 0;
+
+    window.openHireModal = function(wallet) {
+        var p = allProfiles.find(function(x) { return x.wallet_address === wallet; });
+        if (!p) return;
+        _hireTarget = p;
+        _hireBudget = 0;
+
+        // Fill target card
+        var avatarHtml = p.x_avatar_url
+            ? '<div class="hire-target-avatar"><img src="' + esc(p.x_avatar_url) + '" alt=""></div>'
+            : '<div class="hire-target-avatar">&#129438;</div>';
+        var name = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
+        var handle = p.x_handle ? '<div class="hire-target-handle">@' + esc(p.x_handle) + '</div>' : '';
+        document.getElementById('hireTarget').innerHTML = avatarHtml +
+            '<div><div class="hire-target-name">' + name + '</div>' + handle + '</div>';
+
+        // Reset form
+        document.getElementById('hireDesc').value = '';
+        document.getElementById('hireContact').value = '';
+        document.getElementById('hireStatus').textContent = '';
+        document.getElementById('hireSubmit').disabled = true;
+        document.getElementById('hireSubmit').textContent = 'Send Hire Request';
+        document.querySelectorAll('[data-hb]').forEach(function(b) { b.classList.remove('active'); });
+        _hireBudget = 0;
+
+        document.getElementById('hireOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function closeHireModal() {
+        document.getElementById('hireOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+        _hireTarget = null;
+    }
+
+    document.getElementById('hireClose').addEventListener('click', closeHireModal);
+    document.getElementById('hireOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeHireModal();
+    });
+
+    // Budget buttons
+    document.querySelectorAll('[data-hb]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-hb]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            _hireBudget = parseInt(btn.dataset.hb);
+            hireValidate();
+        });
+    });
+
+    function hireValidate() {
+        var desc = (document.getElementById('hireDesc').value || '').trim();
+        var contact = (document.getElementById('hireContact').value || '').trim();
+        document.getElementById('hireSubmit').disabled = !(desc.length >= 10 && contact.length >= 2);
+    }
+
+    document.getElementById('hireDesc').addEventListener('input', hireValidate);
+    document.getElementById('hireContact').addEventListener('input', hireValidate);
+
+    // Submit hire request
+    document.getElementById('hireSubmit').addEventListener('click', async function() {
+        var btn = this;
+        var status = document.getElementById('hireStatus');
+        var desc = document.getElementById('hireDesc').value.trim();
+        var contact = document.getElementById('hireContact').value.trim();
+
+        if (!_hireTarget || desc.length < 10 || contact.length < 2) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        status.textContent = '';
+
+        try {
+            var resp = await fetch('/api/inclawbate/hire-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_wallet: _hireTarget.wallet_address,
+                    description: desc,
+                    budget_claws: _hireBudget || null,
+                    contact: contact
+                })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                status.textContent = 'Hire request sent! They\'ll be notified on Telegram.';
+                status.style.color = '#4ade80';
+                btn.textContent = 'Sent!';
+                setTimeout(closeHireModal, 2500);
+            } else {
+                status.textContent = data.error || 'Failed to send';
+                status.style.color = '#ef4444';
+                btn.textContent = 'Send Hire Request';
+                btn.disabled = false;
+            }
+        } catch(e) {
+            status.textContent = 'Network error — please try again';
+            status.style.color = '#ef4444';
+            btn.textContent = 'Send Hire Request';
+            btn.disabled = false;
         }
     });
 })();
