@@ -4945,24 +4945,37 @@ loadExplore();
 (function(){
     var CLAWS_ADDR='0x7ca47B141639B893C6782823C0b219f872056379';
     var STAKING='0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
-    var RPC='https://mainnet.base.org';
+    var RPCS=['https://mainnet.base.org','https://base.llamarpc.com','https://base.drpc.org'];
     function fw(hex){var b=BigInt(hex||'0x0');return Number(b)/1e18;}
     function fm(n){return Math.round(Number(n)||0).toLocaleString();}
     function fu(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(2);}
     function st(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
     function bp(d,a){if(!d||!d.pairs)return 0;for(var i=0;i<d.pairs.length;i++){var p=d.pairs[i];if(p.baseToken&&p.baseToken.address&&p.baseToken.address.toLowerCase()===a.toLowerCase()&&p.priceUsd)return parseFloat(p.priceUsd);}return 0;}
-    var batch=[
-        {jsonrpc:'2.0',id:0,method:'eth_call',params:[{to:STAKING,data:'0x817b1cd2'},'latest']},
-        {jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:STAKING,data:'0xdff69787'},'latest']},
-        {jsonrpc:'2.0',id:2,method:'eth_call',params:[{to:STAKING,data:'0x7b0a47ee'},'latest']},
-        {jsonrpc:'2.0',id:3,method:'eth_call',params:[{to:STAKING,data:'0x506ec095'},'latest']}
-    ];
+    function rpcBatch(rpcUrl){
+        var batch=[
+            {jsonrpc:'2.0',id:0,method:'eth_call',params:[{to:STAKING,data:'0x817b1cd2'},'latest']},
+            {jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:STAKING,data:'0xdff69787'},'latest']},
+            {jsonrpc:'2.0',id:2,method:'eth_call',params:[{to:STAKING,data:'0x7b0a47ee'},'latest']},
+            {jsonrpc:'2.0',id:3,method:'eth_call',params:[{to:STAKING,data:'0x506ec095'},'latest']}
+        ];
+        return fetch(rpcUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(batch)})
+            .then(function(r){return r.json();})
+            .then(function(arr){
+                arr.sort(function(a,b){return a.id-b.id;});
+                var allOk=arr.every(function(r){return r.result&&r.result!=='0x0';});
+                if(!allOk)throw new Error('partial');
+                return arr.map(function(r){return r.result;});
+            });
+    }
+    function tryRpc(idx){
+        if(idx>=RPCS.length)return Promise.resolve(['0x0','0x0','0x0','0x0']);
+        return rpcBatch(RPCS[idx]).catch(function(){return tryRpc(idx+1);});
+    }
     Promise.all([
-        fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(batch)}).then(function(r){return r.json();}).catch(function(){return[];}),
+        tryRpc(0),
         fetch('https://api.dexscreener.com/latest/dex/tokens/'+CLAWS_ADDR).then(function(r){return r.json();}).catch(function(){return null;})
     ]).then(function(res){
-        var rpc=res[0]||[];rpc.sort(function(a,b){return a.id-b.id;});
-        var c=rpc.map(function(r){return r.result||'0x0';});
+        var c=res[0];
         var dex=res[1];
         var totalStaked=fw(c[0]);
         var stakerCount=Number(BigInt(c[1]||'0x0'));
