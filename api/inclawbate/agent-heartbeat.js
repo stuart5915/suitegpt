@@ -134,13 +134,14 @@ async function postTweetOAuth2(text, accessToken) {
 
 // ── OAuth 1.0a signing helper ──
 
-function buildOAuth1Header(method, url, extraParams) {
-    const X_API_KEY = process.env.INCLAWBATOR_X_API_KEY;
-    const X_API_SECRET = process.env.INCLAWBATOR_X_API_SECRET;
-    const X_ACCESS_TOKEN = process.env.INCLAWBATOR_X_ACCESS_TOKEN;
-    const X_ACCESS_SECRET = process.env.INCLAWBATOR_X_ACCESS_SECRET;
+function buildOAuth1Header(method, url, extraParams, account) {
+    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : 'INCLAWBATOR';
+    const X_API_KEY = process.env[prefix + '_X_API_KEY'] || process.env.INCLAWBATOR_X_API_KEY;
+    const X_API_SECRET = process.env[prefix + '_X_API_SECRET'] || process.env.INCLAWBATOR_X_API_SECRET;
+    const X_ACCESS_TOKEN = process.env[prefix + '_X_ACCESS_TOKEN'];
+    const X_ACCESS_SECRET = process.env[prefix + '_X_ACCESS_SECRET'];
     if (!X_API_KEY || !X_API_SECRET || !X_ACCESS_TOKEN || !X_ACCESS_SECRET) {
-        throw new Error('INCLAWBATOR X API credentials not configured');
+        throw new Error(prefix + ' X API credentials not configured');
     }
 
     const oauth = {
@@ -177,7 +178,7 @@ function buildOAuth1Header(method, url, extraParams) {
 
 // ── Upload image to X via v1.1 media/upload (OAuth 1.0a) ──
 
-async function uploadMediaToX(imageUrl) {
+async function uploadMediaToX(imageUrl, account) {
     // Download image from URL
     const imgResp = await fetch(imageUrl);
     if (!imgResp.ok) throw new Error('Failed to download image: ' + imgResp.status);
@@ -187,7 +188,7 @@ async function uploadMediaToX(imageUrl) {
     const contentType = imgResp.headers.get('content-type') || 'image/png';
 
     const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
-    const authHeader = buildOAuth1Header('POST', uploadUrl, {});
+    const authHeader = buildOAuth1Header('POST', uploadUrl, {}, account);
 
     // Use URL-encoded form body (X API v1.1 media upload)
     const body = new URLSearchParams();
@@ -212,9 +213,9 @@ async function uploadMediaToX(imageUrl) {
 
 // ── Post via shared @inclawbator account (OAuth 1.0a fallback) ──
 
-async function postTweetShared(text, mediaIds) {
+async function postTweetShared(text, mediaIds, account) {
     const url = 'https://api.twitter.com/2/tweets';
-    const authHeader = buildOAuth1Header('POST', url, {});
+    const authHeader = buildOAuth1Header('POST', url, {}, account);
 
     const payload = { text };
     if (mediaIds && mediaIds.length > 0) {
@@ -382,6 +383,7 @@ export default async function handler(req, res) {
             const project = slot.projects;
 
             // Auto-fill slots (no project) — already have tweet_text, just post it
+            const slotAccount = slot.account || 'inclawbator';
             if (!project && slot.tweet_text && slot.booked_by_wallet === 'system-autofill') {
                 try {
                     // Upload image if present in tweet_options
@@ -389,14 +391,14 @@ export default async function handler(req, res) {
                     let mediaIds = null;
                     if (opts.image_url) {
                         try {
-                            const mediaId = await uploadMediaToX(opts.image_url);
+                            const mediaId = await uploadMediaToX(opts.image_url, slotAccount);
                             mediaIds = [mediaId];
                         } catch(imgErr) {
                             // Log but don't fail — post without image
                             errors.push({ slot: slot.id, warning: 'Image upload failed: ' + imgErr.message });
                         }
                     }
-                    const tweetId = await postTweetShared(slot.tweet_text, mediaIds);
+                    const tweetId = await postTweetShared(slot.tweet_text, mediaIds, slotAccount);
                     await supabase.from('agent_schedule')
                         .update({ status: 'posted', tweet_id: tweetId })
                         .eq('id', slot.id);
@@ -473,15 +475,15 @@ export default async function handler(req, res) {
                 let slotMediaIds = null;
                 if (slotOpts.image_url) {
                     try {
-                        const mediaId = await uploadMediaToX(slotOpts.image_url);
+                        const mediaId = await uploadMediaToX(slotOpts.image_url, slotAccount);
                         slotMediaIds = [mediaId];
                     } catch(imgErr) {
                         errors.push(`${project.name}: Image upload warning: ${imgErr.message}`);
                     }
                 }
 
-                // Post to shared @inclawbator
-                const tweetId = await postTweetShared(tweetText, slotMediaIds);
+                // Post to the slot's account (@inclawbator or @inclawbate)
+                const tweetId = await postTweetShared(tweetText, slotMediaIds, slotAccount);
 
                 // Mark slot as posted
                 await supabase
@@ -498,7 +500,7 @@ export default async function handler(req, res) {
                         tweet_id: tweetId,
                         credits_cost: slot.credits_cost || CREDIT_COST,
                         status: 'posted',
-                        posted_via: '@inclawbator'
+                        posted_via: '@' + slotAccount
                     });
 
                 await supabase
