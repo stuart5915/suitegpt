@@ -400,7 +400,7 @@
 <main class="iclw-page">
     <div class="iclw-hero">
         <h1>Inclawbators</h1>
-        <p class="iclw-hero-sub">The freelance marketplace for the Inclawbate ecosystem. Post gigs, find work, hire talent — all paid in CLAWS.</p>
+        <p class="iclw-hero-sub">The people building the Inclawbate ecosystem. Hire directly or post a gig — all paid in CLAWS.</p>
     </div>
 
     <!-- ═══ PEOPLE DIRECTORY ═══ -->
@@ -471,36 +471,15 @@
         <div id="edit-status" style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-sm);"></div>
     </div>
 
-    <!-- Search -->
-    <div class="iclw-search">
-        <span class="iclw-search-icon">&#128269;</span>
-        <input type="text" class="iclw-search-input" id="iclw-search" placeholder="Search by name, skill, or keyword..." autocomplete="off">
-    </div>
-
-    <!-- Filters -->
-    <div class="iclw-filters">
-        <button class="iclw-filter-btn active" data-filter="all">All</button>
-        <button class="iclw-filter-btn" data-filter="available">Available</button>
-        <button class="iclw-filter-btn" data-filter="solidity">Solidity</button>
-        <button class="iclw-filter-btn" data-filter="react">React</button>
-        <button class="iclw-filter-btn" data-filter="design">Design</button>
-        <button class="iclw-filter-btn" data-filter="marketing">Marketing</button>
-        <button class="iclw-filter-btn" data-filter="content">Content</button>
-    </div>
-
-    <!-- Result count -->
-    <div class="iclw-result-count" id="iclw-result-count"></div>
-
     <!-- Directory Grid -->
     <div class="iclw-grid" id="iclw-grid"></div>
-    <div class="iclw-empty" id="iclw-empty" style="display:none;">No inclawbators found matching your search.</div>
-    <button class="iclw-show-more" id="iclw-show-more" style="display:none;" onclick="window._showMoreProfiles()">Show more</button>
+    <div class="iclw-empty" id="iclw-empty" style="display:none;">Loading...</div>
 
-    <!-- CTA -->
+    <!-- Join CTA -->
     <div class="iclw-cta">
-        <div class="iclw-cta-title">Want to get hired?</div>
-        <div class="iclw-cta-sub">Log in with X, fill out your skills and contact method, and start getting gig requests from the ecosystem.</div>
-        <button class="iclw-cta-btn" id="create-profile-btn">Edit Your Profile</button>
+        <div class="iclw-cta-title">Want to join the council?</div>
+        <div class="iclw-cta-sub">Contribute to the Inclawbate ecosystem — build apps, launch tokens, create content. Active contributors get invited.</div>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="iclw-cta-btn">Apply on Telegram</a>
     </div>
 
     </div><!-- /peopleView -->
@@ -614,8 +593,8 @@
     var allProfiles = [];
     var currentFilter = 'all';
     var searchQuery = '';
-    var VISIBLE_LIMIT = 6;
-    var showAll = false;
+    var VISIBLE_LIMIT = 50;
+    var showAll = true;
     var loggedInUser = null;
 
     // Check X login
@@ -677,10 +656,7 @@
     // Is a profile "complete enough" to show?
     // Council always shown. Others need real tagline or skills.
     function isUsefulProfile(p) {
-        if (isCouncil(p)) return true;
-        var hasTagline = p.tagline && p.tagline.trim() && p.tagline !== 'None';
-        var hasSkills = p.skills && p.skills.length > 0;
-        return !!(hasTagline || hasSkills);
+        return isCouncil(p);
     }
 
     function fetchProfiles() {
@@ -694,65 +670,17 @@
         }).catch(function() {});
     }
 
-    window._showMoreProfiles = function() { showAll = true; renderGrid(); };
-
-    // Search handler
-    var _searchTimeout;
-    document.getElementById('iclw-search').addEventListener('input', function() {
-        clearTimeout(_searchTimeout);
-        var val = this.value;
-        _searchTimeout = setTimeout(function() {
-            searchQuery = val.trim().toLowerCase();
-            showAll = false;
-            renderGrid();
-        }, 200);
-    });
-
     function renderGrid() {
         var grid = document.getElementById('iclw-grid');
         var empty = document.getElementById('iclw-empty');
-        var showMoreBtn = document.getElementById('iclw-show-more');
-        var countEl = document.getElementById('iclw-result-count');
         if (!grid) return;
 
-        // Start with useful profiles only (unless searching — then search everything)
-        var filtered = searchQuery ? allProfiles : allProfiles.filter(isUsefulProfile);
+        var filtered = allProfiles.filter(isUsefulProfile);
 
-        // Apply filter
-        if (currentFilter === 'available') {
-            filtered = filtered.filter(function(p) { return p.availability === 'available'; });
-        } else if (currentFilter !== 'all') {
-            filtered = filtered.filter(function(p) {
-                var needle = currentFilter.toLowerCase();
-                return (p.skills || []).some(function(s) { return s.toLowerCase().includes(needle); }) ||
-                       (p.tagline || '').toLowerCase().includes(needle) ||
-                       (p.bio || '').toLowerCase().includes(needle);
-            });
-        }
-
-        // Apply search
-        if (searchQuery) {
-            filtered = filtered.filter(function(p) {
-                var haystack = [
-                    p.display_name, p.x_name, p.x_handle, p.tagline, p.bio,
-                    (p.skills || []).join(' '), p.contact_method
-                ].join(' ').toLowerCase();
-                return haystack.includes(searchQuery);
-            });
-        }
-
-        var totalCount = filtered.length;
-        if (totalCount === 0) { grid.innerHTML = ''; empty.style.display = ''; showMoreBtn.style.display = 'none'; countEl.textContent = ''; return; }
+        if (filtered.length === 0) { grid.innerHTML = ''; empty.style.display = ''; return; }
         empty.style.display = 'none';
 
-        // Cap visible
-        var visible = showAll ? filtered : filtered.slice(0, VISIBLE_LIMIT);
-        var hasMore = totalCount > VISIBLE_LIMIT && !showAll;
-        showMoreBtn.style.display = hasMore ? 'block' : 'none';
-        if (hasMore) showMoreBtn.textContent = 'Show ' + (totalCount - VISIBLE_LIMIT) + ' more';
-        countEl.textContent = totalCount + ' inclawbator' + (totalCount !== 1 ? 's' : '') + (searchQuery || currentFilter !== 'all' ? ' found' : '');
-
-        grid.innerHTML = visible.map(function(p) {
+        grid.innerHTML = filtered.map(function(p) {
             var statusClass = 'iclw-status--' + (p.availability || 'available');
             var statusLabel = (p.availability || 'available').charAt(0).toUpperCase() + (p.availability || 'available').slice(1);
             var displayName = esc(p.display_name || p.x_name || (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : 'Anon'));
@@ -816,18 +744,6 @@
         }).join('');
     }
 
-    // Filters
-    document.querySelectorAll('.iclw-filters .iclw-filter-btn').forEach(function(btn) {
-        if (!btn.dataset.filter) return;
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.iclw-filters .iclw-filter-btn').forEach(function(b) { if (b.dataset.filter) b.classList.remove('active'); });
-            btn.classList.add('active');
-            currentFilter = btn.dataset.filter;
-            showAll = false;
-            renderGrid();
-        });
-    });
-
     // Edit profile — uses X login (JWT), no wallet required
     function openEditPanel() {
         if (!loggedInUser || !loggedInUser._token) {
@@ -857,7 +773,9 @@
         }
     }
 
-    document.getElementById('create-profile-btn').addEventListener('click', openEditPanel);
+    // Edit profile button (if logged in council member)
+    var editBtn = document.getElementById('create-profile-btn');
+    if (editBtn) editBtn.addEventListener('click', openEditPanel);
 
     // Save profile via JWT auth (humans API)
     document.getElementById('save-profile-btn').addEventListener('click', async function() {
