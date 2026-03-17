@@ -419,7 +419,7 @@ function getDateStr() {
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/state</a>\n\n`;
+    msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</a>\n\n`;
 
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
@@ -534,7 +534,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `\n📋 ${tasks.backlog.length} in backlog\n`;
     }
 
-    msg += `<i>Full state: inclawbate.com/state</i>\n`;
+    msg += `<i>Full state: inclawbate.com/how-it-works</i>\n`;
 
     msg += `\n🔗 inclawbate.com`;
 
