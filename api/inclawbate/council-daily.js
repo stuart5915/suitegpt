@@ -229,14 +229,14 @@ async function fetchTasks() {
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'incubation').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('content').eq('category', 'responsibility').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content, author').eq('category', 'responsibility').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
         focus: (focusRes.data || []).map(r => r.content),
         incubations: (incubationRes.data || []).map(r => r.content),
-        responsibilities: (responsibilityRes.data || []).map(r => r.content),
+        responsibilities: (responsibilityRes.data || []).map(r => ({ content: r.content, author: r.author })),
         backlog: (todoRes.data || []).map(r => r.content)
     };
 }
@@ -515,7 +515,19 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 
     if (tasks.responsibilities.length) {
         msg += `\n<b>👥 Responsibilities</b>\n`;
-        tasks.responsibilities.forEach(t => { msg += `• ${esc(t)}\n`; });
+        // Group by author, extract task (strip trailing "- @handle" from content)
+        const byPerson = {};
+        for (const r of tasks.responsibilities) {
+            const person = r.author || 'unassigned';
+            if (!byPerson[person]) byPerson[person] = [];
+            // Strip "- @handle" suffix from content since we show the handle as header
+            const task = r.content.replace(/\s*-\s*@\w+$/i, '').trim();
+            byPerson[person].push(task);
+        }
+        for (const [person, items] of Object.entries(byPerson)) {
+            msg += `<b>${esc(person)}</b>\n`;
+            items.forEach(t => { msg += `  • ${esc(t)}\n`; });
+        }
     }
 
     if (tasks.backlog.length) {
