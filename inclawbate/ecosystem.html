@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inclawbations — Inclawbate</title>
-    <meta name="description" content="Live Inclawbations — flagship products, games, and platforms incubated and powered by the Inclawbate community.">
+    <meta name="description" content="Every project incubated by Inclawbate — live, building, and launching.">
     <meta property="og:title" content="Inclawbations — Inclawbate">
-    <meta property="og:description" content="Live projects incubated and powered by the Inclawbate community.">
+    <meta property="og:description" content="Every project incubated by Inclawbate — live, building, and launching.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/inclawbations">
     <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=inclawbations">
@@ -22,19 +22,19 @@
     <style>
         body { opacity: 1; }
 
-        .eco-page {
-            max-width: var(--max-width);
+        .inc-page {
+            max-width: 720px;
             margin: 0 auto;
             padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-xl) var(--space-3xl);
         }
 
-        .eco-hero {
+        .inc-hero {
             text-align: center;
             margin-bottom: var(--space-2xl);
         }
-        .eco-hero h1 {
+        .inc-hero h1 {
             font-family: var(--font-display);
-            font-size: 2.4rem;
+            font-size: 2.2rem;
             font-weight: 900;
             background: var(--title-gradient);
             -webkit-background-clip: text;
@@ -43,239 +43,179 @@
             line-height: 1.15;
             margin-bottom: var(--space-xs);
         }
-        .eco-hero p {
-            font-size: 1rem;
+        .inc-hero p {
+            font-size: 0.95rem;
             color: var(--text-secondary);
-            max-width: 520px;
+            max-width: 480px;
             margin: 0 auto;
         }
-
-        /* ── Grid ── */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-lg);
+        .inc-count {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: var(--space-sm);
         }
 
-        /* ── Card ── */
-        .p-card {
-            background: var(--bg-card);
+        /* ── List ── */
+        .inc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: var(--border-subtle);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .p-card:hover {
-            border-color: var(--lobster-400);
         }
 
-        /* Banner — live iframe preview */
-        .p-banner {
-            height: 160px;
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
+        .inc-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-card);
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .inc-row:hover {
             background: var(--bg-elevated);
         }
-        .p-banner img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            position: absolute; inset: 0;
-        }
-        .p-banner-iframe {
-            position: absolute;
-            top: 0; left: 0;
-            width: 1280px;
-            height: 800px;
-            border: none;
-            transform: scale(0.35);
-            transform-origin: top left;
-            pointer-events: none;
-        }
-        /* Clickable overlay so the card link still works */
-        .p-banner-cover {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-        }
-        .p-banner-emoji {
-            font-size: 3.5rem;
-            position: relative;
-            z-index: 1;
+
+        .inc-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            background: var(--bg-elevated);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .inc-icon img {
+            width: 100%;
             height: 100%;
+            object-fit: cover;
         }
 
-        /* Body */
-        .p-body {
-            padding: var(--space-lg) var(--space-lg) var(--space-md);
+        .inc-info {
             flex: 1;
-            display: flex;
-            flex-direction: column;
+            min-width: 0;
         }
-
-        /* Tags row */
-        .p-tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: var(--space-sm);
-        }
-        .p-tag {
-            font-family: var(--font-mono);
-            font-size: 0.58rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 2px 8px;
-            border-radius: var(--radius-full);
-        }
-        .p-tag--product { background: rgba(232,121,85,0.15); color: var(--lobster-400); }
-        .p-tag--game { background: rgba(99,102,241,0.15); color: #818cf8; }
-        .p-tag--defi { background: rgba(45,212,191,0.15); color: var(--seafoam-400); }
-        .p-tag--education { background: rgba(96,165,250,0.15); color: #60a5fa; }
-        .p-tag--charity { background: rgba(251,191,36,0.15); color: #fbbf24; }
-        .p-tag--live { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.18); }
-        .p-tag--onchain { background: rgba(168,85,247,0.12); color: #a78bfa; }
-        .p-tag--multiplayer { background: rgba(236,72,153,0.12); color: #f472b6; }
-        .p-tag--nft { background: rgba(251,146,60,0.12); color: #fb923c; }
-
-        .p-name {
+        .inc-name {
             font-family: var(--font-display);
-            font-size: 1.25rem;
-            font-weight: 900;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-            letter-spacing: -0.01em;
-        }
-
-        .p-desc {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.55;
-            margin-bottom: var(--space-md);
-            flex: 1;
-        }
-
-        /* Stats row */
-        .p-stats {
-            display: flex;
-            gap: var(--space-lg);
-            margin-bottom: var(--space-md);
-            flex-wrap: wrap;
-        }
-        .p-stat-val {
-            font-family: var(--font-mono);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 800;
             color: var(--text-primary);
-        }
-        .p-stat-lbl {
-            font-size: 0.62rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            font-weight: 600;
-        }
-
-        /* Links bar */
-        .p-links {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            padding-top: var(--space-md);
-            border-top: 1px solid var(--border-subtle);
-            margin-top: auto;
-        }
-        .p-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 12px;
-            border-radius: var(--radius-full);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all var(--transition-fast);
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .p-link:hover {
-            border-color: var(--lobster-400);
-            color: var(--lobster-300);
-            background: var(--accent-glow);
-        }
-        .p-link svg { width: 13px; height: 13px; flex-shrink: 0; }
-        .p-link--primary {
-            background: var(--accent-gradient);
-            border-color: transparent;
-            color: #fff;
-            font-weight: 700;
-        }
-        .p-link--primary:hover {
-            opacity: 0.88;
-            color: #fff;
-            background: var(--accent-gradient);
+        .inc-desc {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Contract badge */
-        .p-contract {
+        .inc-badge {
             font-family: var(--font-mono);
-            font-size: 0.65rem;
-            color: var(--text-dim);
-            padding: 5px 10px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 8px;
             border-radius: var(--radius-full);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            transition: all var(--transition-fast);
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        .p-contract:hover {
-            border-color: var(--seafoam-400);
-            color: var(--seafoam-300);
+        .inc-badge--live {
+            background: rgba(34,197,94,0.12);
+            color: #4ade80;
+            border: 1px solid rgba(34,197,94,0.18);
+        }
+        .inc-badge--building {
+            background: rgba(251,191,36,0.12);
+            color: #fbbf24;
+            border: 1px solid rgba(251,191,36,0.18);
+        }
+        .inc-badge--incubating {
+            background: rgba(232,121,85,0.12);
+            color: var(--lobster-400);
+            border: 1px solid rgba(232,121,85,0.18);
         }
 
-        /* Community CTA */
-        .community-cta {
+        .inc-arrow {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            transition: transform 0.15s;
+        }
+        .inc-row:hover .inc-arrow {
+            transform: translateX(2px);
+            color: var(--lobster-400);
+        }
+
+        /* Loading state */
+        #incLoading {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            padding: var(--space-lg) 0;
+        }
+
+        /* CTA */
+        .inc-cta {
             text-align: center;
             margin-top: var(--space-2xl);
-            padding: var(--space-2xl) var(--space-xl);
+            padding: var(--space-xl);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-2xl);
+            border-radius: var(--radius-xl);
         }
-        .community-cta h2 {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            font-weight: 900;
-            margin-bottom: var(--space-xs);
-        }
-        .community-cta p {
+        .inc-cta p {
             font-size: 0.9rem;
             color: var(--text-secondary);
-            margin-bottom: var(--space-lg);
+            margin-bottom: var(--space-md);
         }
-        .community-cta-links {
+        .inc-cta-links {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
             flex-wrap: wrap;
         }
-
-        @media (max-width: 768px) {
-            .products-grid { grid-template-columns: 1fr; }
-            .eco-hero h1 { font-size: 1.8rem; }
+        .inc-cta-link {
+            display: inline-block;
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .inc-cta-link--primary {
+            background: var(--accent-gradient);
+            color: #fff;
+        }
+        .inc-cta-link--primary:hover { opacity: 0.88; }
+        .inc-cta-link--secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        .inc-cta-link--secondary:hover {
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
         }
 
+        @media (max-width: 600px) {
+            .inc-hero h1 { font-size: 1.6rem; }
+            .inc-row { padding: var(--space-sm) var(--space-md); }
+            .inc-desc { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -308,272 +248,109 @@
     </div>
 </nav>
 
-<div class="eco-page">
+<div class="inc-page">
 
-    <section class="eco-hero">
+    <section class="inc-hero">
         <h1>Inclawbations</h1>
-        <p>Live projects incubated and powered by the community. Synced from the daily post.</p>
+        <p>Every project incubated by the community. Always growing.</p>
+        <div class="inc-count" id="incCount"></div>
     </section>
 
-    <div class="products-grid">
+    <div class="inc-list" id="incList">
 
-        <!-- PokerAI -->
-        <div class="p-card">
-            <div class="p-banner">
-                <iframe class="p-banner-iframe" src="/pokerai" sandbox="allow-scripts allow-same-origin" loading="lazy" tabindex="-1"></iframe>
-                <div class="p-banner-cover"></div>
+        <!-- Flagship inclawbations (hardcoded) -->
+        <a href="/pokerai" class="inc-row">
+            <div class="inc-icon">&#9824;&#65039;</div>
+            <div class="inc-info">
+                <div class="inc-name">PokerAI</div>
+                <div class="inc-desc">AI agents play Texas Hold'em with real on-chain chips</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--product">Product</span>
-                    <span class="p-tag p-tag--onchain">On-Chain</span>
-                    <span class="p-tag p-tag--live">Live</span>
-                </div>
-                <h2 class="p-name">PokerAI</h2>
-                <p class="p-desc">AI agents battle in Texas Hold'em with real on-chain chips. Spectate live games, bet on hands, and earn from the rake pool.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">6</span> <span class="p-stat-lbl">Agents</span></div>
-                    <div><span class="p-stat-val">2.5%</span> <span class="p-stat-lbl">Rake</span></div>
-                    <div><span class="p-stat-val">Base</span> <span class="p-stat-lbl">Network</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="/pokerai" class="p-link p-link--primary">Play Now &rarr;</a>
-                    <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        @inclawbate
-                    </a>
-                    <a href="https://basescan.org/address/0x810a68b796D6C89F181133355EFe297A36e547D0" target="_blank" rel="noopener" class="p-contract">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        0x810a...47D0
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- Claws Crash -->
-        <div class="p-card">
-            <div class="p-banner">
-                <iframe class="p-banner-iframe" src="/crash" sandbox="allow-scripts allow-same-origin" loading="lazy" tabindex="-1"></iframe>
-                <div class="p-banner-cover"></div>
+        <a href="/crash" class="inc-row">
+            <div class="inc-icon">&#128640;</div>
+            <div class="inc-info">
+                <div class="inc-name">Claws Crash</div>
+                <div class="inc-desc">Multiplayer crash game with CLAWS tokens</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--game">Game</span>
-                    <span class="p-tag p-tag--onchain">On-Chain</span>
-                    <span class="p-tag p-tag--live">Live</span>
-                </div>
-                <h2 class="p-name">Claws Crash</h2>
-                <p class="p-desc">Multiplayer crash gambling with real CLAWS tokens. Provably fair rounds, live chat, auto-cashout, and on-chain deposits via CrashVault.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">1%</span> <span class="p-stat-lbl">House Edge</span></div>
-                    <div><span class="p-stat-val">1:1</span> <span class="p-stat-lbl">CLAWS Ratio</span></div>
-                    <div><span class="p-stat-val">Base</span> <span class="p-stat-lbl">Network</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="/crash" class="p-link p-link--primary">Play Now &rarr;</a>
-                    <a href="https://basescan.org/address/0xBe124C211bE4614C451a5C2E0758B8Bc90517f19" target="_blank" rel="noopener" class="p-contract">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        0xBe12...7f19
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- DeFiKnowledge -->
-        <div class="p-card">
-            <div class="p-banner">
-                <iframe class="p-banner-iframe" src="https://defiknowledge.com" sandbox="allow-scripts allow-same-origin" loading="lazy" tabindex="-1"></iframe>
-                <div class="p-banner-cover"></div>
+        <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="inc-row">
+            <div class="inc-icon">&#128218;</div>
+            <div class="inc-info">
+                <div class="inc-name">DeFiKnowledge</div>
+                <div class="inc-desc">Free DeFi courses, glossary, protocol explorer</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--education">Education</span>
-                    <span class="p-tag p-tag--product">Product</span>
-                    <span class="p-tag p-tag--live">Live</span>
-                </div>
-                <h2 class="p-name">DeFiKnowledge</h2>
-                <p class="p-desc">The DeFi learning platform. Structured courses, glossary with 94 terms, protocol explorer, and sandbox simulator &mdash; free and open to everyone.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">6</span> <span class="p-stat-lbl">Courses</span></div>
-                    <div><span class="p-stat-val">94</span> <span class="p-stat-lbl">Terms</span></div>
-                    <div><span class="p-stat-val">29</span> <span class="p-stat-lbl">Modules</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="https://defiknowledge.com" target="_blank" rel="noopener" class="p-link p-link--primary">Visit Site &rarr;</a>
-                    <a href="https://defiknowledge.com/learn" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-                        Courses
-                    </a>
-                    <a href="https://defiknowledge.com/glossary" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        Glossary
-                    </a>
-                    <a href="https://defiknowledge.com/explore" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-                        Explore
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- FightFarm -->
-        <div class="p-card">
-            <div class="p-banner">
-                <img src="/assets/fightfarmlogo.jpg" alt="FightFarm">
+        <a href="https://basisubi.com" target="_blank" rel="noopener" class="inc-row">
+            <div class="inc-icon">&#128200;</div>
+            <div class="inc-info">
+                <div class="inc-name">Basis</div>
+                <div class="inc-desc">Automated DeFi vault marketplace on Aerodrome &amp; Aave</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--game">Game</span>
-                    <span class="p-tag p-tag--nft">NFT</span>
-                </div>
-                <h2 class="p-name">FightFarm</h2>
-                <p class="p-desc">NFT farming meets PvP battles. Grow, train, and fight your creatures against other players for on-chain rewards.</p>
-                <div class="p-links">
-                    <a href="https://fightfarm.app" target="_blank" rel="noopener" class="p-link p-link--primary">Visit Site &rarr;</a>
-                    <a href="https://x.com/fabordeofficial" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        @fabordeofficial
-                    </a>
-                    <a href="https://t.me/fightfarmnft" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                        Telegram
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- AgentScape -->
-        <div class="p-card">
-            <div class="p-banner" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #533483 100%); display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 900; color: rgba(255,255,255,0.85); text-shadow: 0 2px 12px rgba(83,52,131,0.5); letter-spacing: 0.02em;">AgentScape</span>
+        <a href="/stake" class="inc-row">
+            <div class="inc-icon">&#129438;</div>
+            <div class="inc-info">
+                <div class="inc-name">CLAWS Staking</div>
+                <div class="inc-desc">Stake $CLAWS, earn daily yield from ecosystem revenue</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--game">Game</span>
-                    <span class="p-tag p-tag--multiplayer">Multiplayer</span>
-                </div>
-                <h2 class="p-name">AgentScape</h2>
-                <p class="p-desc">Multiplayer browser RPG where AI agents roam a shared persistent world. Built on Colyseus with real-time networking.</p>
-                <div class="p-links">
-                    <a href="https://agentscape.app" target="_blank" rel="noopener" class="p-link p-link--primary">Play &rarr;</a>
-                    <a href="https://agentscape.app/home" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        Landing Page
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- S4H -->
-        <div class="p-card">
-            <div class="p-banner">
-                <img src="/assets/salvation4humanity.jpg" alt="Salvation 4 Humanity">
+        <a href="https://agentscape.app" target="_blank" rel="noopener" class="inc-row">
+            <div class="inc-icon">&#127918;</div>
+            <div class="inc-info">
+                <div class="inc-name">AgentScape</div>
+                <div class="inc-desc">Multiplayer browser RPG with AI agents</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--charity">Philanthropy</span>
-                    <span class="p-tag p-tag--defi">DeFi</span>
-                </div>
-                <h2 class="p-name">Salvation 4 Humanity</h2>
-                <p class="p-desc">Ecosystem surplus funds real-world good. Stake S4H tokens, earn INCLAWNCH rewards, and contribute to meaningful change.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">S4H</span> <span class="p-stat-lbl">Token</span></div>
-                    <div><span class="p-stat-val">Base</span> <span class="p-stat-lbl">Network</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="/apps/scripture-memory" class="p-link p-link--primary">Scripture Memory &#x1F4D6;</a>
-                    <a href="https://salvation4humanity.com" target="_blank" rel="noopener" class="p-link">Visit Site &rarr;</a>
-                    <a href="https://t.me/salvation4humanity" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                        Telegram
-                    </a>
-                    <a href="https://basescan.org/address/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07" target="_blank" rel="noopener" class="p-contract">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        0x30F5...B07
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--building">Building</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- Basis -->
-        <div class="p-card">
-            <div class="p-banner">
-                <img src="/assets/basis-logo.jpg" alt="Basis">
+        <a href="https://fightfarm.app" target="_blank" rel="noopener" class="inc-row">
+            <div class="inc-icon"><img src="/assets/fightfarmlogo.jpg" alt="FF"></div>
+            <div class="inc-info">
+                <div class="inc-name">FightFarm</div>
+                <div class="inc-desc">NFT farming meets PvP battles</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--defi">DeFi</span>
-                    <span class="p-tag p-tag--product">Product</span>
-                    <span class="p-tag p-tag--onchain">On-Chain</span>
-                    <span class="p-tag p-tag--live">Live</span>
-                </div>
-                <h2 class="p-name">Basis</h2>
-                <p class="p-desc">Automated DeFi vault marketplace. Deposit USDC, earn yield from concentrated liquidity on Aerodrome &amp; leveraged positions on Aave. Managers compete for depositors with transparent, on-chain strategies.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">8</span> <span class="p-stat-lbl">Vaults</span></div>
-                    <div><span class="p-stat-val">ERC-4626</span> <span class="p-stat-lbl">Standard</span></div>
-                    <div><span class="p-stat-val">Base</span> <span class="p-stat-lbl">Network</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="https://basisubi.com" class="p-link p-link--primary">Browse Vaults &rarr;</a>
-                    <a href="https://x.com/BasisUBI" target="_blank" rel="noopener" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        @BasisUBI
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--building">Building</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
-        <!-- CLAWS Staking -->
-        <div class="p-card">
-            <div class="p-banner">
-                <iframe class="p-banner-iframe" src="/stake" sandbox="allow-scripts allow-same-origin" loading="lazy" tabindex="-1"></iframe>
-                <div class="p-banner-cover"></div>
+        <a href="https://salvation4humanity.com" target="_blank" rel="noopener" class="inc-row">
+            <div class="inc-icon">&#10084;&#65039;</div>
+            <div class="inc-info">
+                <div class="inc-name">Salvation 4 Humanity</div>
+                <div class="inc-desc">Ecosystem surplus funds real-world good</div>
             </div>
-            <div class="p-body">
-                <div class="p-tags">
-                    <span class="p-tag p-tag--defi">DeFi</span>
-                    <span class="p-tag p-tag--live">Live</span>
-                </div>
-                <h2 class="p-name">CLAWS Staking</h2>
-                <p class="p-desc">Stake $CLAWS and earn daily yield. Revenue from the entire Inclawbate ecosystem flows back to stakers.</p>
-                <div class="p-stats">
-                    <div><span class="p-stat-val">CLAWS</span> <span class="p-stat-lbl">Token</span></div>
-                    <div><span class="p-stat-val">Base</span> <span class="p-stat-lbl">Network</span></div>
-                </div>
-                <div class="p-links">
-                    <a href="/stake" class="p-link p-link--primary">Start Staking &rarr;</a>
-                    <a href="/tokens" class="p-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                        Token Info
-                    </a>
-                    <a href="https://basescan.org/address/0x7ca47B141639B893C6782823C0b219f872056379" target="_blank" rel="noopener" class="p-contract">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        0x7ca4...6379
-                    </a>
-                </div>
-            </div>
-        </div>
+            <span class="inc-badge inc-badge--live">Live</span>
+            <span class="inc-arrow">&rarr;</span>
+        </a>
 
     </div>
 
-    <!-- Live Incubations from Telegram -->
-    <section style="margin-top:var(--space-2xl)">
-        <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:var(--space-xs);">All Inclawbations</h2>
-        <p style="text-align:center;color:var(--text-dim);font-size:0.88rem;margin-bottom:var(--space-xl);">Live from the daily post &mdash; synced with Telegram.</p>
-        <div id="liveIncubations" class="products-grid" style="opacity:0;transition:opacity 0.3s;"></div>
-        <p id="liveLoading" style="text-align:center;color:var(--text-dim);font-size:0.82rem;padding:var(--space-xl) 0;">Loading incubations...</p>
-    </section>
+    <!-- Dynamic incubations from Telegram append here -->
+    <p id="incLoading" style="display:none;">Loading more incubations...</p>
 
-    <!-- Community Apps CTA -->
-    <section class="community-cta">
-        <h2>Plus dozens of community-built apps</h2>
-        <p>Browse apps, build your own, or launch something new.</p>
-        <div class="community-cta-links">
-            <a href="/apps" class="p-link p-link--primary">Browse Apps</a>
-            <a href="/how-it-works" class="p-link">How It Works</a>
-            <a href="/build" class="p-link">Build Your Own</a>
-            <a href="/" class="p-link">Launch Something</a>
+    <!-- CTA -->
+    <section class="inc-cta">
+        <p>Got a project? We'll incubate it.</p>
+        <div class="inc-cta-links">
+            <a href="/" class="inc-cta-link inc-cta-link--primary">Start Building</a>
+            <a href="/how-it-works" class="inc-cta-link inc-cta-link--secondary">How It Works</a>
+            <a href="/apps" class="inc-cta-link inc-cta-link--secondary">Browse Apps</a>
         </div>
     </section>
 
@@ -595,40 +372,46 @@
 
 <script>
 (function(){
-    var grid = document.getElementById('liveIncubations');
-    var loading = document.getElementById('liveLoading');
+    var list = document.getElementById('incList');
+    var loading = document.getElementById('incLoading');
+    var countEl = document.getElementById('incCount');
+    var flagshipCount = list.querySelectorAll('.inc-row').length;
+
+    // Known flagship domains to skip duplicates from API
+    var known = ['pokerai','crash','defiknowledge.com','basisubi.com','agentscape.app','fightfarm.app','salvation4humanity.com','inclawbate.com'];
+
+    loading.style.display = 'block';
     fetch('/api/inclawbate/team-state')
         .then(function(r){ return r.json(); })
         .then(function(data){
             var items = data.incubations || [];
-            if(!items.length){
-                loading.textContent = 'No incubations yet.';
-                return;
-            }
-            var html = '';
+            var added = 0;
             items.forEach(function(item){
-                var url = item.content || '';
-                var display = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-                var date = item.date ? new Date(item.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
-                var href = url.match(/^https?:\/\//) ? url : 'https://' + url;
-                html += '<div class="p-card">'
-                    + '<div class="p-banner" style="display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);">'
-                    + '<span style="font-size:2.8rem;">&#129438;</span>'
-                    + '</div>'
-                    + '<div class="p-body">'
-                    + '<div class="p-tags"><span class="p-tag p-tag--live">Incubating</span></div>'
-                    + '<h2 class="p-name">' + display + '</h2>'
-                    + (date ? '<p class="p-desc">Added ' + date + '</p>' : '')
-                    + '<div class="p-links">'
-                    + '<a href="' + href + '" target="_blank" rel="noopener" class="p-link p-link--primary">Visit &rarr;</a>'
-                    + '</div></div></div>';
+                var url = (item.content || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/,'');
+                // Skip if it matches a flagship
+                for(var i=0;i<known.length;i++){
+                    if(url.indexOf(known[i]) !== -1) return;
+                }
+                var display = item.content.replace(/^https?:\/\//, '').replace(/\/$/,'');
+                var href = item.content.match(/^https?:\/\//) ? item.content : 'https://' + item.content;
+                var row = document.createElement('a');
+                row.href = href;
+                row.target = '_blank';
+                row.rel = 'noopener';
+                row.className = 'inc-row';
+                row.innerHTML = '<div class="inc-icon">&#129438;</div>'
+                    + '<div class="inc-info"><div class="inc-name">' + display + '</div></div>'
+                    + '<span class="inc-badge inc-badge--incubating">Incubating</span>'
+                    + '<span class="inc-arrow">&rarr;</span>';
+                list.appendChild(row);
+                added++;
             });
-            grid.innerHTML = html;
-            grid.style.opacity = '1';
             loading.style.display = 'none';
+            countEl.textContent = (flagshipCount + added) + ' projects and counting';
         })
         .catch(function(){
-            loading.textContent = 'Could not load incubations.';
+            loading.style.display = 'none';
+            countEl.textContent = flagshipCount + ' projects and counting';
         });
 })();
 </script>
