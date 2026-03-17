@@ -290,6 +290,77 @@
             background: rgba(45,212,191,0.18);
         }
 
+        /* Image prompt generator */
+        .sched-imgprompt-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 1px dashed rgba(232,121,85,0.35);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--lobster-400);
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 6px;
+        }
+        .sched-imgprompt-btn:hover {
+            background: rgba(232,121,85,0.08);
+            border-color: var(--lobster-400);
+        }
+        .sched-imgprompt-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .sched-imgprompt-result {
+            display: none;
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            position: relative;
+        }
+        .sched-imgprompt-result pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+        .sched-imgprompt-copy {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            padding: 3px 8px;
+            border: none;
+            border-radius: 4px;
+            background: rgba(232,121,85,0.15);
+            color: var(--lobster-400);
+            font-size: 0.68rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sched-imgprompt-copy:hover { background: rgba(232,121,85,0.25); }
+        [data-active-account="inclawbate"] .sched-imgprompt-btn {
+            border-color: rgba(45,212,191,0.35);
+            color: var(--seafoam-400);
+        }
+        [data-active-account="inclawbate"] .sched-imgprompt-btn:hover {
+            background: rgba(45,212,191,0.08);
+            border-color: var(--seafoam-400);
+        }
+        [data-active-account="inclawbate"] .sched-imgprompt-copy {
+            background: rgba(45,212,191,0.15);
+            color: var(--seafoam-400);
+        }
+
         /* Project picker — cards instead of dropdown */
         .sched-projects { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-md); }
         .sched-proj {
@@ -756,7 +827,14 @@
             <div class="sched-field" id="schedUserFields">
                 <div class="sched-field-label">Write your tweet</div>
                 <textarea id="schedBookTweet" placeholder="What do you want @inclawbator to post? Write the exact tweet..." maxlength="280" oninput="updateBookCharCount()"></textarea>
-                <div class="sched-charcount" id="schedBookCharCount">0/280</div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div class="sched-charcount" id="schedBookCharCount">0/280</div>
+                    <button type="button" class="sched-imgprompt-btn" id="imgPromptBtn" onclick="window._generateImagePrompt()">&#127912; Generate Image Prompt</button>
+                </div>
+                <div class="sched-imgprompt-result" id="imgPromptResult">
+                    <button type="button" class="sched-imgprompt-copy" id="imgPromptCopy" onclick="window._copyImagePrompt()">Copy</button>
+                    <pre id="imgPromptText"></pre>
+                </div>
             </div>
 
             <!-- Admin-only fields -->
@@ -1316,6 +1394,10 @@
             hint.style.display = 'none';
         }
 
+        // Clear image prompt from previous booking
+        document.getElementById('imgPromptResult').style.display = 'none';
+        document.getElementById('imgPromptText').textContent = '';
+
         // Update placeholder with account handle
         var handle = _activeAccount === 'inclawbate' ? '@inclawbate' : '@inclawbator';
         document.getElementById('schedBookTweet').placeholder = 'What do you want ' + handle + ' to post? Write the exact tweet...';
@@ -1867,6 +1949,57 @@
         var ta = document.getElementById('schedBookTweet');
         var el = document.getElementById('schedBookCharCount');
         if (ta && el) el.textContent = (ta.value || '').length + '/280';
+    };
+
+    window._generateImagePrompt = async function() {
+        var tweetText = (document.getElementById('schedBookTweet').value || '').trim();
+        if (!tweetText) { alert('Write your tweet first, then generate an image prompt for it.'); return; }
+
+        var btn = document.getElementById('imgPromptBtn');
+        var resultEl = document.getElementById('imgPromptResult');
+        btn.disabled = true;
+        btn.innerHTML = '&#9203; Generating...';
+        resultEl.style.display = 'none';
+
+        // Get the current day's pillar name for scene context
+        var pillarName = '';
+        if (_selectedDay) {
+            var dow = _selectedDay.getUTCDay();
+            var pillar = activePillars()[dow];
+            if (pillar) pillarName = pillar.name;
+        }
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate_image_prompt',
+                    tweet_text: tweetText,
+                    account: _activeAccount,
+                    pillar: pillarName
+                })
+            });
+            var data = await resp.json();
+            if (data.error) throw new Error(data.error);
+
+            document.getElementById('imgPromptText').textContent = data.image_prompt;
+            resultEl.style.display = 'block';
+        } catch(e) {
+            alert('Failed to generate: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '&#127912; Generate Image Prompt';
+        }
+    };
+
+    window._copyImagePrompt = function() {
+        var text = document.getElementById('imgPromptText').textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = document.getElementById('imgPromptCopy');
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+        });
     };
 
     // ── Admin Review Queue ──
