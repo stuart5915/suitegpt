@@ -147,16 +147,33 @@ const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed
 
 async function fetchTreasury(clawsPrice) {
     try {
-        // 1. ETH balance of treasury wallet
+        // CLAWS reads first — earned() is rate-limit sensitive, do it early
+        // 1. CLAWS in treasury wallet
+        const walletClaws = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(TREASURY_WALLET_RAW));
+        await delay(300);
+
+        // 2. Treasury staked position
+        const stakedClaws = await rpcRead(STAKING_CONTRACT, clawsBalanceOfData(TREASURY_WALLET_RAW));
+        await delay(300);
+
+        // 3. Unclaimed rewards: earned(treasuryWallet)
+        const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
+        let unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
+        if (unclaimedClaws === 0) {
+            await delay(500);
+            unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
+        }
+        await delay(300);
+
+        // 4. ETH balance of treasury wallet
         const ethBalRes = await fetch(BASE_RPC, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [TREASURY_WALLET, 'latest'], id: 1 })
         }).then(r => r.json());
         const ethBalance = (ethBalRes.error || !ethBalRes.result) ? 0 : Number(BigInt(ethBalRes.result)) / 1e18;
-        await delay(200);
 
-        // 2. ETH price from DexScreener (WETH on Base)
+        // 5. ETH price from DexScreener (not an RPC call, no rate limit)
         let ethPrice = 0;
         try {
             const ethRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
@@ -164,25 +181,6 @@ async function fetchTreasury(clawsPrice) {
             const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
             ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
         } catch (e) { /* ETH price unavailable */ }
-        await delay(200);
-
-        // 3. CLAWS in treasury wallet
-        await delay(300);
-        const walletClaws = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(TREASURY_WALLET_RAW));
-        await delay(300);
-
-        // 4. Treasury staked position
-        const stakedClaws = await rpcRead(STAKING_CONTRACT, clawsBalanceOfData(TREASURY_WALLET_RAW));
-
-        // 5. Unclaimed rewards: earned(treasuryWallet)
-        await delay(500);
-        const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
-        let unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
-        // Retry once if rate-limited
-        if (unclaimedClaws === 0) {
-            await delay(500);
-            unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
-        }
 
         const ethValue = ethBalance * ethPrice;
         const totalClaws = walletClaws + stakedClaws + unclaimedClaws;

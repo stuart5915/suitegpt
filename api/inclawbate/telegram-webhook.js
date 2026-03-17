@@ -602,7 +602,22 @@ async function handleTreasury(chatId) {
         const dailyRewards = rewardRate * 86400;
         const apy = userStaked > 0 ? (dailyRewards * 365 / userStaked * 100) : 0;
 
-        // 3. ETH balance
+        // 3. CLAWS holdings of inclawbate.base.eth — do early before rate limit kicks in
+        const treasuryRaw = TREASURY_WALLET.replace('0x', '').toLowerCase();
+        await tDelay(300);
+        const walletClaws = await rpc(CLAWS_ADDRESS, balData(TREASURY_WALLET));
+        await tDelay(300);
+        const stakedClaws = await rpc(STAKING_CONTRACT, balData(TREASURY_WALLET));
+        await tDelay(300);
+        const earnedData = '0x008cc262000000000000000000000000' + treasuryRaw;
+        let unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        if (unclaimedClaws === 0) {
+            await tDelay(500);
+            unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
+        }
+        const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
+
+        // 4. ETH balance + price (less critical, can tolerate rate limit)
         let ethBalance = 0, ethPrice = 0;
         await tDelay(300);
         try {
@@ -619,23 +634,6 @@ async function handleTreasury(chatId) {
             const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
             ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
         } catch (e) {}
-
-        // 4. CLAWS holdings of inclawbate.base.eth
-        const treasuryRaw = TREASURY_WALLET.replace('0x', '').toLowerCase();
-        await tDelay(300);
-        const walletClaws = await rpc(CLAWS_ADDRESS, balData(TREASURY_WALLET));
-        await tDelay(300);
-        const stakedClaws = await rpc(STAKING_CONTRACT, balData(TREASURY_WALLET));
-        // earned() needs extra breathing room — it's the last RPC call
-        await tDelay(500);
-        const earnedData = '0x008cc262000000000000000000000000' + treasuryRaw;
-        let unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
-        // Retry once if rate-limited (returned 0)
-        if (unclaimedClaws === 0) {
-            await tDelay(500);
-            unclaimedClaws = await rpc(STAKING_CONTRACT, earnedData);
-        }
-        const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
 
         // 5. Council allocation
         let councilWeights = null;
