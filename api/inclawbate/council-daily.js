@@ -400,7 +400,7 @@ function getDateStr() {
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<i>Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/state</i>\n\n`;
+    msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/state</a>\n\n`;
 
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
