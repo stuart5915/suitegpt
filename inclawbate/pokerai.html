@@ -683,6 +683,32 @@
   .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.5); box-shadow: 0 0 10px rgba(59,130,246,0.3); }
   .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.5); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
 
+  #hand-winner-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    z-index: 90;
+    background: rgba(10, 10, 20, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 16px;
+    padding: 16px 28px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.15), 0 8px 32px rgba(0,0,0,0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+  #hand-winner-popup.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
   #hand-action-tooltip {
     display: none;
     position: fixed;
@@ -5073,7 +5099,7 @@ function applyServerState(data) {
   }
 
   updateRoomTabs();
-  if (!_replayingHand) renderFullState();
+  if (!_replayingHand && !_handEndFreeze) renderFullState();
 }
 
 // ============================================================
@@ -5083,6 +5109,8 @@ const handHistoryCache = [];
 let _prevRunning = false;
 let _prevRound = 0;
 let _replayingHand = null; // null = live, index = viewing past hand
+let _handEndFreeze = false; // true during 3s post-hand showdown pause
+let _handEndFreezeTimer = null;
 
 function detectHandComplete(data) {
   const justEnded = _prevRunning && !data.running && data.lastWinner;
@@ -5152,9 +5180,47 @@ function detectHandComplete(data) {
 
     renderTimeline();
 
+    // Freeze display for 3s so cards stay visible + show winner popup
+    _handEndFreeze = true;
+    if (_handEndFreezeTimer) clearTimeout(_handEndFreezeTimer);
+    const potDisplay = handSnapshot.pot > 0 ? handSnapshot.pot.toLocaleString() : '';
+    _showHandWinnerPopup(handSnapshot.winnerEmoji, handSnapshot.winnerName, potDisplay);
+    _handEndFreezeTimer = setTimeout(() => {
+      _handEndFreeze = false;
+      _hideHandWinnerPopup();
+      renderFullState();
+    }, 3000);
+
     // Check if user's agent went bust this hand
     checkMyAgentBust(data);
   }
+}
+
+// ============================================================
+// HAND WINNER POPUP — shows for 3s between hands
+// ============================================================
+function _showHandWinnerPopup(emoji, name, pot) {
+  let popup = document.getElementById('hand-winner-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'hand-winner-popup';
+    document.body.appendChild(popup);
+  }
+  const potLine = pot ? `<div style="font-size:14px;color:var(--accent-gold);font-weight:700;margin-top:2px">+${pot} chips</div>` : '';
+  popup.innerHTML = `
+    <div style="font-size:36px;line-height:1">${emoji}</div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-top:4px">${escapeHtml(name)} wins!</div>
+    ${potLine}
+  `;
+  popup.style.display = 'flex';
+  requestAnimationFrame(() => popup.classList.add('visible'));
+}
+
+function _hideHandWinnerPopup() {
+  const popup = document.getElementById('hand-winner-popup');
+  if (!popup) return;
+  popup.classList.remove('visible');
+  setTimeout(() => { popup.style.display = 'none'; }, 300);
 }
 
 // ============================================================
