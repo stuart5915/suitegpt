@@ -1207,7 +1207,8 @@ function decodeSolTxData(data) {
 const BASE_RPCS = [
     'https://mainnet.base.org',
     'https://1rpc.io/base',
-    'https://base-mainnet.public.blastapi.io'
+    'https://base-mainnet.public.blastapi.io',
+    'https://base.drpc.org'
 ];
 const CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_SEL = {
@@ -1459,6 +1460,7 @@ function fromWei(hex) {
 function fmt(n) { return Math.round(Number(n) || 0).toLocaleString('en-US'); }
 
 async function rpcCall(to, data) {
+    // Try public RPCs first
     for (const url of BASE_RPCS) {
         try {
             const ctrl = new AbortController();
@@ -1476,6 +1478,15 @@ async function rpcCall(to, data) {
             return safeHex(json.result);
         } catch (e) { continue; }
     }
+    // Fallback: use the injected wallet provider (works inside Coinbase/MetaMask browsers
+    // even when public RPCs are blocked)
+    try {
+        const provider = window.ethereum || (window.phantom && window.phantom.ethereum);
+        if (provider) {
+            const result = await provider.request({ method: 'eth_call', params: [{ to, data }, 'latest'] });
+            if (result) return safeHex(result);
+        }
+    } catch (e) {}
     return '0x0';
 }
 
