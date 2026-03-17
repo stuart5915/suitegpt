@@ -557,6 +557,14 @@
 
     </div>
 
+    <!-- Live Incubations from Telegram -->
+    <section style="margin-top:var(--space-2xl)">
+        <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:var(--space-xs);">All Inclawbations</h2>
+        <p style="text-align:center;color:var(--text-dim);font-size:0.88rem;margin-bottom:var(--space-xl);">Live from the daily post &mdash; synced with Telegram.</p>
+        <div id="liveIncubations" class="products-grid" style="opacity:0;transition:opacity 0.3s;"></div>
+        <p id="liveLoading" style="text-align:center;color:var(--text-dim);font-size:0.82rem;padding:var(--space-xl) 0;">Loading incubations...</p>
+    </section>
+
     <!-- Community Apps CTA -->
     <section class="community-cta">
         <h2>Plus dozens of community-built apps</h2>
@@ -565,7 +573,7 @@
             <a href="/apps" class="p-link p-link--primary">Browse Apps</a>
             <a href="/how-it-works" class="p-link">How It Works</a>
             <a href="/build" class="p-link">Build Your Own</a>
-            <a href="/inclawbator" class="p-link">Launch Something</a>
+            <a href="/" class="p-link">Launch Something</a>
         </div>
     </section>
 
@@ -584,6 +592,46 @@
         </div>
     </div>
 </footer>
+
+<script>
+(function(){
+    var grid = document.getElementById('liveIncubations');
+    var loading = document.getElementById('liveLoading');
+    fetch('/api/inclawbate/team-state')
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var items = data.incubations || [];
+            if(!items.length){
+                loading.textContent = 'No incubations yet.';
+                return;
+            }
+            var html = '';
+            items.forEach(function(item){
+                var url = item.content || '';
+                var display = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                var date = item.date ? new Date(item.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+                var href = url.match(/^https?:\/\//) ? url : 'https://' + url;
+                html += '<div class="p-card">'
+                    + '<div class="p-banner" style="display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);">'
+                    + '<span style="font-size:2.8rem;">&#129438;</span>'
+                    + '</div>'
+                    + '<div class="p-body">'
+                    + '<div class="p-tags"><span class="p-tag p-tag--live">Incubating</span></div>'
+                    + '<h2 class="p-name">' + display + '</h2>'
+                    + (date ? '<p class="p-desc">Added ' + date + '</p>' : '')
+                    + '<div class="p-links">'
+                    + '<a href="' + href + '" target="_blank" rel="noopener" class="p-link p-link--primary">Visit &rarr;</a>'
+                    + '</div></div></div>';
+            });
+            grid.innerHTML = html;
+            grid.style.opacity = '1';
+            loading.style.display = 'none';
+        })
+        .catch(function(){
+            loading.textContent = 'Could not load incubations.';
+        });
+})();
+</script>
 
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/privy-bundle.js"></script>
