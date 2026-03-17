@@ -385,6 +385,78 @@ async function handleMarketingPovs(chatId, args) {
     await sendMsg(chatId, msg);
 }
 
+// ── /brand — visual identity + mascot reference ──
+
+async function handleBrand(chatId) {
+    let msg = '🦞 <b>INCLAWBATE BRAND</b>\n\n';
+
+    msg += '<b>Tagline:</b> "Anyone Can Build. Everyone Gets Paid."\n\n';
+
+    msg += '<b>🎨 The Lobster Mascot</b>\n';
+    msg += '• 3D rendered (Octane/Blender quality), NOT flat/2D\n';
+    msg += '• Coral red (#e5533d) body, glossy shell, large expressive eyes\n';
+    msg += '• Personality: confident, builder energy, slightly cocky grin\n';
+    msg += '• Think: Pixar character meets crypto neon aesthetic\n';
+    msg += '• NOT cute/kawaii, NOT scary — adult professional with swagger\n\n';
+
+    msg += '<b>🎯 Color Palette</b>\n';
+    msg += '• Coral Red: #e5533d (mascot, primary)\n';
+    msg += '• Seafoam Teal: #4db6ac (growth, data, success)\n';
+    msg += '• Deep Void: #06060b (ALL backgrounds — always dark)\n';
+    msg += '• Warm Gold: #d4a574 (coins, premium, achievements)\n\n';
+
+    msg += '<b>📐 Poses</b>\n';
+    msg += 'The Builder — at desk, typing on holograms\n';
+    msg += 'The Presenter — gesturing toward floating app\n';
+    msg += 'The Launcher — claw raised with glowing token\n';
+    msg += 'The Thinker — chin on claw, studying data\n';
+    msg += 'The Celebrator — both claws raised, confetti\n';
+    msg += 'The Boss — arms crossed, standing on stack of apps\n';
+    msg += 'The Chef — cooking up something in a glowing pot\n\n';
+
+    msg += '<b>✅ Always:</b> dark backgrounds, 3D render, lobster as focal point, coral+teal neon lighting, cinematic\n';
+    msg += '<b>❌ Never:</b> white/bright backgrounds, flat 2D, stock photos, text in images, cute/chibi style\n\n';
+
+    msg += '📖 Full spec: inclawbate/BRAND_ARCHETYPE.md';
+
+    await sendMsg(chatId, msg);
+}
+
+// ── /narrative — story world, locations, characters ──
+
+async function handleNarrative(chatId) {
+    let msg = '🦞 <b>INCLAWBATE NARRATIVE</b>\n\n';
+
+    msg += '<b>🌊 The World: "The Reef"</b>\n';
+    msg += 'A futuristic underwater/space hybrid tech hub. Bioluminescent coral meets holographic terminals.\n\n';
+
+    msg += '<b>📍 Locations</b>\n';
+    msg += '🔧 The Workshop — cluttered lab, building & how-tos\n';
+    msg += '🚀 The Launchpad — token launches, big announcements\n';
+    msg += '📊 The Trading Floor — DeFi updates, price action\n';
+    msg += '🍻 The Lounge — neon bar, community vibes\n';
+    msg += '🔐 The Vault — treasury, staking, tokenomics\n';
+    msg += '🏟️ The Arena — app spotlights, competitions\n';
+    msg += '🥚 The Incubator — nurturing new projects\n';
+    msg += '🌅 The Rooftop — vision posts, inspiration\n\n';
+
+    msg += '<b>🐚 Characters</b>\n';
+    msg += '🦞 The Inclawbator — main lobster, protagonist\n';
+    msg += '🦞 Mini Lobsters — community/builders (smaller, varied colors)\n';
+    msg += '🦀 Crab Engineer — blue-teal, safety goggles, fixes things\n';
+    msg += '🐙 Octopus Multitasker — purple, juggles 8 tasks\n';
+    msg += '🐋 The Whale — massive, wise, big moves\n';
+    msg += '🦐 Shrimp Newbie — tiny, wide-eyed, learning\n';
+    msg += '🐡 Pufferfish Hype-Man — inflates with excitement\n\n';
+
+    msg += '<b>🎭 Mood Tags</b>\n';
+    msg += '#grindset #hype #cozy #epic #degen #zen #gm #ship-it #teach #flex\n\n';
+
+    msg += '📖 Full bible: inclawbate/NARRATIVE.md';
+
+    await sendMsg(chatId, msg);
+}
+
 // ── /telos — mission, tokens, and how they relate ──
 
 async function handleTelos(chatId) {
@@ -701,6 +773,10 @@ export default async function handler(req, res) {
             await handleMarketingPovs(chatId, args);
         } else if (cmd === 'research') {
             await handleResearch(chatId);
+        } else if (cmd === 'brand') {
+            await handleBrand(chatId);
+        } else if (cmd === 'narrative') {
+            await handleNarrative(chatId);
         } else if (cmd === 'telos') {
             await handleTelos(chatId);
         } else if (cmd === 'treasury') {
@@ -732,13 +808,15 @@ export default async function handler(req, res) {
                 '<b>Projects</b>\n' +
                 '/incubation Name — Add incubation\n' +
                 '/duty Task — Owner — Add responsibility\n\n' +
-                '<b>Marketing</b>\n' +
-                '/marketingpovs — All 15 marketing angles\n' +
-                '/marketingpovs 4 — View one in detail\n' +
-                '/research — Daily research prompt\n\n' +
-                '<b>Treasury</b>\n' +
+                '<b>Treasury & Governance</b>\n' +
                 '/treasury — Treasury status + allocation\n' +
                 '/telos — Mission, tokens, how they relate\n\n' +
+                '<b>Marketing & Brand</b>\n' +
+                '/marketingpovs — All 15 marketing angles\n' +
+                '/marketingpovs 4 — View one in detail\n' +
+                '/research — Daily research prompt\n' +
+                '/brand — Visual identity, mascot, colors\n' +
+                '/narrative — Story world, locations, characters\n\n' +
                 '<b>Council</b>\n' +
                 '/daily — Post daily CLAWS update (admin)\n\n' +
                 '<b>Other</b>\n' +
