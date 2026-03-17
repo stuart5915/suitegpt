@@ -875,7 +875,7 @@ app.get('/health', async (req, res) => {
   const rewardStats = tokenChain ? await withTimeout(tokenChain.getRewardStats().catch(() => null)) : null;
   res.json({
     status: 'ok',
-    version: 10,
+    version: 11,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary(),
