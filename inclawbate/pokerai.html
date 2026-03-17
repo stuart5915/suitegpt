@@ -441,6 +441,15 @@
     border-color: var(--accent-green);
     box-shadow: 0 0 20px rgba(34,197,94,0.6);
   }
+  .seat-avatar.showdown-winner {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 24px rgba(34,197,94,0.8), 0 0 48px rgba(34,197,94,0.4);
+    animation: showdownPulse 0.8s ease-in-out infinite;
+  }
+  @keyframes showdownPulse {
+    0%, 100% { box-shadow: 0 0 24px rgba(34,197,94,0.8), 0 0 48px rgba(34,197,94,0.4); }
+    50% { box-shadow: 0 0 32px rgba(34,197,94,1), 0 0 64px rgba(34,197,94,0.6); }
+  }
 
   .seat-avatar.folded { opacity: 0.35; filter: grayscale(1); }
 
@@ -685,28 +694,30 @@
 
   #hand-winner-popup {
     display: none;
-    position: fixed;
-    top: 50%;
+    position: absolute;
+    bottom: 38%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.7);
-    z-index: 90;
-    background: rgba(10, 10, 20, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    border-radius: 16px;
-    padding: 16px 28px;
-    flex-direction: column;
+    transform: translateX(-50%) scale(0.7);
+    z-index: 50;
+    background: rgba(10, 15, 20, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 14px;
+    padding: 12px 24px;
+    flex-direction: row;
     align-items: center;
+    gap: 10px;
     text-align: center;
-    box-shadow: 0 0 30px rgba(34, 197, 94, 0.15), 0 8px 32px rgba(0,0,0,0.6);
+    white-space: nowrap;
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.15), 0 4px 20px rgba(0,0,0,0.5);
     opacity: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
   }
   #hand-winner-popup.visible {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) scale(1);
   }
 
   #hand-action-tooltip {
@@ -5114,10 +5125,12 @@ let _handEndFreezeTimer = null;
 let _freezeSnapshot = null; // saved community cards + agents for showdown display
 
 function detectHandComplete(data) {
-  const justEnded = _prevRunning && !data.running && data.lastWinner;
+  // Initialize on first update so we don't false-trigger
+  if (_prevRound === 0) { _prevRound = data.round; _prevRunning = data.running; return; }
+  const justEnded = data.lastWinner && data.phase === 'waiting' && data.round !== _prevRound;
   _prevRunning = data.running;
 
-  if (justEnded && data.round !== _prevRound) {
+  if (justEnded) {
     _prevRound = data.round;
 
     // Mark win/loss for hand action tooltips
@@ -5214,13 +5227,13 @@ function _showHandWinnerPopup(emoji, name, pot) {
   if (!popup) {
     popup = document.createElement('div');
     popup.id = 'hand-winner-popup';
-    document.body.appendChild(popup);
+    const felt = document.getElementById('tableFelt');
+    if (felt) felt.appendChild(popup); else document.body.appendChild(popup);
   }
-  const potLine = pot ? `<div style="font-size:14px;color:var(--accent-gold);font-weight:700;margin-top:2px">+${pot} chips</div>` : '';
+  const potText = pot ? ` won ${pot}!` : ' wins!';
   popup.innerHTML = `
-    <div style="font-size:36px;line-height:1">${emoji}</div>
-    <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-top:4px">${escapeHtml(name)} wins!</div>
-    ${potLine}
+    <span style="font-size:24px;line-height:1">${emoji}</span>
+    <span style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;color:#fff">${escapeHtml(name)}${potText}</span>
   `;
   popup.style.display = 'flex';
   requestAnimationFrame(() => popup.classList.add('visible'));
@@ -5566,8 +5579,10 @@ function renderTableSeats() {
     seat.onclick = () => selectAgent(agent.id);
 
     const isCurrent = gameState.currentTurnId === agent.id && gameState.running;
-    const folded = agent.folded;
-    const isWinner = gameState.lastWinner === agent.id;
+    const freezeWinnerId = _handEndFreeze && _freezeSnapshot ? _freezeSnapshot.lastWinner : null;
+    const freezeAgentData = _handEndFreeze && _freezeSnapshot ? _freezeSnapshot.agents.find(a => a.id === agent.id) : null;
+    const folded = _handEndFreeze && freezeAgentData ? freezeAgentData.folded : agent.folded;
+    const isWinner = (_handEndFreeze ? freezeWinnerId === agent.id : gameState.lastWinner === agent.id);
 
     const wallet = getWallet();
     const isMyAgent = agent.isCustom && (
@@ -5678,7 +5693,7 @@ function renderTableSeats() {
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : isSpotlight && !agent.folded && gameState.running ? '<div class="my-agent-label" style="background:rgba(245,197,66,0.85);color:#000">PEEKING</div>' : ''}
-      <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
+      <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner && _handEndFreeze ? 'showdown-winner' : isWinner ? 'winner' : ''}"
            title="${escapeHtml(agent.name)}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
         ${agent.emoji}
