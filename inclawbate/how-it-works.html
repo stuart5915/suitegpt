@@ -1538,38 +1538,7 @@
 
     var allVoters = [];
 
-    var CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
-    var STAKING_ADDRS = [
-        '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6',
-        '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40'
-    ];
-    var BASE_RPC = 'https://base.llamarpc.com';
-
-    /* Fetch CLAWS balance (wallet + staked) client-side via RPC */
-    function rpcBalanceOf(contract, address) {
-        var padded = address.slice(2).toLowerCase().padStart(64, '0');
-        var data = '0x70a08231' + padded;
-        return fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: contract, data: data }, 'latest'] })
-        }).then(function(r) { return r.json(); }).then(function(j) {
-            if (!j.result || j.result === '0x') return BigInt(0);
-            return BigInt(j.result);
-        }).catch(function() { return BigInt(0); });
-    }
-
-    function getClawsBalance(address) {
-        var calls = [rpcBalanceOf(CLAWS_TOKEN, address)];
-        STAKING_ADDRS.forEach(function(s) { calls.push(rpcBalanceOf(s, address)); });
-        return Promise.all(calls).then(function(results) {
-            var total = BigInt(0);
-            results.forEach(function(r) { total += r; });
-            return total.toString();
-        });
-    }
-
-    /* Fetch live synthesis + voters from API, then refresh balances client-side */
+    /* Fetch live synthesis + voters from API, then refresh balances via proxy */
     function fetchSynthesis() {
         fetch(VOTE_API)
             .then(function(r) { return r.json(); })
@@ -1583,15 +1552,22 @@
                     renderSynthBar();
                     renderVoters();
 
-                    /* Refresh balances from chain (browser can hit RPCs fine) */
-                    var promises = allVoters.map(function(v) {
-                        return getClawsBalance(v.address).then(function(bal) {
-                            v.claws_balance = bal;
-                        });
-                    });
-                    Promise.all(promises).then(function() {
-                        renderVoters();
-                    });
+                    /* Refresh balances via server proxy (avoids CORS) */
+                    var addrs = allVoters.map(function(v) { return v.address; }).join(',');
+                    if (addrs) {
+                        fetch('/api/inclawbate/claws-balances?addresses=' + addrs)
+                            .then(function(r) { return r.json(); })
+                            .then(function(bData) {
+                                if (bData.balances) {
+                                    allVoters.forEach(function(v) {
+                                        var bal = bData.balances[v.address.toLowerCase()];
+                                        if (bal && bal !== '0') v.claws_balance = bal;
+                                    });
+                                    renderVoters();
+                                }
+                            })
+                            .catch(function() { /* keep DB values */ });
+                    }
                 }
             })
             .catch(function() { /* use defaults */ });
