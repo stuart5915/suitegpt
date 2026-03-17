@@ -261,9 +261,59 @@ export default async function handler(req, res) {
         return res.json({ pillar, dayOfWeek, drafts: drafts || [] });
     }
 
-    // POST — generate drafts
+    // POST — actions
     if (req.method === 'POST') {
         const { action, date } = req.body || {};
+
+        // ── Public actions (no auth required) ──
+
+        // Generate image prompt from raw tweet text — open to anyone
+        if (action === 'generate_image_prompt') {
+            const { tweet_text, account: promptAccount, pillar: pillarName } = req.body;
+            if (!tweet_text || !tweet_text.trim()) return res.status(400).json({ error: 'tweet_text required' });
+
+            const acct = promptAccount || 'inclawbator';
+            const cfg = getAccountConfig(acct);
+            const sceneHint = cfg.sceneHints[pillarName] || '';
+            const scenes = cfg.narrativeScenes[pillarName] || [];
+            const narrativeScene = scenes.length ? scenes[Math.floor(Math.random() * scenes.length)] : '';
+
+            const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
+
+This image accompanies this tweet from @${acct}:
+"${tweet_text.trim()}"
+
+${BRAND_IMAGE_CONTEXT}
+
+${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
+
+${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
+
+IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point.
+
+Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
+
+            try {
+                const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        max_tokens: 300,
+                        temperature: 0.9,
+                        messages: [{ role: 'user', content: imgPrompt }]
+                    })
+                });
+                const data = await resp.json();
+                const prompt = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '');
+                if (!prompt) return res.status(500).json({ error: 'Failed to generate image prompt' });
+                return res.json({ ok: true, image_prompt: prompt });
+            } catch(e) {
+                return res.status(500).json({ error: 'Image prompt generation failed: ' + e.message });
+            }
+        }
+
+        // ── Admin-only actions below ──
 
         // Auth check — admin only
         const authHeader = req.headers.authorization;
@@ -506,52 +556,6 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
                     .eq('id', slot_id);
                 if (error) return res.status(500).json({ error: error.message });
                 return res.json({ ok: true, image_prompt: newPrompt });
-            } catch(e) {
-                return res.status(500).json({ error: 'Image prompt generation failed: ' + e.message });
-            }
-        }
-
-        // ── Generate image prompt from raw tweet text (no slot needed) ──
-        if (action === 'generate_image_prompt') {
-            const { tweet_text, account: promptAccount, pillar: pillarName } = req.body;
-            if (!tweet_text || !tweet_text.trim()) return res.status(400).json({ error: 'tweet_text required' });
-
-            const acct = promptAccount || 'inclawbator';
-            const cfg = getAccountConfig(acct);
-            const sceneHint = cfg.sceneHints[pillarName] || '';
-            const scenes = cfg.narrativeScenes[pillarName] || [];
-            const narrativeScene = scenes.length ? scenes[Math.floor(Math.random() * scenes.length)] : '';
-
-            const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
-
-This image accompanies this tweet from @${acct}:
-"${tweet_text.trim()}"
-
-${BRAND_IMAGE_CONTEXT}
-
-${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
-
-${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
-
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point.
-
-Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
-
-            try {
-                const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
-                    body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
-                        max_tokens: 300,
-                        temperature: 0.9,
-                        messages: [{ role: 'user', content: imgPrompt }]
-                    })
-                });
-                const data = await resp.json();
-                const prompt = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '');
-                if (!prompt) return res.status(500).json({ error: 'Failed to generate image prompt' });
-                return res.json({ ok: true, image_prompt: prompt });
             } catch(e) {
                 return res.status(500).json({ error: 'Image prompt generation failed: ' + e.message });
             }

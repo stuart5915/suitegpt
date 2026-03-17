@@ -117,26 +117,28 @@ export default async function handler(req, res) {
             const bookAccount = ['inclawbator', 'inclawbate'].includes(reqAccount) ? reqAccount : 'inclawbator';
             const isAdmin = FREE_WALLETS.includes(wallet);
 
-            if (!project_id || !scheduled_at) {
-                return res.status(400).json({ error: 'project_id and scheduled_at required' });
+            if (!scheduled_at) {
+                return res.status(400).json({ error: 'scheduled_at required' });
             }
-            if (!isAdmin && (!tweet_text || tweet_text.trim().length === 0)) {
+            if (!tweet_text || tweet_text.trim().length === 0) {
                 return res.status(400).json({ error: 'Tweet text is required' });
             }
-            if (tweet_text && tweet_text.length > 280) {
+            if (tweet_text.length > 280) {
                 return res.status(400).json({ error: 'Tweet must be 280 characters or less' });
             }
 
-            // Validate project
-            const { data: project } = await supabase
-                .from('projects')
-                .select('id, name, creator_wallet')
-                .eq('id', project_id)
-                .single();
+            // Validate project if provided (optional — community members can book without one)
+            if (project_id) {
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select('id, name, creator_wallet')
+                    .eq('id', project_id)
+                    .single();
 
-            if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_wallet !== wallet) {
-                return res.status(403).json({ error: 'Only the project owner can book slots' });
+                if (!project) return res.status(404).json({ error: 'Project not found' });
+                if (project.creator_wallet !== wallet && !isAdmin) {
+                    return res.status(403).json({ error: 'Only the project owner can book slots for this project' });
+                }
             }
 
             // Validate time
@@ -168,7 +170,6 @@ export default async function handler(req, res) {
 
             // Insert slot
             const insertData = {
-                project_id,
                 booked_by_wallet: wallet,
                 scheduled_at: slotDate.toISOString(),
                 content_angle: (content_angle || '').slice(0, 200) || null,
@@ -179,6 +180,7 @@ export default async function handler(req, res) {
                 tweet_options: tweet_options || {},
                 account: bookAccount,
             };
+            if (project_id) insertData.project_id = project_id;
             if (tweet_text) insertData.tweet_text = tweet_text.trim();
             if (tx_hash) insertData.tx_hash = tx_hash;
 
