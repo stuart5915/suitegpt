@@ -236,23 +236,58 @@
         /* Synthesis bar (stacked horizontal) */
         .alloc-synth-bar {
             display: flex;
-            border-radius: var(--radius-full);
-            overflow: hidden;
-            height: 32px;
-            margin-bottom: 6px;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
         }
-        .alloc-synth-seg {
+        .alloc-synth-row {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
+        }
+        .alloc-synth-label {
             font-family: var(--font-mono);
-            font-size: 0.55rem;
-            font-weight: 700;
-            color: #fff;
-            transition: flex 0.3s ease;
-            min-width: 0;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            width: 120px;
+            flex-shrink: 0;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .alloc-synth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .alloc-synth-track {
+            flex: 1;
+            height: 20px;
+            background: rgba(255,255,255,0.04);
+            border-radius: var(--radius-full);
             overflow: hidden;
-            white-space: nowrap;
+        }
+        .alloc-synth-fill {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 0.4s ease;
+            min-width: 2px;
+        }
+        .alloc-synth-pct {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            width: 36px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+        @media (max-width: 480px) {
+            .alloc-synth-label { width: 80px; font-size: 0.55rem; }
         }
 
         /* Allocation rows */
@@ -401,18 +436,38 @@
         }
         .voter-bar {
             display: flex;
-            height: 10px;
-            border-radius: 3px;
+            height: 16px;
+            border-radius: 4px;
             overflow: hidden;
-            min-width: 120px;
+            min-width: 160px;
+            background: rgba(255,255,255,0.04);
         }
         .voter-bar-seg {
             height: 100%;
             transition: flex 0.2s;
+            position: relative;
+        }
+        .voter-bar-seg:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .voter-balance {
-            color: var(--text-dim);
-            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 600;
         }
         .voter-time {
             color: var(--text-dim);
@@ -1343,13 +1398,35 @@
         var bar = document.getElementById('alloc-synth-bar');
         if (!bar) return;
         bar.innerHTML = '';
+        var maxPct = Math.max.apply(null, synthesis.concat([1]));
         buckets.forEach(function(b, i) {
-            var seg = document.createElement('div');
-            seg.className = 'alloc-synth-seg';
-            seg.style.background = b.color;
-            seg.style.flex = synthesis[i];
-            seg.textContent = synthesis[i] > 4 ? b.label.split(' ')[0] + ' ' + synthesis[i] + '%' : '';
-            bar.appendChild(seg);
+            var row = document.createElement('div');
+            row.className = 'alloc-synth-row';
+
+            var label = document.createElement('div');
+            label.className = 'alloc-synth-label';
+            var dot = document.createElement('span');
+            dot.className = 'alloc-synth-dot';
+            dot.style.background = b.color;
+            label.appendChild(document.createTextNode(b.label.split(' ').slice(0, 2).join(' ')));
+            label.insertBefore(dot, label.firstChild);
+
+            var track = document.createElement('div');
+            track.className = 'alloc-synth-track';
+            var fill = document.createElement('div');
+            fill.className = 'alloc-synth-fill';
+            fill.style.background = b.color;
+            fill.style.width = Math.max(synthesis[i] / maxPct * 100, synthesis[i] > 0 ? 3 : 0) + '%';
+            track.appendChild(fill);
+
+            var pct = document.createElement('div');
+            pct.className = 'alloc-synth-pct';
+            pct.textContent = synthesis[i] + '%';
+
+            row.appendChild(label);
+            row.appendChild(track);
+            row.appendChild(pct);
+            bar.appendChild(row);
         });
         var count = document.getElementById('alloc-voter-count');
         if (count) count.textContent = totalVoters > 0
@@ -1547,11 +1624,14 @@
             var bar = document.createElement('div');
             bar.className = 'voter-bar';
             buckets.forEach(function(b) {
+                var pctVal = v.weights[b.id] || 0;
+                if (pctVal === 0) return;
                 var seg = document.createElement('div');
                 seg.className = 'voter-bar-seg';
                 seg.style.background = b.color;
-                seg.style.flex = v.weights[b.id] || 0;
-                seg.title = b.label + ': ' + (v.weights[b.id] || 0) + '%';
+                seg.style.flex = pctVal;
+                seg.setAttribute('data-tip', b.label + ' ' + pctVal + '%');
+                seg.title = b.label + ': ' + pctVal + '%';
                 bar.appendChild(seg);
             });
             tdDist.appendChild(bar);
