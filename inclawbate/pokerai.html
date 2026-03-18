@@ -103,9 +103,9 @@
   .logo span { color: var(--accent-gold); }
 
   .nav-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .nav-tabs {
     display: flex;
@@ -387,11 +387,32 @@
     text-align: center;
     padding: 8px;
   }
+  .currency-switch-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .currency-switch-panel {
+    background: var(--bg-surface, #141420); border: 1px solid var(--border-light, rgba(255,255,255,0.08));
+    border-radius: 16px; padding: 28px; max-width: 400px; width: 90%;
+    text-align: center; font-family: 'Inter', sans-serif; position: relative;
+  }
+  .currency-switch-panel h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .currency-switch-panel p { margin: 0 0 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .currency-switch-panel .csw-actions { display: flex; gap: 10px; justify-content: center; }
+  .currency-switch-panel .csw-btn {
+    padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif; border: none; transition: all 0.2s;
+  }
+  .currency-switch-panel .csw-btn.cancel { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .currency-switch-panel .csw-btn.cancel:hover { background: rgba(255,255,255,0.1); }
+  .currency-switch-panel .csw-btn.confirm { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; }
+  .currency-switch-panel .csw-btn.confirm:hover { filter: brightness(1.1); }
 
   /* === ARENA VIEW === */
   .arena-layout {
     display: grid;
-    grid-template-columns: 260px 1fr 300px;
+    grid-template-columns: 280px 1fr 280px;
     gap: 16px;
     align-items: start;
   }
@@ -632,6 +653,16 @@
     white-space: nowrap;
     z-index: 15;
     pointer-events: none;
+  }
+
+  .seat-topup-glow .seat-avatar {
+    box-shadow: 0 0 16px rgba(99,102,241,0.7), 0 0 40px rgba(99,102,241,0.4);
+    border-color: var(--accent-primary) !important;
+    animation: topupPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes topupPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(99,102,241,0.7), 0 0 40px rgba(99,102,241,0.4); }
+    50% { box-shadow: 0 0 24px rgba(99,102,241,0.9), 0 0 56px rgba(99,102,241,0.5); }
   }
 
   .seat-avatar.active {
@@ -3313,7 +3344,7 @@
   .hiw-tier-badge { font-size: 12px; }
 
   @media (max-width: 1200px) {
-    .arena-layout { grid-template-columns: 1fr 300px; }
+    .arena-layout { grid-template-columns: 1fr 280px; }
     .game-log { height: 200px; min-height: unset; max-height: unset; position: static; }
     .cp-stats-row { gap: 8px; }
     .cp-stat-value { font-size: 13px; }
@@ -3587,7 +3618,7 @@
   }
   .bal-amount {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 42px;
+    font-size: 32px;
     font-weight: 800;
     line-height: 1;
     color: var(--text-primary);
@@ -3598,6 +3629,12 @@
   .bal-sub {
     font-size: 13px;
     color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .bal-breakdown {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
     margin-top: 4px;
   }
   .bal-actions {
@@ -4227,7 +4264,7 @@
                   <div class="bal-label">USDC</div>
                   <div class="bal-amount"><span id="balUsdc" class="wallet-balance">0</span></div>
                   <div class="bal-sub" id="balUsdcSub">$0.00 USDC</div>
-                  <div class="bal-sub" id="balUsdcTotal" style="color:var(--accent-cyan);font-size:9px;margin-top:2px"></div>
+                  <div class="bal-breakdown" id="balUsdcTotal"></div>
                   <div class="bal-actions">
                     <button onclick="openVault()" class="bal-btn bal-btn-deposit">Deposit</button>
                     <button onclick="openVault('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
@@ -4240,7 +4277,7 @@
                   <div class="bal-label">POKERAI</div>
                   <div class="bal-amount"><span id="balPokeraiChips">0</span></div>
                   <div class="bal-sub" id="balPokeraiChipsSub">0 $POKERAI total</div>
-                  <div class="bal-sub" id="balPokeraiChipsTotal" style="color:hsl(263,70%,68%);font-size:9px;margin-top:2px"></div>
+                  <div class="bal-breakdown" id="balPokeraiChipsTotal"></div>
                   <div class="bal-actions">
                     <button onclick="openVaultPokerai()" class="bal-btn bal-btn-deposit">Deposit</button>
                     <button onclick="openVaultPokerai('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
@@ -5017,6 +5054,7 @@ function handleMessage(msg) {
         _handResults[msg.data.winnerId] = 'win';
         if (_hoveredAgentId) _renderActionTooltip(_hoveredAgentId);
       }
+      if (msg.data && msg.data.handName) _lastHandName = msg.data.handName;
       break;
 
     case 'poolEvent':
@@ -5110,6 +5148,16 @@ function handleMessage(msg) {
         renderMyAgents();
         const currLabel = msg.data.currency === 'pokerai' ? '$POKERAI' : 'USDC';
         showToast(`Withdrew ${msg.data.amount.toLocaleString()} ${currLabel} chips back to wallet`, 'success');
+        // Handle pending currency switch
+        if (_pendingCurrencySwitch && _pendingCurrencySwitch.agentId === msg.data.agentId) {
+          const switchCurrency = _pendingCurrencySwitch.currency;
+          _pendingCurrencySwitch = null;
+          document.querySelector('.currency-switch-overlay')?.remove();
+          _fundPanelCurrency[msg.data.agentId] = switchCurrency;
+          _openFundPanel = msg.data.agentId;
+          renderMyAgents();
+          setTimeout(() => switchFundCurrency(msg.data.agentId, switchCurrency), 50);
+        }
       }
       break;
 
@@ -5428,6 +5476,7 @@ let _replayingHand = null; // null = live, index = viewing past hand
 let _handEndFreeze = false; // true during 3s post-hand showdown pause
 let _handEndFreezeTimer = null;
 let _freezeSnapshot = null; // saved community cards + agents for showdown display
+let _lastHandName = ''; // winning hand name from handResult event
 
 function detectHandComplete(data) {
   // Detect hand end: phase transitions TO 'waiting' with a winner set
@@ -5476,8 +5525,10 @@ function detectHandComplete(data) {
         (wallet && winnerAgent.walletAddress === wallet.address) ||
         (!wallet && sessionId && winnerAgent.walletAddress === 'sandbox_' + sessionId)
       ),
+      handName: _lastHandName || '',
       timestamp: Date.now()
     };
+    _lastHandName = '';
 
     // Estimate pot from chip changes if pot is 0 at this point
     if (!handSnapshot.pot && winnerAgent) {
@@ -5603,10 +5654,15 @@ function closeBustPopup() {
 function bustTopUp() {
   const agentId = _bustAgentId;
   closeBustPopup();
-  // Open the top-up in sidebar
+  // Open the top-up in sidebar + highlight agent on felt
   if (agentId) {
     selectAgent(agentId);
     sidebarTopUp(agentId);
+    const seatEl = document.getElementById('seat-' + agentId);
+    if (seatEl) {
+      seatEl.classList.add('seat-topup-glow');
+      setTimeout(() => seatEl.classList.remove('seat-topup-glow'), 6000);
+    }
   }
 }
 
@@ -5671,6 +5727,7 @@ function showHandRecap(index) {
     <div class="hand-recap-winner-emoji">${winAgent.emoji}</div>
     <div>
       <div style="font-family:'Rajdhani';font-size:20px;font-weight:800;color:var(--accent-green)">${winAgent.name} wins!</div>
+      ${h.handName ? `<div style="font-size:12px;color:var(--accent-gold);font-weight:700;margin-top:2px">${h.handName}</div>` : ''}
       ${winAgent.hand ? `<div style="display:flex;gap:4px;margin-top:4px">${winAgent.hand.map(c => `<div class="card${c.red ? ' red' : ''}" style="width:36px;height:50px"><div class="card-rank" style="font-size:14px">${c.rank}</div><div class="card-suit" style="font-size:11px">${c.suit}</div></div>`).join('')}</div>` : ''}
     </div>
   ` : '';
@@ -6155,15 +6212,17 @@ function _renderActionTooltip(agentId) {
   tooltip.innerHTML = html;
   tooltip.style.display = 'block';
 
-  // Position above the seat
+  // Position above the seat (account for body zoom)
+  const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
   const rect = seat.getBoundingClientRect();
   const ttRect = tooltip.getBoundingClientRect();
-  let left = rect.left + rect.width / 2 - ttRect.width / 2;
-  let top = rect.top - ttRect.height - 8;
+  let left = (rect.left + rect.width / 2 - ttRect.width / 2) / zoom;
+  let top = (rect.top - ttRect.height - 8) / zoom;
   // Keep on screen
+  const vw = window.innerWidth / zoom;
   if (left < 4) left = 4;
-  if (left + ttRect.width > window.innerWidth - 4) left = window.innerWidth - ttRect.width - 4;
-  if (top < 4) top = rect.bottom + 8; // flip below if no room above
+  if (left + ttRect.width / zoom > vw - 4) left = vw - ttRect.width / zoom - 4;
+  if (top < 4) top = (rect.bottom + 8) / zoom; // flip below if no room above
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
 }
@@ -6956,9 +7015,7 @@ function updateWalletUI() {
   if (balUsdcSub) balUsdcSub.textContent = '$' + (totalUsdcChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
   const balUsdcTotal = document.getElementById('balUsdcTotal');
   if (balUsdcTotal) {
-    balUsdcTotal.textContent = usdcAgentChips > 0
-      ? 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2)
-      : '';
+    balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (usdcAgentChips / CHIPS_PER_USDC).toFixed(2);
   }
   // Update POKERAI chips card
   const pokeraiCard = document.getElementById('balPokeraiChipsCard');
@@ -6971,9 +7028,7 @@ function updateWalletUI() {
     if (pokSub) pokSub.textContent = totalPok.toLocaleString() + ' $POKERAI total';
     const pokTotal = document.getElementById('balPokeraiChipsTotal');
     if (pokTotal) {
-      pokTotal.textContent = pokeraiAgentChips > 0
-        ? 'Wallet: ' + pokeraiWalletBalance.toLocaleString() + ' · Agents: ' + pokeraiAgentChips.toLocaleString()
-        : '';
+      pokTotal.textContent = 'Wallet: ' + pokeraiWalletBalance.toLocaleString() + ' · Agents: ' + pokeraiAgentChips.toLocaleString();
     }
   }
   // Update vault modal if open
@@ -7832,7 +7887,10 @@ function setEmission(stop) {
 
 // === Auto Top-Up ===
 
+let _autoTopUpLastEdit = 0; // timestamp of last user change — blocks server overwrites for 5s
+
 function updateAutoTopUp() {
+  _autoTopUpLastEdit = Date.now();
   const enabled = document.getElementById('autoTopUpToggle').checked;
   const targetChips = parseInt(document.getElementById('autoTopUpTarget').value) || 10000;
   const cashOutAt = parseInt(document.getElementById('autoCashOutTarget').value) || 0;
@@ -7848,6 +7906,8 @@ function updateAutoTopUp() {
 }
 
 function applyAutoTopUpState(config) {
+  // Skip server overwrite for 5s after user edits to prevent dropdown resets
+  if (Date.now() - _autoTopUpLastEdit < 5000) return;
   const toggle = document.getElementById('autoTopUpToggle');
   const target = document.getElementById('autoTopUpTarget');
   const cashOut = document.getElementById('autoCashOutTarget');
@@ -8526,17 +8586,41 @@ function _selectFundPreset(agentId, amt, btn) {
 
 const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
 const _fundPanelCurrency = {}; // per-agent fund currency selection
+let _pendingCurrencySwitch = null; // { agentId, currency }
+
+function showCurrencySwitchModal(agentId, agent, oldLabel, newLabel, currency) {
+  document.querySelector('.currency-switch-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'currency-switch-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="currency-switch-panel">
+      <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+      <h3>Switch to ${newLabel}?</h3>
+      <p><strong>${agent.chipStack.toLocaleString()}</strong> ${oldLabel} chips will be withdrawn to your wallet before switching.</p>
+      <div class="csw-actions">
+        <button class="csw-btn cancel" onclick="this.closest('.currency-switch-overlay').remove()">Cancel</button>
+        <button class="csw-btn confirm" id="cswConfirmBtn" onclick="confirmCurrencySwitch('${agentId}','${currency}',${agent.chipStack},this)">Withdraw &amp; Switch</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function confirmCurrencySwitch(agentId, currency, chipStack, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span class="spinner" style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block"></span> Withdrawing...</span>';
+  _pendingCurrencySwitch = { agentId, currency };
+  ws.send(JSON.stringify({ type: 'defundAgent', agentId, amount: chipStack }));
+}
 
 function switchFundCurrency(agentId, currency) {
-  // If agent has chips in a different currency, auto-withdraw first
+  // If agent has chips in a different currency, show modal to withdraw first
   const agent = myAgents.find(a => a.id === agentId);
   if (agent && agent.chipStack > 0 && agent.currency && agent.currency !== currency) {
     const oldLabel = agent.currency === 'pokerai' ? '$POKERAI' : 'USDC';
     const newLabel = currency === 'pokerai' ? '$POKERAI' : 'USDC';
-    if (!confirm(`This agent has ${agent.chipStack.toLocaleString()} ${oldLabel} chips. Withdraw them to switch to ${newLabel}?`)) return;
-    // Auto-withdraw all chips, then switch currency
-    ws.send(JSON.stringify({ type: 'defundAgent', agentId, amount: agent.chipStack }));
-    showToast(`Withdrawing ${agent.chipStack.toLocaleString()} ${oldLabel} chips...`, 'info');
+    showCurrencySwitchModal(agentId, agent, oldLabel, newLabel, currency);
+    return;
   }
   _fundPanelCurrency[agentId] = currency;
   const uBtn = document.getElementById('fundCurrUsdc-' + agentId);

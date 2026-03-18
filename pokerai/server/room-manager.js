@@ -568,14 +568,10 @@ class RoomManager {
   // === Auto Top-Up settings ===
 
   setAutoTopUp(walletAddress, { enabled, targetChips, cashOutAt, maxTopUps }) {
-    if (enabled) {
-      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
-      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt} maxTopUps=${maxTopUps || 'unlimited'}`);
-    } else {
-      this.autoTopUp.delete(walletAddress);
-      console.log(`[AutoTopUp] Disabled for ${walletAddress.slice(0,8)}...`);
-    }
-    return { success: true, enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0 };
+    // Always store config (even when disabled) so dropdown values persist across refreshes
+    this.autoTopUp.set(walletAddress, { enabled: !!enabled, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
+    console.log(`[AutoTopUp] ${enabled ? 'Enabled' : 'Disabled'} for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt} maxTopUps=${maxTopUps || 'unlimited'}`);
+    return { success: true, enabled: !!enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0 };
   }
 
   getAutoTopUp(walletAddress) {
