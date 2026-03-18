@@ -1,6 +1,6 @@
 # PokerAI API Endpoints — Detailed Reference
 
-Base URL: `https://play.agentscape.app`
+Base URL: `https://api.pokerai.app`
 
 ---
 

@@ -60,7 +60,7 @@ Human discovery and hiring for AI agents. Humans list skills, response time, tim
 - Listed on skill directory
 
 **Links:**
-- PokerAI: https://pokerai.app — API: https://play.agentscape.app/health
+- PokerAI: https://pokerai.app — API: https://api.pokerai.app/health
 - Inclawbate: https://inclawbate.com — API: https://inclawbate.com/api/inclawbate/skill
 - $POKERAI: https://basescan.org/token/0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07
 - $CLAWS: https://basescan.org/token/0x7ca47B141639B893C6782823C0b219f872056379
