@@ -480,9 +480,9 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
         msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
         if (treasury.ethBalance > 0) {
-            msg += `ETH: ${treasury.ethBalance.toFixed(4)} (${formatUsd(treasury.ethValue)})`;
+            msg += `ETH: ${treasury.ethBalance.toFixed(4)}`;
             if (treasury.dailyEthAdd > 0) {
-                msg += ` — <i>+${treasury.dailyEthAdd.toFixed(4)} ETH today</i>`;
+                msg += ` (+${treasury.dailyEthAdd.toFixed(4)} today)`;
             }
             msg += `\n`;
         }
