@@ -12,11 +12,6 @@ const supabase = createClient(
 // Council group chat — fallback when inclawbator has no TG
 const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID || null;
 
-const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com'
-];
-
 const BUDGET_LABELS = {
     0: 'Let them quote',
     500: '500 CLAWS',
@@ -27,10 +22,8 @@ const BUDGET_LABELS = {
 };
 
 export default async function handler(req, res) {
-    const origin = req.headers.origin;
-    if (ALLOWED_ORIGINS.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
+    // Open CORS — external agents need to submit hire requests
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

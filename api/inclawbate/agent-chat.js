@@ -23,9 +23,7 @@ STAKE CLAWS — Use get_staking_info to explain CLAWS staking and earning passiv
 
 EXPLORE ECOSYSTEM — Use get_ecosystem_info for an overview of everything Inclawbate offers.
 
-HIRE A HUMAN — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use browse_inclawbators to find available Inclawbators. For actually initiating a hire, use hire_inclawbator. They're vetted humans paid in CLAWS, direct wallet-to-wallet with zero platform fees. You can also use browse_open_gigs to show open gig requests — this is a freelance marketplace where hirers post requests and inclawbators apply.
-
-BROWSE GIGS — When someone asks about available work, freelance opportunities, what help people need, or wants to find a gig to work on, use browse_open_gigs. This shows open gig requests from the ecosystem that inclawbators can claim.
+HIRE THE COUNCIL — When someone needs help with logo design, smart contracts, marketing strategy, content, or anything that requires human expertise, use hire_inclawbator. This posts their request directly to the Inclawbate Council Telegram group where vetted members pick it up. You MUST collect two things before calling hire_inclawbator: (1) what they need done (task_description) and (2) how council members can reach them (contact — X handle, Telegram, email, or wallet). Optionally ask about budget in CLAWS. Payment happens when work is delivered.
 
 BUILD A LANDING PAGE — When someone wants a branded page for their project, use build_landing_page. The AI builder creates full pages with no code needed.
 
@@ -226,15 +224,16 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'hire_inclawbator',
-      description: 'Initiate hiring a specific human Inclawbator. Use after browse_inclawbators when user has chosen someone. Explains the payment + hiring process.',
+      description: 'Post a hire request to the Inclawbate Council. Sends the request to the Council Telegram group where vetted members pick it up. Requires a task description and contact info (X handle, TG, email, or wallet). Use when someone needs help with design, dev, marketing, content, strategy, or any human work.',
       parameters: {
         type: 'object',
         properties: {
-          handle: { type: 'string', description: 'X handle of the Inclawbator to hire' },
-          task_description: { type: 'string', description: 'What the user needs done' },
-          skill: { type: 'string', description: 'Required skill: design, development, marketing, content' }
+          task_description: { type: 'string', description: 'What the user needs done — be specific' },
+          contact: { type: 'string', description: 'How council members can reach the requester (X handle, Telegram, email, or wallet address)' },
+          budget_claws: { type: 'number', description: 'Optional budget in CLAWS (0 = let them quote)' },
+          skill: { type: 'string', description: 'Required skill: design, development, marketing, content, strategy' }
         },
-        required: ['handle']
+        required: ['task_description', 'contact']
       }
     }
   },
@@ -654,25 +653,39 @@ async function browseInclawbators(args) {
   }
 }
 
-function hireInclawbatorInfo(args) {
-  const handle = args.handle || '';
-  return JSON.stringify({
-    action: 'initiate_hire',
-    who: handle ? '@' + handle.replace(/^@/, '') : 'an Inclawbator',
-    task: args.task_description || null,
-    process: [
-      '1. Send CLAWS payment directly to the Inclawbator\'s wallet',
-      '2. Share the transaction hash here or on the platform',
-      '3. The Inclawbator gets notified via Telegram',
-      '4. They\'ll reach out to discuss details and deliver the work',
-      '5. All communication happens through the Inclawbate platform'
-    ],
-    payment: 'CLAWS token on Base, direct wallet-to-wallet, zero platform fee',
-    directory_url: 'https://inclawbate.com/inclawbator',
-    note: handle
-      ? 'Ready to hire @' + handle.replace(/^@/, '') + '! Send CLAWS to their wallet and share the tx hash to get started.'
-      : 'Browse the Inclawbators directory to find the right person first.'
-  });
+async function hireInclawbatorInfo(args) {
+  const desc = args.task_description || '';
+  const contact = args.contact || '';
+  if (!desc || !contact) {
+    return JSON.stringify({
+      error: 'Need both task_description and contact info to post a hire request.',
+      hint: 'Ask the user: what do they need done, and how should the council reach them (X handle, Telegram, email, or wallet)?'
+    });
+  }
+  try {
+    const res = await fetch(APP_API + '/hire-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        description: desc,
+        contact: contact,
+        budget_claws: args.budget_claws || 0
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      return JSON.stringify({
+        action: 'hire_request_posted',
+        posted: true,
+        message: 'Request posted to the Inclawbate Council Telegram group. A council member will reach out via: ' + contact,
+        request_id: data.id,
+        what_happens_next: 'Council members see the request, claim it, and contact you directly. Payment in CLAWS when work is delivered.'
+      });
+    }
+    return JSON.stringify({ error: data.error || 'Failed to post hire request' });
+  } catch (e) {
+    return JSON.stringify({ error: 'Failed to reach hire-request API: ' + e.message });
+  }
 }
 
 async function browseOpenGigs(args) {
@@ -950,7 +963,7 @@ async function executeTool(name, args) {
     case 'setup_x_agent': return setupXAgentInfo();
     case 'get_project_status': return await getProjectStatus(args);
     case 'browse_inclawbators': return await browseInclawbators(args);
-    case 'hire_inclawbator': return hireInclawbatorInfo(args);
+    case 'hire_inclawbator': return await hireInclawbatorInfo(args);
     case 'browse_open_gigs': return await browseOpenGigs(args);
     case 'build_landing_page': return buildLandingPageInfo(args);
     case 'register_project': return registerProjectInfo(args);
