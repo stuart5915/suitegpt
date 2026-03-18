@@ -1500,15 +1500,64 @@ async function rpcCall(to, data) {
 const STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
 const DEPLOY_PAID_SEL = '0x82123c96'; // deployPaid(address,address)
 
-async function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
-    if (!confirm(`Deploy a staking pool for ${tokenName}?\n\nThis sends one transaction to the Staking Factory on Base.`)) return;
+function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
+    // Open modal instead of bare confirm
+    document.querySelector('.deploy-pool-overlay')?.remove();
 
+    const overlay = document.createElement('div');
+    overlay.className = 'deploy-pool-overlay fund-modal-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const modal = document.createElement('div');
+    modal.className = 'fund-modal';
+    modal.innerHTML = `
+        <div class="fund-modal-header">
+            <div class="fund-modal-title">Create Staking Pool</div>
+            <div class="fund-modal-pool">${esc(tokenName)}</div>
+        </div>
+        <div style="padding:0 20px;">
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:6px;">Stake Token</div>
+                <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">$${esc(tokenName)} <span style="font-size:0.75rem;font-weight:400;color:var(--text-dim);font-family:var(--font-mono)">${tokenAddr.slice(0,6)}...${tokenAddr.slice(-4)}</span></div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:6px;">Reward Token</div>
+                <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">$CLAWS <span style="font-size:0.75rem;font-weight:400;color:var(--text-dim);">— stakers earn CLAWS</span></div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:6px;">Factory</div>
+                <div style="font-size:0.78rem;font-family:var(--font-mono);color:var(--text-secondary);">${STAKING_FACTORY.slice(0,6)}...${STAKING_FACTORY.slice(-4)} <span style="color:var(--text-dim)">on Base</span></div>
+            </div>
+            <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.8rem;color:var(--text-secondary);line-height:1.5;">
+                Deploys a staking pool where holders stake $${esc(tokenName)} and earn $CLAWS rewards. You control the reward rate — fund it anytime from your dashboard. Free to deploy, just gas.
+            </div>
+        </div>
+        <div class="fund-modal-actions">
+            <button class="fund-modal-submit" id="deployPoolBtn">Deploy Pool</button>
+            <button class="fund-modal-cancel" id="deployPoolCancel">Cancel</button>
+        </div>
+        <div id="deployPoolStatus" style="text-align:center;padding:8px 20px;font-size:0.8rem;color:var(--text-dim);display:none;"></div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById('deployPoolCancel').addEventListener('click', () => overlay.remove());
+    document.getElementById('deployPoolBtn').addEventListener('click', () => {
+        _executePoolDeploy(tokenAddr, projectId, tokenName, overlay);
+    });
+}
+
+async function _executePoolDeploy(tokenAddr, projectId, tokenName, overlay) {
+    const deployBtn = document.getElementById('deployPoolBtn');
+    const statusEl = document.getElementById('deployPoolStatus');
     const provider = window.ethereum;
     if (!provider) { alert('No wallet connected'); return; }
 
-    const origText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Deploying...';
+    deployBtn.disabled = true;
+    deployBtn.textContent = 'Deploying...';
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Waiting for wallet confirmation...';
 
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
@@ -1517,9 +1566,13 @@ async function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
         // Switch to Base
         try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] }); } catch(e) {}
 
+        statusEl.textContent = 'Sending transaction...';
+
         // deployPaid(tokenAddress, rewardToken=CLAWS)
         const deployData = DEPLOY_PAID_SEL + pad32(tokenAddr) + pad32(CLAWS);
         const receipt = await sendTx(wallet, STAKING_FACTORY, deployData);
+
+        statusEl.textContent = 'Parsing pool address...';
 
         // Parse pool address from PoolDeployed event
         let poolAddr = null;
@@ -1534,6 +1587,8 @@ async function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
         }
         if (!poolAddr) throw new Error('Could not find pool address in transaction');
 
+        statusEl.textContent = 'Registering pool...';
+
         // Update DB with staking address
         const auth = getStoredAuth();
         const token = auth ? auth.token : null;
@@ -1545,14 +1600,19 @@ async function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
         const result = await resp.json();
         if (result.error) console.warn('DB update warning:', result.error);
 
-        alert(`Staking pool deployed!\n\nPool: ${poolAddr}\n\nYou can now Fund Rewards from your dashboard.`);
+        // Show success state in modal
+        deployBtn.style.display = 'none';
+        document.getElementById('deployPoolCancel').textContent = 'Done';
+        statusEl.style.color = '#4ade80';
+        statusEl.innerHTML = `Pool deployed!<br><span style="font-family:var(--font-mono);font-size:0.75rem;">${poolAddr}</span><br><br>You can now <strong>Fund Rewards</strong> from your dashboard.`;
 
         // Reload tokens to show Fund Rewards button
         loadUserTokens();
     } catch (e) {
-        alert('Pool deployment failed: ' + (e.message || e));
-        btn.disabled = false;
-        btn.textContent = origText;
+        statusEl.style.color = '#f87171';
+        statusEl.textContent = 'Failed: ' + (e.message || e);
+        deployBtn.disabled = false;
+        deployBtn.textContent = 'Deploy Pool';
     }
 }
 
