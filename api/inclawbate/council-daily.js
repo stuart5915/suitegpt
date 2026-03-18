@@ -416,7 +416,7 @@ function getDateStr() {
     return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
 }
 
-function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday) {
+function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
     msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</a>\n\n`;
@@ -465,6 +465,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `APY: ${supply.apy.toFixed(1)}%\n`;
             msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
+            if (stakerCount > 0) msg += `\nStakers: ${stakerCount}`;
             msg += `\nStake: https://www.inclawbate.com/stake/claws\n`;
         }
     }
@@ -648,7 +649,7 @@ export default async function handler(req, res) {
         await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
 
         // Build messages
-        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday);
+        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount);
         const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount);
 
         // Post to council group
