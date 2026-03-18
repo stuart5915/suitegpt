@@ -772,13 +772,14 @@ async function generateDrafts(req, res, targetDate, account, style) {
     const angles = cfg.slotAngles[pillar.name] || ['general'];
 
     // Check which slots are already booked
+    // Extend range past midnight to include early-morning slots (UTC hour 1 = 9PM ET)
     const dayStart = date + 'T00:00:00Z';
-    const nextDay = new Date(new Date(date + 'T00:00:00Z').getTime() + 86400000).toISOString();
+    const rangeEnd = new Date(new Date(date + 'T00:00:00Z').getTime() + 86400000 + 6 * 3600000).toISOString();
     const { data: existing } = await supabase
         .from('agent_schedule')
         .select('scheduled_at, status')
         .gte('scheduled_at', dayStart)
-        .lt('scheduled_at', nextDay)
+        .lt('scheduled_at', rangeEnd)
         .eq('account', account)
         .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image']);
 
