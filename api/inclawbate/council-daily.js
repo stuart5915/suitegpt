@@ -148,16 +148,24 @@ const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed
 
 async function fetchStakerCount() {
     try {
-        // Get CLAWS transfer events TO the staking contract — each unique sender is a staker
-        const url = `https://api.basescan.org/api?module=account&action=tokentx&contractaddress=${CLAWS_ADDRESS}&address=${STAKING_CONTRACT}&apikey=${BASESCAN_API_KEY}&page=1&offset=10000`;
-        const res = await fetch(url);
+        // ERC-20 Transfer(from, to, value) topic + filter "to" = staking contract
+        const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+        const paddedStaking = '0x' + STAKING_CONTRACT.replace('0x', '').toLowerCase().padStart(64, '0');
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0', method: 'eth_getLogs', id: 1,
+                params: [{ address: CLAWS_ADDRESS, topics: [transferTopic, null, paddedStaking], fromBlock: '0x0', toBlock: 'latest' }]
+            })
+        });
         const data = await res.json();
-        if (data.status !== '1' || !data.result) return 0;
-        // Transfers TO staking contract = stakes. Count unique senders.
+        if (!data.result || !Array.isArray(data.result)) return 0;
         const stakers = new Set();
-        for (const tx of data.result) {
-            if (tx.to.toLowerCase() === STAKING_CONTRACT.toLowerCase()) {
-                stakers.add(tx.from.toLowerCase());
+        for (const log of data.result) {
+            // topics[1] = from address (padded)
+            if (log.topics && log.topics[1]) {
+                stakers.add('0x' + log.topics[1].slice(26).toLowerCase());
             }
         }
         return stakers.size;
@@ -584,25 +592,15 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
 
-    // Treasury with ETH stack growth
-    if (treasury) {
-        tweet += `\n🏦 Treasury`;
-        if (treasury.total) {
-            const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-            tweet += `: ${formatUsd(treasury.total)}`;
-            if (treasuryChange) {
-                const arrow = treasuryChange.diff >= 0 ? '+' : '-';
-                tweet += ` (${arrow}${formatUsd(Math.abs(treasuryChange.diff))})`;
-            }
+    // Treasury — total with delta only
+    if (treasury?.total) {
+        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+        let line = `\n🏦 Treasury: ${formatUsd(treasury.total)}`;
+        if (treasuryChange && treasuryChange.diff !== 0) {
+            const sign = treasuryChange.diff >= 0 ? '+' : '-';
+            line += ` (${sign}${formatUsd(Math.abs(treasuryChange.diff))})`;
         }
-        tweet += `\n`;
-        if (treasury.ethBalance > 0) {
-            tweet += `ETH: ${treasury.ethBalance.toFixed(4)}`;
-            if (treasury.dailyEthAdd > 0) {
-                tweet += ` (+${treasury.dailyEthAdd.toFixed(4)} today)`;
-            }
-            tweet += `\n`;
-        }
+        tweet += line + `\n`;
     }
 
     // Incubations — count only
