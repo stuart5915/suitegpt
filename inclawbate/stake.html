@@ -2865,8 +2865,10 @@
 
     function arPad32Hex(n) { return BigInt(n).toString(16).padStart(64,'0'); }
 
+    // Treasury wallet — show admin panel pre-deploy for this wallet
+    var TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
+
     async function checkAngelAdmin() {
-        if (!contractDeployed) return;
         var wallet = null;
         try {
             if (window.ethereum) {
@@ -2876,18 +2878,37 @@
         } catch(e) {}
         if (!wallet) return;
 
-        try {
-            var adminHex = await ethCall(ANGEL_REWARDS, AR_SEL.admin);
-            var contractAdmin = '0x' + adminHex.slice(-40).toLowerCase();
-            if (contractAdmin === wallet.toLowerCase()) {
-                $id('arAdminPanel').classList.add('visible');
-                $id('arAdminWallet').textContent = wallet.slice(0,6) + '...' + wallet.slice(-4);
+        var isAdmin = false;
+
+        if (contractDeployed) {
+            try {
+                var adminHex = await ethCall(ANGEL_REWARDS, AR_SEL.admin);
+                var contractAdmin = '0x' + adminHex.slice(-40).toLowerCase();
+                isAdmin = (contractAdmin === wallet.toLowerCase());
+            } catch(e) {
+                console.warn('Angel admin check error:', e);
+            }
+        } else {
+            // Pre-deploy: show admin panel for treasury wallet so UI can be previewed
+            isAdmin = (wallet.toLowerCase() === TREASURY);
+        }
+
+        if (isAdmin) {
+            $id('arAdminPanel').classList.add('visible');
+            $id('arAdminWallet').textContent = wallet.slice(0,6) + '...' + wallet.slice(-4);
+            if (contractDeployed) {
                 fetchAngelAdminStats();
             } else {
-                $id('arAdminPanel').classList.remove('visible');
+                // Static preview stats
+                $id('arAdmRate').textContent = '~7.1M CLAWS/day';
+                $id('arAdmEnd').textContent = 'Not started';
+                $id('arAdmRemaining').textContent = '0 CLAWS';
+                $id('arAdmDeposited').textContent = '0 CLAWS';
+                $id('arAdmClaimed').textContent = '0 CLAWS';
+                $id('arAdmWeight').textContent = '0 (0 holders)';
             }
-        } catch(e) {
-            console.warn('Angel admin check error:', e);
+        } else {
+            $id('arAdminPanel').classList.remove('visible');
         }
     }
 
@@ -2985,7 +3006,12 @@
 
     // Deposit handler
     $id('arAdmDepositBtn').addEventListener('click', async function() {
-        if (!contractDeployed || !window.ethereum) return;
+        if (!contractDeployed) {
+            $id('arAdmDepositStatus').textContent = 'Contract not deployed yet. Deploy first, then update the address.';
+            $id('arAdmDepositStatus').className = 'ar-admin-status error';
+            return;
+        }
+        if (!window.ethereum) return;
         var amountRaw = parseInt(($id('arAdmAmount').value || '').replace(/[.,]/g, '')) || 0;
         if (amountRaw <= 0) return;
         var durationSec = arGetDurationSec();
