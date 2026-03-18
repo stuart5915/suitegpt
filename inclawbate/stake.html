@@ -1929,9 +1929,20 @@
                     </div>
                 </div>
 
-                <!-- Your position (visible when connected + has angel) -->
-                <div class="angel-rewards-position" id="arPosition">
-                    <div class="angel-position-row">
+                <!-- Claim section — always visible -->
+                <div class="angel-rewards-position visible" id="arPosition">
+                    <!-- State: not connected -->
+                    <div class="angel-position-row" id="arStateConnect">
+                        <div class="angel-position-info">
+                            <div class="angel-position-earned-label">Your Unclaimed Rewards</div>
+                            <div class="angel-position-earned" style="color:var(--text-dim)">Connect wallet to check</div>
+                        </div>
+                        <div style="text-align:right">
+                            <button class="angel-claim-btn" id="arConnectBtn">Connect Wallet</button>
+                        </div>
+                    </div>
+                    <!-- State: connected + has angel -->
+                    <div class="angel-position-row" id="arStateHolder" style="display:none">
                         <div class="angel-position-info">
                             <div class="angel-position-earned-label">Your Unclaimed Rewards</div>
                             <div class="angel-position-earned"><span id="arEarned">0.00</span> CLAWS <span class="usd" id="arEarnedUsd"></span></div>
@@ -1940,6 +1951,16 @@
                         <div style="text-align:right">
                             <button class="angel-claim-btn" id="arClaimBtn" disabled>Claim Rewards</button>
                             <div class="angel-claim-status" id="arClaimStatus"></div>
+                        </div>
+                    </div>
+                    <!-- State: connected but no angel -->
+                    <div class="angel-position-row" id="arStateNoAngel" style="display:none">
+                        <div class="angel-position-info">
+                            <div class="angel-position-earned-label">You don't hold an Angel NFT</div>
+                            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Buy one to start earning CLAWS rewards instantly.</div>
+                        </div>
+                        <div style="text-align:right">
+                            <a href="https://opensea.io/collection/inclawbate-angel" target="_blank" rel="noopener" class="angel-claim-btn" style="text-decoration:none">Buy on OpenSea</a>
                         </div>
                     </div>
                 </div>
@@ -2356,32 +2377,46 @@
     var $id = document.getElementById.bind(document);
     var clawsPrice = 0;
 
-    // Not deployed yet — show preview state
-    if (ANGEL_REWARDS === '0x0000000000000000000000000000000000000000') {
-        // Show static preview data
+    var contractDeployed = ANGEL_REWARDS !== '0x0000000000000000000000000000000000000000';
+
+    // Show static preview when contract not deployed yet
+    if (!contractDeployed) {
         $id('arTotalPool').textContent = '5.1B';
         $id('arHolders').textContent = '39';
         $id('arTimeLeft').textContent = '~718';
-
-        // Estimate per-NFT-per-day based on planned params
-        // 5.1B / 718 days / ~60 NFTs (estimated registered weight) = ~118K/day per NFT
-        // With 39 holders at ~1 NFT each: 5.1B / 718 / 39 = ~182K/day
         $id('arPerNftDay').textContent = '~182K';
 
-        // Try to fetch CLAWS price for context
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_TOKEN)
             .then(function(r){return r.json()})
             .then(function(d){
                 if (d.pairs && d.pairs[0]) {
                     clawsPrice = parseFloat(d.pairs[0].priceUsd) || 0;
                     if (clawsPrice > 0) {
-                        var dailyUsd = 182000 * clawsPrice;
-                        $id('arPerNftDay').textContent = '~182K ($' + dailyUsd.toFixed(2) + ')';
+                        $id('arPerNftDay').textContent = '~182K ($' + (182000 * clawsPrice).toFixed(2) + ')';
                     }
                 }
             }).catch(function(){});
+    }
 
-        return; // Don't attempt contract reads
+    // ── Connect wallet button ──
+    $id('arConnectBtn').addEventListener('click', async function() {
+        try {
+            if (window.ethereum) {
+                await window.ethereum.request({method:'eth_requestAccounts'});
+                loadUserPosition();
+            } else if (window.privy) {
+                window.privy.login();
+            } else {
+                alert('No wallet detected. Install MetaMask or use a Web3 browser.');
+            }
+        } catch(e) {}
+    });
+
+    // ── Show correct state based on wallet + NFT ──
+    function showArState(state) {
+        $id('arStateConnect').style.display = state === 'connect' ? '' : 'none';
+        $id('arStateHolder').style.display = state === 'holder' ? '' : 'none';
+        $id('arStateNoAngel').style.display = state === 'noangel' ? '' : 'none';
     }
 
     // ── Contract is deployed — load live data ──
@@ -2445,47 +2480,64 @@
             }
         } catch(e) {}
 
-        if (!wallet) return;
+        if (!wallet) {
+            showArState('connect');
+            return;
+        }
 
         try {
+            // Always check NFT balance (works even before rewards contract deploy)
             var addrPad = pad32(wallet);
-            var [earnedHex, weightHex, nftBalHex] = await Promise.all([
-                ethCall(ANGEL_REWARDS, SEL.earned + addrPad),
-                ethCall(ANGEL_REWARDS, SEL.weightOf + addrPad),
-                ethCall(ANGEL_NFT, SEL.balanceOf + addrPad),
-            ]);
-
-            var earned = hexToBN(earnedHex);
-            var weight = Number(hexToBN(weightHex));
+            var nftBalHex = await ethCall(ANGEL_NFT, SEL.balanceOf + addrPad);
             var nftBal = Number(hexToBN(nftBalHex));
 
-            if (nftBal > 0 || weight > 0 || earned > 0n) {
-                $id('arPosition').classList.add('visible');
-                $id('arMyNfts').textContent = nftBal.toString();
-
-                var earnedNum = Number(earned) / 1e18;
-                $id('arEarned').textContent = formatClaws(earned);
-                if (clawsPrice > 0 && earnedNum > 0) {
-                    $id('arEarnedUsd').textContent = '~$' + (earnedNum * clawsPrice).toFixed(2);
+            if (nftBal === 0) {
+                // Check if they have unclaimed from before (weight > 0 from past NFT)
+                var hasWeight = false;
+                if (contractDeployed) {
+                    var weightHex = await ethCall(ANGEL_REWARDS, SEL.weightOf + addrPad);
+                    var earnedHex = await ethCall(ANGEL_REWARDS, SEL.earned + addrPad);
+                    if (hexToBN(weightHex) > 0n || hexToBN(earnedHex) > 0n) hasWeight = true;
                 }
-
-                $id('arClaimBtn').disabled = (earned === 0n);
-
-                // Live update earned every 5 sec
-                setInterval(async function() {
-                    try {
-                        var e2 = hexToBN(await ethCall(ANGEL_REWARDS, SEL.earned + addrPad));
-                        var e2Num = Number(e2) / 1e18;
-                        $id('arEarned').textContent = formatClaws(e2);
-                        if (clawsPrice > 0 && e2Num > 0) {
-                            $id('arEarnedUsd').textContent = '~$' + (e2Num * clawsPrice).toFixed(2);
-                        }
-                        $id('arClaimBtn').disabled = (e2 === 0n);
-                    } catch(e) {}
-                }, 5000);
-            } else if (nftBal === 0) {
-                // User has no Angel NFT — don't show position panel
+                if (!hasWeight) {
+                    showArState('noangel');
+                    return;
+                }
             }
+
+            // User holds Angel NFT (or has unclaimed rewards)
+            showArState('holder');
+            $id('arMyNfts').textContent = nftBal.toString();
+
+            if (!contractDeployed) {
+                $id('arEarned').textContent = '0.00';
+                $id('arClaimBtn').disabled = true;
+                $id('arClaimStatus').textContent = 'Rewards contract deploying soon';
+                return;
+            }
+
+            // Fetch earned from contract
+            var earnedHex2 = await ethCall(ANGEL_REWARDS, SEL.earned + addrPad);
+            var earned = hexToBN(earnedHex2);
+            var earnedNum = Number(earned) / 1e18;
+            $id('arEarned').textContent = formatClaws(earned);
+            if (clawsPrice > 0 && earnedNum > 0) {
+                $id('arEarnedUsd').textContent = '~$' + (earnedNum * clawsPrice).toFixed(2);
+            }
+            $id('arClaimBtn').disabled = (earned === 0n);
+
+            // Live update earned every 5 sec
+            setInterval(async function() {
+                try {
+                    var e2 = hexToBN(await ethCall(ANGEL_REWARDS, SEL.earned + addrPad));
+                    var e2Num = Number(e2) / 1e18;
+                    $id('arEarned').textContent = formatClaws(e2);
+                    if (clawsPrice > 0 && e2Num > 0) {
+                        $id('arEarnedUsd').textContent = '~$' + (e2Num * clawsPrice).toFixed(2);
+                    }
+                    $id('arClaimBtn').disabled = (e2 === 0n);
+                } catch(e) {}
+            }, 5000);
         } catch(e) {
             console.warn('AngelRewards user error:', e);
         }
