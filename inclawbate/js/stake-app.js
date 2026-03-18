@@ -496,7 +496,8 @@ async function fetchAllPoolStats() {
         var periodEnd = Number(safeBigInt(results[base + 3]));
         var rewardPool = fromWei(results[base + 4]);
         var apy = 0;
-        if (totalStaked > 0 && rewardRate > 0) {
+        var now = Math.floor(Date.now() / 1000);
+        if (totalStaked > 0 && rewardRate > 0 && rewardPool > 0 && periodEnd > now) {
             var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
             // For dual-token pools, adjust APY by price ratio (reward value / stake value)
             var pk = POOL_KEYS[i];
@@ -1171,7 +1172,9 @@ async function refreshPoolStats(key) {
     var stakerCount = Number(safeBigInt(results[1]));
     var rewardRate = fromWei(results[2]);
     var rewardPool = fromWei(results[4]);
-    var rawApy = totalStaked > 0 && rewardRate > 0 ? (rewardRate * 86400 * 365 / totalStaked) * 100 : 0;
+    var nowSec = Math.floor(Date.now() / 1000);
+    var periodEndVal = Number(safeBigInt(results[3]));
+    var rawApy = totalStaked > 0 && rewardRate > 0 && rewardPool > 0 && periodEndVal > nowSec ? (rewardRate * 86400 * 365 / totalStaked) * 100 : 0;
     var apy = rawApy;
     if (rawApy > 0 && POOLS[key].rewardToken && poolPrices[key] > 0 && poolPrices[key + '_reward'] > 0) {
         apy = rawApy * (poolPrices[key + '_reward'] / poolPrices[key]);
