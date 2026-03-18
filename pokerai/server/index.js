@@ -1146,6 +1146,174 @@ app.post('/admin/set-emission', (req, res) => {
   res.json({ success: true, config: rewardEngine.getEmissionConfig() });
 });
 
+// =========== OpenClaw REST API ===========
+// Thin HTTP wrappers so external AI agents (OpenClaw) can manage poker bots via curl.
+// Auth: x-wallet header for reads, challenge/signature flow for writes.
+
+// --- Auth helpers ---
+function getWalletHeader(req) {
+  const w = req.headers['x-wallet'];
+  return w ? w.toLowerCase() : null;
+}
+
+function requireWalletHeader(req, res) {
+  const addr = getWalletHeader(req);
+  if (!addr) { res.status(401).json({ error: 'Missing x-wallet header' }); return null; }
+  return addr;
+}
+
+function requireAuthenticatedWallet(req, res) {
+  const addr = requireWalletHeader(req, res);
+  if (!addr) return null;
+  if (!authenticatedWallets.has(addr)) {
+    res.status(403).json({ error: 'Wallet not authenticated. POST /api/auth/challenge first, then POST /api/auth/verify with signature.' });
+    return null;
+  }
+  return addr;
+}
+
+// --- Auth endpoints ---
+app.post('/api/auth/challenge', (req, res) => {
+  const wallet = (req.body.wallet || '').toLowerCase();
+  if (!wallet || !wallet.startsWith('0x')) return res.status(400).json({ error: 'Missing wallet address' });
+  const nonce = createChallenge(wallet);
+  const message = getChallengeMessage(nonce);
+  res.json({ nonce, message });
+});
+
+app.post('/api/auth/verify', (req, res) => {
+  const wallet = (req.body.wallet || '').toLowerCase();
+  const signature = req.body.signature;
+  if (!wallet || !signature) return res.status(400).json({ error: 'Missing wallet or signature' });
+  const result = verifySignature(wallet, signature);
+  if (result.valid) {
+    authenticatedWallets.add(wallet);
+    res.json({ authenticated: true, wallet });
+  } else {
+    res.status(401).json({ authenticated: false, error: result.error });
+  }
+});
+
+// --- Public endpoints ---
+app.get('/api/rooms', (req, res) => {
+  const summary = rooms.getRoomsSummary();
+  // Enrich with currency info
+  for (const [roomId, info] of Object.entries(summary)) {
+    info.roomId = roomId;
+    info.currency = roomId.startsWith('pokerai_') ? 'pokerai' : (roomId === 'sandbox' ? 'sandbox' : 'usdc');
+  }
+  res.json(summary);
+});
+
+app.get('/api/leaderboard', (req, res) => {
+  const roster = rooms.getGlobalRoster();
+  // Sort by profit (chips - baseChips) desc, only include agents with hands played
+  const ranked = roster
+    .filter(a => a.handsPlayed > 0)
+    .map(a => ({
+      id: a.id,
+      name: a.name,
+      emoji: a.emoji,
+      style: a.style,
+      chips: a.chips,
+      baseChips: a.baseChips,
+      profit: a.chips - a.baseChips,
+      handsWon: a.handsWon,
+      handsPlayed: a.handsPlayed,
+      winRate: a.handsPlayed > 0 ? Math.round((a.handsWon / a.handsPlayed) * 1000) / 10 : 0,
+      biggestPot: a.biggestPot,
+      room: a.room,
+      isCustom: a.isCustom
+    }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, Number(req.query.limit) || 50);
+  res.json(ranked);
+});
+
+// --- Wallet-read endpoints (x-wallet header) ---
+app.get('/api/agents', (req, res) => {
+  const addr = requireWalletHeader(req, res);
+  if (!addr) return;
+  const agents = rooms.getAgentsForWallet(addr);
+  const autoTopUp = rooms.getAutoTopUp(addr);
+  res.json({ agents, autoTopUp });
+});
+
+app.get('/api/agents/:id/stats', async (req, res) => {
+  const addr = requireWalletHeader(req, res);
+  if (!addr) return;
+  const agentId = req.params.id;
+  const stats = await rooms.computeAgentStats(agentId, false);
+  if (!stats) return res.status(404).json({ error: 'Agent not found or no hand history' });
+  res.json(stats);
+});
+
+// --- Authenticated write endpoints ---
+app.post('/api/agents', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const { name, emoji, aggression, bluffing, patience, tiltResist, rules, prompt } = req.body;
+  if (!name) return res.status(400).json({ error: 'Missing agent name' });
+  const result = rooms.createLobbyAgent(addr, {
+    name,
+    emoji: emoji || '🤖',
+    aggression: aggression ?? 50,
+    bluffing: bluffing ?? 30,
+    patience: patience ?? 50,
+    tiltResist: tiltResist ?? 50,
+    rules: rules || {},
+    prompt: prompt || ''
+  });
+  res.json(result);
+});
+
+app.post('/api/agents/:id/fund', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const { amount, currency } = req.body;
+  if (!isValidPositiveNumber(amount)) return res.status(400).json({ error: 'Invalid amount' });
+  const result = rooms.fundLobbyAgent(addr, req.params.id, amount, currency || 'usdc');
+  if (result.success) rooms.store.recordTransaction(addr, 'fund_agent', 0, amount);
+  res.json(result);
+});
+
+app.post('/api/agents/:id/defund', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const amount = req.body.amount;
+  if (amount !== undefined && !isValidPositiveNumber(amount)) return res.status(400).json({ error: 'Invalid amount' });
+  const result = rooms.defundLobbyAgent(addr, req.params.id, amount);
+  if (result.success) rooms.store.recordTransaction(addr, 'defund_agent', 0, result.amount);
+  res.json(result);
+});
+
+app.post('/api/agents/:id/join', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const { roomId, chipStack } = req.body;
+  if (!roomId) return res.status(400).json({ error: 'Missing roomId' });
+  if (chipStack !== undefined && !isValidPositiveNumber(chipStack)) return res.status(400).json({ error: 'Invalid chipStack' });
+  const result = rooms.joinRoom(addr, req.params.id, roomId, chipStack);
+  if (result.success) broadcastStateToAll();
+  res.json(result);
+});
+
+app.post('/api/agents/:id/leave', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const result = rooms.leaveTable(addr, req.params.id);
+  if (result.success) broadcastStateToAll();
+  res.json(result);
+});
+
+app.post('/api/auto-topup', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const { enabled, targetChips, cashOutAt, maxTopUps } = req.body;
+  const result = rooms.setAutoTopUp(addr, { enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0 });
+  res.json(result);
+});
+
 // =========== Server startup ===========
 
 async function startServer() {
