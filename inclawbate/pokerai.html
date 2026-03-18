@@ -14,11 +14,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-deep: #080b14;
-    --bg-dark: #0d1220;
-    --bg-card: #111827;
-    --bg-surface: #1a2236;
-    --bg-elevated: #1f2d45;
+    --bg-deep: #060911;
+    --bg-dark: #0a0e1a;
+    --bg-card: #0e1521;
+    --bg-surface: #141d2e;
+    --bg-elevated: #1a2638;
     --accent-gold: #f5c542;
     --accent-green: #22c55e;
     --accent-red: #ef4444;
@@ -29,8 +29,8 @@
     --text-primary: #f0f4ff;
     --text-secondary: #8899bb;
     --text-muted: #4a5a7a;
-    --border: #1e2d47;
-    --border-light: #2a3d5c;
+    --border: #182440;
+    --border-light: #243550;
     --glow-gold: 0 0 20px rgba(245,197,66,0.3);
     --glow-green: 0 0 20px rgba(34,197,94,0.3);
     --glow-blue: 0 0 20px rgba(59,130,246,0.3);
@@ -44,6 +44,7 @@
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
+    zoom: 0.9;
   }
 
   body::before {
@@ -63,7 +64,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(8,11,20,0.92);
+    background: rgba(6,9,17,0.94);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
@@ -272,10 +273,28 @@
   .compact-room-btn.sandbox-btn:hover { border-color: var(--accent-green); }
   .compact-room-btn.sandbox-btn.active { border-color: var(--accent-green); background: rgba(34,197,94,0.08); }
   .compact-room-btn.sandbox-btn.active .cr-name { color: var(--accent-green); }
+  .compact-room-btn { position: relative; }
+  .cr-my-agent-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    background: var(--accent-green);
+    border: 2px solid var(--bg-deep);
+    border-radius: 50%;
+    font-size: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    z-index: 2;
+  }
 
   .compact-portfolio {
-    width: 340px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -310,10 +329,14 @@
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    padding-bottom: 2px;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scroll-behavior: smooth;
   }
-  .cp-agents-scroll::-webkit-scrollbar { height: 3px; }
-  .cp-agents-scroll::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+  .cp-agents-scroll::-webkit-scrollbar { height: 6px; }
+  .cp-agents-scroll::-webkit-scrollbar-track { background: var(--bg-surface); border-radius: 3px; }
+  .cp-agents-scroll::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+  .cp-agents-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   .cp-agent-chip {
     display: flex;
     align-items: center;
@@ -3292,7 +3315,6 @@
   @media (max-width: 1200px) {
     .arena-layout { grid-template-columns: 1fr 300px; }
     .game-log { height: 200px; min-height: unset; max-height: unset; position: static; }
-    .compact-portfolio { width: 280px; }
     .cp-stats-row { gap: 8px; }
     .cp-stat-value { font-size: 13px; }
   }
@@ -5717,6 +5739,11 @@ function switchRoom(roomId) {
 
 function updateRoomTabs() {
   const rooms = gameState.rooms || {};
+  // Build set of rooms where user has agents playing
+  const myRooms = new Set();
+  const playing = myAgents.filter(a => a.status === 'playing');
+  playing.forEach(a => { if (a.roomId) myRooms.add(a.roomId); });
+
   for (const [roomId, info] of Object.entries(rooms)) {
     const el = document.getElementById('roomPlayers-' + roomId);
     if (el) {
@@ -5726,13 +5753,28 @@ function updateRoomTabs() {
         el.textContent = info.tableCount + ' table' + (info.tableCount !== 1 ? 's' : '');
       }
     }
-    // Update compact room player counts
+    // Update compact room player counts + agent badge
+    const cBtn = document.getElementById('compactRoom-' + roomId);
     const cEl = document.getElementById('compactPlayers-' + roomId);
     if (cEl) {
       if (info.playerCount > 0) {
         cEl.textContent = info.playerCount + 'p · ' + info.tableCount + 't';
       } else {
         cEl.textContent = info.tableCount + 't';
+      }
+    }
+    // Show/hide "my agent" badge
+    if (cBtn) {
+      let badge = cBtn.querySelector('.cr-my-agent-badge');
+      if (myRooms.has(roomId)) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'cr-my-agent-badge';
+          badge.textContent = '✓';
+          cBtn.appendChild(badge);
+        }
+      } else if (badge) {
+        badge.remove();
       }
     }
   }
@@ -8769,6 +8811,17 @@ showView = function(name) {
   }
   updateWalletUI();
   connect();
+
+  // Horizontal wheel scroll for compact portfolio agent chips
+  const cpScroll = document.getElementById('cpAgents');
+  if (cpScroll) {
+    cpScroll.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        cpScroll.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
 })();
 </script>
 
