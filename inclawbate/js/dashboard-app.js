@@ -674,7 +674,7 @@ function renderProjectCard(p) {
         }
     }
     if (!isSolana && !p.staking_address && status === 'active' && addr) {
-        actionsHtml += `<a href="/inclawbator#pool" class="project-card-action primary">Create Pool</a>`;
+        actionsHtml += `<button type="button" class="project-card-action primary" data-deploy-pool="${esc(addr)}" data-project-id="${esc(p.id)}" data-token-name="${esc(name)}">Create Pool</button>`;
     }
     if (p.staking_address) {
         actionsHtml += `<button type="button" class="project-card-action primary" data-pool="${esc(p.staking_address)}" data-name="${esc(name)}" data-project="${esc(p.id)}">Fund Rewards</button>`;
@@ -774,6 +774,12 @@ function renderProjectCard(p) {
     card.querySelector('.project-card-action.primary[data-pool]')?.addEventListener('click', (e) => {
         const btn = e.currentTarget;
         openFundModal(btn.dataset.pool, btn.dataset.name, btn.dataset.project);
+    });
+
+    // Wire create pool button
+    card.querySelector('[data-deploy-pool]')?.addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        deployStakingPool(btn.dataset.deployPool, btn.dataset.projectId, btn.dataset.tokenName, btn);
     });
 
     // Wire edit button
@@ -1488,6 +1494,66 @@ async function rpcCall(to, data) {
         }
     } catch (e) {}
     return '0x0';
+}
+
+// ── Inline Staking Pool Deployment ──
+const STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
+const DEPLOY_PAID_SEL = '0x82123c96'; // deployPaid(address,address)
+
+async function deployStakingPool(tokenAddr, projectId, tokenName, btn) {
+    if (!confirm(`Deploy a staking pool for ${tokenName}?\n\nThis sends one transaction to the Staking Factory on Base.`)) return;
+
+    const provider = window.ethereum;
+    if (!provider) { alert('No wallet connected'); return; }
+
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Deploying...';
+
+    try {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const wallet = accounts[0];
+
+        // Switch to Base
+        try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] }); } catch(e) {}
+
+        // deployPaid(tokenAddress, rewardToken=CLAWS)
+        const deployData = DEPLOY_PAID_SEL + pad32(tokenAddr) + pad32(CLAWS);
+        const receipt = await sendTx(wallet, STAKING_FACTORY, deployData);
+
+        // Parse pool address from PoolDeployed event
+        let poolAddr = null;
+        if (receipt && receipt.logs) {
+            for (let i = 0; i < receipt.logs.length; i++) {
+                const log = receipt.logs[i];
+                if (log.address && log.address.toLowerCase() === STAKING_FACTORY.toLowerCase() && log.topics && log.topics.length >= 2) {
+                    poolAddr = '0x' + log.topics[1].slice(26);
+                    break;
+                }
+            }
+        }
+        if (!poolAddr) throw new Error('Could not find pool address in transaction');
+
+        // Update DB with staking address
+        const auth = getStoredAuth();
+        const token = auth ? auth.token : null;
+        const resp = await fetch(API_BASE + '/inclawbator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}), 'x-wallet': wallet },
+            body: JSON.stringify({ action: 'update-staking', project_id: projectId, staking_address: poolAddr, staking_deploy_tx: receipt.transactionHash })
+        });
+        const result = await resp.json();
+        if (result.error) console.warn('DB update warning:', result.error);
+
+        alert(`Staking pool deployed!\n\nPool: ${poolAddr}\n\nYou can now Fund Rewards from your dashboard.`);
+
+        // Reload tokens to show Fund Rewards button
+        loadUserTokens();
+    } catch (e) {
+        alert('Pool deployment failed: ' + (e.message || e));
+        btn.disabled = false;
+        btn.textContent = origText;
+    }
 }
 
 async function sendTx(from, to, data) {
