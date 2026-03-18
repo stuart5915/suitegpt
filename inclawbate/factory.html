@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Factory — Inclawbate</title>
+    <meta name="description" content="Daily incubation pipeline — build, launch, grow.">
+    <meta property="og:title" content="App Factory — Inclawbate">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/factory">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; }
+
+        .factory-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: var(--space-lg) var(--space-lg) var(--space-4xl);
+        }
+
+        .factory-hero {
+            text-align: center;
+            padding: var(--space-3xl) 0 var(--space-2xl);
+        }
+        .factory-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0 0 6px;
+        }
+        .factory-hero-sub {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        .factory-day-badge {
+            display: inline-block;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 4px 14px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--lobster-300);
+            margin-top: 10px;
+        }
+
+        /* Gate */
+        .factory-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            gap: 16px;
+        }
+        .factory-gate h2 { color: var(--text-primary); font-size: 1.3rem; font-weight: 700; }
+        .factory-gate p { color: var(--text-secondary); }
+        .factory-gate a { color: var(--lobster-400); text-decoration: underline; cursor: pointer; }
+
+        /* Section cards */
+        .factory-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .factory-section-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+        .factory-section-hdr h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* Pipeline checklist */
+        .pipeline-steps { list-style: none; padding: 0; margin: 0; }
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .pipeline-step:last-child { border-bottom: none; }
+        .pipeline-check {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .pipeline-check.done {
+            background: var(--lobster-400);
+            border-color: var(--lobster-400);
+            color: #fff;
+        }
+        .pipeline-label {
+            flex: 1;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .pipeline-label small {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+        .pipeline-action {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 5px 12px;
+            color: var(--lobster-300);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color 0.15s;
+        }
+        .pipeline-action:hover { border-color: var(--lobster-400); }
+
+        /* Progress bar */
+        .pipeline-progress {
+            margin-top: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pipeline-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .pipeline-bar-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .pipeline-bar-label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            min-width: 36px;
+        }
+
+        /* Idea generator */
+        .idea-prompt-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .idea-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: var(--space-sm);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 8px 18px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 8px 18px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-body);
+        }
+        .btn-secondary:hover { border-color: var(--lobster-400); }
+
+        /* Active incubations */
+        .incubation-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+        }
+        .incubation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .incubation-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .incubation-day {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+        .incubation-meta {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .incubation-meta span { margin-right: 14px; }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .status-dot.green { background: var(--green); }
+        .status-dot.yellow { background: var(--yellow); }
+
+        /* Feedback inbox */
+        .feedback-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .feedback-item:last-child { border-bottom: none; }
+        .feedback-icon { font-size: 1.2rem; flex-shrink: 0; padding-top: 2px; }
+        .feedback-body { flex: 1; }
+        .feedback-body strong { color: var(--text-primary); font-size: 0.9rem; }
+        .feedback-body p { color: var(--text-secondary); font-size: 0.82rem; margin: 2px 0 6px; }
+        .feedback-actions { display: flex; gap: 6px; }
+        .feedback-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: var(--font-body);
+        }
+        .feedback-btn:hover { border-color: var(--lobster-400); color: var(--text-primary); }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--space-sm);
+        }
+        .stat-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            text-align: center;
+        }
+        .stat-val {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--lobster-300);
+        }
+        .stat-label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        /* New incubation form */
+        .new-form { display: none; }
+        .new-form.open { display: block; }
+        .new-form label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            margin-top: var(--space-md);
+        }
+        .new-form label:first-child { margin-top: 0; }
+        .new-form input, .new-form textarea, .new-form select {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+        .new-form input:focus, .new-form textarea:focus {
+            border-color: var(--lobster-400);
+            outline: none;
+        }
+        .new-form textarea { resize: vertical; min-height: 60px; }
+        .new-form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: var(--space-md);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-2xl) 0;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .loading { text-align: center; padding: var(--space-lg); color: var(--text-dim); }
+
+        @media (max-width: 600px) {
+            .factory-page { padding: var(--space-md) var(--space-sm) var(--space-3xl); }
+            .factory-hero h1 { font-size: 1.6rem; }
+            .pipeline-action { display: none; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+
+    <!-- Gate -->
+    <div id="factoryGate" class="factory-gate">
+        <h2>App Factory</h2>
+        <p>Connect your wallet to access the factory.</p>
+        <a onclick="connectWallet()">Connect Wallet</a>
+    </div>
+
+    <!-- Main -->
+    <div id="factoryMain" class="factory-page" style="display:none;">
+        <div class="factory-hero">
+            <h1>App Factory</h1>
+            <p class="factory-hero-sub">1 app, 1 token, 1 pool — every day.</p>
+            <div class="factory-day-badge" id="dayBadge">Loading...</div>
+        </div>
+
+        <!-- Today's Pipeline -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Today's Pipeline</h2>
+                <button class="btn-primary" id="newIncBtn" onclick="toggleNewForm()">+ New Incubation</button>
+            </div>
+
+            <!-- New incubation form -->
+            <div class="new-form" id="newForm">
+                <label>App Name</label>
+                <input type="text" id="newAppName" placeholder="e.g. Flip Cards" maxlength="60">
+                <label>Description</label>
+                <textarea id="newAppDesc" placeholder="One-liner for what the app does" maxlength="200"></textarea>
+                <label>Token Symbol (optional)</label>
+                <input type="text" id="newTokenSymbol" placeholder="e.g. $FLIP" maxlength="10">
+                <div class="new-form-actions">
+                    <button class="btn-primary" onclick="createPipeline()">Start Pipeline</button>
+                    <button class="btn-secondary" onclick="toggleNewForm()">Cancel</button>
+                </div>
+            </div>
+
+            <div id="pipelineWrap">
+                <div class="loading">Loading pipeline...</div>
+            </div>
+        </div>
+
+        <!-- Idea Generator -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Idea Generator</h2>
+                <button class="btn-secondary" onclick="generatePrompt()">Generate Research Prompt</button>
+            </div>
+            <div id="ideaWrap">
+                <p style="color:var(--text-dim);font-size:0.88rem;">Hit "Generate Research Prompt" to build a context-rich prompt you can paste into your research agent. It pulls all existing apps + token utilities to avoid duplicates.</p>
+            </div>
+        </div>
+
+        <!-- Active Incubations -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Active Incubations</h2>
+                <span id="incubationCount" style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-dim);"></span>
+            </div>
+            <div id="incubationsList">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Feedback Inbox -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Feedback Inbox</h2>
+                <span id="feedbackCount" style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-dim);"></span>
+            </div>
+            <div id="feedbackList">
+                <div class="empty-state">No feedback yet. Poll results will appear here.</div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Stats</h2>
+            </div>
+            <div class="stats-row" id="statsRow">
+                <div class="stat-box"><div class="stat-val" id="statApps">-</div><div class="stat-label">Apps</div></div>
+                <div class="stat-box"><div class="stat-val" id="statTokens">-</div><div class="stat-label">Tokens</div></div>
+                <div class="stat-box"><div class="stat-val" id="statPools">-</div><div class="stat-label">Pools</div></div>
+                <div class="stat-box"><div class="stat-val" id="statClaws">-</div><div class="stat-label">CLAWS Funded</div></div>
+                <div class="stat-box"><div class="stat-val" id="statVotes">-</div><div class="stat-label">Poll Votes</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/nav-component.js"></script>
+    <script>
+    (function() {
+        'use strict';
+
+        var API = '/api/inclawbate/factory';
+        var APPS_API = '/api/inclawbate/apps';
+        var COUNCIL = [
+            '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+            '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
+            '0x496f68438493eb1cc632f7cec6634f042c95e333',
+            '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
+            '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
+        ];
+
+        var _wallet = null;
+        var _pipelines = [];
+        var _existingApps = [];
+        var _todayPipeline = null;
+
+        // ---------- Wallet ----------
+        window.connectWallet = async function() {
+            try {
+                var provider = window._awaitProvider ? await window._awaitProvider() : window.ethereum;
+                if (!provider) { alert('No wallet detected.'); return; }
+                var accs = await provider.request({ method: 'eth_requestAccounts' });
+                _wallet = (accs[0] || '').toLowerCase();
+                localStorage.setItem('connectedWallet', _wallet);
+                checkGate();
+            } catch (e) {
+                console.error('Wallet error:', e);
+            }
+        };
+
+        function checkGate() {
+            if (!_wallet) _wallet = (localStorage.getItem('connectedWallet') || '').toLowerCase();
+            if (!_wallet || COUNCIL.indexOf(_wallet) === -1) {
+                document.getElementById('factoryGate').style.display = 'flex';
+                document.getElementById('factoryMain').style.display = 'none';
+                if (_wallet && COUNCIL.indexOf(_wallet) === -1) {
+                    document.getElementById('factoryGate').innerHTML = '<h2>Access Denied</h2><p>Council members only.</p>';
+                }
+                return;
+            }
+            document.getElementById('factoryGate').style.display = 'none';
+            document.getElementById('factoryMain').style.display = 'block';
+            loadAll();
+        }
+
+        // ---------- Load ----------
+        async function loadAll() {
+            await Promise.all([loadPipelines(), loadApps()]);
+            renderToday();
+            renderIncubations();
+            renderStats();
+        }
+
+        async function loadPipelines() {
+            try {
+                var r = await fetch(API + '?wallet=' + _wallet);
+                var d = await r.json();
+                _pipelines = d.pipelines || [];
+            } catch (e) {
+                _pipelines = [];
+            }
+        }
+
+        async function loadApps() {
+            try {
+                var r = await fetch(APPS_API + '?inclawbators_only=false&limit=500');
+                var d = await r.json();
+                _existingApps = d.apps || [];
+            } catch (e) {
+                _existingApps = [];
+            }
+        }
+
+        // ---------- Today's Pipeline ----------
+        function renderToday() {
+            var today = new Date().toISOString().slice(0, 10);
+            _todayPipeline = _pipelines.find(function(p) { return p.created_at && p.created_at.slice(0, 10) === today; });
+
+            // Day badge
+            var totalDays = _pipelines.length;
+            document.getElementById('dayBadge').textContent = 'Day ' + (totalDays + (_todayPipeline ? 0 : 1)) + ' \u00b7 ' + totalDays + ' incubation' + (totalDays === 1 ? '' : 's');
+
+            var wrap = document.getElementById('pipelineWrap');
+            if (!_todayPipeline) {
+                wrap.innerHTML = '<div class="empty-state">No incubation started today. Hit "+ New Incubation" to begin.</div>';
+                return;
+            }
+
+            var steps = [
+                { key: 'step_app', label: 'Build App', detail: _todayPipeline.app_name || '', action: '/build', actionLabel: 'Open Builder' },
+                { key: 'step_token', label: 'Launch Token', detail: _todayPipeline.token_symbol || '', action: null, actionLabel: 'Launch on Clanker' },
+                { key: 'step_pool', label: 'Deploy Staking Pool', detail: _todayPipeline.staking_address ? _todayPipeline.staking_address.slice(0, 10) + '...' : '', action: null, actionLabel: 'Deploy Pool' },
+                { key: 'step_buy', label: 'Buy Token', detail: '', action: null, actionLabel: 'Swap on Aero' },
+                { key: 'step_stake', label: 'Stake Token', detail: '', action: null, actionLabel: 'Stake' },
+                { key: 'step_fund', label: 'Fund Pool with CLAWS', detail: _todayPipeline.claws_funded ? _todayPipeline.claws_funded.toLocaleString() + ' CLAWS' : '', action: null, actionLabel: 'Fund' },
+                { key: 'step_tweet', label: 'Schedule Daily Tweet', detail: '', action: null, actionLabel: 'Schedule' },
+                { key: 'step_poll', label: 'Attach Poll', detail: '', action: null, actionLabel: 'Add Poll' }
+            ];
+
+            var doneCount = 0;
+            var html = '<ul class="pipeline-steps">';
+            steps.forEach(function(s) {
+                var done = _todayPipeline[s.key];
+                if (done) doneCount++;
+                html += '<li class="pipeline-step">';
+                html += '<div class="pipeline-check ' + (done ? 'done' : '') + '" onclick="toggleStep(\'' + _todayPipeline.id + '\',\'' + s.key + '\',' + !done + ')">' + (done ? '\u2713' : '') + '</div>';
+                html += '<div class="pipeline-label">' + esc(s.label);
+                if (s.detail) html += ' <small>' + esc(s.detail) + '</small>';
+                html += '</div>';
+                if (s.action) {
+                    html += '<a class="pipeline-action" href="' + s.action + '" target="_blank">' + s.actionLabel + '</a>';
+                } else if (!done) {
+                    html += '<span class="pipeline-action" onclick="toggleStep(\'' + _todayPipeline.id + '\',\'' + s.key + '\',true)">' + s.actionLabel + '</span>';
+                }
+                html += '</li>';
+            });
+            html += '</ul>';
+
+            var pct = Math.round((doneCount / steps.length) * 100);
+            html += '<div class="pipeline-progress">';
+            html += '<div class="pipeline-bar"><div class="pipeline-bar-fill" style="width:' + pct + '%"></div></div>';
+            html += '<span class="pipeline-bar-label">' + doneCount + '/' + steps.length + '</span>';
+            html += '</div>';
+
+            wrap.innerHTML = html;
+        }
+
+        // ---------- Toggle step ----------
+        window.toggleStep = async function(id, key, val) {
+            try {
+                var r = await fetch(API, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, [key]: val, wallet: _wallet })
+                });
+                var d = await r.json();
+                if (d.pipeline) {
+                    var idx = _pipelines.findIndex(function(p) { return p.id === id; });
+                    if (idx >= 0) _pipelines[idx] = d.pipeline;
+                    renderToday();
+                    renderIncubations();
+                    renderStats();
+                }
+            } catch (e) {
+                console.error('Toggle error:', e);
+            }
+        };
+
+        // ---------- New incubation ----------
+        window.toggleNewForm = function() {
+            document.getElementById('newForm').classList.toggle('open');
+        };
+
+        window.createPipeline = async function() {
+            var name = document.getElementById('newAppName').value.trim();
+            if (!name) { alert('App name required'); return; }
+            var desc = document.getElementById('newAppDesc').value.trim();
+            var symbol = document.getElementById('newTokenSymbol').value.trim();
+
+            try {
+                var r = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_name: name, app_description: desc, token_symbol: symbol, wallet: _wallet })
+                });
+                var d = await r.json();
+                if (d.error) { alert(d.error); return; }
+                if (d.pipeline) {
+                    _pipelines.unshift(d.pipeline);
+                    document.getElementById('newForm').classList.remove('open');
+                    document.getElementById('newAppName').value = '';
+                    document.getElementById('newAppDesc').value = '';
+                    document.getElementById('newTokenSymbol').value = '';
+                    renderToday();
+                    renderIncubations();
+                    renderStats();
+                }
+            } catch (e) {
+                alert('Failed to create pipeline');
+            }
+        };
+
+        // ---------- Active incubations ----------
+        function renderIncubations() {
+            var wrap = document.getElementById('incubationsList');
+            document.getElementById('incubationCount').textContent = _pipelines.length + ' total';
+
+            if (_pipelines.length === 0) {
+                wrap.innerHTML = '<div class="empty-state">No incubations yet. Start your first one!</div>';
+                return;
+            }
+
+            var html = '';
+            var shown = _pipelines.slice(0, 20);
+            shown.forEach(function(p) {
+                var dayNum = daysSince(p.created_at);
+                var stepsComplete = countSteps(p);
+                var statusColor = stepsComplete === 8 ? 'green' : 'yellow';
+                html += '<div class="incubation-card">';
+                html += '<div class="incubation-header">';
+                html += '<span class="incubation-name"><span class="status-dot ' + statusColor + '"></span>' + esc(p.app_name || 'Untitled') + '</span>';
+                html += '<span class="incubation-day">Day ' + dayNum + (p.token_symbol ? ' \u00b7 ' + esc(p.token_symbol) : '') + '</span>';
+                html += '</div>';
+                html += '<div class="incubation-meta">';
+                html += '<span>' + stepsComplete + '/8 steps</span>';
+                if (p.app_slug) html += '<span><a href="/s/' + esc(p.app_slug) + '" target="_blank" style="color:var(--lobster-300);">View App</a></span>';
+                if (p.poll_winner) html += '<span>Poll: "' + esc(p.poll_winner) + '"</span>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            if (_pipelines.length > 20) {
+                html += '<div class="empty-state" style="padding:var(--space-md) 0;">Showing 20 of ' + _pipelines.length + '</div>';
+            }
+
+            wrap.innerHTML = html;
+        }
+
+        function countSteps(p) {
+            var keys = ['step_app', 'step_token', 'step_pool', 'step_buy', 'step_stake', 'step_fund', 'step_tweet', 'step_poll'];
+            return keys.reduce(function(n, k) { return n + (p[k] ? 1 : 0); }, 0);
+        }
+
+        function daysSince(dateStr) {
+            if (!dateStr) return 0;
+            var then = new Date(dateStr);
+            var now = new Date();
+            return Math.max(1, Math.ceil((now - then) / 86400000));
+        }
+
+        // ---------- Stats ----------
+        function renderStats() {
+            var apps = _pipelines.filter(function(p) { return p.step_app; }).length;
+            var tokens = _pipelines.filter(function(p) { return p.step_token; }).length;
+            var pools = _pipelines.filter(function(p) { return p.step_pool; }).length;
+            var claws = _pipelines.reduce(function(s, p) { return s + (p.claws_funded || 0); }, 0);
+            var votes = _pipelines.reduce(function(s, p) { return s + (p.poll_votes || 0); }, 0);
+
+            document.getElementById('statApps').textContent = apps;
+            document.getElementById('statTokens').textContent = tokens;
+            document.getElementById('statPools').textContent = pools;
+            document.getElementById('statClaws').textContent = claws > 0 ? (claws / 1000).toFixed(1) + 'K' : '0';
+            document.getElementById('statVotes').textContent = votes;
+        }
+
+        // ---------- Idea Generator ----------
+        window.generatePrompt = function() {
+            var appNames = _existingApps.map(function(a) { return a.name; }).filter(Boolean);
+            var categories = {};
+            _existingApps.forEach(function(a) {
+                if (a.category) categories[a.category] = (categories[a.category] || 0) + 1;
+            });
+
+            var utilities = [
+                'Unlock premium features (pay CLAWS)',
+                'Tipping / gifting between users',
+                'Voting / governance within app',
+                'Entry fee for competitions / games',
+                'Staking for boosted rewards',
+                'Burn-to-use (deflationary)',
+                'Revenue sharing (hold \u2192 earn fees)',
+                'NFT minting currency',
+                'Reputation / level-up system',
+                'Ad-free experience'
+            ];
+
+            // Check which utilities are already used in pipeline descriptions
+            var usedUtilities = [];
+            _pipelines.forEach(function(p) {
+                if (p.token_utility) usedUtilities.push(p.token_utility);
+            });
+
+            var catSummary = Object.entries(categories).map(function(e) { return e[0] + ' (' + e[1] + ')'; }).join(', ');
+
+            var today = new Date();
+            var dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            var prompt = 'CONTEXT: I run Inclawbate, an on-chain app incubator on Base. Every day I launch 1 new app + token + staking pool.\n\n';
+            prompt += 'EXISTING APPS (' + appNames.length + ' total):\n';
+            if (appNames.length > 0) {
+                prompt += appNames.join(', ') + '\n\n';
+            } else {
+                prompt += '(none yet)\n\n';
+            }
+            prompt += 'CATEGORIES COVERED: ' + (catSummary || 'none yet') + '\n\n';
+            prompt += 'TOKEN UTILITY PATTERNS AVAILABLE:\n';
+            utilities.forEach(function(u, i) {
+                var used = usedUtilities.indexOf(u) >= 0;
+                prompt += (i + 1) + '. ' + u + (used ? ' [ALREADY USED]' : '') + '\n';
+            });
+            prompt += '\n';
+            if (usedUtilities.length > 0) {
+                prompt += 'UTILITIES ALREADY ASSIGNED: ' + usedUtilities.join(', ') + '\n\n';
+            }
+            prompt += 'TODAY: ' + dateStr + '\n\n';
+            prompt += 'TASK: Research today\'s trending topics in crypto, DeFi, culture, and memes. Then suggest 3 new app ideas that:\n';
+            prompt += '1. Do NOT duplicate any existing app listed above\n';
+            prompt += '2. Each uses a DIFFERENT token utility from the list (prefer unused ones)\n';
+            prompt += '3. Are buildable in a single session (HTML + JS, no backend required)\n';
+            prompt += '4. Connect to something happening today or this week\n';
+            prompt += '5. Have clear CLAWS token integration\n\n';
+            prompt += 'For each idea, provide:\n';
+            prompt += '- App name + one-line description\n';
+            prompt += '- Token symbol suggestion\n';
+            prompt += '- Which token utility pattern it uses\n';
+            prompt += '- Why it\'s timely (what trend/event it connects to)\n';
+            prompt += '- 3 poll options for the first community refinement tweet\n';
+
+            document.getElementById('ideaWrap').innerHTML =
+                '<div class="idea-prompt-box" id="ideaPromptText">' + esc(prompt) + '</div>' +
+                '<div class="idea-actions">' +
+                '<button class="btn-primary" onclick="copyPrompt()">Copy to Clipboard</button>' +
+                '<button class="btn-secondary" onclick="generatePrompt()">Regenerate</button>' +
+                '</div>';
+        };
+
+        window.copyPrompt = function() {
+            var text = document.getElementById('ideaPromptText').textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.querySelector('.idea-actions .btn-primary');
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy to Clipboard'; }, 1500);
+            });
+        };
+
+        // ---------- Util ----------
+        function esc(s) {
+            if (!s) return '';
+            var d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // ---------- Init ----------
+        checkGate();
+    })();
+    </script>
+</body>
+</html>
