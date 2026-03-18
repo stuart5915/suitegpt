@@ -1607,7 +1607,7 @@ async function _executePoolDeploy(tokenAddr, projectId, tokenName, overlay) {
         statusEl.innerHTML = `Pool deployed!<br><span style="font-family:var(--font-mono);font-size:0.75rem;">${poolAddr}</span><br><br>You can now <strong>Fund Rewards</strong> from your dashboard.`;
 
         // Reload tokens to show Fund Rewards button
-        loadUserTokens();
+        loadProjects();
     } catch (e) {
         statusEl.style.color = '#f87171';
         statusEl.textContent = 'Failed: ' + (e.message || e);
