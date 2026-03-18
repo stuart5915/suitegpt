@@ -875,7 +875,7 @@ Output ONLY the numbered entries. Nothing else.`;
             },
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
-                max_tokens: (style === 'formatted' || style === 'mixed') ? 2500 : 1500,
+                max_tokens: 4000,
                 temperature: style === 'punchy' ? 1.0 : 0.9,
                 messages: [{ role: 'user', content: batchPrompt }]
             })
