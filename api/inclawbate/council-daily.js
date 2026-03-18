@@ -580,6 +580,17 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
 
+    // Treasury — one-liner with delta
+    if (treasury?.total) {
+        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+        let treasuryLine = `🏦 Treasury: ${formatUsd(treasury.total)}`;
+        if (treasuryChange) {
+            const arrow = treasuryChange.diff >= 0 ? '+' : '-';
+            treasuryLine += ` (${arrow}${formatUsd(Math.abs(treasuryChange.diff))})`;
+        }
+        tweet += `\n${treasuryLine}\n`;
+    }
+
     // Incubations — count only
     if (tasks.incubations.length) {
         tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
