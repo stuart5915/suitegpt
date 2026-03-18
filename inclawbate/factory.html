@@ -502,7 +502,11 @@
 
         // ---------- Load ----------
         async function loadAll() {
-            await Promise.all([loadPipelines(), loadApps()]);
+            try {
+                await Promise.all([loadPipelines(), loadApps()]);
+            } catch (e) {
+                console.error('loadAll error:', e);
+            }
             renderToday();
             renderIncubations();
             renderStats();
@@ -511,19 +515,23 @@
         async function loadPipelines() {
             try {
                 var r = await fetch(API + '?wallet=' + _wallet);
+                if (!r.ok) { console.error('Factory API:', r.status); _pipelines = []; return; }
                 var d = await r.json();
                 _pipelines = d.pipelines || [];
             } catch (e) {
+                console.error('loadPipelines error:', e);
                 _pipelines = [];
             }
         }
 
         async function loadApps() {
             try {
-                var r = await fetch(APPS_API + '?inclawbators_only=false&limit=500');
+                var r = await fetch(APPS_API);
+                if (!r.ok) { console.error('Apps API:', r.status); _existingApps = []; return; }
                 var d = await r.json();
                 _existingApps = d.apps || [];
             } catch (e) {
+                console.error('loadApps error:', e);
                 _existingApps = [];
             }
         }
