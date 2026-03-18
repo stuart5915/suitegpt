@@ -339,7 +339,8 @@ export default async function handler(req, res) {
 
         // ── Update staking address ──
         if (action === 'update-staking') {
-            const user = authenticateRequest(req);
+            const reqWallet = (req.headers['x-wallet'] || '').toLowerCase();
+            const user = authenticateRequest(req) || (reqWallet === SUPER_ADMIN ? { sub: SUPER_ADMIN } : null);
             if (!user) return res.status(401).json({ error: 'Authentication required' });
 
             const { project_id, staking_address, staking_deploy_tx } = req.body;
@@ -347,16 +348,19 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'project_id and staking_address required' });
             }
 
-            // Verify ownership
-            const { data: project } = await supabase
-                .from('inclawbator_projects')
-                .select('creator_profile_id')
-                .eq('id', project_id)
-                .single();
+            // Verify ownership (admin bypass via x-wallet)
+            const isAdminStaking = (req.headers['x-wallet'] || '').toLowerCase() === SUPER_ADMIN;
+            if (!isAdminStaking) {
+                const { data: project } = await supabase
+                    .from('inclawbator_projects')
+                    .select('creator_profile_id')
+                    .eq('id', project_id)
+                    .single();
 
-            if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
-                return res.status(403).json({ error: 'Not the project owner' });
+                if (!project) return res.status(404).json({ error: 'Project not found' });
+                if (project.creator_profile_id !== user.sub) {
+                    return res.status(403).json({ error: 'Not the project owner' });
+                }
             }
 
             const { data, error } = await supabase
