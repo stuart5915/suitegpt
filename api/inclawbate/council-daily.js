@@ -480,7 +480,11 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
         msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
         if (treasury.ethBalance > 0) {
-            msg += `ETH: ${treasury.ethBalance.toFixed(4)} (${formatUsd(treasury.ethValue)})\n`;
+            msg += `ETH: ${treasury.ethBalance.toFixed(4)} (${formatUsd(treasury.ethValue)})`;
+            if (treasury.dailyEthAdd > 0) {
+                msg += ` — <i>+${treasury.dailyEthAdd.toFixed(4)} ETH today</i>`;
+            }
+            msg += `\n`;
         }
         if (treasury.basisVault > 0) {
             msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
@@ -580,15 +584,25 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
 
-    // Treasury — one-liner with delta
-    if (treasury?.total) {
-        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-        let treasuryLine = `🏦 Treasury: ${formatUsd(treasury.total)}`;
-        if (treasuryChange) {
-            const arrow = treasuryChange.diff >= 0 ? '+' : '-';
-            treasuryLine += ` (${arrow}${formatUsd(Math.abs(treasuryChange.diff))})`;
+    // Treasury with ETH stack growth
+    if (treasury) {
+        tweet += `\n🏦 Treasury`;
+        if (treasury.total) {
+            const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+            tweet += `: ${formatUsd(treasury.total)}`;
+            if (treasuryChange) {
+                const arrow = treasuryChange.diff >= 0 ? '+' : '-';
+                tweet += ` (${arrow}${formatUsd(Math.abs(treasuryChange.diff))})`;
+            }
         }
-        tweet += `\n${treasuryLine}\n`;
+        tweet += `\n`;
+        if (treasury.ethBalance > 0) {
+            tweet += `ETH: ${treasury.ethBalance.toFixed(4)}`;
+            if (treasury.dailyEthAdd > 0) {
+                tweet += ` (+${treasury.dailyEthAdd.toFixed(4)} today)`;
+            }
+            tweet += `\n`;
+        }
     }
 
     // Incubations — count only
@@ -640,7 +654,8 @@ export default async function handler(req, res) {
         const TREASURY_DAILY_USD = 100;
         const ethPrice = treasuryRaw?.ethPrice || 0;
         const daysSinceStart = Math.max(0, Math.floor((Date.now() - TREASURY_ETH_START_DATE.getTime()) / 86400000));
-        const addedEth = ethPrice > 0 ? (daysSinceStart * TREASURY_DAILY_USD) / ethPrice : 0;
+        const dailyEthAdd = ethPrice > 0 ? TREASURY_DAILY_USD / ethPrice : 0;
+        const addedEth = dailyEthAdd * daysSinceStart;
         const syntheticEthBalance = TREASURY_ETH_START + addedEth;
         const syntheticEthValue = syntheticEthBalance * ethPrice;
 
@@ -652,6 +667,7 @@ export default async function handler(req, res) {
             ethBalance: syntheticEthBalance,
             ethPrice,
             ethValue: Math.round(syntheticEthValue),
+            dailyEthAdd,
             basisVault,
             walletClaws: treasuryRaw?.walletClaws || 0,
             stakedClaws: treasuryRaw?.stakedClaws || 0,
