@@ -603,12 +603,10 @@ function renderOverview() {
     var container = document.getElementById('stakeTableContainer');
     if (!container) return;
 
-    // Read current filter + sort
+    // Read current sort
     var activeFilter = 'all';
-    var activeTab = document.querySelector('#stakeFilters .lp-filter-tab.active');
-    if (activeTab) activeFilter = activeTab.dataset.filter;
-    var sortEl = document.getElementById('stakeSort');
-    var sortBy = sortEl ? sortEl.value : 'tvl';
+    var activeOpt = document.querySelector('#stakeSortDropdown .stake-sort-option.active');
+    var sortBy = activeOpt ? activeOpt.dataset.sort : 'tvl';
 
     // Filter pools
     var filtered = POOL_KEYS.filter(function(key) {
@@ -2248,18 +2246,27 @@ async function init() {
 
     wirePoolEvents();
 
-    // Filter tabs
-    document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(t) { t.classList.remove('active'); });
-            tab.classList.add('active');
-            collapseAnyRow();
-            renderOverview();
+    // Sort dropdown (custom)
+    var sortBtn = document.getElementById('stakeSortBtn');
+    var sortWrap = document.getElementById('stakeSortWrap');
+    if (sortBtn && sortWrap) {
+        sortBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sortWrap.classList.toggle('open');
         });
-    });
-    // Sort dropdown
-    var sortSelect = document.getElementById('stakeSort');
-    if (sortSelect) sortSelect.addEventListener('change', function() { collapseAnyRow(); renderOverview(); });
+        document.addEventListener('click', function() { sortWrap.classList.remove('open'); });
+        document.querySelectorAll('#stakeSortDropdown .stake-sort-option').forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('#stakeSortDropdown .stake-sort-option').forEach(function(o) { o.classList.remove('active'); });
+                opt.classList.add('active');
+                document.getElementById('stakeSortValue').textContent = opt.textContent;
+                sortWrap.classList.remove('open');
+                collapseAnyRow();
+                renderOverview();
+            });
+        });
+    }
 
     // Pool creation modal
     var poolModalBtn = document.getElementById('openPoolModalBtn');

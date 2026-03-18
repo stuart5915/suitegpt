@@ -389,44 +389,82 @@
         .stake-toolbar {
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
             margin-bottom: var(--space-md);
-            flex-wrap: wrap;
         }
-        .stake-filters { display: flex; gap: 4px; }
-        .lp-filter-tab {
-            background: transparent;
+        .stake-sort-wrap {
+            position: relative;
+            margin-left: auto;
+        }
+        .stake-sort-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 5px 14px;
+            border-radius: 10px;
+            padding: 7px 12px;
             font-family: var(--font-body);
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-dim);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.15s;
         }
-        .lp-filter-tab:hover {
-            color: var(--text-secondary);
-            border-color: var(--border-default);
-        }
-        .lp-filter-tab.active {
-            background: var(--seafoam-400);
+        .stake-sort-btn:hover {
             border-color: var(--seafoam-400);
-            color: #000;
+            color: var(--text-primary);
         }
-        .lp-sort {
-            margin-left: auto;
-            background: var(--bg-elevated);
+        .stake-sort-label {
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+        .stake-sort-value {
+            font-weight: 700;
+            color: var(--seafoam-400);
+        }
+        .stake-sort-chevron {
+            transition: transform 0.2s;
+            opacity: 0.5;
+        }
+        .stake-sort-wrap.open .stake-sort-chevron {
+            transform: rotate(180deg);
+        }
+        .stake-sort-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            min-width: 120px;
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 5px 14px;
+            border-radius: 10px;
+            padding: 4px;
+            z-index: 50;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .stake-sort-wrap.open .stake-sort-dropdown {
+            display: block;
+        }
+        .stake-sort-option {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 12px;
             font-family: var(--font-body);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-secondary);
             cursor: pointer;
-            appearance: auto;
+            transition: all 0.12s;
+        }
+        .stake-sort-option:hover {
+            background: rgba(99,102,241,0.1);
+            color: var(--text-primary);
+        }
+        .stake-sort-option.active {
+            color: var(--seafoam-400);
         }
 
         /* ── Table ── */
@@ -660,8 +698,7 @@
             .stake-table tbody td:nth-child(6) { display: none; }
         }
         @media (max-width: 480px) {
-            .stake-toolbar { gap: 4px; }
-            .lp-filter-tab { padding: 4px 10px; font-size: 0.7rem; }
+            .stake-sort-btn { padding: 6px 10px; font-size: 0.75rem; }
         }
 
         /* ── Inline Pool Expansion ── */
@@ -2351,15 +2388,18 @@
 
         <!-- Toolbar -->
         <div class="stake-toolbar">
-            <div class="stake-filters" id="stakeFilters">
-                <button class="lp-filter-tab active" data-filter="all">All</button>
-                <button class="lp-filter-tab" data-filter="inclawbator">Inclawbator</button>
+            <div class="stake-sort-wrap" id="stakeSortWrap">
+                <button class="stake-sort-btn" id="stakeSortBtn">
+                    <span class="stake-sort-label">Sort by</span>
+                    <span class="stake-sort-value" id="stakeSortValue">TVL</span>
+                    <svg class="stake-sort-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="stake-sort-dropdown" id="stakeSortDropdown">
+                    <button class="stake-sort-option active" data-sort="tvl">TVL</button>
+                    <button class="stake-sort-option" data-sort="apy">APY</button>
+                    <button class="stake-sort-option" data-sort="stakers">Stakers</button>
+                </div>
             </div>
-            <select class="lp-sort" id="stakeSort">
-                <option value="tvl">TVL</option>
-                <option value="apy">APY</option>
-                <option value="stakers">Stakers</option>
-            </select>
         </div>
 
         <!-- Table -->
