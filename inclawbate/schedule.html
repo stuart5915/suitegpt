@@ -1478,56 +1478,72 @@
                 }
 
             } else if (booked) {
-                var logoChar = (booked.project_name || '?').charAt(0).toUpperCase();
-                var logoHtml = booked.project_logo
-                    ? '<img src="' + booked.project_logo + '" alt="" onerror="this.parentNode.textContent=\'' + logoChar + '\'">'
-                    : logoChar;
-
-                html += '<div class="sched-logo">' + logoHtml + '</div>';
-                html += '<div class="sched-content">';
-                html += '<div class="sched-content-name">' + (booked.project_name || 'Project');
-                if (booked.project_symbol) html += ' <span style="opacity:0.6">$' + booked.project_symbol + '</span>';
-                html += '</div>';
+                // User-booked slot — render same visual style as autofill
+                html += '<div class="sched-content" style="flex:1;min-width:0">';
                 if (booked.content_angle) {
                     html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
+                } else if (booked.project_name && booked.project_name !== 'Project') {
+                    html += '<div class="sched-content-angle">' + escHtml(booked.project_name) + '</div>';
                 }
                 if (booked.tweet_text) {
-                    html += '<div class="sched-draft-text">' + escHtml(booked.tweet_text).slice(0, 80) + (booked.tweet_text.length > 80 ? '...' : '') + '</div>';
+                    html += '<div class="sched-draft-text">' + escHtml(booked.tweet_text) + '</div>';
+                }
+
+                var slotOpts2 = booked.tweet_options || {};
+                // Show image prompt for drafts/pending (same as autofill)
+                if (slotOpts2.image_prompt && (isDraft || isPending)) {
+                    html += '<div class="sched-img-prompt" id="imgPrompt_' + booked.id + '" onclick="event.stopPropagation()">';
+                    html += '<div class="sched-img-prompt-toggle" onclick="this.parentElement.classList.toggle(\'open\')">';
+                    html += '<span class="sched-img-prompt-label">Image Prompt</span>';
+                    html += '<span class="sched-img-prompt-arrow">&#x25BC;</span>';
+                    html += '</div>';
+                    html += '<div class="sched-img-prompt-body">';
+                    html += '<div class="sched-img-prompt-text">' + escHtml(slotOpts2.image_prompt) + '</div>';
+                    html += '<div class="sched-img-prompt-actions">';
+                    html += '<button class="sched-img-prompt-btn" onclick="window._copyImgPrompt(this,\'' + booked.id + '\')" title="Copy prompt">&#x1F4CB;</button>';
+                    html += '<button class="sched-img-prompt-btn" onclick="window._regenImgPrompt(\'' + booked.id + '\')" title="New prompt">&#x21BB;</button>';
+                    html += '</div></div></div>';
                 }
                 html += '</div>';
 
-                // Image area for user-booked slots (admin/editor)
-                var slotOpts2 = booked.tweet_options || {};
+                // Image area for user-booked slots
                 if (slotOpts2.image_url) {
                     html += '<img src="' + slotOpts2.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
 
+                // Status badges + actions (same pattern as autofill)
                 if (isPosted) {
                     html += '<span class="sched-tag sched-tag--posted">posted</span>';
-                } else if (_hasEditAccess() && !isPast) {
-                    // Admin/editor controls on user-booked slots
+                } else if (isScheduled) {
+                    html += '<span class="sched-tag" style="color:#818cf8;border-color:rgba(99,102,241,0.4);font-size:0.68rem;padding:2px 8px;border-radius:20px;border:1px solid;font-weight:600">scheduled</span>';
+                } else if (booked.status === 'needs_image') {
+                    // no extra badge — "+ image" button already shown
+                } else if (booked.status === 'needs_review' || isPending) {
+                    html += '<span class="sched-tag sched-tag--draft">review</span>';
+                }
+
+                // Admin/editor actions
+                if (_hasEditAccess() && !isPast && !isPosted) {
                     html += '<div class="sched-draft-actions">';
-                    if (_isAdmin() && (isPending || booked.status === 'needs_review')) {
-                        html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
-                    } else if (_isAdmin() && isScheduled) {
-                        html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
+                    if (_isAdmin()) {
+                        if (isDraft || isPending) {
+                            html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
+                        } else if (isScheduled) {
+                            html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
+                        }
                     }
                     html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._editDraft(\'' + booked.id + '\')" title="Edit tweet text">&#x270E;</button>';
+                    html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._regenSlot(\'' + booked.id + '\')" title="Regenerate tweet">&#x21BB;</button>';
                     html += '<button class="sched-draft-btn sched-draft-btn--delete" onclick="event.stopPropagation();window._deleteSlot(\'' + booked.id + '\')" title="Delete this slot">&#x2715;</button>';
                     html += '</div>';
                 } else if (isPending && isMine) {
                     html += '<span class="sched-tag sched-tag--pending">pending review</span>';
                     html += '<button onclick="event.stopPropagation();window._schedCancel(\'' + booked.id + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">cancel</button>';
-                } else if (isPending) {
-                    html += '<span class="sched-tag sched-tag--pending">pending</span>';
                 } else if (isMine && !isPast) {
-                    html += '<span class="sched-tag sched-tag--mine">yours</span>';
                     html += '<button onclick="event.stopPropagation();window._schedCancel(\'' + booked.id + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">cancel</button>';
                     html += '<button onclick="event.stopPropagation();window._schedEdit(\'' + booked.id + '\')" style="background:none;border:none;color:var(--seafoam-400);cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">edit</button>';
-                } else if (isMine && isPast) {
-                    html += '<span class="sched-tag sched-tag--mine">yours</span>';
                 }
 
             } else if (!isPast) {
