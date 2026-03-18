@@ -1652,6 +1652,33 @@
         }
 
         /* Stats grid */
+        /* Live unclaimed ticker */
+        .angel-ticker-wrap {
+            text-align: center;
+            padding: var(--space-md) 0 var(--space-lg);
+        }
+        .angel-ticker-value {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: hsl(280, 60%, 65%);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            text-shadow: 0 0 30px hsla(280, 60%, 55%, 0.3);
+        }
+        .angel-ticker-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        @media (max-width: 480px) {
+            .angel-ticker-value { font-size: 1.6rem; }
+        }
+
         .angel-rewards-stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -2100,6 +2127,12 @@
                         <div class="angel-rewards-badge"><span class="pulse-dot"></span> Angel Holder Rewards</div>
                         <div class="angel-rewards-title">Earn <span>CLAWS</span> just by holding an Angel NFT</div>
                     </div>
+                </div>
+
+                <!-- Live unclaimed ticker -->
+                <div class="angel-ticker-wrap">
+                    <div class="angel-ticker-value" id="arUnclaimedTicker">0.000000</div>
+                    <div class="angel-ticker-label">CLAWS Earned &amp; Unclaimed</div>
                 </div>
 
                 <!-- Global stats -->
@@ -2709,6 +2742,7 @@
             var weight = Number(hexToBN(weightHex));
             var count = Number(hexToBN(countHex));
             var deposited = hexToBN(depositedHex);
+            var claimed = hexToBN(claimedHex);
             var now  = Math.floor(Date.now() / 1000);
 
             // Total pool
@@ -2734,6 +2768,38 @@
             } else {
                 $id('arTimeLeft').textContent = 'Ended';
             }
+
+            // ── Live unclaimed ticker ──
+            // unclaimed = total dripped so far - claimed
+            // total dripped = deposited - remaining
+            var remaining = (end > now) ? rate * BigInt(end - now) : 0n;
+            var dripped = deposited - remaining;
+            var unclaimed = dripped - claimed;
+            if (unclaimed < 0n) unclaimed = 0n;
+
+            var ratePerSec = Number(rate) / 1e18;
+            var unclaimedFloat = Number(unclaimed) / 1e18;
+            var tickerStart = performance.now();
+            var stillDripping = (end > now && rate > 0n);
+
+            // Clear previous ticker
+            if (window._arTickerInterval) cancelAnimationFrame(window._arTickerInterval);
+
+            function tickerUpdate() {
+                var elapsed = (performance.now() - tickerStart) / 1000;
+                var current = unclaimedFloat + (stillDripping ? elapsed * ratePerSec : 0);
+                if (current >= 1e9) {
+                    $id('arUnclaimedTicker').textContent = (current / 1e9).toFixed(6) + ' B';
+                } else if (current >= 1e6) {
+                    $id('arUnclaimedTicker').textContent = (current / 1e6).toFixed(6) + ' M';
+                } else if (current >= 1e3) {
+                    $id('arUnclaimedTicker').textContent = (current / 1e3).toFixed(4) + ' K';
+                } else {
+                    $id('arUnclaimedTicker').textContent = current.toFixed(6);
+                }
+                window._arTickerInterval = requestAnimationFrame(tickerUpdate);
+            }
+            tickerUpdate();
 
 
         } catch(e) {
