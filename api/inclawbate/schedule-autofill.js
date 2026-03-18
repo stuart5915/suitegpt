@@ -361,8 +361,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const { error } = await supabase
                 .from('agent_schedule')
                 .delete()
-                .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill');
+                .eq('id', slot_id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true });
         }
@@ -373,8 +372,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const { error } = await supabase
                 .from('agent_schedule')
                 .update({ status: 'scheduled' })
-                .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill');
+                .eq('id', slot_id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true });
         }
@@ -387,8 +385,7 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
             const { error } = await supabase
                 .from('agent_schedule')
                 .update(updates)
-                .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill');
+                .eq('id', slot_id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true });
         }
@@ -422,7 +419,6 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
                 .from('agent_schedule')
                 .select('*')
                 .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill')
                 .single();
             if (!slot) return res.status(404).json({ error: 'Slot not found' });
 
@@ -563,7 +559,6 @@ IMAGE: [2-3 sentence prompt — lobster doing something SPECIFIC to the tweet, n
                 .from('agent_schedule')
                 .select('*')
                 .eq('id', slot_id)
-                .eq('booked_by_wallet', 'system-autofill')
                 .single();
             if (!slot) return res.status(404).json({ error: 'Slot not found' });
 
@@ -631,7 +626,6 @@ Output ONLY the prompt, nothing else.`;
             const { data: updated, error } = await supabase
                 .from('agent_schedule')
                 .update({ status: 'scheduled' })
-                .eq('booked_by_wallet', 'system-autofill')
                 .eq('account', approveAccount || 'inclawbator')
                 .in('status', ['needs_review', 'needs_image'])
                 .gte('scheduled_at', dayStart)
@@ -783,8 +777,9 @@ async function generateDrafts(req, res, targetDate, account, style) {
     const angles = cfg.slotAngles[pillar.name] || ['general'];
 
     // Check which slots are already booked
-    // Extend range past midnight to include early-morning slots (UTC hour 1 = 9PM ET)
-    const dayStart = date + 'T00:00:00Z';
+    // Range: 06:00 UTC (skip previous day's Night slot at hour 1) to next day 06:00 UTC
+    // This covers today's slots at hours 13,16,19,22 + today's Night slot at next-day hour 1
+    const dayStart = date + 'T06:00:00Z';
     const rangeEnd = new Date(new Date(date + 'T00:00:00Z').getTime() + 86400000 + 6 * 3600000).toISOString();
     const { data: existing } = await supabase
         .from('agent_schedule')
