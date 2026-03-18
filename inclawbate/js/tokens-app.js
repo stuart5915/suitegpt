@@ -54,6 +54,16 @@ var EXTRA_TOKENS = [
         status: 'active',
         tier: 'ecosystem',
         created_at: '2026-03-14T00:00:00Z'
+    },
+    {
+        id: 'mirrormind',
+        token_name: 'Mirror Mind',
+        token_symbol: 'MIND',
+        token_address: '0x997494e831a2660F5d411BCe58695437617a7B07',
+        logo_url: '/inclawbate/assets/mirrormind.png',
+        status: 'active',
+        tier: 'incubated',
+        created_at: '2026-03-18T00:00:00Z'
     }
 ];
 
