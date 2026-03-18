@@ -696,6 +696,110 @@
             font-size: 0.7rem;
             color: var(--text-dim);
         }
+
+        /* ── CLAWS Rewards Highlight ── */
+        .angel-rewards-highlight {
+            position: relative;
+            margin-bottom: var(--space-2xl);
+            padding: 2px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, hsl(280, 60%, 50%), hsl(38, 80%, 55%), hsl(280, 50%, 45%));
+            background-size: 200% 200%;
+            animation: angelGlow 6s ease infinite;
+        }
+        @keyframes angelGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .angel-rewards-highlight-inner {
+            background: var(--bg-elevated);
+            border-radius: calc(var(--radius-xl) - 2px);
+            padding: var(--space-xl);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .angel-rewards-highlight-inner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 50% 60% at 20% 0%, hsla(280, 60%, 55%, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 50% at 80% 100%, hsla(38, 80%, 55%, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .angel-rewards-highlight h2 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin: 0 0 var(--space-xs) 0;
+        }
+        .angel-rewards-highlight h2 span {
+            background: linear-gradient(135deg, hsl(280, 60%, 65%), hsl(38, 80%, 60%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .angel-rewards-highlight-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .angel-rewards-highlight-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .arh-stat {
+            text-align: center;
+        }
+        .arh-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: hsl(280, 60%, 65%);
+            line-height: 1.2;
+        }
+        .arh-stat-value.gold { color: hsl(38, 80%, 60%); }
+        .arh-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .angel-rewards-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 32px;
+            border: none;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, hsl(280, 60%, 55%), hsl(280, 50%, 45%));
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px hsla(280, 60%, 45%, 0.3);
+        }
+        .angel-rewards-cta-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px hsla(280, 60%, 45%, 0.4);
+        }
+        @media (max-width: 600px) {
+            .angel-rewards-highlight-stats { gap: 20px; }
+            .arh-stat-value { font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body>
@@ -736,8 +840,7 @@
             </div>
             <h1 class="angel-title">Angel NFT</h1>
             <p class="angel-sub">
-                A founding badge for the 828 original INCLAWNCH holders who believed from the start.
-                Send your snapshot INCLAWNCH to mint. Minting closes forever on March 15, 2026.
+                A founding badge for the 828 original holders. Hold one and earn <strong style="color:hsl(280,60%,65%)">CLAWS rewards every second</strong> &mdash; no staking required. Just hold it in your wallet.
             </p>
         </div>
 
@@ -749,6 +852,31 @@
 
         <!-- NFT Tab Content -->
         <div id="tabNft">
+
+        <!-- CLAWS Rewards Highlight -->
+        <div class="angel-rewards-highlight">
+            <div class="angel-rewards-highlight-inner">
+                <h2>Earn <span>CLAWS</span> Every Second</h2>
+                <p class="angel-rewards-highlight-desc">
+                    5.1 billion CLAWS are being distributed to Angel NFT holders over ~2 years. No staking. No lock-ups. Just hold an Angel NFT in your wallet and claim anytime.
+                </p>
+                <div class="angel-rewards-highlight-stats">
+                    <div class="arh-stat">
+                        <div class="arh-stat-value">5.1B</div>
+                        <div class="arh-stat-label">Total Reward Pool</div>
+                    </div>
+                    <div class="arh-stat">
+                        <div class="arh-stat-value gold" id="arhPerDay">~182K</div>
+                        <div class="arh-stat-label">CLAWS / NFT / Day</div>
+                    </div>
+                    <div class="arh-stat">
+                        <div class="arh-stat-value">~718</div>
+                        <div class="arh-stat-label">Days of Rewards</div>
+                    </div>
+                </div>
+                <a href="/stake" class="angel-rewards-cta-btn">Claim Rewards on Stake Page &rarr;</a>
+            </div>
+        </div>
 
         <!-- Countdown Banner -->
         <div class="angel-countdown-banner" id="countdownBanner">
@@ -830,6 +958,7 @@
 
                 <h3 style="margin-top:var(--space-lg)">Angel Holder Benefits</h3>
                 <ul class="angel-info-list">
+                    <li><strong style="color:hsl(280,60%,65%)">Earn CLAWS every second</strong> &mdash; 5.1B CLAWS distributed over ~2 years to Angel holders. No staking. Just hold.</li>
                     <li><strong>Unlimited Build Studio credits</strong> &mdash; build as many apps as you want, any model tier, no limits</li>
                     <li><strong>Free token launches</strong> &mdash; no CLAWS burn required for dev allocation tiers</li>
                     <li><strong>Free staking pool deployment</strong> &mdash; deploy staking for your token at zero cost</li>

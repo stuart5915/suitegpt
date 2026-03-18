@@ -83,10 +83,6 @@
             font-size: 0.92rem;
             color: var(--text-secondary);
         }
-        .state-item.focus-item {
-            border-color: rgba(255, 140, 50, 0.3);
-            background: rgba(255, 140, 50, 0.05);
-        }
         .state-item.done-item {
             opacity: 0.6;
             text-decoration: line-through;
@@ -167,14 +163,6 @@
         <p>Live view of what we're building and where treasury funds go</p>
     </div>
 
-    <!-- Focus -->
-    <div class="state-section" id="focus-section">
-        <h2 onclick="toggleSection(this)">🔥 Focus <span class="chevron">▼</span></h2>
-        <div class="section-body">
-            <div id="focus-list" class="loading">Loading...</div>
-        </div>
-    </div>
-
     <!-- Incubations -->
     <div class="state-section" id="incubation-section">
         <h2 onclick="toggleSection(this)">🦞 Incubations <span class="count" id="incubation-count"></span> <span class="chevron">▼</span></h2>
@@ -253,7 +241,6 @@ function escHtml(s) {
 fetch('/api/inclawbate/team-state')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-        renderItems(document.getElementById('focus-list'), data.focus, 'focus-item');
         renderItems(document.getElementById('incubation-list'), data.incubations, 'incubation-item');
         document.getElementById('incubation-count').textContent = data.incubations.length;
         renderItems(document.getElementById('responsibility-list'), data.responsibilities);
@@ -265,7 +252,7 @@ fetch('/api/inclawbate/team-state')
         }
     })
     .catch(function() {
-        document.getElementById('focus-list').innerHTML = '<div class="empty-state">Failed to load</div>';
+        document.getElementById('incubation-list').innerHTML = '<div class="empty-state">Failed to load</div>';
     });
 
 /* Allocation vote system removed — lives on /how-it-works */
