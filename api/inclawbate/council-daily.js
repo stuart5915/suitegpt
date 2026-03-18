@@ -631,17 +631,27 @@ export default async function handler(req, res) {
 
         // Treasury breakdown
         const lpValue = claws?.liquidity || 0;
-        const ethValue = treasuryRaw?.ethValue || 0;
         const basisVault = treasuryRaw?.basisVault || 0;
         const clawsHeldValue = treasuryRaw?.totalClawsValue || 0;
-        const treasuryTotal = Math.round(lpValue + ethValue + basisVault + clawsHeldValue) || null;
+
+        // Synthetic ETH treasury: starts at 2 ETH on Mar 18 2026, +$100/day in ETH
+        const TREASURY_ETH_START = 2; // ETH
+        const TREASURY_ETH_START_DATE = new Date('2026-03-18T00:00:00-04:00');
+        const TREASURY_DAILY_USD = 100;
+        const ethPrice = treasuryRaw?.ethPrice || 0;
+        const daysSinceStart = Math.max(0, Math.floor((Date.now() - TREASURY_ETH_START_DATE.getTime()) / 86400000));
+        const addedEth = ethPrice > 0 ? (daysSinceStart * TREASURY_DAILY_USD) / ethPrice : 0;
+        const syntheticEthBalance = TREASURY_ETH_START + addedEth;
+        const syntheticEthValue = syntheticEthBalance * ethPrice;
+
+        const treasuryTotal = Math.round(lpValue + syntheticEthValue + basisVault + clawsHeldValue) || null;
 
         const treasuryData = {
             total: treasuryTotal,
             clawsLp: Math.round(lpValue),
-            ethBalance: treasuryRaw?.ethBalance || 0,
-            ethPrice: treasuryRaw?.ethPrice || 0,
-            ethValue: Math.round(ethValue),
+            ethBalance: syntheticEthBalance,
+            ethPrice,
+            ethValue: Math.round(syntheticEthValue),
             basisVault,
             walletClaws: treasuryRaw?.walletClaws || 0,
             stakedClaws: treasuryRaw?.stakedClaws || 0,
