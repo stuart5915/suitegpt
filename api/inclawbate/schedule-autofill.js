@@ -499,14 +499,20 @@ RULES:
 - Can use \\n for line breaks if doing a formatted/structured tweet
 - NEVER use vague filler like "various" or "popular ones"
 
-IMAGE PROMPT RULES:
+IMAGE PROMPT (this is critical — the image must illustrate the tweet):
 ${BRAND_IMAGE_CONTEXT}
 ${sceneHint ? 'BASE SCENE (adapt to tweet content): ' + sceneHint : ''}
 ${narrativeScene ? 'NARRATIVE INSPIRATION: ' + narrativeScene : ''}
 
+After writing the tweet, ask yourself: "What is this tweet ABOUT?" Then show the lobster DOING that thing.
+- Tweet about staking → lobster meditating with orbiting coins and APY charts
+- Tweet about building → lobster at workstation with holographic app floating above
+- Tweet about community → lobster greeting others at The Lounge
+- Tweet about growth → lobster on The Rooftop watching stats rise
+
 Output format:
 TWEET: [the tweet — can include \\n for line breaks]
-IMAGE: [2-3 sentence prompt]`;
+IMAGE: [2-3 sentence prompt — lobster doing something SPECIFIC to the tweet, narrative location, dark background, coral+teal lighting, Octane render, 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -570,18 +576,23 @@ IMAGE: [2-3 sentence prompt]`;
             const narrativeScene = (cfg.narrativeScenes[pillarName] || [])[Math.floor(Math.random() * (cfg.narrativeScenes[pillarName] || ['']).length)] || '';
             const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
-This image accompanies this specific tweet from @${slotAccount}:
+This image MUST visually illustrate this specific tweet from @${slotAccount}:
 "${tweetText}"
 
 ${BRAND_IMAGE_CONTEXT}
 
-${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
+${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet): ' + sceneHint : ''}
 
-${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
+${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements):\n' + narrativeScene : ''}
 
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point. Draw from the narrative scene for specific settings and character details.
+STEP BY STEP:
+1. Read the tweet above. What is the KEY SUBJECT? (staking? building? a specific app? community? treasury?)
+2. What should the lobster be DOING to illustrate this? (presenting an app = showing a holographic screen, staking = meditating with orbiting coins, building = coding at workstation, community = greeting others at The Lounge)
+3. What SPECIFIC VISUAL DETAILS from the tweet should appear? (if "APY increased" → charts trending up, if "100+ apps" → constellation of floating app screens, if "poker" → card table and chips)
 
-Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
+Write ONE image prompt (2-3 sentences). The 3D lobster mascot must be the focal point doing something that SPECIFICALLY relates to what the tweet says. Include: pose, action, specific visual elements from the tweet, dark background, coral+teal lighting, Octane render quality, 1:1.
+
+Output ONLY the prompt, nothing else.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -842,28 +853,43 @@ RULES:
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary tone and structure
 
-Generate ${emptyHours.length} tweets. For EACH tweet, write a matching image prompt that visually represents THAT SPECIFIC tweet's content.
+Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching image prompt.
+
+THE IMAGE PROMPT IS THE MOST IMPORTANT PART. Read the tweet you just wrote, then craft an image that ILLUSTRATES the specific content of that tweet. Not a generic brand image — a scene that someone could look at and understand what the tweet is about.
 
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 
-BASE SCENE for today's pillar (${pillar.name}) — adapt this to each tweet's specific content:
+BASE SCENE for today's pillar (${pillar.name}) — use as a starting point, then customize based on the tweet:
 ${sceneHint}
 
-NARRATIVE WORLD (use these scenes as inspiration — pull locations, characters, props, and moods to make each image vivid and unique):
+NARRATIVE SCENES (pick elements — locations, characters, props, moods — to make each image vivid):
 ${narrativeScenesList}
 
-CRITICAL: Each image prompt must be UNIQUE and tied to what the tweet says. Draw from the narrative scenes above for specific settings, supporting characters (Crab Engineer, Shrimp Newbie, Mini Lobsters, etc.), and locations (The Workshop, The Reef, The Lounge, etc.). Don't just repeat the same generic scene for every tweet.
+HOW TO WRITE A GOOD IMAGE PROMPT:
+1. Read your tweet. Identify the KEY SUBJECT (staking? an app? building? community?)
+2. Choose a scene/location that fits (The Workshop for building, The Trading Floor for DeFi, The Lounge for community, The Rooftop for vision)
+3. Show the lobster DOING something related to the tweet (presenting an app, tending yield gardens, meditating with orbiting coins, coding at a workstation)
+4. Add specific visual details from the tweet content (if tweet mentions "staking APY" show charts and yield arrows, if it mentions "100+ apps" show a constellation of floating app screens)
+5. End with: dark background, coral+teal lighting, Octane render quality, 1:1
 
-EXAMPLE of a good pair:
-TWEET: a full social network just went live on inclawbate. built with AI in minutes. no code needed. the future is here.
-IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, proudly presenting a holographic social network interface to the Crab Engineer who gives a thumbs-up. Glowing connection nodes and profile cards float around. Dark void background with coral (#e5533d) rim lighting on the glossy shell and teal (#4db6ac) data streams between the nodes. Volumetric lighting, cinematic depth of field, Octane render quality, 1:1.
+GOOD EXAMPLES:
+TWEET: staking apy just increased. more claws locked, better yields. passive income is real. inclawbate.com/stake
+IMAGE: 3D rendered Inclawbate lobster mascot in "Staking Zen" pose, meditating on a floating coral platform surrounded by orbiting CLAWS token coins. A large holographic APY chart trends upward behind it with glowing green arrows. Yield streams in teal (#4db6ac) flow from coins into the lobster. Dark void background with warm coral (#e5533d) rim lighting. Volumetric light, cinematic depth of field, Octane render quality, 1:1.
+
+TWEET: someone just built a full app on inclawbate in 10 minutes. no code. just vibes.
+IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, claws flying across a glowing keyboard with a completed app floating above the screen — fully formed with UI elements, buttons, and data flowing through it. The Shrimp Newbie watches in amazement from behind. Dark workshop with coral neon signs and teal holographic code streams. Cinematic depth of field, Octane render quality, 1:1.
+
+BAD IMAGE PROMPTS (DO NOT DO THIS):
+- "3D lobster mascot in a cool pose with coral and teal lighting" (too generic, could be any tweet)
+- "The lobster standing confidently" (no connection to tweet content)
+- "Lobster with holographic screens" (vague, doesn't reflect specific tweet)
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentence image prompt — 3D lobster mascot in a narrative location, dark background, coral+teal lighting, supporting characters where relevant, visually matching the tweet's content]
+IMAGE: [2-3 sentence image prompt — 3D lobster mascot doing something SPECIFIC to the tweet, in a narrative location, dark background, coral+teal lighting, Octane render quality, 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 
