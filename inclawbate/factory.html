@@ -550,10 +550,20 @@
 
         async function loadApps() {
             try {
-                var r = await fetch(APPS_API);
-                if (!r.ok) { console.error('Apps API:', r.status); _existingApps = []; return; }
-                var d = await r.json();
-                _existingApps = d.apps || [];
+                // API caps at 50 per page — paginate to get all apps
+                _existingApps = [];
+                var page = 1;
+                var hasMore = true;
+                while (hasMore) {
+                    var r = await fetch(APPS_API + '?limit=50&page=' + page);
+                    if (!r.ok) { console.error('Apps API:', r.status); break; }
+                    var d = await r.json();
+                    var batch = d.apps || [];
+                    _existingApps = _existingApps.concat(batch);
+                    hasMore = batch.length === 50 && page < 10; // safety cap
+                    page++;
+                }
+                console.log('[Factory] Loaded ' + _existingApps.length + ' apps');
             } catch (e) {
                 console.error('loadApps error:', e);
                 _existingApps = [];
