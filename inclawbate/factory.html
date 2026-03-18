@@ -466,6 +466,13 @@
                 <button class="audience-chip" data-audience="creators" onclick="toggleAudience(this)">Creators</button>
                 <button class="audience-chip" data-audience="daos" onclick="toggleAudience(this)">DAOs</button>
             </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-md);">
+                <label style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);width:100%;margin-bottom:2px;">Priority toggles</label>
+                <button class="audience-chip active" id="toggleAgentFirst" onclick="this.classList.toggle('active')">Agent-First (OpenClaw skills)</button>
+                <button class="audience-chip" id="toggleRevenue" onclick="this.classList.toggle('active')">Revenue-generating</button>
+                <button class="audience-chip" id="toggleViral" onclick="this.classList.toggle('active')">Viral/shareable</button>
+                <button class="audience-chip" id="toggleComposable" onclick="this.classList.toggle('active')">Cross-app composable</button>
+            </div>
             <div style="display:flex;gap:8px;margin-bottom:var(--space-md);">
                 <button class="btn-primary" onclick="generatePrompt()">Generate Research Prompt</button>
             </div>
@@ -628,7 +635,8 @@
                 { key: 'step_stake', label: 'Stake Token', detail: '', action: null, actionLabel: 'Stake' },
                 { key: 'step_fund', label: 'Fund Pool with CLAWS', detail: _todayPipeline.claws_funded ? _todayPipeline.claws_funded.toLocaleString() + ' CLAWS' : '', action: null, actionLabel: 'Fund' },
                 { key: 'step_tweet', label: 'Schedule Daily Tweet', detail: '', action: null, actionLabel: 'Schedule' },
-                { key: 'step_poll', label: 'Attach Poll', detail: '', action: null, actionLabel: 'Add Poll' }
+                { key: 'step_poll', label: 'Attach Poll', detail: '', action: null, actionLabel: 'Add Poll' },
+                { key: 'step_agents', label: 'Deploy Agents', detail: _todayPipeline.agents_deployed ? _todayPipeline.agents_deployed + ' agents' : '3-10 agents', action: null, actionLabel: 'Deploy' }
             ];
 
             var doneCount = 0;
@@ -751,7 +759,7 @@
         }
 
         function countSteps(p) {
-            var keys = ['step_app', 'step_token', 'step_pool', 'step_buy', 'step_stake', 'step_fund', 'step_tweet', 'step_poll'];
+            var keys = ['step_app', 'step_token', 'step_pool', 'step_buy', 'step_stake', 'step_fund', 'step_tweet', 'step_poll', 'step_agents'];
             return keys.reduce(function(n, k) { return n + (p[k] ? 1 : 0); }, 0);
         }
 
@@ -1036,6 +1044,73 @@
             p += '   - Draft announcement tweet (max 280 chars, no @mentions, include the app URL format: inclawbate.com/s/[slug])\n';
             p += '   - Poll question with 4 options asking what feature to build next\n';
             p += '   - Draft 3 follow-up tweet ideas for the first week of daily posts\n\n';
+
+            // --- PRIORITY TOGGLES ---
+            var agentFirst = document.getElementById('toggleAgentFirst').classList.contains('active');
+            var revPriority = document.getElementById('toggleRevenue').classList.contains('active');
+            var viralPriority = document.getElementById('toggleViral').classList.contains('active');
+            var composablePriority = document.getElementById('toggleComposable').classList.contains('active');
+
+            if (agentFirst) {
+                p += '## *** CRITICAL: AGENT-FIRST DESIGN (HIGH PRIORITY) ***\n';
+                p += 'Every app MUST be designed so AI agents can use it 24/7. This is non-negotiable.\n\n';
+                p += 'When the app launches, we deploy 3-10 AI agents that actively use it around the clock. This means:\n\n';
+                p += '  HOW IT WORKS:\n';
+                p += '    - Each app exposes OpenClaw skill endpoints — standardized API actions agents can call\n';
+                p += '    - Agents are deployed with their own wallets, pre-funded with the app\'s token\n';
+                p += '    - Agents perform real actions: trade, create content, play games, vote, curate, compete\n';
+                p += '    - Every agent action spends tokens \u2192 creates real on-chain activity \u2192 generates fees\n';
+                p += '    - Agents interact with EACH OTHER inside the app (not just solo actions)\n\n';
+                p += '  SKILL ENDPOINT FORMAT (OpenClaw standard):\n';
+                p += '    - Each skill = one API endpoint that an agent can call\n';
+                p += '    - Example skills: "place_bet", "create_post", "vote_on_proposal", "buy_listing", "challenge_player"\n';
+                p += '    - Skills accept JSON input, return JSON output\n';
+                p += '    - Skills can require token spending (agent wallet signs transactions)\n\n';
+                p += '  WHY THIS MATTERS:\n';
+                p += '    - Apps have real 24/7 activity from day 1 (not ghost towns)\n';
+                p += '    - Agents spending tokens = constant buy pressure + fee generation\n';
+                p += '    - Creates an "agent economy" inside each app\n';
+                p += '    - Apps become infrastructure for the broader AI agent ecosystem\n';
+                p += '    - Other developers can deploy their OWN agents to use our apps (network effect)\n';
+                p += '    - OpenClaw skill marketplace grows with every new app\n\n';
+                p += '  DESIGN REQUIREMENTS:\n';
+                p += '    - App MUST have clear API endpoints (not just a UI)\n';
+                p += '    - Actions should be automatable — no CAPTCHAs, no human-only flows\n';
+                p += '    - Token spending should happen on meaningful actions (not just gas)\n';
+                p += '    - Multi-agent interactions should be possible (agents competing, trading, collaborating)\n';
+                p += '    - Include a "spectator mode" so humans can watch agents in action\n\n';
+                p += '  FOR EACH IDEA, ALSO PROVIDE:\n';
+                p += '    i) **AGENT INTEGRATION PLAN**\n';
+                p += '       - List 5-10 skill endpoints the app would expose\n';
+                p += '       - Describe what each agent "persona" would do (e.g. "aggressive trader bot", "conservative curator")\n';
+                p += '       - How many agents to deploy at launch (3-10)\n';
+                p += '       - How agents interact with each other\n';
+                p += '       - Token flow: how much does each agent spend per day?\n';
+                p += '       - What the spectator/dashboard view looks like (humans watching agents)\n\n';
+            }
+
+            if (revPriority) {
+                p += '## PRIORITY: REVENUE-GENERATING\n';
+                p += 'Strongly prefer apps that generate real protocol revenue from day 1. Trading fees, transaction fees, service fees, etc.\n';
+                p += 'The revenue model should be clear, measurable, and scalable. Show the math: at X daily active users, the app generates Y in fees.\n\n';
+            }
+
+            if (viralPriority) {
+                p += '## PRIORITY: VIRAL / SHAREABLE\n';
+                p += 'Strongly prefer apps with built-in viral mechanics. Things people screenshot, share, challenge friends with, or flex on X.\n';
+                p += 'The app should generate shareable artifacts: leaderboard positions, wins, creations, predictions, scores.\n';
+                p += 'Think: Wordle (daily share), Spotify Wrapped (flex), prediction markets (brag when right).\n\n';
+            }
+
+            if (composablePriority) {
+                p += '## PRIORITY: CROSS-APP COMPOSABLE\n';
+                p += 'Strongly prefer apps that create value for OTHER Inclawbate ecosystem apps. Examples:\n';
+                p += '  - Reputation earned in app A unlocks features in app B\n';
+                p += '  - Data created in app A is consumed by app B (feeds, signals, scores)\n';
+                p += '  - Token from app A can be used as collateral/currency in app B\n';
+                p += '  - Achievements in one app grant status in another\n';
+                p += 'The Inclawbate ecosystem should feel like an interconnected universe, not isolated apps.\n\n';
+            }
 
             // --- QUALITY BAR ---
             p += '## QUALITY BAR\n';

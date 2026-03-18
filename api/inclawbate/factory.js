@@ -21,7 +21,7 @@ const COUNCIL = new Set([
     '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
 ]);
 
-const STEP_KEYS = ['step_app', 'step_token', 'step_pool', 'step_buy', 'step_stake', 'step_fund', 'step_tweet', 'step_poll'];
+const STEP_KEYS = ['step_app', 'step_token', 'step_pool', 'step_buy', 'step_stake', 'step_fund', 'step_tweet', 'step_poll', 'step_agents'];
 
 function isCouncil(wallet) {
     return wallet && COUNCIL.has(wallet.toLowerCase());
@@ -109,7 +109,8 @@ export default async function handler(req, res) {
         // Optional field updates
         const fields = ['app_name', 'app_slug', 'app_description', 'token_symbol', 'token_address',
                         'staking_address', 'claws_funded', 'tweet_id', 'poll_tweet_id',
-                        'poll_results', 'poll_winner', 'poll_votes', 'token_utility', 'feedback_status'];
+                        'poll_results', 'poll_winner', 'poll_votes', 'token_utility', 'feedback_status',
+                        'agents_deployed', 'skill_endpoints'];
         fields.forEach(f => {
             if (req.body[f] !== undefined) updates[f] = req.body[f];
         });
