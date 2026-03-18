@@ -475,7 +475,9 @@ Real data (use ONLY these numbers):
 - ${ctx.totalApps}+ apps on inclawbate
 - Popular apps: ${topAppList || '(not available — do NOT reference specific apps)'}
 - Recent apps: ${recentAppList || '(not available — do NOT reference specific apps)'}
-- Token: $CLAWS on Base, website: inclawbate.com
+${ctx.claws ? `- $CLAWS price: $${ctx.claws.price} (24h: ${ctx.claws.change24h > 0 ? '+' : ''}${ctx.claws.change24h.toFixed(1)}%, direction: ${ctx.claws.direction.toUpperCase()})
+- $CLAWS volume 24h: $${ctx.claws.volume24h.toFixed(0)}, liquidity: $${ctx.claws.liquidity.toFixed(0)}, mcap: $${ctx.claws.marketCap.toFixed(0)}` : '- Token: $CLAWS on Base (no live price data — do NOT mention price direction)'}
+- Website: inclawbate.com
 - App builder: inclawbate.com/build
 - Staking: inclawbate.com/stake
 - PokerAI: pokerai.app
@@ -494,6 +496,7 @@ RULES:
 - Lowercase preferred, crypto-native casual tone
 - Can use \\n for line breaks if doing a formatted/structured tweet
 - NEVER use vague filler like "various" or "popular ones"
+- NEVER say "price is up" or "pumping" unless the data above shows positive 24h change. If price is DOWN, focus on building/fundamentals/community. NEVER fabricate market claims.
 
 IMAGE PROMPT (this is critical — the image must illustrate the tweet):
 ${BRAND_IMAGE_CONTEXT}
@@ -666,9 +669,9 @@ const STYLE_EXAMPLES = [
 
 // Fetch real platform stats for accurate content
 async function fetchPlatformContext() {
-    const results = { totalApps: 0, recentApps: [], builders: [], topApps: [] };
+    const results = { totalApps: 0, recentApps: [], builders: [], topApps: [], claws: null };
 
-    const [appsRes, countRes, buildersRes, profilesRes] = await Promise.allSettled([
+    const [appsRes, countRes, buildersRes, profilesRes, clawsRes] = await Promise.allSettled([
         supabase.from('user_apps')
             .select('name, slug, category, upvote_count, view_count, creator_x_handle, creator_wallet')
             .eq('is_public', true)
@@ -685,6 +688,10 @@ async function fetchPlatformContext() {
         supabase.from('human_profiles')
             .select('wallet_address, x_handle')
             .not('x_handle', 'is', null),
+        // Fetch live CLAWS token data from DexScreener
+        fetch('https://api.dexscreener.com/latest/dex/tokens/0x7ca47B141639B893C6782823C0b219f872056379')
+            .then(r => r.json())
+            .catch(() => null),
     ]);
 
     // Build wallet → current x_handle mapping from profiles
@@ -728,6 +735,23 @@ async function fetchPlatformContext() {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
             .map(([handle, count]) => ({ handle, apps: count }));
+    }
+
+    // Parse live CLAWS token data
+    if (clawsRes.status === 'fulfilled' && clawsRes.value) {
+        const dex = clawsRes.value;
+        const pair = dex.pairs?.[0];
+        if (pair) {
+            const change24h = parseFloat(pair.priceChange?.h24 || 0);
+            results.claws = {
+                price: pair.priceUsd || '0',
+                change24h,
+                direction: change24h > 2 ? 'up' : change24h < -2 ? 'down' : 'flat',
+                volume24h: parseFloat(pair.volume?.h24 || 0),
+                liquidity: parseFloat(pair.liquidity?.usd || 0),
+                marketCap: parseFloat(pair.marketCap || pair.fdv || 0),
+            };
+        }
     }
 
     return results;
@@ -806,6 +830,20 @@ async function generateDrafts(req, res, targetDate, account, style) {
         `${a.name} (${a.view_count || 0} views)`
     ).join(', ');
 
+    // Build live CLAWS data block
+    let clawsDataBlock = '- Token: $CLAWS on Base (no live price data available — do NOT mention price direction)';
+    if (ctx.claws) {
+        const c = ctx.claws;
+        const dirLabel = c.direction === 'up' ? 'UP' : c.direction === 'down' ? 'DOWN' : 'FLAT/SIDEWAYS';
+        clawsDataBlock = `- $CLAWS LIVE DATA (from DexScreener right now):
+  - Price: $${c.price}
+  - 24h change: ${c.change24h > 0 ? '+' : ''}${c.change24h.toFixed(1)}% (${dirLabel})
+  - 24h volume: $${c.volume24h.toFixed(0)}
+  - Liquidity: $${c.liquidity.toFixed(0)}
+  - Market cap: $${c.marketCap.toFixed(0)}
+  - PRICE DIRECTION IS ${dirLabel}. You MUST reflect this accurately. If price is DOWN, do NOT say "price is up" or imply bullish momentum. If FLAT, talk about stability or building.`;
+    }
+
     // Pick random style examples for variety
     const shuffled = [...cfg.styleExamples].sort(() => Math.random() - 0.5);
     const exampleBlock = shuffled.slice(0, 5).map((e, i) => `${i + 1}. "${e}"`).join('\n');
@@ -820,7 +858,7 @@ REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Total apps: ${ctx.totalApps}+
 - Popular apps: ${topAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
 - Recent apps: ${recentAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
-- Token: $CLAWS on Base
+${clawsDataBlock}
 - Website: inclawbate.com
 - App builder: inclawbate.com/build (AI builds apps, no code)
 - Staking: inclawbate.com/stake
@@ -847,6 +885,14 @@ RULES:
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Include inclawbate.com when it fits naturally (not every tweet)
 - Each tweet should feel DIFFERENT from the others — vary tone and structure
+
+CRITICAL — NO FALSE CLAIMS:
+- NEVER say "price is up", "pumping", "mooning", "bullish" unless the 24h change data above is actually positive
+- NEVER say "staking yields are fire" or imply high APY unless real APY data is provided and actually high
+- If price is DOWN, you can: talk about building during dips, focus on fundamentals, highlight what's shipping, or simply avoid mentioning price
+- If price is FLAT, talk about stability, accumulation, or focus on product/community instead
+- NEVER fabricate any metric. If you don't have the data, don't reference it. Talk about what you DO know (apps, tools, building, community)
+- When in doubt, focus on what the platform DOES (builds apps, incubates projects, tools) rather than making market claims
 
 Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching image prompt.
 
