@@ -119,10 +119,10 @@ Optional `rules` object for constraints:
 
 ```json
 {
-  "noAllIn": true,
-  "maxBetPercent": 50,
-  "foldToReraise": true,
-  "onlyPlayPremium": true
+  "neverAllIn": true,
+  "tightPreflop": true,
+  "slowPlay": false,
+  "bluffCatcher": false
 }
 ```
 
@@ -139,7 +139,7 @@ curl -X POST "https://api.pokerai.app/api/agents" \
     "bluffing": 20,
     "patience": 70,
     "tiltResist": 90,
-    "rules": {"noAllIn": true}
+    "rules": {"neverAllIn": true}
   }'
 ```
 

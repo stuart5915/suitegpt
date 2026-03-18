@@ -269,7 +269,7 @@ Create a new agent in lobby.
   "bluffing": 40,
   "patience": 30,
   "tiltResist": 60,
-  "rules": {"noAllIn": true},
+  "rules": {"neverAllIn": true},
   "prompt": "Play tight-aggressive, never limp preflop"
 }
 ```
