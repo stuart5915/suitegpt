@@ -147,26 +147,42 @@ const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
 const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
 
 async function fetchStakerCount() {
+    // Scan Staked(address,uint256) events in 10K-block chunks (Base RPC limit).
+    // Parallel batches of 10 to stay fast. Covers ~2M blocks (~12 days on Base).
+    const stakedTopic = '0x9e71bc8eea02a63969f509818f2dafb9254532904319f9dbda79b67bd34a5f3d';
     try {
-        // ERC-20 Transfer(from, to, value) topic + filter "to" = staking contract
-        const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-        const paddedStaking = '0x' + STAKING_CONTRACT.replace('0x', '').toLowerCase().padStart(64, '0');
-        const res = await fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0', method: 'eth_getLogs', id: 1,
-                params: [{ address: CLAWS_ADDRESS, topics: [transferTopic, null, paddedStaking], fromBlock: '0x0', toBlock: 'latest' }]
-            })
+        const headRes = await fetch(BASE_RPC, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_blockNumber', params: [], id: 1 })
         });
-        const data = await res.json();
-        if (!data.result || !Array.isArray(data.result)) return 0;
+        const latest = parseInt((await headRes.json()).result, 16);
+        const startBlock = latest - 2000000;
         const stakers = new Set();
-        for (const log of data.result) {
-            // topics[1] = from address (padded)
-            if (log.topics && log.topics[1]) {
-                stakers.add('0x' + log.topics[1].slice(26).toLowerCase());
+        const CHUNK = 9999;
+        const BATCH = 10;
+        for (let from = startBlock; from <= latest; from += (CHUNK + 1) * BATCH) {
+            const batch = [];
+            for (let i = 0; i < BATCH; i++) {
+                const f = from + i * (CHUNK + 1);
+                if (f > latest) break;
+                const t = Math.min(f + CHUNK, latest);
+                batch.push(fetch(BASE_RPC, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0', method: 'eth_getLogs', id: i,
+                        params: [{ address: STAKING_CONTRACT, topics: [stakedTopic], fromBlock: '0x' + f.toString(16), toBlock: '0x' + t.toString(16) }]
+                    })
+                }).then(r => r.json()).catch(() => null));
             }
+            const results = await Promise.all(batch);
+            for (const data of results) {
+                if (data?.result && Array.isArray(data.result)) {
+                    for (const log of data.result) {
+                        if (log.topics?.[1]) stakers.add('0x' + log.topics[1].slice(26).toLowerCase());
+                    }
+                }
+            }
+            await delay(150);
         }
         return stakers.size;
     } catch (e) {
