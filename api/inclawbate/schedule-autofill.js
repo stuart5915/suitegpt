@@ -475,8 +475,8 @@ Real data (use ONLY these numbers):
 - ${ctx.totalApps}+ apps on inclawbate
 - Popular apps: ${topAppList || '(not available — do NOT reference specific apps)'}
 - Recent apps: ${recentAppList || '(not available — do NOT reference specific apps)'}
-${ctx.claws ? `- $CLAWS price: $${ctx.claws.price} (24h: ${ctx.claws.change24h > 0 ? '+' : ''}${ctx.claws.change24h.toFixed(1)}%, direction: ${ctx.claws.direction.toUpperCase()})
-- $CLAWS volume 24h: $${ctx.claws.volume24h.toFixed(0)}, liquidity: $${ctx.claws.liquidity.toFixed(0)}, mcap: $${ctx.claws.marketCap.toFixed(0)}` : '- Token: $CLAWS on Base (no live price data — do NOT mention price direction)'}
+${ctx.claws ? `- $CLAWS price: $${ctx.claws.price} (24h: ${ctx.claws.change24h > 0 ? '+' : ''}${ctx.claws.change24h.toFixed(1)}%, ${ctx.claws.direction.toUpperCase()})${ctx.claws.volume24h >= 5000 ? `\n- $CLAWS 24h volume: $${ctx.claws.volume24h >= 1000 ? (ctx.claws.volume24h/1000).toFixed(1) + 'k' : ctx.claws.volume24h.toFixed(0)}` : '\n- $CLAWS volume: LOW — do NOT mention volume'}${ctx.claws.marketCap >= 50000 ? `\n- $CLAWS mcap: $${ctx.claws.marketCap >= 1000000 ? (ctx.claws.marketCap/1000000).toFixed(2) + 'M' : (ctx.claws.marketCap/1000).toFixed(0) + 'k'}` : ''}
+- If price is DOWN/FLAT, do NOT say "price is up" or imply pumping. Use EXACT numbers — do NOT inflate.` : '- Token: $CLAWS on Base (no live price data — do NOT mention price direction)'}
 - Website: inclawbate.com
 - App builder: inclawbate.com/build
 - Staking: inclawbate.com/stake
@@ -830,18 +830,26 @@ async function generateDrafts(req, res, targetDate, account, style) {
         `${a.name} (${a.view_count || 0} views)`
     ).join(', ');
 
-    // Build live CLAWS data block
-    let clawsDataBlock = '- Token: $CLAWS on Base (no live price data available — do NOT mention price direction)';
+    // Build live CLAWS data block — only include metrics worth tweeting about
+    let clawsDataBlock = '- Token: $CLAWS on Base (no live price data available — do NOT mention price, volume, or market numbers)';
     if (ctx.claws) {
         const c = ctx.claws;
         const dirLabel = c.direction === 'up' ? 'UP' : c.direction === 'down' ? 'DOWN' : 'FLAT/SIDEWAYS';
-        clawsDataBlock = `- $CLAWS LIVE DATA (from DexScreener right now):
-  - Price: $${c.price}
-  - 24h change: ${c.change24h > 0 ? '+' : ''}${c.change24h.toFixed(1)}% (${dirLabel})
-  - 24h volume: $${c.volume24h.toFixed(0)}
-  - Liquidity: $${c.liquidity.toFixed(0)}
-  - Market cap: $${c.marketCap.toFixed(0)}
-  - PRICE DIRECTION IS ${dirLabel}. You MUST reflect this accurately. If price is DOWN, do NOT say "price is up" or imply bullish momentum. If FLAT, talk about stability or building.`;
+        // Format numbers with proper labels to prevent AI inflation
+        const fmtUsd = (n) => n >= 1000000 ? `$${(n/1000000).toFixed(2)}M` : n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(2)}`;
+        let lines = [`- $CLAWS LIVE DATA (from DexScreener — these are the EXACT real numbers):`];
+        lines.push(`  - Price: $${c.price}`);
+        lines.push(`  - 24h price change: ${c.change24h > 0 ? '+' : ''}${c.change24h.toFixed(1)}% — price is ${dirLabel}`);
+        // Only include volume if meaningful (>$5k)
+        if (c.volume24h >= 5000) lines.push(`  - 24h volume: ${fmtUsd(c.volume24h)}`);
+        else lines.push(`  - 24h volume: LOW (do NOT mention volume in tweets)`);
+        // Only include liquidity if meaningful (>$10k)
+        if (c.liquidity >= 10000) lines.push(`  - Liquidity: ${fmtUsd(c.liquidity)}`);
+        // Only include mcap if meaningful (>$50k)
+        if (c.marketCap >= 50000) lines.push(`  - Market cap: ${fmtUsd(c.marketCap)}`);
+        lines.push(`  - PRICE IS ${dirLabel}. If DOWN or FLAT, do NOT say "price is up" or imply pumping. Focus on building, shipping, fundamentals instead.`);
+        lines.push(`  - USE THESE EXACT NUMBERS. Do NOT round up, do NOT add "k" or "M" unless the number above already has it. $317 is three hundred seventeen dollars, NOT $317k.`);
+        clawsDataBlock = lines.join('\n');
     }
 
     // Pick random style examples for variety
