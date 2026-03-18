@@ -2134,27 +2134,16 @@
                             <button class="angel-claim-btn" id="arConnectBtn">Connect Wallet</button>
                         </div>
                     </div>
-                    <!-- State: connected + has angel + earning -->
+                    <!-- State: connected + has angel -->
                     <div class="angel-position-row" id="arStateHolder" style="display:none">
                         <div class="angel-position-info">
                             <div class="angel-position-earned-label">Your Unclaimed Rewards</div>
                             <div class="angel-position-earned"><span id="arEarned">0.00</span> CLAWS <span class="usd" id="arEarnedUsd"></span></div>
-                            <div class="angel-position-nft-count">You hold <strong id="arMyNfts">0</strong> Angel NFT(s)</div>
+                            <div class="angel-position-nft-count">You hold <strong id="arMyNfts">0</strong> Angel NFT(s) <span id="arActivateHint" style="display:none;color:hsl(280,60%,65%);font-size:0.72rem;">&mdash; tap Claim to activate rewards</span></div>
                         </div>
                         <div style="text-align:right">
-                            <button class="angel-claim-btn" id="arClaimBtn" disabled>Claim Rewards</button>
+                            <button class="angel-claim-btn" id="arClaimBtn">Claim / Activate</button>
                             <div class="angel-claim-status" id="arClaimStatus"></div>
-                        </div>
-                    </div>
-                    <!-- State: connected + has angel + needs to activate -->
-                    <div class="angel-position-row" id="arStateActivate" style="display:none">
-                        <div class="angel-position-info">
-                            <div class="angel-position-earned-label">You hold <strong id="arActivateNfts">0</strong> Angel NFT(s)</div>
-                            <div style="font-size:0.78rem;color:hsl(280,60%,65%);margin-top:4px;line-height:1.5;">Activate to start earning CLAWS every second. One-time transaction &mdash; after this, rewards accrue automatically.</div>
-                        </div>
-                        <div style="text-align:right">
-                            <button class="angel-claim-btn" id="arActivateBtn">Start Earning</button>
-                            <div class="angel-claim-status" id="arActivateStatus"></div>
                         </div>
                     </div>
                     <!-- State: connected but no angel -->
@@ -2185,7 +2174,7 @@
                     </div>
                     <div class="angel-how-item">
                         <div class="angel-how-icon">4</div>
-                        <div><strong>New owner activates</strong> &mdash; after a transfer, the new holder taps "Start Earning" once and begins accruing rewards.</div>
+                        <div><strong>New owner claims to activate</strong> &mdash; after a transfer, the new holder just hits "Claim / Activate" and starts earning.</div>
                     </div>
                 </div>
 
@@ -2701,7 +2690,6 @@
     function showArState(state) {
         $id('arStateConnect').style.display = state === 'connect' ? '' : 'none';
         $id('arStateHolder').style.display = state === 'holder' ? '' : 'none';
-        $id('arStateActivate').style.display = state === 'activate' ? '' : 'none';
         $id('arStateNoAngel').style.display = state === 'noangel' ? '' : 'none';
     }
 
@@ -2793,28 +2781,22 @@
                 }
             }
 
+            showArState('holder');
+            $id('arMyNfts').textContent = nftBal.toString();
+
             if (!contractDeployed) {
-                showArState('holder');
-                $id('arMyNfts').textContent = nftBal.toString();
                 $id('arEarned').textContent = '0.00';
                 $id('arClaimBtn').disabled = true;
                 $id('arClaimStatus').textContent = 'Rewards contract deploying soon';
+                $id('arActivateHint').style.display = 'none';
                 return;
             }
 
             // Check if user needs to activate (has NFT but weightOf is 0 or stale)
             var currentWeight = Number(hexToBN(await ethCall(ANGEL_REWARDS, SEL.weightOf + addrPad)));
-
-            if (nftBal > 0 && currentWeight !== nftBal) {
-                // Needs to sync — show "Start Earning" state
-                showArState('activate');
-                $id('arActivateNfts').textContent = nftBal.toString();
-                return;
-            }
-
-            // User is synced and earning (or has unclaimed from past holding)
-            showArState('holder');
-            $id('arMyNfts').textContent = nftBal.toString();
+            var needsActivate = (nftBal > 0 && currentWeight !== nftBal);
+            $id('arActivateHint').style.display = needsActivate ? 'inline' : 'none';
+            $id('arClaimBtn').textContent = needsActivate ? 'Claim / Activate' : 'Claim Rewards';
 
             // Fetch earned from contract
             var earnedHex2 = await ethCall(ANGEL_REWARDS, SEL.earned + addrPad);
@@ -2824,7 +2806,8 @@
             if (clawsPrice > 0 && earnedNum > 0) {
                 $id('arEarnedUsd').textContent = '~$' + (earnedNum * clawsPrice).toFixed(2);
             }
-            $id('arClaimBtn').disabled = (earned === 0n);
+            // Enable button if earned > 0 OR needs activation
+            $id('arClaimBtn').disabled = (earned === 0n && !needsActivate);
 
             // Live update earned every 5 sec (clear previous interval)
             if (earnedInterval) clearInterval(earnedInterval);
@@ -2836,7 +2819,7 @@
                     if (clawsPrice > 0 && e2Num > 0) {
                         $id('arEarnedUsd').textContent = '~$' + (e2Num * clawsPrice).toFixed(2);
                     }
-                    $id('arClaimBtn').disabled = (e2 === 0n);
+                    $id('arClaimBtn').disabled = (e2 === 0n && !needsActivate);
                 } catch(e) {}
             }, 5000);
         } catch(e) {
@@ -2897,74 +2880,7 @@
                             $id('arEarned').textContent = '0.00';
                             $id('arEarnedUsd').textContent = '';
                             btn.disabled = true;
-                        } else {
-                            status.textContent = 'Transaction failed';
-                            btn.disabled = false;
-                        }
-                    }
-                } catch(e) {}
-                if (attempts > 60) { clearInterval(poll); status.textContent = 'Check basescan for status'; }
-            }, 3000);
-
-        } catch(e) {
-            if (e.code === 4001) {
-                status.textContent = 'Cancelled';
-            } else {
-                status.textContent = 'Error: ' + (e.message || 'Unknown');
-            }
-            btn.disabled = false;
-        }
-    });
-
-    // ── Activate (sync) handler ──
-    $id('arActivateBtn').addEventListener('click', async function() {
-        var btn = $id('arActivateBtn');
-        var status = $id('arActivateStatus');
-        btn.disabled = true;
-        status.textContent = 'Confirm in wallet...';
-
-        try {
-            if (!window.ethereum) throw new Error('No wallet');
-
-            // Ensure Base chain
-            try {
-                await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN_ID}]});
-            } catch(sw) {
-                if (sw.code === 4902) {
-                    await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
-                        chainId: CHAIN_ID, chainName: 'Base',
-                        nativeCurrency: {name:'ETH',symbol:'ETH',decimals:18},
-                        rpcUrls: ['https://mainnet.base.org'],
-                        blockExplorerUrls: ['https://basescan.org']
-                    }]});
-                }
-            }
-
-            var accounts = await window.ethereum.request({method:'eth_requestAccounts'});
-            var from = accounts[0];
-
-            var txHash = await window.ethereum.request({
-                method: 'eth_sendTransaction',
-                params: [{
-                    from: from,
-                    to: ANGEL_REWARDS,
-                    data: SEL.sync,
-                    gas: '0x30D40'
-                }]
-            });
-
-            status.innerHTML = 'Tx sent. <a href="https://basescan.org/tx/' + txHash + '" target="_blank">View</a>';
-
-            var attempts = 0;
-            var poll = setInterval(async function() {
-                attempts++;
-                try {
-                    var receipt = await rpcCall({jsonrpc:'2.0',id:1,method:'eth_getTransactionReceipt',params:[txHash]});
-                    if (receipt.result && receipt.result.status) {
-                        clearInterval(poll);
-                        if (receipt.result.status === '0x1') {
-                            status.innerHTML = 'Activated! You are now earning CLAWS.';
-                            // Reload into the holder/earning state
+                            // Refresh state (updates button text, hides activate hint)
                             setTimeout(function() { loadUserPosition(); }, 2000);
                         } else {
                             status.textContent = 'Transaction failed';
@@ -2972,7 +2888,7 @@
                         }
                     }
                 } catch(e) {}
-                if (attempts > 60) { clearInterval(poll); status.textContent = 'Check basescan for status'; btn.disabled = false; }
+                if (attempts > 60) { clearInterval(poll); status.textContent = 'Check basescan for status'; }
             }, 3000);
 
         } catch(e) {
