@@ -5153,10 +5153,20 @@ function handleMessage(msg) {
           const switchCurrency = _pendingCurrencySwitch.currency;
           _pendingCurrencySwitch = null;
           document.querySelector('.currency-switch-overlay')?.remove();
+          // Clear agent currency so card shows fresh state
+          const switchAgent = myAgents.find(a => a.id === msg.data.agentId);
+          if (switchAgent) switchAgent.currency = null;
           _fundPanelCurrency[msg.data.agentId] = switchCurrency;
-          _openFundPanel = msg.data.agentId;
+          // Force render by temporarily clearing the guard, then re-setting
+          _openFundPanel = null;
           renderMyAgents();
-          setTimeout(() => switchFundCurrency(msg.data.agentId, switchCurrency), 50);
+          _openFundPanel = msg.data.agentId;
+          setTimeout(() => {
+            // Re-open fund panel and apply currency
+            const fp = document.getElementById('fundPanel-' + msg.data.agentId);
+            if (fp) fp.style.display = 'block';
+            switchFundCurrency(msg.data.agentId, switchCurrency);
+          }, 50);
         }
       }
       break;
