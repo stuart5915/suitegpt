@@ -1223,10 +1223,12 @@
 
         var start = new Date();
         start.setHours(0, 0, 0, 0);
-        var end = new Date(start.getTime() + 7 * 86400000);
+        // Pad query range by 1 day on each side to cover all timezone offsets
+        var queryStart = new Date(start.getTime() - 86400000);
+        var end = new Date(start.getTime() + 8 * 86400000);
 
         try {
-            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + start.toISOString() + '&end=' + end.toISOString() + '&account=' + _activeAccount);
+            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + queryStart.toISOString() + '&end=' + end.toISOString() + '&account=' + _activeAccount);
             var data = await resp.json();
             _schedSlots = data.slots || [];
         } catch (e) {
@@ -1316,8 +1318,16 @@
             d.setHours(0, 0, 0, 0);
             d.setDate(d.getDate() + i);
 
-            var dayStr = d.toISOString().split('T')[0];
-            var bookedCount = _schedSlots.filter(function(s) { return new Date(s.scheduled_at).toISOString().startsWith(dayStr); }).length;
+            // Use local calendar date as dayStr (YYYY-MM-DD) so it matches
+            // regardless of timezone offset
+            var dayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            // Match slots by checking if their UTC date falls on this local calendar date
+            var utcDayStart = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            var utcDayEnd = new Date(utcDayStart.getTime() + 86400000);
+            var bookedCount = _schedSlots.filter(function(s) {
+                var st = new Date(s.scheduled_at).getTime();
+                return st >= utcDayStart.getTime() && st < utcDayEnd.getTime();
+            }).length;
 
             var btn = document.createElement('div');
             btn.className = 'sched-day' + (i === 0 ? ' today' : '');
@@ -1336,7 +1346,7 @@
 
     function selectDay(date) {
         _selectedDay = date;
-        var dayStr = date.toISOString().split('T')[0];
+        var dayStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
 
         document.querySelectorAll('#schedSection .sched-day').forEach(function(el) {
             el.classList.toggle('active', el.getAttribute('data-date') === dayStr);
@@ -1361,11 +1371,15 @@
         container.innerHTML = '';
         var now = Date.now();
 
+        // Normalize: use the local calendar date as a UTC date so
+        // slot matching works regardless of the user's timezone
+        var utcBase = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+
         PEAK_SLOTS.forEach(function(peak) {
-            var slotTime = new Date(date);
+            var slotTime = new Date(utcBase);
             // For UTC hour 1, it's actually the next calendar day
             if (peak.utc < 6) {
-                slotTime.setDate(slotTime.getDate() + 1);
+                slotTime.setUTCDate(slotTime.getUTCDate() + 1);
             }
             slotTime.setUTCHours(peak.utc, 0, 0, 0);
 
@@ -1894,7 +1908,7 @@
         var styleLabels = { mixed: 'Mixed', punchy: 'Punchy', formatted: 'Formatted', engagement: 'Engagement' };
         toggle.innerHTML = '&#x2728; Generating ' + (styleLabels[style] || '') + '...';
 
-        var dayStr = _selectedDay.toISOString().split('T')[0];
+        var dayStr = _selectedDay.getFullYear() + '-' + String(_selectedDay.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDay.getDate()).padStart(2, '0');
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
@@ -1961,7 +1975,7 @@
         var auth = getAuth();
         if (!auth || !auth.token) return;
         if (!_selectedDay) return;
-        var dayStr = _selectedDay.toISOString().split('T')[0];
+        var dayStr = _selectedDay.getFullYear() + '-' + String(_selectedDay.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDay.getDate()).padStart(2, '0');
 
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
