@@ -1521,7 +1521,11 @@
 
             if (!booked && !isPast) {
                 (function(t) {
-                    el.addEventListener('click', function() { openBookForm(t); });
+                    if (_hasEditAccess()) {
+                        el.addEventListener('click', function() { _openNewDraft(t); });
+                    } else {
+                        el.addEventListener('click', function() { openBookForm(t); });
+                    }
                 })(new Date(slotTime));
             }
 
@@ -2118,10 +2122,77 @@
         { label: 'schedule', text: 'inclawbate.com/schedule' },
     ];
 
+    // Open draft modal for an empty/available slot — editors/admins
+    var _newDraftSlotTime = null;
+    function _openNewDraft(slotTime) {
+        _editingSlotId = null;
+        _newDraftSlotTime = slotTime.toISOString();
+        var ta = document.getElementById('draftModalText');
+        ta.value = '';
+
+        // Populate pillar context
+        var dow = slotTime.getUTCDay();
+        var pillar = activePillars()[dow];
+        if (pillar) {
+            document.getElementById('draftModalPillar').style.display = 'flex';
+            document.getElementById('draftModalPillarEmoji').textContent = pillar.emoji;
+            document.getElementById('draftModalPillarName').textContent = pillar.name;
+            document.getElementById('draftModalPillarDesc').textContent = '\u2014 ' + pillar.desc;
+        } else {
+            document.getElementById('draftModalPillar').style.display = 'none';
+        }
+
+        // Populate emoji row
+        var emojiRow = document.getElementById('draftModalEmojis');
+        emojiRow.innerHTML = '';
+        QUICK_EMOJIS.forEach(function(em) {
+            var btn = document.createElement('button');
+            btn.className = 'draft-modal-emoji';
+            btn.textContent = em;
+            btn.type = 'button';
+            btn.onclick = function() {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                ta.value = ta.value.substring(0, start) + em + ta.value.substring(end);
+                ta.selectionStart = ta.selectionEnd = start + em.length;
+                ta.focus();
+                updateDraftCount();
+            };
+            emojiRow.appendChild(btn);
+        });
+
+        // Populate quick inserts
+        var insertsRow = document.getElementById('draftModalInserts');
+        insertsRow.innerHTML = '';
+        QUICK_INSERTS.forEach(function(item) {
+            var chip = document.createElement('span');
+            chip.className = 'draft-modal-insert';
+            chip.textContent = item.label;
+            chip.onclick = function() {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                var before = ta.value.substring(0, start);
+                var spaceBefore = before.length && before[before.length - 1] !== ' ' ? ' ' : '';
+                ta.value = before + spaceBefore + item.text + ' ' + ta.value.substring(end);
+                ta.selectionStart = ta.selectionEnd = start + spaceBefore.length + item.text.length + 1;
+                ta.focus();
+                updateDraftCount();
+            };
+            insertsRow.appendChild(chip);
+        });
+
+        // Reset image prompt
+        document.getElementById('draftModalImgResult').style.display = 'none';
+        document.getElementById('draftModalImgText').textContent = '';
+
+        updateDraftCount();
+        document.getElementById('draftModal').classList.add('open');
+        setTimeout(function() { ta.focus(); }, 100);
+    }
+
     window._editDraft = function(slotId) {
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
         _editingSlotId = slotId;
+        _newDraftSlotTime = null;
         var ta = document.getElementById('draftModalText');
         ta.value = slot.tweet_text || '';
 
@@ -2277,7 +2348,6 @@
     };
 
     window.saveDraftModal = async function() {
-        if (!_editingSlotId) return;
         var newText = document.getElementById('draftModalText').value.trim();
         if (!newText) return;
         if (newText.length > 280) { return; }
@@ -2289,17 +2359,37 @@
         btn.disabled = true; btn.textContent = 'Saving...';
 
         try {
-            var r = await fetch('/api/inclawbate/schedule-autofill', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                body: JSON.stringify({ action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText })
-            });
-            var data = await r.json();
-            if (data.error) throw new Error(data.error);
-            var slot = _schedSlots.find(function(s) { return s.id === _editingSlotId; });
-            if (slot) slot.tweet_text = newText;
+            if (_newDraftSlotTime && !_editingSlotId) {
+                // Creating a new slot from an available time
+                var r = await fetch('/api/inclawbate/agent-schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                    body: JSON.stringify({
+                        action: 'book',
+                        scheduled_at: _newDraftSlotTime,
+                        tweet_text: newText,
+                        account: _activeAccount
+                    })
+                });
+                var data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'Failed to create slot');
+                if (data.slot) _schedSlots.push(data.slot);
+                _newDraftSlotTime = null;
+            } else if (_editingSlotId) {
+                // Updating an existing slot
+                var r = await fetch('/api/inclawbate/schedule-autofill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                    body: JSON.stringify({ action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText })
+                });
+                var data = await r.json();
+                if (data.error) throw new Error(data.error);
+                var slot = _schedSlots.find(function(s) { return s.id === _editingSlotId; });
+                if (slot) slot.tweet_text = newText;
+            }
             closeDraftModal();
             renderSlots(_selectedDay);
+            renderDayStrip();
         } catch(e) {
             alert('Failed: ' + e.message);
         } finally {
