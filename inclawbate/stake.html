@@ -2929,28 +2929,41 @@
 
             status.innerHTML = 'Tx sent. <a href="https://basescan.org/tx/' + txHash + '" target="_blank">View</a>';
 
-            // Poll for receipt
+            // Poll for receipt — use wallet provider for reliable receipt
             var attempts = 0;
             var poll = setInterval(async function() {
                 attempts++;
                 try {
-                    var receipt = await rpcCall({jsonrpc:'2.0',id:1,method:'eth_getTransactionReceipt',params:[txHash]});
-                    if (receipt.result && receipt.result.status) {
+                    var receipt = null;
+                    // Try wallet provider first (most reliable)
+                    try {
+                        receipt = await window.ethereum.request({
+                            method: 'eth_getTransactionReceipt', params: [txHash]
+                        });
+                    } catch(e2) {
+                        // Fallback to public RPC
+                        var rpcRes = await rpcCall({jsonrpc:'2.0',id:1,method:'eth_getTransactionReceipt',params:[txHash]});
+                        receipt = rpcRes.result;
+                    }
+                    if (receipt && receipt.status) {
                         clearInterval(poll);
-                        if (receipt.result.status === '0x1') {
+                        if (receipt.status === '0x1' || receipt.status === 1 || receipt.status === true) {
                             status.innerHTML = 'Claimed! <a href="https://basescan.org/tx/' + txHash + '" target="_blank">View tx</a>';
                             $id('arEarned').textContent = '0.00';
                             $id('arEarnedUsd').textContent = '';
                             btn.disabled = true;
-                            // Refresh state (updates button text, hides activate hint)
                             setTimeout(function() { loadUserPosition(); }, 2000);
-                        } else {
-                            status.textContent = 'Transaction failed';
+                        } else if (receipt.status === '0x0' || receipt.status === 0 || receipt.status === false) {
+                            status.textContent = 'Transaction reverted';
                             btn.disabled = false;
                         }
                     }
                 } catch(e) {}
-                if (attempts > 60) { clearInterval(poll); status.textContent = 'Check basescan for status'; }
+                if (attempts > 60) {
+                    clearInterval(poll);
+                    status.innerHTML = 'Taking a while... <a href="https://basescan.org/tx/' + txHash + '" target="_blank">Check on BaseScan</a>';
+                    btn.disabled = false;
+                }
             }, 3000);
 
         } catch(e) {
