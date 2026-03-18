@@ -199,8 +199,9 @@ export default async function handler(req, res) {
                     query = query.or('moderated.is.null,moderated.eq.false');
                 }
 
-                // Only show apps from inclawbators (visible in /inclawbators directory)
-                if (req.query.inclawbators_only !== 'false') {
+                // Only filter to inclawbators when explicitly requested (e.g. inclawbators directory page)
+                // Default: show ALL public apps regardless of creator profile status
+                if (req.query.inclawbators_only === 'true') {
                     const { data: profiles } = await supabase
                         .from('human_profiles')
                         .select('x_handle, wallet_address, tagline, skills')
