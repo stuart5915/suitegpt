@@ -734,66 +734,105 @@
 
         // ---------- Idea Generator ----------
         window.generatePrompt = function() {
-            var appNames = _existingApps.map(function(a) { return a.name; }).filter(Boolean);
+            // Build rich app list with descriptions + categories
+            var appList = _existingApps.map(function(a) {
+                var parts = [a.name || 'Untitled'];
+                if (a.category) parts.push('[' + a.category + ']');
+                if (a.description) parts.push('— ' + a.description.slice(0, 80));
+                return '  - ' + parts.join(' ');
+            }).join('\n');
+
             var categories = {};
             _existingApps.forEach(function(a) {
                 if (a.category) categories[a.category] = (categories[a.category] || 0) + 1;
             });
+            var catSummary = Object.entries(categories).map(function(e) { return e[0] + ' (' + e[1] + ')'; }).join(', ');
 
-            var utilities = [
-                'Unlock premium features (pay CLAWS)',
-                'Tipping / gifting between users',
-                'Voting / governance within app',
-                'Entry fee for competitions / games',
-                'Staking for boosted rewards',
-                'Burn-to-use (deflationary)',
-                'Revenue sharing (hold \u2192 earn fees)',
-                'NFT minting currency',
-                'Reputation / level-up system',
-                'Ad-free experience'
-            ];
-
-            // Check which utilities are already used in pipeline descriptions
+            // Collect token utilities already used in factory pipelines
             var usedUtilities = [];
+            var pipelineTokens = [];
             _pipelines.forEach(function(p) {
                 if (p.token_utility) usedUtilities.push(p.token_utility);
+                if (p.app_name && p.token_symbol) {
+                    pipelineTokens.push('  - ' + p.app_name + ' ($' + p.token_symbol + ')' + (p.token_utility ? ' — utility: ' + p.token_utility : ''));
+                }
             });
-
-            var catSummary = Object.entries(categories).map(function(e) { return e[0] + ' (' + e[1] + ')'; }).join(', ');
 
             var today = new Date();
             var dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-            var prompt = 'CONTEXT: I run Inclawbate, an on-chain app incubator on Base. Every day I launch 1 new app + token + staking pool.\n\n';
-            prompt += 'EXISTING APPS (' + appNames.length + ' total):\n';
-            if (appNames.length > 0) {
-                prompt += appNames.join(', ') + '\n\n';
+            var prompt = '';
+            prompt += '=== INCLAWBATE APP FACTORY — IDEA GENERATION ===\n\n';
+
+            prompt += '## WHO WE ARE\n';
+            prompt += 'Inclawbate is an on-chain app incubator on Base (L2). We build real apps with real tokens and real staking pools. Our ecosystem token is $CLAWS. Every incubation we launch gets:\n';
+            prompt += '  1. A full-featured web app (can be complex — multi-page, real-time, AI-powered, etc.)\n';
+            prompt += '  2. Its OWN token launched via Clanker on Base (NOT $CLAWS — a brand new token specific to the app)\n';
+            prompt += '  3. A staking pool where users stake the app\'s token and earn $CLAWS rewards\n';
+            prompt += '  4. The token MUST have real utility within the app — not just speculative. The app should require or benefit from holding/using the token.\n';
+            prompt += '  5. Daily tweets from @inclawbate promoting the app, with community polls driving refinement\n\n';
+
+            prompt += '## EXISTING APPS (' + _existingApps.length + ' total) — DO NOT DUPLICATE THESE\n';
+            if (appList) {
+                prompt += appList + '\n\n';
             } else {
-                prompt += '(none yet)\n\n';
+                prompt += '  (none yet)\n\n';
             }
-            prompt += 'CATEGORIES COVERED: ' + (catSummary || 'none yet') + '\n\n';
-            prompt += 'TOKEN UTILITY PATTERNS AVAILABLE:\n';
-            utilities.forEach(function(u, i) {
-                var used = usedUtilities.indexOf(u) >= 0;
-                prompt += (i + 1) + '. ' + u + (used ? ' [ALREADY USED]' : '') + '\n';
-            });
-            prompt += '\n';
+
+            prompt += '## CATEGORY COVERAGE\n';
+            prompt += (catSummary || 'none yet') + '\n';
+            prompt += 'We need MORE coverage in: DeFi, AI/ML tools, creator economy, data/analytics, communication, productivity, DAO tooling, identity/reputation, prediction markets, real-world integrations\n\n';
+
+            if (pipelineTokens.length > 0) {
+                prompt += '## FACTORY INCUBATIONS SO FAR (tokens already launched)\n';
+                prompt += pipelineTokens.join('\n') + '\n\n';
+            }
+
+            prompt += '## TOKEN UTILITY PATTERNS\n';
+            prompt += 'Each new app\'s token should have DEEP utility — not surface-level. Examples of strong utility:\n';
+            prompt += '  - Access gating: hold X tokens to unlock features, tiers, or premium content\n';
+            prompt += '  - Pay-per-use: spend tokens to use app functions (burned or redistributed)\n';
+            prompt += '  - Governance: token holders vote on app direction, features, parameters\n';
+            prompt += '  - Revenue share: app generates fees, distributed to token stakers\n';
+            prompt += '  - Collateral/deposit: stake tokens as collateral for actions (prediction markets, escrow)\n';
+            prompt += '  - Creator economy: tip, subscribe, commission — all in the app token\n';
+            prompt += '  - Reputation: earn tokens for contributions, tokens = reputation score\n';
+            prompt += '  - LP incentives: provide liquidity for the app token, earn boosted rewards\n';
+            prompt += '  - Burn mechanics: deflationary actions tied to app usage\n';
+            prompt += '  - Cross-app composability: token interacts with other Inclawbate ecosystem apps\n\n';
+
             if (usedUtilities.length > 0) {
-                prompt += 'UTILITIES ALREADY ASSIGNED: ' + usedUtilities.join(', ') + '\n\n';
+                prompt += '## UTILITIES ALREADY USED (try something different)\n';
+                prompt += usedUtilities.map(function(u) { return '  - ' + u; }).join('\n') + '\n\n';
             }
-            prompt += 'TODAY: ' + dateStr + '\n\n';
-            prompt += 'TASK: Research today\'s trending topics in crypto, DeFi, culture, and memes. Then suggest 3 new app ideas that:\n';
-            prompt += '1. Do NOT duplicate any existing app listed above\n';
-            prompt += '2. Each uses a DIFFERENT token utility from the list (prefer unused ones)\n';
-            prompt += '3. Are buildable in a single session (HTML + JS, no backend required)\n';
-            prompt += '4. Connect to something happening today or this week\n';
-            prompt += '5. Have clear CLAWS token integration\n\n';
-            prompt += 'For each idea, provide:\n';
-            prompt += '- App name + one-line description\n';
-            prompt += '- Token symbol suggestion\n';
-            prompt += '- Which token utility pattern it uses\n';
-            prompt += '- Why it\'s timely (what trend/event it connects to)\n';
-            prompt += '- 3 poll options for the first community refinement tweet\n';
+
+            prompt += '## TODAY\'S DATE: ' + dateStr + '\n\n';
+
+            prompt += '## YOUR TASK\n';
+            prompt += '1. RESEARCH what\'s trending today in crypto, DeFi, AI, culture, memes, news, and markets. Look at X/Twitter trends, crypto news, major events, product launches, cultural moments.\n\n';
+            prompt += '2. ANALYZE gaps in our existing app portfolio — what categories, use cases, or audiences are we missing?\n\n';
+            prompt += '3. PROPOSE 3 new app ideas. For EACH idea, provide:\n\n';
+            prompt += '   a) APP NAME + TAGLINE (punchy, memorable)\n\n';
+            prompt += '   b) WHAT IT DOES — 2-3 paragraph description. Be specific about features, user flows, and what makes it compelling. These are NOT toy apps — think full products.\n\n';
+            prompt += '   c) TOKEN DESIGN:\n';
+            prompt += '      - Suggested token name + symbol (e.g. $FLIP)\n';
+            prompt += '      - How the token has REAL utility within the app (specific mechanics)\n';
+            prompt += '      - Why users would want to hold it beyond speculation\n';
+            prompt += '      - Suggested tokenomics split (LP%, treasury%, staking incentives%, team%)\n\n';
+            prompt += '   d) TECHNICAL ARCHITECTURE:\n';
+            prompt += '      - Key features and components\n';
+            prompt += '      - What APIs, smart contracts, or integrations it needs\n';
+            prompt += '      - Data model (what gets stored, where)\n';
+            prompt += '      - Real-time features? AI features? On-chain interactions?\n\n';
+            prompt += '   e) WHY NOW — what trend, event, or cultural moment makes this timely?\n\n';
+            prompt += '   f) GROWTH HOOK — how does this app attract and retain users? What makes someone share it?\n\n';
+            prompt += '   g) FIRST TWEET POLL — draft a tweet announcing the app + a poll with 4 options asking the community what feature to build next\n\n';
+
+            prompt += '## QUALITY BAR\n';
+            prompt += '- Think Duolingo, not a to-do list. These should be apps people WANT to use.\n';
+            prompt += '- The token should feel essential, not bolted on. "Why does this need a token?" should have an obvious answer.\n';
+            prompt += '- Prioritize ideas where the token utility creates a flywheel (more users \u2192 more token demand \u2192 better app \u2192 more users).\n';
+            prompt += '- Consider composability with the existing Inclawbate ecosystem (CLAWS, staking, other apps).\n';
 
             document.getElementById('ideaWrap').innerHTML =
                 '<div class="idea-prompt-box" id="ideaPromptText">' + esc(prompt) + '</div>' +
