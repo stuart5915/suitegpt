@@ -2,7 +2,10 @@
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_KEY = process.env.GROQ_API_KEY;
+// Support multiple Groq API keys for higher throughput — comma-separated in env
+const GROQ_KEYS = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+let groqKeyIndex = 0;
+function nextGroqKey() { const k = GROQ_KEYS[groqKeyIndex % GROQ_KEYS.length]; groqKeyIndex++; return k; }
 const APP_API = 'https://inclawbate.com/api/inclawbate';
 
 const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosystem AI agent.
@@ -523,38 +526,36 @@ async function executeTool(name, args) {
 // ── Session store ──
 const sessions = new Map();
 
-// Model fallback chain: try best model first, fall back to faster ones on rate limit
+// Model fallback: try best model first, fall back to faster ones on rate limit
 const MODELS = [
   'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'gemma2-9b-it'
+  'llama-3.1-8b-instant'
 ];
 
 async function callGroq(messages) {
-  for (let i = 0; i < MODELS.length; i++) {
-    const model = MODELS[i];
+  // Try each key × model combination until one works
+  const totalAttempts = GROQ_KEYS.length * MODELS.length;
+  for (let attempt = 0; attempt < totalAttempts; attempt++) {
+    const key = nextGroqKey();
+    const model = MODELS[attempt % MODELS.length];
     try {
       const res = await fetch(GROQ_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
         body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
       });
       const data = await res.json();
       if (data.error) {
         const errMsg = data.error.message || data.error.type || '';
         const isRateLimit = res.status === 429 || errMsg.includes('rate_limit') || errMsg.includes('limit') || errMsg.includes('capacity') || errMsg.includes('overloaded');
-        console.error('Groq error (' + model + '):', errMsg);
-        if (isRateLimit && i < MODELS.length - 1) {
-          // Rate limited — immediately try next model, no delay
-          continue;
-        }
-        // Non-rate-limit error or last model — return it
+        console.error('Groq error (' + model + ', key ' + (groqKeyIndex % GROQ_KEYS.length) + '):', errMsg);
+        if (isRateLimit && attempt < totalAttempts - 1) continue;
         return data;
       }
       return data;
     } catch (e) {
       console.error('Groq fetch error (' + model + '):', e.message);
-      if (i < MODELS.length - 1) continue;
+      if (attempt < totalAttempts - 1) continue;
       return { error: { message: e.message } };
     }
   }
