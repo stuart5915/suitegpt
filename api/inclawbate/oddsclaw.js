@@ -325,7 +325,8 @@ async function resolveMarket(req, res) {
 
     const disputeDeadline = new Date(now.getTime() + DISPUTE_WINDOW_HOURS * 60 * 60 * 1000);
 
-    await supabase.from('oddsclaw_markets')
+    // Atomically set resolved — only if still active/closed (prevents double resolution)
+    const { data: updated, error: updateErr } = await supabase.from('oddsclaw_markets')
         .update({
             resolved_outcome: outcome,
             resolved_at: now.toISOString(),
@@ -333,13 +334,19 @@ async function resolveMarket(req, res) {
             dispute_deadline: disputeDeadline.toISOString(),
             status: 'resolved'
         })
-        .eq('id', market_id);
+        .eq('id', market_id)
+        .in('status', ['active', 'closed'])
+        .select('id');
+
+    if (updateErr || !updated || updated.length === 0) {
+        return res.status(400).json({ error: 'Market already resolved or update failed' });
+    }
 
     // Distribute pool to winners (or refund on void)
     if (outcome !== 'void') {
-        await creditWinners(market_id, outcome, market);
+        await creditWinners(market_id, outcome);
     } else {
-        await refundAll(market_id, market);
+        await refundAll(market_id);
     }
 
     return res.status(200).json({ success: true, outcome, dispute_deadline: disputeDeadline.toISOString() });
@@ -348,8 +355,17 @@ async function resolveMarket(req, res) {
 // ──────────────────────────────────────────────
 // Resolution: distribute pool to winners proportionally
 // ──────────────────────────────────────────────
-async function creditWinners(marketId, outcome, market) {
-    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+async function creditWinners(marketId, outcome) {
+    // Re-fetch market for fresh pool values (not stale from earlier read)
+    const { data: freshMarket } = await supabase
+        .from('oddsclaw_markets')
+        .select('yes_pool, no_pool, creator_wallet')
+        .eq('id', marketId)
+        .single();
+
+    if (!freshMarket) return;
+
+    const totalPool = parseFloat(freshMarket.yes_pool) + parseFloat(freshMarket.no_pool);
     if (totalPool <= 0) return;
 
     // Get all positions on winning side
@@ -364,7 +380,7 @@ async function creditWinners(marketId, outcome, market) {
     if (!winners || winners.length === 0) {
         // No winners — return pool to market creator
         await supabase.rpc('oddsclaw_credit_wallet', {
-            p_wallet: market.creator_wallet, p_amount: totalPool
+            p_wallet: freshMarket.creator_wallet, p_amount: totalPool
         }).catch(() => {});
         return;
     }
@@ -408,8 +424,17 @@ async function creditWinners(marketId, outcome, market) {
     }
 }
 
-async function refundAll(marketId, market) {
-    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+async function refundAll(marketId) {
+    // Re-fetch market for fresh pool values
+    const { data: freshMarket } = await supabase
+        .from('oddsclaw_markets')
+        .select('yes_pool, no_pool, creator_wallet')
+        .eq('id', marketId)
+        .single();
+
+    if (!freshMarket) return;
+
+    const totalPool = parseFloat(freshMarket.yes_pool) + parseFloat(freshMarket.no_pool);
     if (totalPool <= 0) return;
 
     const { data: positions } = await supabase
@@ -422,18 +447,18 @@ async function refundAll(marketId, market) {
     if (!positions || positions.length === 0) {
         // No positions — return pool to creator
         await supabase.rpc('oddsclaw_credit_wallet', {
-            p_wallet: market.creator_wallet, p_amount: totalPool
+            p_wallet: freshMarket.creator_wallet, p_amount: totalPool
         }).catch(() => {});
         return;
     }
 
-    // Proportional refund from pool based on what each person invested
-    const totalCost = positions.reduce((sum, p) => sum + parseFloat(p.total_cost), 0);
+    // Proportional refund based on remaining shares (not total_cost, which isn't reduced on sell)
+    const totalShares = positions.reduce((sum, p) => sum + parseFloat(p.shares), 0);
 
     for (const pos of positions) {
-        // Each person gets their proportion of what's left in the pool
-        const refund = totalCost > 0
-            ? (parseFloat(pos.total_cost) / totalCost) * totalPool
+        // Each person gets their proportion of the pool based on shares held
+        const refund = totalShares > 0
+            ? (parseFloat(pos.shares) / totalShares) * totalPool
             : 0;
 
         if (refund > 0) {
@@ -541,7 +566,14 @@ async function faucet(req, res) {
 
     if (existing) {
         const bal = parseFloat(existing.odds_balance);
-        if (bal >= 1000) return res.status(400).json({ error: 'You already have enough test ODDS' });
+        if (bal >= 5000) return res.status(400).json({ error: 'You already have enough test ODDS' });
+
+        // Cooldown: check last update (faucet credits trigger updated_at)
+        const lastUpdate = new Date(existing.updated_at || 0);
+        const cooldownMs = 60 * 60 * 1000; // 1 hour
+        if (Date.now() - lastUpdate.getTime() < cooldownMs) {
+            return res.status(429).json({ error: 'Faucet cooldown — try again in an hour' });
+        }
     }
 
     const newBal = await supabase.rpc('oddsclaw_credit_wallet', { p_wallet: w, p_amount: 10000 });

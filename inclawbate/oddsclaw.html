@@ -868,7 +868,7 @@
             <div class="how-step">
                 <div class="how-step-num">4</div>
                 <h3>Collect Winnings</h3>
-                <p>Correct prediction? Each winning share pays 1 ODDS. Wrong? You lose your stake.</p>
+                <p>Correct prediction? Winners split the entire pool proportionally. Wrong? You lose your stake.</p>
             </div>
         </div>
         <div style="margin-top:20px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:18px;">
@@ -885,11 +885,11 @@
 </main>
 
 <div class="mobile-nav">
-    <button class="active" onclick="showView('markets')">Markets</button>
-    <button onclick="showView('positions')">Positions</button>
-    <button onclick="showView('create')">Create</button>
-    <button onclick="showView('leaderboard')">Board</button>
-    <button onclick="showView('howitworks')">How</button>
+    <button class="active" data-view="markets" onclick="showView('markets')">Markets</button>
+    <button data-view="positions" onclick="showView('positions')">Positions</button>
+    <button data-view="create" onclick="showView('create')">Create</button>
+    <button data-view="leaderboard" onclick="showView('leaderboard')">Board</button>
+    <button data-view="howitworks" onclick="showView('howitworks')">How</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -995,7 +995,7 @@
         // Mobile nav
         document.querySelectorAll('.mobile-nav button').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.mobile-nav button').forEach(function(b) {
-            if (b.textContent.toLowerCase().replace(/\s/g, '') === name.replace(/\s/g, '')) b.classList.add('active');
+            if (b.dataset.view === name) b.classList.add('active');
         });
 
         if (name === 'markets') loadMarkets();
@@ -1084,8 +1084,8 @@
                 '<div class="prob-big-card no"><div class="prob-big-label">NO</div><div class="prob-big-pct">' + nPct + '%</div></div>' +
             '</div>';
 
-            // Trade panel
-            if (m.status === 'active') {
+            // Trade panel (only show if market is active AND not past close time)
+            if (m.status === 'active' && new Date() < new Date(m.close_time)) {
                 html += '<div class="trade-panel">' +
                     '<h3>Trade</h3>' +
                     '<div class="trade-side-toggle">' +
@@ -1154,7 +1154,7 @@
                     var cls = t.side === 'yes' ? 'yes-text' : 'no-text';
                     html += '<tr>' +
                         '<td>' + new Date(t.created_at).toLocaleTimeString() + '</td>' +
-                        '<td class="' + cls + '">' + t.direction.toUpperCase() + ' ' + t.side.toUpperCase() + '</td>' +
+                        '<td class="' + cls + '">' + esc(t.direction).toUpperCase() + ' ' + esc(t.side).toUpperCase() + '</td>' +
                         '<td>' + parseFloat(t.shares).toFixed(2) + '</td>' +
                         '<td>' + parseFloat(t.price).toFixed(4) + '</td>' +
                         '<td>' + parseFloat(t.odds_amount).toFixed(2) + '</td>' +
@@ -1208,8 +1208,8 @@
 
     function updateEstimate() {
         if (!_currentMarket) return;
-        var amount = parseFloat(document.getElementById('tradeAmount').value) || 0;
-        if (amount <= 0) {
+        var amount = parseFloat(document.getElementById('tradeAmount').value);
+        if (!amount || isNaN(amount) || amount <= 0) {
             document.getElementById('estShares').textContent = '—';
             document.getElementById('estPrice').textContent = '—';
             document.getElementById('estFee').textContent = '—';
@@ -1251,7 +1251,7 @@
             document.getElementById('estShares').textContent = shares.toFixed(2);
             document.getElementById('estPrice').textContent = price.toFixed(4) + ' ODDS';
             document.getElementById('estFee').textContent = fee.toFixed(2) + ' ODDS';
-            document.getElementById('estPayout').textContent = shares.toFixed(2) + ' ODDS (if correct)';
+            document.getElementById('estPayout').textContent = shares.toFixed(2) + ' shares (payout depends on final pool)';
         }
     }
 
@@ -1378,7 +1378,7 @@
             positions.forEach(function(p) {
                 var currentVal = 0;
                 if (p.market_status === 'resolved') {
-                    currentVal = p.resolved_outcome === p.side ? parseFloat(p.shares) : 0;
+                    currentVal = p.claimed_amount !== undefined ? parseFloat(p.claimed_amount) : (p.resolved_outcome === p.side ? parseFloat(p.shares) : 0);
                 } else if (p.probs) {
                     currentVal = parseFloat(p.shares) * (p.side === 'yes' ? p.probs.yes : p.probs.no);
                 }

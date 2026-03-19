@@ -62,6 +62,7 @@ contract OddsClawVault is ReentrancyGuard {
     /// @notice Deposit ODDS tokens — server credits off-chain balance via Deposit event
     function deposit(uint256 tokenAmount) external nonReentrant whenNotPaused {
         require(tokenAmount >= MIN_DEPOSIT, "Min 10 ODDS");
+        require(tokenAmount % TOKEN_DECIMALS == 0, "Must deposit whole tokens");
 
         oddsToken.safeTransferFrom(msg.sender, address(this), tokenAmount);
 

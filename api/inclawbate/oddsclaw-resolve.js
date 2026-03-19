@@ -40,14 +40,23 @@ function compare(price, target, comparator) {
         case 'gt':  return price > target;
         case 'lte': return price <= target;
         case 'lt':  return price < target;
-        case 'eq':  return Math.abs(price - target) < 0.01;
+        case 'eq':  return Math.abs(price - target) / Math.max(target, 0.0001) < 0.001; // 0.1% relative
         default: return false;
     }
 }
 
 // Distribute pool to winners proportionally (same logic as main API)
-async function creditWinners(marketId, outcome, market) {
-    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+async function creditWinners(marketId, outcome) {
+    // Re-fetch market for fresh pool values
+    const { data: freshMarket } = await supabase
+        .from('oddsclaw_markets')
+        .select('yes_pool, no_pool, creator_wallet')
+        .eq('id', marketId)
+        .single();
+
+    if (!freshMarket) return;
+
+    const totalPool = parseFloat(freshMarket.yes_pool) + parseFloat(freshMarket.no_pool);
     if (totalPool <= 0) return;
 
     const { data: winners } = await supabase
@@ -61,7 +70,7 @@ async function creditWinners(marketId, outcome, market) {
     if (!winners || winners.length === 0) {
         // No winners — return pool to creator
         await supabase.rpc('oddsclaw_credit_wallet', {
-            p_wallet: market.creator_wallet, p_amount: totalPool
+            p_wallet: freshMarket.creator_wallet, p_amount: totalPool
         }).catch(() => {});
         return;
     }
@@ -71,6 +80,7 @@ async function creditWinners(marketId, outcome, market) {
     for (const pos of winners) {
         const shares = parseFloat(pos.shares);
         const payout = (shares / totalWinningShares) * totalPool;
+        const pnl = payout - parseFloat(pos.total_cost);
 
         await supabase.rpc('oddsclaw_credit_wallet', {
             p_wallet: pos.wallet_address, p_amount: payout
@@ -79,28 +89,79 @@ async function creditWinners(marketId, outcome, market) {
         await supabase.from('oddsclaw_positions')
             .update({ claimed: true, claimed_amount: payout })
             .eq('id', pos.id);
+
+        // Update leaderboard
+        await updateLeaderboard(pos.wallet_address, pnl, payout, true);
     }
 
-    // Mark losers
+    // Mark losers + update their leaderboard
     const losingSide = outcome === 'yes' ? 'no' : 'yes';
-    await supabase.from('oddsclaw_positions')
-        .update({ claimed: true, claimed_amount: 0 })
+    const { data: losers } = await supabase
+        .from('oddsclaw_positions')
+        .select('*')
         .eq('market_id', marketId)
         .eq('side', losingSide)
         .gt('shares', 0)
         .eq('claimed', false);
+
+    if (losers) {
+        for (const pos of losers) {
+            await supabase.from('oddsclaw_positions')
+                .update({ claimed: true, claimed_amount: 0 })
+                .eq('id', pos.id);
+            await updateLeaderboard(pos.wallet_address, -parseFloat(pos.total_cost), 0, false);
+        }
+    }
+}
+
+async function updateLeaderboard(wallet, pnl, volume, isWin) {
+    const { data: existing } = await supabase
+        .from('oddsclaw_leaderboard')
+        .select('*')
+        .eq('wallet_address', wallet)
+        .single();
+
+    if (existing) {
+        await supabase.from('oddsclaw_leaderboard')
+            .update({
+                total_pnl: parseFloat(existing.total_pnl) + pnl,
+                total_volume: parseFloat(existing.total_volume) + volume,
+                total_trades: (existing.total_trades || 0) + 1,
+                win_count: (existing.win_count || 0) + (isWin ? 1 : 0),
+                loss_count: (existing.loss_count || 0) + (isWin ? 0 : 1)
+            })
+            .eq('wallet_address', wallet);
+    } else {
+        await supabase.from('oddsclaw_leaderboard')
+            .insert({
+                wallet_address: wallet,
+                total_pnl: pnl,
+                total_volume: volume,
+                total_trades: 1,
+                win_count: isWin ? 1 : 0,
+                loss_count: isWin ? 0 : 1
+            });
+    }
 }
 
 export default async function handler(req, res) {
+    // Verify this is called by Vercel cron or has the correct secret
     const cronSecret = req.headers['x-vercel-cron'];
+    const authHeader = req.headers['authorization'];
+    const isVercelCron = !!cronSecret;
+    const isAuthed = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isVercelCron && !isAuthed) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     try {
-        // Find auto-resolve markets past resolution time
+        // Find auto-resolve markets past resolution time (active OR closed)
         const { data: markets, error } = await supabase
             .from('oddsclaw_markets')
             .select('*')
             .eq('resolution_type', 'auto_price')
-            .eq('status', 'active')
+            .in('status', ['active', 'closed'])
             .lte('resolution_time', new Date().toISOString())
             .limit(10);
 
@@ -112,17 +173,24 @@ export default async function handler(req, res) {
         const results = [];
 
         for (const market of markets) {
+            // Guard: skip if resolution_target or comparator is missing
+            const target = parseFloat(market.resolution_target);
+            if (isNaN(target) || !market.resolution_comparator) {
+                results.push({ id: market.id, slug: market.slug, error: 'Missing resolution target or comparator' });
+                continue;
+            }
+
             const price = await fetchPrice(market.resolution_source);
             if (price === null) {
                 results.push({ id: market.id, slug: market.slug, error: 'Could not fetch price' });
                 continue;
             }
 
-            const target = parseFloat(market.resolution_target);
             const outcome = compare(price, target, market.resolution_comparator) ? 'yes' : 'no';
             const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_HOURS * 60 * 60 * 1000);
 
-            await supabase.from('oddsclaw_markets')
+            // Atomically set resolved status (only if still active/closed)
+            const { data: updated, error: updateErr } = await supabase.from('oddsclaw_markets')
                 .update({
                     resolved_outcome: outcome,
                     resolved_at: new Date().toISOString(),
@@ -130,10 +198,18 @@ export default async function handler(req, res) {
                     dispute_deadline: disputeDeadline.toISOString(),
                     status: 'resolved'
                 })
-                .eq('id', market.id);
+                .eq('id', market.id)
+                .in('status', ['active', 'closed'])
+                .select('id');
 
-            // Distribute pool to winners
-            await creditWinners(market.id, outcome, market);
+            // If no rows updated, someone else resolved it — skip
+            if (updateErr || !updated || updated.length === 0) {
+                results.push({ id: market.id, slug: market.slug, error: 'Already resolved or update failed' });
+                continue;
+            }
+
+            // Distribute pool to winners (re-fetches fresh pool data)
+            await creditWinners(market.id, outcome);
 
             resolved++;
             results.push({ id: market.id, slug: market.slug, outcome, price, target });
