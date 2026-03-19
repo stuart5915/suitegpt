@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OddsClaw — Prediction Market</title>
+    <meta name="description" content="What are the odds? Predict anything, trade YES/NO, earn $ODDS.">
+    <meta property="og:title" content="OddsClaw — What are the odds?">
+    <meta property="og:description" content="Prediction market on Base. Create markets, trade YES/NO positions, earn $ODDS.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://oddsclaw.app">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deep: #06060b;
+            --bg-surface: #0c0c14;
+            --bg-card: #12121c;
+            --bg-elevated: #1a1a28;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-default: rgba(255,255,255,0.1);
+            --text-primary: #e8e6e3;
+            --text-secondary: #8a8698;
+            --text-dim: #5a5670;
+            --accent-yes: #22c55e;
+            --accent-yes-bg: rgba(34,197,94,0.08);
+            --accent-no: #ef4444;
+            --accent-no-bg: rgba(239,68,68,0.08);
+            --accent-odds: #f59e0b;
+            --accent-odds-bg: rgba(245,158,11,0.1);
+            --lobster-400: #e8734a;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --radius-full: 999px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .app-logo span { color: var(--accent-odds); }
+        .app-logo-icon { font-size: 1.4rem; }
+
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-full);
+            padding: 3px;
+        }
+        .nav-tab {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .nav-tab:hover { color: var(--text-secondary); }
+        .nav-tab.active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .balance-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--accent-odds);
+            font-weight: 600;
+        }
+        .wallet-btn {
+            background: linear-gradient(135deg, var(--accent-odds), #d97706);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-full);
+            padding: 7px 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        .wallet-btn:hover { opacity: 0.9; }
+        .wallet-btn.connected {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+        .powered-by {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .powered-by a {
+            color: var(--lobster-400);
+            text-decoration: none;
+        }
+
+        /* Main content */
+        .app-main {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 16px 80px;
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Markets Feed */
+        .markets-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .filter-chips {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .filter-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s;
+        }
+        .filter-chip:hover { border-color: var(--accent-odds); color: var(--text-secondary); }
+        .filter-chip.active { background: var(--accent-odds-bg); border-color: var(--accent-odds); color: var(--accent-odds); }
+
+        .sort-select {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Market Card */
+        .market-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .market-card:hover { border-color: var(--accent-odds); }
+        .market-question {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .market-probs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .prob-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--accent-no-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .prob-bar-fill {
+            height: 100%;
+            background: var(--accent-yes);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .prob-yes {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--accent-yes);
+            min-width: 42px;
+        }
+        .prob-no {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--accent-no);
+            min-width: 42px;
+            text-align: right;
+        }
+        .market-meta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+        .market-meta-item { display: flex; align-items: center; gap: 4px; }
+        .market-category-badge {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+            padding: 2px 8px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+        .market-actions-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+        .trade-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.15s;
+        }
+        .trade-btn:hover { opacity: 0.85; }
+        .trade-btn.yes { background: var(--accent-yes); color: #fff; }
+        .trade-btn.no { background: var(--accent-no); color: #fff; }
+
+        /* Market Detail View */
+        .detail-back {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 16px;
+            padding: 0;
+        }
+        .detail-back:hover { color: var(--text-secondary); }
+        .detail-question {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .detail-desc {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .detail-probs-big {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .prob-big-card {
+            flex: 1;
+            padding: 16px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+        .prob-big-card.yes { background: var(--accent-yes-bg); border: 1px solid rgba(34,197,94,0.2); }
+        .prob-big-card.no { background: var(--accent-no-bg); border: 1px solid rgba(239,68,68,0.2); }
+        .prob-big-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+        .prob-big-card.yes .prob-big-label { color: var(--accent-yes); }
+        .prob-big-card.no .prob-big-label { color: var(--accent-no); }
+        .prob-big-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+        .prob-big-card.yes .prob-big-pct { color: var(--accent-yes); }
+        .prob-big-card.no .prob-big-pct { color: var(--accent-no); }
+
+        /* Trade Panel */
+        .trade-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+        .trade-panel h3 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .trade-side-toggle {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-full);
+            padding: 3px;
+        }
+        .side-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            background: none;
+            color: var(--text-dim);
+            transition: all 0.15s;
+        }
+        .side-btn.active-yes { background: var(--accent-yes); color: #fff; }
+        .side-btn.active-no { background: var(--accent-no); color: #fff; }
+        .trade-input-group {
+            margin-bottom: 12px;
+        }
+        .trade-input-label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .trade-input {
+            width: 100%;
+            background: var(--bg-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+        .trade-input:focus { border-color: var(--accent-odds); outline: none; }
+        .quick-amounts {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .quick-amt {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 3px 10px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .quick-amt:hover { border-color: var(--accent-odds); color: var(--text-secondary); }
+        .trade-estimate {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .trade-estimate-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+        .trade-estimate-row span:last-child {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .trade-submit {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            transition: opacity 0.15s;
+        }
+        .trade-submit:hover { opacity: 0.9; }
+        .trade-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+        .trade-submit.buy-yes { background: var(--accent-yes); }
+        .trade-submit.buy-no { background: var(--accent-no); }
+
+        /* Trade history table */
+        .trades-table {
+            width: 100%;
+            font-size: 0.78rem;
+            border-collapse: collapse;
+        }
+        .trades-table th {
+            text-align: left;
+            color: var(--text-dim);
+            font-weight: 600;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .trades-table td {
+            padding: 6px 8px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .trades-table .yes-text { color: var(--accent-yes); font-weight: 600; }
+        .trades-table .no-text { color: var(--accent-no); font-weight: 600; }
+
+        /* Positions View */
+        .position-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .position-question {
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+        }
+        .position-question:hover { color: var(--accent-odds); }
+        .position-side {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: var(--radius-full);
+        }
+        .position-side.yes { background: var(--accent-yes-bg); color: var(--accent-yes); }
+        .position-side.no { background: var(--accent-no-bg); color: var(--accent-no); }
+        .position-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+        .position-stats strong {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+
+        /* Create Market View */
+        .create-form {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+        .create-form h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .create-form-sub {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            background: var(--bg-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+        .form-textarea { resize: vertical; min-height: 60px; }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent-odds); outline: none; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row > .form-group { flex: 1; }
+        .form-hint { font-size: 0.72rem; color: var(--text-dim); margin-top: 3px; }
+        .create-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent-odds), #d97706);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            margin-top: 8px;
+        }
+        .create-submit:hover { opacity: 0.9; }
+        .create-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Leaderboard */
+        .lb-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .lb-table th {
+            text-align: left;
+            color: var(--text-dim);
+            font-weight: 600;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .lb-table td {
+            padding: 8px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .lb-table .rank { color: var(--accent-odds); font-weight: 700; }
+        .lb-table .pnl-pos { color: var(--accent-yes); font-weight: 600; }
+        .lb-table .pnl-neg { color: var(--accent-no); font-weight: 600; }
+
+        /* How It Works */
+        .how-steps {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .how-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+        }
+        .how-step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-odds);
+            margin-bottom: 6px;
+        }
+        .how-step h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+        .how-step p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+
+        /* Utility */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+        }
+        .empty-state h3 { font-size: 1rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            z-index: 1000;
+            display: none;
+        }
+        .toast.show { display: block; }
+        .faucet-btn {
+            background: var(--accent-odds-bg);
+            border: 1px solid var(--accent-odds);
+            border-radius: var(--radius-md);
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent-odds);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        .faucet-btn:hover { opacity: 0.8; }
+
+        .resolve-btn {
+            background: var(--accent-odds);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 8px 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .nav-tabs { display: none; }
+            .app-main { padding: 12px 10px 80px; }
+            .detail-probs-big { flex-direction: column; }
+            .form-row { flex-direction: column; gap: 0; }
+            .how-steps { grid-template-columns: 1fr; }
+            /* Mobile nav */
+            .mobile-nav {
+                display: flex !important;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: var(--bg-surface);
+                border-top: 1px solid var(--border-subtle);
+                padding: 6px 0;
+                z-index: 100;
+                justify-content: space-around;
+            }
+            .mobile-nav button {
+                background: none;
+                border: none;
+                color: var(--text-dim);
+                font-size: 0.65rem;
+                font-weight: 600;
+                padding: 4px 8px;
+                cursor: pointer;
+                font-family: 'Inter', sans-serif;
+            }
+            .mobile-nav button.active { color: var(--accent-odds); }
+        }
+
+        .mobile-nav { display: none; }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <a class="app-logo" href="/"><span class="app-logo-icon">🎲</span> Odds<span>Claw</span></a>
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showView('markets')">Markets</button>
+        <button class="nav-tab" onclick="showView('positions')">Positions</button>
+        <button class="nav-tab" onclick="showView('create')">Create</button>
+        <button class="nav-tab" onclick="showView('leaderboard')">Leaderboard</button>
+        <button class="nav-tab" onclick="showView('howitworks')">How It Works</button>
+    </div>
+    <div class="header-right">
+        <div class="balance-display" id="balanceDisplay" style="display:none;"></div>
+        <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+        <div class="powered-by">Powered by <a href="https://inclawbate.com">inclawbate</a></div>
+    </div>
+</header>
+
+<main class="app-main">
+    <!-- Markets Feed -->
+    <div class="view active" id="view-markets">
+        <div class="markets-toolbar">
+            <div class="filter-chips">
+                <button class="filter-chip active" data-cat="all" onclick="setFilter(this)">All</button>
+                <button class="filter-chip" data-cat="crypto" onclick="setFilter(this)">Crypto</button>
+                <button class="filter-chip" data-cat="politics" onclick="setFilter(this)">Politics</button>
+                <button class="filter-chip" data-cat="sports" onclick="setFilter(this)">Sports</button>
+                <button class="filter-chip" data-cat="culture" onclick="setFilter(this)">Culture</button>
+                <button class="filter-chip" data-cat="custom" onclick="setFilter(this)">Custom</button>
+            </div>
+            <select class="sort-select" id="sortSelect" onchange="loadMarkets()">
+                <option value="volume">Top Volume</option>
+                <option value="newest">Newest</option>
+                <option value="closing">Closing Soon</option>
+                <option value="trades">Most Trades</option>
+            </select>
+        </div>
+        <div id="marketsFeed"></div>
+    </div>
+
+    <!-- Market Detail -->
+    <div class="view" id="view-detail">
+        <button class="detail-back" onclick="showView('markets')">&larr; Back to Markets</button>
+        <div id="detailContent"></div>
+    </div>
+
+    <!-- Positions -->
+    <div class="view" id="view-positions">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 class="section-title" style="margin:0;">My Positions</h2>
+            <button class="faucet-btn" id="faucetBtn" onclick="requestFaucet()" style="display:none;">Get Test ODDS</button>
+        </div>
+        <div id="positionsContent"></div>
+    </div>
+
+    <!-- Create Market -->
+    <div class="view" id="view-create">
+        <div class="create-form">
+            <h2>Create a Market</h2>
+            <p class="create-form-sub">Cost: 100 ODDS (creation fee) + initial liquidity. What are the odds?</p>
+
+            <div class="form-group">
+                <label class="form-label">Question</label>
+                <input class="form-input" id="createQuestion" placeholder="Will ETH be above $4,000 on March 30?" maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description (optional)</label>
+                <textarea class="form-textarea" id="createDesc" placeholder="Additional context, resolution criteria..." maxlength="2000"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="createCategory">
+                        <option value="crypto">Crypto</option>
+                        <option value="politics">Politics</option>
+                        <option value="sports">Sports</option>
+                        <option value="culture">Culture</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Resolution Type</label>
+                    <select class="form-select" id="createResType" onchange="toggleAutoFields()">
+                        <option value="creator">I'll resolve it</option>
+                        <option value="auto_price">Auto (crypto price)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="autoFields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Price Source</label>
+                        <select class="form-select" id="createSource">
+                            <option value="coingecko:ethereum">ETH (Ethereum)</option>
+                            <option value="coingecko:bitcoin">BTC (Bitcoin)</option>
+                            <option value="coingecko:solana">SOL (Solana)</option>
+                            <option value="coingecko:base">BASE</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condition</label>
+                        <select class="form-select" id="createComparator">
+                            <option value="gte">Price &ge; target</option>
+                            <option value="gt">Price &gt; target</option>
+                            <option value="lte">Price &le; target</option>
+                            <option value="lt">Price &lt; target</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Target Price (USD)</label>
+                    <input class="form-input" id="createTarget" type="number" step="0.01" placeholder="4000">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Trading Closes</label>
+                    <input class="form-input" id="createCloseTime" type="datetime-local">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Resolves At</label>
+                    <input class="form-input" id="createResolveTime" type="datetime-local">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Initial Liquidity (ODDS)</label>
+                <input class="form-input" id="createLiquidity" type="number" value="500" min="200" step="100">
+                <div class="form-hint">Min 200 ODDS. Seeds both YES and NO pools equally (50/50 starting odds).</div>
+            </div>
+
+            <button class="create-submit" id="createSubmitBtn" onclick="submitCreate()" disabled>Connect Wallet to Create</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="view" id="view-leaderboard">
+        <h2 class="section-title">Leaderboard</h2>
+        <div id="leaderboardContent"></div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="view" id="view-howitworks">
+        <h2 class="section-title">How OddsClaw Works</h2>
+        <p style="color:var(--text-secondary);font-size:0.92rem;line-height:1.6;margin-bottom:20px;">
+            OddsClaw is a prediction market on Base. Create questions about the future, trade YES/NO positions, and earn $ODDS when you're right.
+        </p>
+        <div class="how-steps">
+            <div class="how-step">
+                <div class="how-step-num">1</div>
+                <h3>Browse Markets</h3>
+                <p>Find questions about crypto prices, world events, or anything custom.</p>
+            </div>
+            <div class="how-step">
+                <div class="how-step-num">2</div>
+                <h3>Pick a Side</h3>
+                <p>Buy YES or NO with $ODDS tokens. Price reflects crowd probability.</p>
+            </div>
+            <div class="how-step">
+                <div class="how-step-num">3</div>
+                <h3>Wait or Trade</h3>
+                <p>Hold until resolution or sell early if odds shift in your favor.</p>
+            </div>
+            <div class="how-step">
+                <div class="how-step-num">4</div>
+                <h3>Collect Winnings</h3>
+                <p>Correct prediction? Each winning share pays 1 ODDS. Wrong? You lose your stake.</p>
+            </div>
+        </div>
+        <div style="margin-top:20px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:18px;">
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:8px;color:var(--accent-odds);">$ODDS Token</h3>
+            <ul style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;padding-left:18px;">
+                <li>Create markets (100 ODDS fee)</li>
+                <li>Trade YES/NO positions</li>
+                <li>Dispute incorrect resolutions (500 ODDS stake)</li>
+                <li>Stake ODDS to earn CLAWS rewards</li>
+                <li>Governance on disputed outcomes</li>
+            </ul>
+        </div>
+    </div>
+</main>
+
+<div class="mobile-nav">
+    <button class="active" onclick="showView('markets')">Markets</button>
+    <button onclick="showView('positions')">Positions</button>
+    <button onclick="showView('create')">Create</button>
+    <button onclick="showView('leaderboard')">Board</button>
+    <button onclick="showView('howitworks')">How</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+    'use strict';
+
+    var API = '/api/inclawbate/oddsclaw';
+    var _wallet = null;
+    var _balance = 0;
+    var _currentFilter = 'all';
+    var _currentMarket = null;
+    var _tradeSide = 'yes';
+
+    // ── Toast ──
+    function toast(msg, ms) {
+        var el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(function() { el.classList.remove('show'); }, ms || 3000);
+    }
+
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function shortAddr(a) {
+        return a ? a.slice(0, 6) + '...' + a.slice(-4) : '';
+    }
+
+    function timeLeft(dateStr) {
+        var diff = new Date(dateStr) - new Date();
+        if (diff <= 0) return 'Closed';
+        var h = Math.floor(diff / 3600000);
+        if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+        var m = Math.floor((diff % 3600000) / 60000);
+        return h + 'h ' + m + 'm';
+    }
+
+    function fmtNum(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return parseFloat(n).toFixed(1);
+    }
+
+    // ── Wallet ──
+    window.connectWallet = async function() {
+        if (_wallet) return;
+        try {
+            var provider;
+            if (window._awaitProvider) {
+                provider = await window._awaitProvider();
+            } else if (window.ethereum) {
+                provider = window.ethereum;
+            }
+            if (!provider) { toast('No wallet found'); return; }
+
+            var accounts = await provider.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts[0]) {
+                _wallet = accounts[0].toLowerCase();
+                var btn = document.getElementById('walletBtn');
+                btn.textContent = shortAddr(_wallet);
+                btn.classList.add('connected');
+                document.getElementById('faucetBtn').style.display = '';
+                document.getElementById('createSubmitBtn').disabled = false;
+                document.getElementById('createSubmitBtn').textContent = 'Create Market (100 + liquidity ODDS)';
+                loadBalance();
+                loadPositions();
+            }
+        } catch (err) {
+            console.error('Wallet connect error:', err);
+            toast('Failed to connect wallet');
+        }
+    };
+
+    async function loadBalance() {
+        if (!_wallet) return;
+        try {
+            var r = await fetch(API + '?wallet=' + _wallet);
+            if (r.ok) {
+                var d = await r.json();
+                _balance = d.balance || 0;
+                var el = document.getElementById('balanceDisplay');
+                el.textContent = fmtNum(_balance) + ' ODDS';
+                el.style.display = '';
+            }
+        } catch (e) {}
+    }
+
+    // ── Views ──
+    window.showView = function(name) {
+        document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+        document.getElementById('view-' + name).classList.add('active');
+        document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.nav-tab').forEach(function(t) {
+            if (t.textContent.toLowerCase().replace(/\s/g, '') === name.replace(/\s/g, '')) t.classList.add('active');
+        });
+        // Mobile nav
+        document.querySelectorAll('.mobile-nav button').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.mobile-nav button').forEach(function(b) {
+            if (b.textContent.toLowerCase().replace(/\s/g, '') === name.replace(/\s/g, '')) b.classList.add('active');
+        });
+
+        if (name === 'markets') loadMarkets();
+        if (name === 'positions') loadPositions();
+        if (name === 'leaderboard') loadLeaderboard();
+    };
+
+    // ── Markets Feed ──
+    window.setFilter = function(el) {
+        document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+        el.classList.add('active');
+        _currentFilter = el.dataset.cat;
+        loadMarkets();
+    };
+
+    async function loadMarkets() {
+        var feed = document.getElementById('marketsFeed');
+        feed.innerHTML = '<div class="empty-state">Loading markets...</div>';
+        var sort = document.getElementById('sortSelect').value;
+        var url = API + '?status=active&sort=' + sort + '&limit=50';
+        if (_currentFilter !== 'all') url += '&category=' + _currentFilter;
+
+        try {
+            var r = await fetch(url);
+            if (!r.ok) throw new Error('API error');
+            var d = await r.json();
+            var markets = d.markets || [];
+
+            if (markets.length === 0) {
+                feed.innerHTML = '<div class="empty-state"><h3>No markets yet</h3><p>Be the first to create one!</p></div>';
+                return;
+            }
+
+            var html = '';
+            markets.forEach(function(m) {
+                var yPct = Math.round((m.probs.yes || 0.5) * 100);
+                var nPct = 100 - yPct;
+                html += '<div class="market-card" onclick="openMarket(\'' + m.id + '\')">' +
+                    '<div class="market-question">' + esc(m.question) + '</div>' +
+                    '<div class="market-probs">' +
+                        '<span class="prob-yes">' + yPct + '%</span>' +
+                        '<div class="prob-bar"><div class="prob-bar-fill" style="width:' + yPct + '%"></div></div>' +
+                        '<span class="prob-no">' + nPct + '%</span>' +
+                    '</div>' +
+                    '<div class="market-meta">' +
+                        '<span class="market-category-badge">' + esc(m.category) + '</span>' +
+                        '<span class="market-meta-item">' + fmtNum(parseFloat(m.total_volume)) + ' ODDS vol</span>' +
+                        '<span class="market-meta-item">' + (m.trade_count || 0) + ' trades</span>' +
+                        '<span class="market-meta-item">' + timeLeft(m.close_time) + '</span>' +
+                    '</div>' +
+                    '<div class="market-actions-row">' +
+                        '<button class="trade-btn yes" onclick="event.stopPropagation();quickTrade(\'' + m.id + '\',\'yes\')">YES ' + yPct + '%</button>' +
+                        '<button class="trade-btn no" onclick="event.stopPropagation();quickTrade(\'' + m.id + '\',\'no\')">NO ' + nPct + '%</button>' +
+                    '</div>' +
+                '</div>';
+            });
+            feed.innerHTML = html;
+        } catch (err) {
+            console.error('Load markets error:', err);
+            feed.innerHTML = '<div class="empty-state">Failed to load markets</div>';
+        }
+    }
+
+    // ── Market Detail ──
+    window.openMarket = async function(id) {
+        showView('detail');
+        var wrap = document.getElementById('detailContent');
+        wrap.innerHTML = '<div class="empty-state">Loading...</div>';
+
+        try {
+            var r = await fetch(API + '?id=' + id);
+            if (!r.ok) throw new Error('API error');
+            var d = await r.json();
+            _currentMarket = d.market;
+            var m = d.market;
+            var trades = d.trades || [];
+
+            var yPct = Math.round((m.probs.yes || 0.5) * 100);
+            var nPct = 100 - yPct;
+
+            var html = '<h1 class="detail-question">' + esc(m.question) + '</h1>';
+            if (m.description) html += '<p class="detail-desc">' + esc(m.description) + '</p>';
+
+            html += '<div class="detail-probs-big">' +
+                '<div class="prob-big-card yes"><div class="prob-big-label">YES</div><div class="prob-big-pct">' + yPct + '%</div></div>' +
+                '<div class="prob-big-card no"><div class="prob-big-label">NO</div><div class="prob-big-pct">' + nPct + '%</div></div>' +
+            '</div>';
+
+            // Trade panel
+            if (m.status === 'active') {
+                html += '<div class="trade-panel">' +
+                    '<h3>Trade</h3>' +
+                    '<div class="trade-side-toggle">' +
+                        '<button class="side-btn active-yes" id="sideYes" onclick="setSide(\'yes\')">YES</button>' +
+                        '<button class="side-btn" id="sideNo" onclick="setSide(\'no\')">NO</button>' +
+                    '</div>' +
+                    '<div class="trade-input-group">' +
+                        '<div class="trade-input-label"><span>Amount (ODDS)</span><span id="tradeBalance"></span></div>' +
+                        '<input class="trade-input" id="tradeAmount" type="number" step="1" min="1" placeholder="100" oninput="updateEstimate()">' +
+                        '<div class="quick-amounts">' +
+                            '<button class="quick-amt" onclick="setTradeAmount(50)">50</button>' +
+                            '<button class="quick-amt" onclick="setTradeAmount(100)">100</button>' +
+                            '<button class="quick-amt" onclick="setTradeAmount(500)">500</button>' +
+                            '<button class="quick-amt" onclick="setTradeAmount(1000)">1K</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="trade-estimate" id="tradeEstimate">' +
+                        '<div class="trade-estimate-row"><span>Estimated shares</span><span id="estShares">—</span></div>' +
+                        '<div class="trade-estimate-row"><span>Avg price</span><span id="estPrice">—</span></div>' +
+                        '<div class="trade-estimate-row"><span>Fee (2%)</span><span id="estFee">—</span></div>' +
+                        '<div class="trade-estimate-row"><span>Potential payout</span><span id="estPayout">—</span></div>' +
+                    '</div>' +
+                    '<button class="trade-submit buy-yes" id="tradeSubmit" onclick="submitTrade()">Buy YES</button>' +
+                '</div>';
+            }
+
+            if (m.status === 'resolved') {
+                html += '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:18px;margin-bottom:20px;">' +
+                    '<h3 style="font-size:0.92rem;margin-bottom:8px;">Resolved: <span style="color:' + (m.resolved_outcome === 'yes' ? 'var(--accent-yes)' : 'var(--accent-no)') + ';text-transform:uppercase;">' + m.resolved_outcome + '</span></h3>' +
+                    '<p style="font-size:0.82rem;color:var(--text-dim);">Resolved by ' + shortAddr(m.resolved_by) + ' on ' + new Date(m.resolved_at).toLocaleDateString() + '</p>' +
+                '</div>';
+            }
+
+            // Creator resolve button
+            if (m.status === 'active' && _wallet === m.creator_wallet && new Date() >= new Date(m.resolution_time)) {
+                html += '<div style="background:var(--accent-odds-bg);border:1px solid var(--accent-odds);border-radius:var(--radius-lg);padding:18px;margin-bottom:20px;">' +
+                    '<h3 style="font-size:0.92rem;color:var(--accent-odds);margin-bottom:8px;">Ready to Resolve</h3>' +
+                    '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px;">You are the creator. Select the outcome:</p>' +
+                    '<div style="display:flex;gap:8px;">' +
+                        '<button class="resolve-btn" style="background:var(--accent-yes);" onclick="resolveThis(\'yes\')">Resolve YES</button>' +
+                        '<button class="resolve-btn" style="background:var(--accent-no);color:#fff;" onclick="resolveThis(\'no\')">Resolve NO</button>' +
+                        '<button class="resolve-btn" style="background:var(--text-dim);" onclick="resolveThis(\'void\')">Void</button>' +
+                    '</div>' +
+                '</div>';
+            }
+
+            // Market info
+            html += '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:18px;margin-bottom:20px;">' +
+                '<h3 style="font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--text-secondary);">Market Info</h3>' +
+                '<div style="font-size:0.8rem;color:var(--text-dim);line-height:1.8;">' +
+                    'Category: ' + esc(m.category) + '<br>' +
+                    'Resolution: ' + esc(m.resolution_type) + '<br>' +
+                    'Closes: ' + new Date(m.close_time).toLocaleString() + '<br>' +
+                    'Resolves: ' + new Date(m.resolution_time).toLocaleString() + '<br>' +
+                    'Volume: ' + fmtNum(parseFloat(m.total_volume)) + ' ODDS<br>' +
+                    'Trades: ' + (m.trade_count || 0) + '<br>' +
+                    'Creator: ' + shortAddr(m.creator_wallet) + '<br>' +
+                '</div>' +
+            '</div>';
+
+            // Recent trades
+            if (trades.length > 0) {
+                html += '<h3 style="font-size:0.92rem;font-weight:700;margin-bottom:10px;">Recent Trades</h3>';
+                html += '<table class="trades-table"><thead><tr><th>Time</th><th>Side</th><th>Shares</th><th>Price</th><th>ODDS</th></tr></thead><tbody>';
+                trades.slice(0, 20).forEach(function(t) {
+                    var cls = t.side === 'yes' ? 'yes-text' : 'no-text';
+                    html += '<tr>' +
+                        '<td>' + new Date(t.created_at).toLocaleTimeString() + '</td>' +
+                        '<td class="' + cls + '">' + t.direction.toUpperCase() + ' ' + t.side.toUpperCase() + '</td>' +
+                        '<td>' + parseFloat(t.shares).toFixed(2) + '</td>' +
+                        '<td>' + parseFloat(t.price).toFixed(4) + '</td>' +
+                        '<td>' + parseFloat(t.odds_amount).toFixed(2) + '</td>' +
+                    '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            wrap.innerHTML = html;
+
+            // Update trade balance display
+            if (_wallet) {
+                var balEl = document.getElementById('tradeBalance');
+                if (balEl) balEl.textContent = 'Balance: ' + fmtNum(_balance) + ' ODDS';
+            }
+        } catch (err) {
+            console.error('Market detail error:', err);
+            wrap.innerHTML = '<div class="empty-state">Failed to load market</div>';
+        }
+    };
+
+    window.setSide = function(side) {
+        _tradeSide = side;
+        document.getElementById('sideYes').className = 'side-btn' + (side === 'yes' ? ' active-yes' : '');
+        document.getElementById('sideNo').className = 'side-btn' + (side === 'no' ? ' active-no' : '');
+        var btn = document.getElementById('tradeSubmit');
+        if (btn) {
+            btn.textContent = 'Buy ' + side.toUpperCase();
+            btn.className = 'trade-submit buy-' + side;
+        }
+        updateEstimate();
+    };
+
+    window.setTradeAmount = function(n) {
+        document.getElementById('tradeAmount').value = n;
+        updateEstimate();
+    };
+
+    function updateEstimate() {
+        if (!_currentMarket) return;
+        var amount = parseFloat(document.getElementById('tradeAmount').value) || 0;
+        if (amount <= 0) {
+            document.getElementById('estShares').textContent = '—';
+            document.getElementById('estPrice').textContent = '—';
+            document.getElementById('estFee').textContent = '—';
+            document.getElementById('estPayout').textContent = '—';
+            return;
+        }
+        var yp = parseFloat(_currentMarket.yes_pool);
+        var np = parseFloat(_currentMarket.no_pool);
+        var fee = amount * 0.02;
+        var net = amount - fee;
+
+        var shares;
+        if (_tradeSide === 'yes') {
+            shares = yp - (yp * np) / (np + net);
+        } else {
+            shares = np - (yp * np) / (yp + net);
+        }
+        shares = Math.max(0, shares);
+        var price = shares > 0 ? net / shares : 0;
+
+        document.getElementById('estShares').textContent = shares.toFixed(2);
+        document.getElementById('estPrice').textContent = price.toFixed(4) + ' ODDS';
+        document.getElementById('estFee').textContent = fee.toFixed(2) + ' ODDS';
+        document.getElementById('estPayout').textContent = shares.toFixed(2) + ' ODDS (if correct)';
+    }
+
+    window.submitTrade = async function() {
+        if (!_wallet) { toast('Connect wallet first'); return; }
+        var amount = parseFloat(document.getElementById('tradeAmount').value);
+        if (!amount || amount <= 0) { toast('Enter an amount'); return; }
+
+        var btn = document.getElementById('tradeSubmit');
+        btn.disabled = true;
+        btn.textContent = 'Trading...';
+
+        try {
+            var r = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'trade',
+                    wallet: _wallet,
+                    market_id: _currentMarket.id,
+                    side: _tradeSide,
+                    odds_amount: amount,
+                    direction: 'buy'
+                })
+            });
+            var d = await r.json();
+            if (d.success) {
+                toast('Bought ' + d.shares.toFixed(2) + ' ' + _tradeSide.toUpperCase() + ' shares!');
+                _currentMarket.yes_pool = d.new_probs ? (d.new_probs.no * 2000).toString() : _currentMarket.yes_pool;
+                _currentMarket.no_pool = d.new_probs ? (d.new_probs.yes * 2000).toString() : _currentMarket.no_pool;
+                loadBalance();
+                openMarket(_currentMarket.id);
+            } else {
+                toast(d.error || 'Trade failed');
+            }
+        } catch (err) {
+            toast('Trade failed');
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Buy ' + _tradeSide.toUpperCase();
+    };
+
+    window.quickTrade = function(marketId, side) {
+        _tradeSide = side;
+        openMarket(marketId);
+    };
+
+    window.resolveThis = async function(outcome) {
+        if (!_wallet || !_currentMarket) return;
+        if (!confirm('Resolve this market as ' + outcome.toUpperCase() + '?')) return;
+
+        try {
+            var r = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'resolve', wallet: _wallet, market_id: _currentMarket.id, outcome: outcome })
+            });
+            var d = await r.json();
+            if (d.success) {
+                toast('Market resolved as ' + outcome.toUpperCase());
+                openMarket(_currentMarket.id);
+            } else {
+                toast(d.error || 'Resolve failed');
+            }
+        } catch (err) { toast('Resolve failed'); }
+    };
+
+    // ── Positions ──
+    async function loadPositions() {
+        var wrap = document.getElementById('positionsContent');
+        if (!_wallet) {
+            wrap.innerHTML = '<div class="empty-state"><h3>Connect wallet to see positions</h3></div>';
+            return;
+        }
+
+        try {
+            var r = await fetch(API + '?wallet=' + _wallet);
+            if (!r.ok) throw new Error('API error');
+            var d = await r.json();
+            _balance = d.balance || 0;
+            document.getElementById('balanceDisplay').textContent = fmtNum(_balance) + ' ODDS';
+
+            var positions = d.positions || [];
+            if (positions.length === 0) {
+                wrap.innerHTML = '<div class="empty-state"><h3>No positions yet</h3><p>Start trading to see your positions here.</p></div>';
+                return;
+            }
+
+            var html = '';
+            positions.forEach(function(p) {
+                var currentVal = 0;
+                if (p.market_status === 'resolved') {
+                    currentVal = p.resolved_outcome === p.side ? parseFloat(p.shares) : 0;
+                } else if (p.probs) {
+                    currentVal = parseFloat(p.shares) * (p.side === 'yes' ? p.probs.yes : p.probs.no);
+                }
+                var pnl = currentVal - parseFloat(p.total_cost);
+
+                html += '<div class="position-card">' +
+                    '<div class="position-header">' +
+                        '<span class="position-question" onclick="openMarket(\'' + p.market_id + '\')">' + esc(p.market_question || 'Market') + '</span>' +
+                        '<span class="position-side ' + p.side + '">' + p.side.toUpperCase() + '</span>' +
+                    '</div>' +
+                    '<div class="position-stats">' +
+                        '<span>Shares: <strong>' + parseFloat(p.shares).toFixed(2) + '</strong></span>' +
+                        '<span>Avg: <strong>' + parseFloat(p.avg_price).toFixed(4) + '</strong></span>' +
+                        '<span>Cost: <strong>' + parseFloat(p.total_cost).toFixed(2) + '</strong></span>' +
+                        '<span>PnL: <strong style="color:' + (pnl >= 0 ? 'var(--accent-yes)' : 'var(--accent-no)') + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '</strong></span>' +
+                    '</div>' +
+                '</div>';
+            });
+            wrap.innerHTML = html;
+        } catch (err) {
+            wrap.innerHTML = '<div class="empty-state">Failed to load positions</div>';
+        }
+    }
+
+    // ── Leaderboard ──
+    async function loadLeaderboard() {
+        var wrap = document.getElementById('leaderboardContent');
+        wrap.innerHTML = '<div class="empty-state">Loading...</div>';
+
+        try {
+            var r = await fetch(API + '?leaderboard=true');
+            if (!r.ok) throw new Error('API error');
+            var d = await r.json();
+            var lb = d.leaderboard || [];
+
+            if (lb.length === 0) {
+                wrap.innerHTML = '<div class="empty-state"><h3>No traders yet</h3></div>';
+                return;
+            }
+
+            var html = '<table class="lb-table"><thead><tr><th>#</th><th>Trader</th><th>PnL</th><th>Volume</th><th>W/L</th></tr></thead><tbody>';
+            lb.forEach(function(row, i) {
+                var pnl = parseFloat(row.total_pnl);
+                html += '<tr>' +
+                    '<td class="rank">' + (i + 1) + '</td>' +
+                    '<td>' + shortAddr(row.wallet_address) + '</td>' +
+                    '<td class="' + (pnl >= 0 ? 'pnl-pos' : 'pnl-neg') + '">' + (pnl >= 0 ? '+' : '') + fmtNum(pnl) + '</td>' +
+                    '<td>' + fmtNum(parseFloat(row.total_volume)) + '</td>' +
+                    '<td>' + (row.win_count || 0) + '/' + (row.loss_count || 0) + '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table>';
+            wrap.innerHTML = html;
+        } catch (err) {
+            wrap.innerHTML = '<div class="empty-state">Failed to load leaderboard</div>';
+        }
+    }
+
+    // ── Create Market ──
+    window.toggleAutoFields = function() {
+        var rt = document.getElementById('createResType').value;
+        document.getElementById('autoFields').style.display = rt === 'auto_price' ? 'block' : 'none';
+    };
+
+    window.submitCreate = async function() {
+        if (!_wallet) { toast('Connect wallet first'); return; }
+
+        var question = document.getElementById('createQuestion').value.trim();
+        if (!question || question.length < 10) { toast('Question must be at least 10 characters'); return; }
+
+        var closeTime = document.getElementById('createCloseTime').value;
+        var resolveTime = document.getElementById('createResolveTime').value;
+        if (!closeTime || !resolveTime) { toast('Set close and resolution times'); return; }
+
+        var resType = document.getElementById('createResType').value;
+        var body = {
+            action: 'create',
+            wallet: _wallet,
+            question: question,
+            description: document.getElementById('createDesc').value.trim(),
+            category: document.getElementById('createCategory').value,
+            resolution_type: resType,
+            close_time: new Date(closeTime).toISOString(),
+            resolution_time: new Date(resolveTime).toISOString(),
+            initial_liquidity: parseFloat(document.getElementById('createLiquidity').value) || 500
+        };
+
+        if (resType === 'auto_price') {
+            body.resolution_source = document.getElementById('createSource').value;
+            body.resolution_comparator = document.getElementById('createComparator').value;
+            body.resolution_target = parseFloat(document.getElementById('createTarget').value);
+            if (!body.resolution_target) { toast('Set a target price'); return; }
+            body.resolution_criteria = 'Auto-resolves when price ' + body.resolution_comparator + ' $' + body.resolution_target;
+        }
+
+        var btn = document.getElementById('createSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+
+        try {
+            var r = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            var d = await r.json();
+            if (d.success) {
+                toast('Market created!');
+                loadBalance();
+                openMarket(d.market.id);
+            } else {
+                toast(d.error || 'Creation failed');
+            }
+        } catch (err) {
+            toast('Creation failed');
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Create Market (100 + liquidity ODDS)';
+    };
+
+    // ── Faucet (test mode) ──
+    window.requestFaucet = async function() {
+        if (!_wallet) return;
+        try {
+            var r = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'faucet', wallet: _wallet })
+            });
+            var d = await r.json();
+            if (d.success) {
+                toast('Got 10,000 test ODDS!');
+                _balance = d.balance;
+                document.getElementById('balanceDisplay').textContent = fmtNum(_balance) + ' ODDS';
+            } else {
+                toast(d.error || 'Faucet failed');
+            }
+        } catch (err) { toast('Faucet failed'); }
+    };
+
+    // ── Init ──
+    loadMarkets();
+
+    console.log('[OddsClaw] v1 init');
+})();
+</script>
+
+</body>
+</html>
