@@ -526,10 +526,11 @@ async function executeTool(name, args) {
 // ── Session store ──
 const sessions = new Map();
 
-// Model fallback: try best model first, fall back to faster ones on rate limit
+// Model priority: 8b-instant has 10x higher rate limits, use it first.
+// 70b-versatile is smarter but rate-limits fast on free tier.
 const MODELS = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant'
+  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile'
 ];
 
 async function callGroq(messages) {
