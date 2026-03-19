@@ -13,11 +13,8 @@ const supabase = createClient(
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID;
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
-const STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
 const VOTE_STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
-const ANGEL_REWARDS_CONTRACT = '0x071aaa3A83CC0ffBf471907c6A0995f12E7C682B';
-const TREASURY_WALLET_RAW = '91B5C0D07859CFeAfEB67d9694121CD741F049bd'; // no 0x prefix, for calldata
-const BASE_RPC = 'https://mainnet.base.org';
+const BASE_RPC = 'https://mainnet.base.org'; // used by voter balance refresh
 const BUCKET_LABELS = {
     'reinvest': 'Reinvest', 'buy-claws': 'Buy', 'claws-lp': 'LP',
     'staking': 'Staking', 'ecosystem': 'Ecosystem', 'grants': 'Grants',
@@ -77,182 +74,61 @@ async function fetchClawsPrice() {
     }
 }
 
-const LP_POOL = '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F';
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
-const TREASURY_FUNDING_RATE = 100; // $/day — update when funding changes
-const BASESCAN_API_KEY = 'C6WMY6JWVYDGI9QZBEDNUH86E7A5PIZACC';
 
-async function rpcRead(to, data) {
-    try {
-        const res = await fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to, data }, 'latest'], id: 1 })
-        });
-        const result = await res.json();
-        if (result.error || !result.result) return 0;
-        return Number(BigInt(result.result)) / 1e18;
-    } catch (e) {
-        return 0;
-    }
-}
-
-function clawsBalanceOfData(addr) {
-    return '0x70a08231000000000000000000000000' + addr.replace('0x', '').toLowerCase();
-}
-
+const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function storageRead(contract, slot) {
+// ── Cached Chain Data ──
+// Reads staking, angel, and treasury data from Supabase cache
+// (populated every 4 hours by /api/inclawbate/cache-chain-data)
+
+async function fetchChainDataCache() {
     try {
-        const res = await fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getStorageAt', params: [contract, slot, 'latest'], id: 1 })
-        });
-        const result = await res.json();
-        if (result.error || !result.result) return 0;
-        return Number(BigInt(result.result)) / 1e18;
-    } catch (e) { return 0; }
-}
-
-async function fetchStakingAndLP() {
-    // Sequential RPC calls to avoid Base public RPC rate limit
-    // CLAWS.balanceOf(stakingContract) = total CLAWS in contract (staked + rewards pool)
-    const contractTotal = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(STAKING_CONTRACT));
-    await delay(200);
-    // Storage slot 6 = _totalSupply = total staked by users (Synthetix StakingRewards layout)
-    const userStaked = await storageRead(STAKING_CONTRACT, '0x6');
-    await delay(200);
-    const inLP = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(LP_POOL));
-    await delay(200);
-    const rewardRate = await rpcRead(STAKING_CONTRACT, '0x7b0a47ee');  // rewardRate()
-
-    const rewardsPool = contractTotal - userStaked;
-    const dailyRewards = rewardRate * 86400;
-    const apy = userStaked > 0 ? (dailyRewards * 365 / userStaked * 100) : 0;
-
-    return {
-        staked: userStaked,
-        rewardsPool: rewardsPool > 0 ? rewardsPool : 0,
-        inLP,
-        dailyRewards,
-        apy,
-        stakedPct: (userStaked / TOTAL_SUPPLY * 100).toFixed(1),
-        lpPct: (inLP / TOTAL_SUPPLY * 100).toFixed(1),
-        lockedPct: ((contractTotal + inLP) / TOTAL_SUPPLY * 100).toFixed(1)
-    };
-}
-
-const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
-const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
-
-const ANGEL_RPC = 'https://base.drpc.org'; // separate RPC to avoid rate limits on mainnet.base.org
-
-async function fetchAngelRewards() {
-    // AngelRewards contract reads — uses separate RPC to avoid competing with staking reads
-    const rpcs = [ANGEL_RPC, 'https://base.llamarpc.com', BASE_RPC];
-    for (const rpc of rpcs) {
-        try {
-            const call = async (data) => {
-                const res = await fetch(rpc, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', id: 1,
-                        params: [{ to: ANGEL_REWARDS_CONTRACT, data }, 'latest'] })
-                });
-                const d = await res.json();
-                if (d.error) throw new Error(d.error.message);
-                return (!d.result) ? 0 : Number(BigInt(d.result));
-            };
-            const rewardRate = await call('0x7b0a47ee') / 1e18;  // rewardRate()
-            const totalDeposited = await call('0x1f4c74fd') / 1e18;  // totalDeposited()
-            const totalClaimed = await call('0xa34b0f76') / 1e18;  // totalClaimed()
-            const holders = await call('0x362f04c0');  // participantCount() — raw uint
-            const rewardsRemaining = await call('0x7a5c08ae') / 1e18;  // rewardPoolBalance()
-            // Sanity check — if all zeros, RPC likely failed silently, try next
-            if (rewardRate === 0 && totalDeposited === 0 && holders === 0) continue;
-            return {
-                dailyRewards: rewardRate * 86400,
-                totalDeposited,
-                totalClaimed,
-                holders,
-                rewardsRemaining
-            };
-        } catch (e) { continue; }
-    }
-    return null;
-}
-
-async function fetchStakerCount() {
-    // The staking contract exposes stakerCount() — just call it directly
-    try {
-        const res = await fetch(BASE_RPC, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', id: 1,
-                params: [{ to: STAKING_CONTRACT, data: '0xdff69787' }, 'latest'] })
-        });
-        const data = await res.json();
-        if (data.error || !data.result) return 0;
-        return Number(BigInt(data.result));
-    } catch (e) {
-        return 0;
-    }
-}
-
-async function fetchTreasury(clawsPrice) {
-    try {
-        // CLAWS reads first — earned() is rate-limit sensitive, do it early
-        // 1. CLAWS in treasury wallet
-        const walletClaws = await rpcRead(CLAWS_ADDRESS, clawsBalanceOfData(TREASURY_WALLET_RAW));
-        await delay(300);
-
-        // 2. Treasury staked position
-        const stakedClaws = await rpcRead(STAKING_CONTRACT, clawsBalanceOfData(TREASURY_WALLET_RAW));
-        await delay(300);
-
-        // 3. Unclaimed rewards: earned(treasuryWallet)
-        const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
-        let unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
-        if (unclaimedClaws === 0) {
-            await delay(500);
-            unclaimedClaws = await rpcRead(STAKING_CONTRACT, earnedCalldata);
-        }
-        await delay(300);
-
-        // 4. ETH balance of treasury wallet
-        const ethBalRes = await fetch(BASE_RPC, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [TREASURY_WALLET, 'latest'], id: 1 })
-        }).then(r => r.json());
-        const ethBalance = (ethBalRes.error || !ethBalRes.result) ? 0 : Number(BigInt(ethBalRes.result)) / 1e18;
-
-        // 5. ETH price from DexScreener (not an RPC call, no rate limit)
-        let ethPrice = 0;
-        try {
-            const ethRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
-            const ethData = await ethRes.json();
-            const topPair = ethData.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDbC') || ethData.pairs?.[0];
-            ethPrice = topPair ? parseFloat(topPair.priceUsd || 0) : 0;
-        } catch (e) { /* ETH price unavailable */ }
-
-        const ethValue = ethBalance * ethPrice;
-        const totalClaws = walletClaws + stakedClaws + unclaimedClaws;
-
-        return {
-            ethBalance,
-            ethPrice,
-            ethValue: Math.round(ethValue),
-            basisVault: BASIS_VAULT_VALUE,
-            walletClaws,
-            stakedClaws,
-            unclaimedClaws,
-            totalClaws,
-            totalClawsValue: totalClaws * clawsPrice,
-        };
+        const { data, error } = await supabase
+            .from('platform_settings')
+            .select('value, updated_at')
+            .eq('key', 'chain_data_cache')
+            .single();
+        if (error || !data) return null;
+        const cache = JSON.parse(data.value);
+        // Reject cache older than 12 hours
+        const age = Date.now() - new Date(cache.updated_at).getTime();
+        if (age > 12 * 60 * 60 * 1000) return null;
+        return cache;
     } catch (e) {
         return null;
     }
+}
+
+function cachedStakingToSupply(staking) {
+    if (!staking) return null;
+    return {
+        staked: staking.staked,
+        rewardsPool: staking.rewardsPool,
+        inLP: staking.inLP,
+        dailyRewards: staking.dailyRewards,
+        apy: staking.apy,
+        stakedPct: staking.stakedPct,
+        lpPct: staking.lpPct,
+        lockedPct: staking.lockedPct
+    };
+}
+
+function cachedTreasuryToRaw(treasury, clawsPrice) {
+    if (!treasury) return null;
+    const totalClaws = treasury.walletClaws + treasury.stakedClaws + treasury.unclaimedClaws;
+    return {
+        ethBalance: treasury.ethBalance,
+        ethPrice: treasury.ethPrice,
+        ethValue: Math.round(treasury.ethBalance * treasury.ethPrice),
+        basisVault: BASIS_VAULT_VALUE,
+        walletClaws: treasury.walletClaws,
+        stakedClaws: treasury.stakedClaws,
+        unclaimedClaws: treasury.unclaimedClaws,
+        totalClaws,
+        totalClawsValue: totalClaws * clawsPrice,
+    };
 }
 
 // Treasury = LP TVL + staked CLAWS value + earned rewards value
@@ -675,23 +551,23 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Fetch non-RPC data + lightweight RPC in parallel first
-        const [claws, tasks, allocation, stakerCount] = await Promise.all([
+        // Fetch non-RPC data + chain data cache in parallel
+        const [claws, tasks, allocation, chainCache] = await Promise.all([
             fetchClawsPrice(),
             fetchTasks(),
             fetchAllocationSynthesis(),
-            fetchStakerCount()
+            fetchChainDataCache()
         ]);
 
-        // RPC calls sequentially to avoid Base RPC rate limits
-        const supply = await fetchStakingAndLP();
         const clawsPrice = claws?.price || 0;
-        const treasuryRaw = await fetchTreasury(clawsPrice);
 
-        // Angel rewards — after core staking/treasury reads
-        const angelStats = await fetchAngelRewards();
+        // Use cached chain data (populated every 4h by cache-chain-data cron)
+        const supply = cachedStakingToSupply(chainCache?.staking);
+        const stakerCount = chainCache?.staking?.stakerCount || 0;
+        const treasuryRaw = cachedTreasuryToRaw(chainCache?.treasury, clawsPrice);
+        const angelStats = chainCache?.angel || null;
 
-        // Refresh voter balances last (lower priority, most RPC-heavy)
+        // Refresh voter balances (still needed, but isolated RPC calls)
         await refreshVoterBalances();
 
         // Treasury breakdown
