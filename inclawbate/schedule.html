@@ -705,6 +705,43 @@
         }
         .approve-all-btn:hover { background:rgba(34,197,94,0.2);border-color:#4ade80; }
 
+        /* Post-now button */
+        .sched-draft-btn--postnow { border-color:rgba(56,189,248,0.4);color:#38bdf8;width:auto;padding:0 8px;font-size:0.65rem;font-weight:700; }
+        .sched-draft-btn--postnow:hover { background:rgba(56,189,248,0.1); }
+
+        /* ── Weekly Overview Bar ── */
+        .sched-week-overview {
+            display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
+            margin-bottom:var(--space-md);animation:fadeUp 0.4s ease 0.08s both;
+        }
+        .sched-week-col {
+            background:var(--bg-card);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-md);padding:8px 4px;text-align:center;
+            cursor:pointer;transition:all 0.15s;
+        }
+        .sched-week-col:hover { border-color:var(--border-bright); }
+        .sched-week-col.active { border-color:var(--lobster-400);background:rgba(232,121,85,0.06); }
+        [data-active-account="inclawbate"] .sched-week-col.active {
+            border-color:var(--seafoam-400);background:rgba(45,212,191,0.06);
+        }
+        .sched-week-day { font-size:0.6rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.05em; }
+        .sched-week-date { font-family:var(--font-mono);font-size:0.82rem;font-weight:700;color:var(--text-primary);margin:2px 0 6px; }
+        .sched-week-dots { display:flex;gap:3px;justify-content:center;flex-wrap:wrap; }
+        .sched-week-dot {
+            width:8px;height:8px;border-radius:50%;
+        }
+        .sched-week-dot--empty { background:var(--bg-elevated);border:1px solid var(--border-subtle); }
+        .sched-week-dot--draft { background:#fbbf24; }
+        .sched-week-dot--scheduled { background:#818cf8; }
+        .sched-week-dot--posted { background:#4ade80; }
+        .sched-week-dot--pending { background:#818cf8;opacity:0.5; }
+        @media (max-width: 480px) {
+            .sched-week-overview { grid-template-columns:repeat(7,1fr);gap:2px; }
+            .sched-week-col { padding:6px 2px; }
+            .sched-week-date { font-size:0.72rem; }
+            .sched-week-dot { width:6px;height:6px; }
+        }
+
         /* ── Image prompt (collapsible) ── */
         .sched-img-prompt {
             margin-top:6px;background:rgba(99,102,241,0.06);
@@ -1005,7 +1042,8 @@
             </div>
             <span class="pillar-badge-image" id="pillarImageBadge" style="display:none">1 image / day</span>
         </div>
-        <div class="sched-days" id="schedDays"></div>
+        <div class="sched-week-overview" id="schedWeekOverview"></div>
+        <div class="sched-days" id="schedDays" style="display:none"></div>
         <div class="sched-slots" id="schedSlots">
             <div style="text-align:center;padding:var(--space-xl);color:var(--text-dim)">Loading schedule...</div>
         </div>
@@ -1309,38 +1347,60 @@
     }
 
     function renderDayStrip() {
-        var container = document.getElementById('schedDays');
+        // Render new weekly overview with status dots
+        var container = document.getElementById('schedWeekOverview');
         container.innerHTML = '';
         var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        var selStr = _selectedDay ? (_selectedDay.getFullYear() + '-' + String(_selectedDay.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDay.getDate()).padStart(2, '0')) : '';
 
         for (var i = 0; i < 7; i++) {
             var d = new Date();
             d.setHours(0, 0, 0, 0);
             d.setDate(d.getDate() + i);
 
-            // Use local calendar date as dayStr (YYYY-MM-DD) so it matches
-            // regardless of timezone offset
             var dayStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            // Match slots by checking if their UTC date falls on this local calendar date
             var utcDayStart = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             var utcDayEnd = new Date(utcDayStart.getTime() + 86400000);
-            var bookedCount = _schedSlots.filter(function(s) {
-                var st = new Date(s.scheduled_at).getTime();
-                return st >= utcDayStart.getTime() && st < utcDayEnd.getTime();
-            }).length;
 
-            var btn = document.createElement('div');
-            btn.className = 'sched-day' + (i === 0 ? ' today' : '');
-            btn.setAttribute('data-date', dayStr);
-            btn.innerHTML = '<div class="sched-day-name">' + (i === 0 ? 'Today' : dayNames[d.getDay()]) + '</div>'
-                + '<div class="sched-day-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
-                + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/5</div>' : '');
+            // Get status of each slot for this day
+            var daySlots = _schedSlots.filter(function(s) {
+                var st = new Date(s.scheduled_at).getTime();
+                return st >= utcDayStart.getTime() && st < utcDayEnd.getTime() && s.status !== 'cancelled';
+            });
+
+            var dotsHtml = '';
+            // 5 peak slots per day — show a dot for each
+            for (var j = 0; j < 5; j++) {
+                var matchSlot = daySlots[j];
+                var dotCls = 'sched-week-dot ';
+                if (!matchSlot) {
+                    dotCls += 'sched-week-dot--empty';
+                } else if (matchSlot.status === 'posted') {
+                    dotCls += 'sched-week-dot--posted';
+                } else if (matchSlot.status === 'scheduled') {
+                    dotCls += 'sched-week-dot--scheduled';
+                } else if (matchSlot.status === 'needs_review' || matchSlot.status === 'needs_image') {
+                    dotCls += 'sched-week-dot--draft';
+                } else if (matchSlot.status === 'pending_review') {
+                    dotCls += 'sched-week-dot--pending';
+                } else {
+                    dotCls += 'sched-week-dot--empty';
+                }
+                dotsHtml += '<span class="' + dotCls + '"></span>';
+            }
+
+            var col = document.createElement('div');
+            col.className = 'sched-week-col' + (dayStr === selStr ? ' active' : '');
+            col.setAttribute('data-date', dayStr);
+            col.innerHTML = '<div class="sched-week-day">' + (i === 0 ? 'Today' : dayNames[d.getDay()]) + '</div>'
+                + '<div class="sched-week-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
+                + '<div class="sched-week-dots">' + dotsHtml + '</div>';
 
             (function(date) {
-                btn.addEventListener('click', function() { selectDay(date); });
+                col.addEventListener('click', function() { selectDay(date); });
             })(new Date(d));
 
-            container.appendChild(btn);
+            container.appendChild(col);
         }
     }
 
@@ -1348,7 +1408,7 @@
         _selectedDay = date;
         var dayStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
 
-        document.querySelectorAll('#schedSection .sched-day').forEach(function(el) {
+        document.querySelectorAll('#schedWeekOverview .sched-week-col').forEach(function(el) {
             el.classList.toggle('active', el.getAttribute('data-date') === dayStr);
         });
 
@@ -1467,6 +1527,7 @@
                         if (isDraft) {
                             html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
                         } else if (isScheduled) {
+                            html += '<button class="sched-draft-btn sched-draft-btn--postnow" onclick="event.stopPropagation();window._postNow(\'' + booked.id + '\')" title="Post this tweet right now">&#x26A1; post now</button>';
                             html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
                         }
                     }
@@ -1531,6 +1592,7 @@
                         if (isDraft || isPending) {
                             html += '<button class="sched-draft-btn sched-draft-btn--approve" onclick="event.stopPropagation();window._approveDraft(\'' + booked.id + '\')" title="Approve &amp; schedule for posting">&#x2713; approve</button>';
                         } else if (isScheduled) {
+                            html += '<button class="sched-draft-btn sched-draft-btn--postnow" onclick="event.stopPropagation();window._postNow(\'' + booked.id + '\')" title="Post this tweet right now">&#x26A1; post now</button>';
                             html += '<button class="sched-draft-btn" onclick="event.stopPropagation();window._unapproveDraft(\'' + booked.id + '\')" title="Unapprove — move back to draft" style="color:#fb923c;border-color:rgba(251,146,36,0.3)">&#x21A9; unapprove</button>';
                         }
                     }
@@ -1961,6 +2023,7 @@
             if (data.drafts && data.drafts.length) {
                 data.drafts.forEach(function(d) { _schedSlots.push(d); });
                 renderSlots(_selectedDay);
+                renderDayStrip();
                 updatePillarBanner(_selectedDay);
             }
             alert('Generated ' + (data.generated || 0) + ' ' + (styleLabels[style] || '') + ' drafts for ' + (data.pillar || 'today') + '.');
@@ -1988,7 +2051,42 @@
             var slot = _schedSlots.find(function(s) { return s.id === slotId; });
             if (slot) slot.status = 'scheduled';
             renderSlots(_selectedDay);
+            renderDayStrip();
         } catch(e) { alert('Failed: ' + e.message); }
+    };
+
+    window._postNow = async function(slotId) {
+        if (!confirm('Post this tweet to X right now?')) return;
+        var auth = getAuth();
+        if (!auth || !auth.token) return;
+
+        // Find the button and show loading state
+        var btn = document.querySelector('[onclick*="_postNow(\\\'' + slotId + '\\\')"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'posting...'; }
+
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'post_now', slot_id: slotId })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); if (btn) { btn.disabled = false; btn.innerHTML = '&#x26A1; post now'; } return; }
+
+            var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+            if (slot) { slot.status = 'posted'; slot.tweet_id = data.tweet_id; }
+            renderSlots(_selectedDay);
+            renderDayStrip();
+
+            if (data.tweet_url) {
+                alert('Posted! ' + data.tweet_url);
+            } else {
+                alert('Posted successfully!');
+            }
+        } catch(e) {
+            alert('Failed: ' + e.message);
+            if (btn) { btn.disabled = false; btn.innerHTML = '&#x26A1; post now'; }
+        }
     };
 
     window._unapproveDraft = async function(slotId) {
@@ -2032,6 +2130,7 @@
                 }
             });
             renderSlots(_selectedDay);
+            renderDayStrip();
             alert('Approved ' + (data.approved || 0) + ' drafts — they will auto-post at their scheduled times.');
         } catch(e) { alert('Failed: ' + e.message); }
     };

@@ -3,6 +3,7 @@
 // GET  ?date=YYYY-MM-DD    — get drafts for a date
 
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -638,10 +639,127 @@ Output ONLY the prompt, nothing else.`;
             return res.json({ ok: true, approved: (updated || []).length });
         }
 
+        // ── Post Now — immediately post a scheduled slot ──
+        if (action === 'post_now') {
+            if (!isAdmin) return res.status(403).json({ error: 'Only admin can post immediately' });
+            const { slot_id } = req.body;
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .single();
+            if (!slot) return res.status(404).json({ error: 'Slot not found' });
+            if (slot.status === 'posted') return res.status(400).json({ error: 'Already posted' });
+            if (!slot.tweet_text) return res.status(400).json({ error: 'Slot has no tweet text' });
+
+            try {
+                const slotAccount = slot.account || 'inclawbator';
+                const slotOpts = slot.tweet_options || {};
+
+                // Upload image if present
+                let mediaIds = null;
+                if (slotOpts.image_url) {
+                    try {
+                        const mediaId = await uploadMediaToX(slotOpts.image_url, slotAccount);
+                        mediaIds = [mediaId];
+                    } catch(imgErr) {
+                        // Continue without image
+                    }
+                }
+
+                // Post via shared account
+                const tweetId = await postTweetShared(slot.tweet_text, mediaIds, slotAccount);
+
+                // Mark as posted
+                await supabase
+                    .from('agent_schedule')
+                    .update({ status: 'posted', tweet_id: tweetId })
+                    .eq('id', slot_id);
+
+                const handle = slotAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                return res.json({
+                    ok: true,
+                    tweet_id: tweetId,
+                    tweet_url: tweetId ? `https://x.com/${handle}/status/${tweetId}` : null
+                });
+            } catch(e) {
+                return res.status(500).json({ error: 'Post failed: ' + e.message });
+            }
+        }
+
         return res.status(400).json({ error: 'Unknown action' });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ── OAuth 1.0a signing for X API ──
+
+function buildOAuth1Header(method, url, extraParams, account) {
+    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : 'INCLAWBATOR';
+    const X_API_KEY = process.env[prefix + '_X_API_KEY'] || process.env.INCLAWBATOR_X_API_KEY;
+    const X_API_SECRET = process.env[prefix + '_X_API_SECRET'] || process.env.INCLAWBATOR_X_API_SECRET;
+    const X_ACCESS_TOKEN = process.env[prefix + '_X_ACCESS_TOKEN'];
+    const X_ACCESS_SECRET = process.env[prefix + '_X_ACCESS_SECRET'];
+    if (!X_API_KEY || !X_API_SECRET || !X_ACCESS_TOKEN || !X_ACCESS_SECRET) {
+        throw new Error(prefix + ' X API credentials not configured');
+    }
+
+    const oauth = {
+        oauth_consumer_key: X_API_KEY,
+        oauth_nonce: crypto.randomBytes(16).toString('hex'),
+        oauth_signature_method: 'HMAC-SHA1',
+        oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+        oauth_token: X_ACCESS_TOKEN,
+        oauth_version: '1.0',
+        ...extraParams
+    };
+
+    const paramString = Object.keys(oauth).sort()
+        .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(oauth[k])}`).join('&');
+    const signatureBase = [method, encodeURIComponent(url), encodeURIComponent(paramString)].join('&');
+    const signingKey = `${encodeURIComponent(X_API_SECRET)}&${encodeURIComponent(X_ACCESS_SECRET)}`;
+    const signature = crypto.createHmac('sha1', signingKey).update(signatureBase).digest('base64');
+    oauth.oauth_signature = signature;
+
+    const headerParams = Object.keys(oauth).filter(k => k.startsWith('oauth_')).sort();
+    return 'OAuth ' + headerParams.map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauth[k])}"`).join(', ');
+}
+
+async function uploadMediaToX(imageUrl, account) {
+    const imgResp = await fetch(imageUrl);
+    if (!imgResp.ok) throw new Error('Failed to download image: ' + imgResp.status);
+    const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
+    const base64Data = imgBuffer.toString('base64');
+    const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
+    const authHeader = buildOAuth1Header('POST', uploadUrl, {}, account);
+    const body = new URLSearchParams();
+    body.append('media_data', base64Data);
+    const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error('Media upload failed: ' + (data.error || JSON.stringify(data.errors || data)));
+    return data.media_id_string;
+}
+
+async function postTweetShared(text, mediaIds, account) {
+    const url = 'https://api.twitter.com/2/tweets';
+    const authHeader = buildOAuth1Header('POST', url, {}, account);
+    const payload = { text };
+    if (mediaIds && mediaIds.length > 0) payload.media = { media_ids: mediaIds };
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || data.title || 'X API post failed');
+    return data.data?.id || null;
 }
 
 // Tweet format examples — teach the AI what good @inclawbator tweets look like
