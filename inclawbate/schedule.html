@@ -675,10 +675,24 @@
         .review-btn--reject:hover { background:rgba(239,68,68,0.3); }
         .sched-draft-text {
             font-size:0.75rem;color:var(--text-secondary);line-height:1.4;
-            margin-top:4px;display:-webkit-box;-webkit-line-clamp:4;
+            margin-top:4px;display:-webkit-box;-webkit-line-clamp:3;
             -webkit-box-orient:vertical;overflow:hidden;font-style:italic;
-            white-space:pre-wrap;word-break:break-word;
+            white-space:pre-wrap;word-break:break-word;cursor:pointer;
+            transition:all 0.15s;
         }
+        .sched-draft-text.expanded {
+            -webkit-line-clamp:unset;display:block;
+        }
+        .sched-draft-text:hover { color:var(--text-primary); }
+        /* Posted link */
+        .sched-posted-link {
+            display:inline-flex;align-items:center;gap:4px;
+            font-size:0.68rem;font-weight:600;padding:2px 8px;
+            border-radius:20px;background:rgba(34,197,94,0.15);color:#4ade80;
+            text-decoration:none;transition:all 0.15s;border:1px solid transparent;
+        }
+        .sched-posted-link:hover { border-color:#4ade80;background:rgba(34,197,94,0.25); }
+        .sched-posted-link svg { width:12px;height:12px; }
         .sched-draft-actions { display:flex;gap:6px;flex-shrink:0; }
         .sched-draft-btn {
             background:none;border:1px solid var(--border-subtle);color:var(--text-dim);
@@ -1510,7 +1524,12 @@
 
                 // Status badge
                 if (isPosted) {
-                    html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                    var xHandle = _activeAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                    if (booked.tweet_id) {
+                        html += '<a href="https://x.com/' + xHandle + '/status/' + booked.tweet_id + '" target="_blank" rel="noopener" class="sched-posted-link" onclick="event.stopPropagation()" title="View on X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> posted</a>';
+                    } else {
+                        html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                    }
                 } else if (isScheduled) {
                     html += '<span class="sched-tag" style="color:#818cf8;border-color:rgba(99,102,241,0.4);font-size:0.68rem;padding:2px 8px;border-radius:20px;border:1px solid;font-weight:600">scheduled</span>';
                 } else if (booked.status === 'needs_image') {
@@ -1576,7 +1595,12 @@
 
                 // Status badges + actions (same pattern as autofill)
                 if (isPosted) {
-                    html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                    var xHandle2 = _activeAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                    if (booked.tweet_id) {
+                        html += '<a href="https://x.com/' + xHandle2 + '/status/' + booked.tweet_id + '" target="_blank" rel="noopener" class="sched-posted-link" onclick="event.stopPropagation()" title="View on X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> posted</a>';
+                    } else {
+                        html += '<span class="sched-tag sched-tag--posted">posted</span>';
+                    }
                 } else if (isScheduled) {
                     html += '<span class="sched-tag" style="color:#818cf8;border-color:rgba(99,102,241,0.4);font-size:0.68rem;padding:2px 8px;border-radius:20px;border:1px solid;font-weight:600">scheduled</span>';
                 } else if (booked.status === 'needs_image') {
@@ -1615,6 +1639,15 @@
             }
 
             el.innerHTML = html;
+
+            // Click-to-expand tweet text
+            var draftTextEl = el.querySelector('.sched-draft-text');
+            if (draftTextEl) {
+                draftTextEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    this.classList.toggle('expanded');
+                });
+            }
 
             if (!booked && !isPast) {
                 (function(t) {
