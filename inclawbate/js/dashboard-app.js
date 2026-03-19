@@ -889,10 +889,8 @@ async function fetchSingleTokenPrice(addr) {
                 const volStr = volume24h >= 1000 ? '$' + (volume24h / 1000).toFixed(1) + 'K' : '$' + Math.round(volume24h);
                 feeEl.innerHTML = `<span class="fee-estimate-value">~${feeEth.toFixed(6)} ETH earned (24h)</span><span class="fee-estimate-vol">Vol: ${volStr}</span>`;
                 feeEl.style.display = '';
-                // Update per-card claim button with estimate
-                const resolvedAddr = best.baseToken.address || addr;
-                const claimBtn = document.querySelector(`.claim-single-btn[data-token-addr="${addr}"]`) || document.querySelector(`.claim-single-btn[data-token-addr="${resolvedAddr}"]`);
-                if (claimBtn) claimBtn.textContent = 'Claim ~' + feeEth.toFixed(6) + ' ETH';
+                // Per-card fee estimate is shown in the fee row above;
+                // claim button just says "Claim Fees" since Clanker pools all fees
             } else if (volume24h === 0) {
                 feeEl.innerHTML = '<span class="fee-estimate-value fee-none">No trading activity (24h)</span>';
                 feeEl.style.display = '';
@@ -950,10 +948,12 @@ async function fetchLPFees(tokens, wallet) {
             return;
         }
 
-        // Show per-card claim buttons with fee amount
+        // Per-card buttons: just show "Claim Fees" (no amount) since
+        // Clanker pools fees across all tokens — clicking any card claims everything.
+        // The per-token fee ESTIMATE is already shown in the fee row above.
         document.querySelectorAll('.claim-single-btn').forEach(btn => {
             btn.style.display = '';
-            btn.textContent = 'Claim ~' + wethAmt.toFixed(6) + ' ETH';
+            btn.textContent = 'Claim Fees';
         });
 
         // Show Claim All ETH header button
