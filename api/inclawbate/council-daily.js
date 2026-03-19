@@ -147,37 +147,40 @@ async function fetchStakingAndLP() {
 const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
 const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
 
+const ANGEL_RPC = 'https://base.drpc.org'; // separate RPC to avoid rate limits on mainnet.base.org
+
 async function fetchAngelRewards() {
-    // AngelRewards contract reads (sequential to avoid rate limits)
-    try {
-        const call = async (data) => {
-            const res = await fetch(BASE_RPC, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', id: 1,
-                    params: [{ to: ANGEL_REWARDS_CONTRACT, data }, 'latest'] })
-            });
-            const d = await res.json();
-            return (d.error || !d.result) ? 0 : Number(BigInt(d.result));
-        };
-        const rewardRate = await call('0x7b0a47ee') / 1e18;  // rewardRate()
-        await delay(150);
-        const totalDeposited = await call('0x1f4c74fd') / 1e18;  // totalDeposited()
-        await delay(150);
-        const totalClaimed = await call('0xa34b0f76') / 1e18;  // totalClaimed()
-        await delay(150);
-        const holders = await call('0x362f04c0');  // participantCount() — raw uint
-        await delay(150);
-        const rewardsRemaining = await call('0x7a5c08ae') / 1e18;  // rewardPoolBalance()
-        return {
-            dailyRewards: rewardRate * 86400,
-            totalDeposited,
-            totalClaimed,
-            holders,
-            rewardsRemaining
-        };
-    } catch (e) {
-        return null;
+    // AngelRewards contract reads — uses separate RPC to avoid competing with staking reads
+    const rpcs = [ANGEL_RPC, 'https://base.llamarpc.com', BASE_RPC];
+    for (const rpc of rpcs) {
+        try {
+            const call = async (data) => {
+                const res = await fetch(rpc, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', id: 1,
+                        params: [{ to: ANGEL_REWARDS_CONTRACT, data }, 'latest'] })
+                });
+                const d = await res.json();
+                if (d.error) throw new Error(d.error.message);
+                return (!d.result) ? 0 : Number(BigInt(d.result));
+            };
+            const rewardRate = await call('0x7b0a47ee') / 1e18;  // rewardRate()
+            const totalDeposited = await call('0x1f4c74fd') / 1e18;  // totalDeposited()
+            const totalClaimed = await call('0xa34b0f76') / 1e18;  // totalClaimed()
+            const holders = await call('0x362f04c0');  // participantCount() — raw uint
+            const rewardsRemaining = await call('0x7a5c08ae') / 1e18;  // rewardPoolBalance()
+            // Sanity check — if all zeros, RPC likely failed silently, try next
+            if (rewardRate === 0 && totalDeposited === 0 && holders === 0) continue;
+            return {
+                dailyRewards: rewardRate * 86400,
+                totalDeposited,
+                totalClaimed,
+                holders,
+                rewardsRemaining
+            };
+        } catch (e) { continue; }
     }
+    return null;
 }
 
 async function fetchStakerCount() {
