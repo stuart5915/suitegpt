@@ -15,6 +15,7 @@ const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID;
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
 const VOTE_STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const ANGEL_REWARDS_CONTRACT = '0x071aaa3A83CC0ffBf471907c6A0995f12E7C682B';
 const TREASURY_WALLET_RAW = '91B5C0D07859CFeAfEB67d9694121CD741F049bd'; // no 0x prefix, for calldata
 const BASE_RPC = 'https://mainnet.base.org';
 const BUCKET_LABELS = {
@@ -145,6 +146,39 @@ async function fetchStakingAndLP() {
 
 const TREASURY_WALLET = '0x' + TREASURY_WALLET_RAW;
 const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
+
+async function fetchAngelRewards() {
+    // AngelRewards contract reads (sequential to avoid rate limits)
+    try {
+        const call = async (data) => {
+            const res = await fetch(BASE_RPC, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', id: 1,
+                    params: [{ to: ANGEL_REWARDS_CONTRACT, data }, 'latest'] })
+            });
+            const d = await res.json();
+            return (d.error || !d.result) ? 0 : Number(BigInt(d.result));
+        };
+        const rewardRate = await call('0x7b0a47ee') / 1e18;  // rewardRate()
+        await delay(150);
+        const totalDeposited = await call('0x1f4c74fd') / 1e18;  // totalDeposited()
+        await delay(150);
+        const totalClaimed = await call('0xa34b0f76') / 1e18;  // totalClaimed()
+        await delay(150);
+        const holders = await call('0x362f04c0');  // participantCount() — raw uint
+        await delay(150);
+        const rewardsRemaining = await call('0x7a5c08ae') / 1e18;  // rewardPoolBalance()
+        return {
+            dailyRewards: rewardRate * 86400,
+            totalDeposited,
+            totalClaimed,
+            holders,
+            rewardsRemaining
+        };
+    } catch (e) {
+        return null;
+    }
+}
 
 async function fetchStakerCount() {
     // The staking contract exposes stakerCount() — just call it directly
@@ -412,7 +446,7 @@ function getDateStr() {
     return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
 }
 
-function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount) {
+function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
     msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</a>\n\n`;
@@ -431,7 +465,8 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     if (supply) {
         const price = claws?.price || 0;
         const treasuryWallet = treasury?.walletClaws || 0;
-        const accounted = supply.staked + supply.rewardsPool + supply.inLP + treasuryWallet;
+        const angelLocked = angelStats?.rewardsRemaining || 0;
+        const accounted = supply.staked + supply.rewardsPool + supply.inLP + treasuryWallet + angelLocked;
         const circulating = Math.max(TOTAL_SUPPLY - accounted, 0);
         const circulatingPct = (circulating / TOTAL_SUPPLY * 100).toFixed(1);
         const rewardsPct = (supply.rewardsPool / TOTAL_SUPPLY * 100).toFixed(1);
@@ -464,6 +499,21 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             if (stakerCount > 0) msg += `\nStakers: ${stakerCount}`;
             msg += `\nStake: https://www.inclawbate.com/stake/claws\n`;
         }
+    }
+
+    // Angel NFT Rewards
+    if (angelStats) {
+        const price = claws?.price || 0;
+        msg += `\n<b>😇 Angel NFT Rewards</b>\n`;
+        msg += `Reward Pool: ${formatNum(angelStats.totalDeposited)} CLAWS`;
+        if (price > 0) msg += ` ≈ ${formatUsd(angelStats.totalDeposited * price)}`;
+        msg += `\n`;
+        msg += `Daily: ${formatNum(angelStats.dailyRewards)} CLAWS`;
+        if (price > 0) msg += ` ≈ ${formatUsd(angelStats.dailyRewards * price)}`;
+        msg += `\n`;
+        msg += `Holders Earning: ${angelStats.holders}\n`;
+        msg += `Claimed: ${formatNum(angelStats.totalClaimed)} CLAWS\n`;
+        msg += `Remaining: ${formatNum(angelStats.rewardsRemaining)} CLAWS\n`;
     }
 
     // Treasury breakdown
@@ -556,7 +606,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     return msg;
 }
 
-function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stakerCount) {
+function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
     const date = getDateStr();
     const price = claws?.price || 0;
     let tweet = `🦞 $CLAWS Daily | ${date}\n\n`;
@@ -578,6 +628,13 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         if (supply.apy > 0) tweet += `APY: ${supply.apy.toFixed(0)}%\n`;
         if (stakerCount > 0) tweet += `Stakers: ${stakerCount}\n`;
         tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
+    }
+
+    // Angel NFT Rewards
+    if (angelStats) {
+        tweet += `\n😇 Angel NFT Rewards\n`;
+        tweet += `${formatNum(angelStats.dailyRewards)} $CLAWS/day to ${angelStats.holders} holders\n`;
+        tweet += `Pool: ${formatNum(angelStats.totalDeposited)} $CLAWS\n`;
     }
 
     // Treasury — total with delta only
@@ -621,6 +678,9 @@ export default async function handler(req, res) {
             fetchAllocationSynthesis(),
             fetchStakerCount()
         ]);
+
+        // Angel rewards — sequential RPC reads (after stakerCount to avoid rate limit)
+        const angelStats = await fetchAngelRewards();
 
         // RPC calls sequentially to avoid Base RPC rate limits
         const supply = await fetchStakingAndLP();
@@ -670,8 +730,8 @@ export default async function handler(req, res) {
         await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
 
         // Build messages
-        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount);
-        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount);
+        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
+        const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
 
         // Post to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
