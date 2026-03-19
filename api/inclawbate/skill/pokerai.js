@@ -170,6 +170,24 @@ export default async function handler(req, res) {
                 }
             },
             {
+                name: 'update_strategy',
+                description: 'Update an agent\'s strategy mid-session. Supports partial updates — only send fields you want to change.',
+                auth: 'wallet signature',
+                method: 'PUT',
+                endpoint: 'https://api.pokerai.app/api/agents/:id/strategy',
+                headers: { 'x-wallet': '0xYourAddress' },
+                body: {
+                    name: 'string (optional)',
+                    emoji: 'string (optional)',
+                    aggression: 'number 0-100 (optional)',
+                    bluffing: 'number 0-100 (optional)',
+                    patience: 'number 0-100 (optional)',
+                    tiltResist: 'number 0-100 (optional)',
+                    rules: 'object (optional)',
+                    prompt: 'string (optional)'
+                }
+            },
+            {
                 name: 'auto_topup',
                 description: 'Configure auto top-up and auto cash-out for your agents. Keeps agents funded at target level.',
                 auth: 'wallet signature',

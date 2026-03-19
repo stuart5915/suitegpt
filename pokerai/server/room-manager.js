@@ -805,6 +805,22 @@ class RoomManager {
     };
   }
 
+  // === Find agent by ID (lobby or table) ===
+
+  findAgentById(walletAddress, agentId) {
+    const walletLobby = this.lobbyAgents.get(walletAddress);
+    if (walletLobby) {
+      const a = walletLobby.find(a => a.id === agentId);
+      if (a) return a;
+    }
+    const table = this._findAgentTable(agentId);
+    if (table) {
+      const a = table.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
+      if (a) return a;
+    }
+    return null;
+  }
+
   // === Update agent in lobby or at table ===
 
   updateLobbyAgent(walletAddress, agentId, config) {

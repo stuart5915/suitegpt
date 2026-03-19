@@ -1306,6 +1306,31 @@ app.post('/api/agents/:id/leave', (req, res) => {
   res.json(result);
 });
 
+app.put('/api/agents/:id/strategy', (req, res) => {
+  const addr = requireAuthenticatedWallet(req, res);
+  if (!addr) return;
+  const { name, emoji, aggression, bluffing, patience, tiltResist, rules, prompt } = req.body;
+  if (aggression === undefined && bluffing === undefined && patience === undefined && !name && !emoji) {
+    return res.status(400).json({ error: 'Provide at least one field to update (name, emoji, aggression, bluffing, patience, tiltResist, rules, prompt)' });
+  }
+  // Merge with existing values so partial updates work
+  const agent = rooms.findAgentById(addr, req.params.id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+  const config = {
+    name: name || agent.name,
+    emoji: emoji || agent.emoji,
+    aggression: aggression ?? agent.traits?.aggression ?? 50,
+    bluffing: bluffing ?? agent.traits?.bluffing ?? 30,
+    patience: patience ?? agent.traits?.patience ?? 50,
+    tiltResist: tiltResist ?? agent.traits?.tiltResist ?? 50,
+    rules: rules || agent.rules || {},
+    prompt: prompt !== undefined ? prompt : (agent.prompt || '')
+  };
+  const result = rooms.updateLobbyAgent(addr, req.params.id, config);
+  if (result.success) broadcastStateToAll();
+  res.json(result);
+});
+
 app.post('/api/auto-topup', (req, res) => {
   const addr = requireAuthenticatedWallet(req, res);
   if (!addr) return;
