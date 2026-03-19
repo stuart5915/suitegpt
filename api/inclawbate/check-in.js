@@ -20,22 +20,30 @@ function getDateStr() {
 
 // Turn a responsibility into a short question
 function toQuestion(content) {
-    const c = content.toLowerCase();
-    // Strip trailing punctuation
-    const clean = content.replace(/[.!?]+$/, '').trim();
+    // Strip trailing " - @handle" suffixes and punctuation
+    let clean = content.replace(/\s*-\s*@\w+$/i, '').replace(/[.!?]+$/, '').trim();
+    const c = clean.toLowerCase();
 
-    // Pattern: "Fix X" → "X fix progress?"
+    // Truncate overly long descriptions to first clause
+    if (clean.length > 60) {
+        const dash = clean.indexOf(' — ');
+        const comma = clean.indexOf(', ');
+        const cut = dash > 10 ? dash : (comma > 10 ? comma : 60);
+        clean = clean.slice(0, cut).trim();
+    }
+
+    // Pattern: "Fix X" → "X fix — progress?"
     if (c.startsWith('fix ')) return clean.replace(/^fix /i, '') + ' fix — progress?';
-    // Pattern: "Launch X" / "Publish X" → "X — launch status?"
+    // Pattern: "Launch X" / "Publish X" → "X — status?"
     if (c.startsWith('launch ') || c.startsWith('publish ')) return clean + ' — status?';
-    // Pattern: "Managing X" → "X — any updates?"
+    // Pattern: "Managing X" → "X — updates?"
     if (c.startsWith('managing ')) return clean.replace(/^managing /i, '') + ' — updates?';
     // Pattern: "Addressing X" → "X — progress?"
     if (c.startsWith('addressing ')) return clean.replace(/^addressing /i, '') + ' — progress?';
-    // Pattern contains "awaiting" → "status on X?"
+    // Pattern contains "awaiting" → "any movement?"
     if (c.includes('awaiting')) return clean + ' — any movement?';
     // Default: just ask for update
-    return clean + ' — update?';
+    return clean + '?';
 }
 
 export default async function handler(req, res) {
