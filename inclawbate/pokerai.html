@@ -5108,6 +5108,7 @@ function handleMessage(msg) {
         showToast(msg.data.error, 'error');
       } else {
         _openFundPanel = null;
+        _agentUpdateCooldown = Date.now() + 3000; // ignore stale myAgents for 3s
         // Optimistically update local agent data so card refreshes immediately
         const fundedAgent = myAgents.find(a => a.id === msg.data.agentId);
         if (fundedAgent) {
@@ -5133,6 +5134,7 @@ function handleMessage(msg) {
       } else {
         _openWithdrawPanel = null;
         _openFundPanel = null; // Clear so render isn't blocked
+        _agentUpdateCooldown = Date.now() + 3000; // ignore stale myAgents for 3s
         const defundedAgent = myAgents.find(a => a.id === msg.data.agentId);
         if (defundedAgent) {
           defundedAgent.chipStack = msg.data.chipStack;
@@ -5199,6 +5201,7 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast('Top-up failed: ' + msg.data.error, 'error');
       } else {
+        _agentUpdateCooldown = Date.now() + 3000;
         if (msg.data.newBalance !== undefined) {
           if (msg.data.currency === 'pokerai') {
             pokeraiWalletBalance = msg.data.newBalance;
@@ -5335,6 +5338,8 @@ function handleMessage(msg) {
       break;
 
     case 'myAgents':
+      // Skip stale broadcasts right after fund/defund (optimistic update already applied)
+      if (Date.now() < _agentUpdateCooldown) break;
       myAgents = msg.data || [];
       if (msg.autoTopUp) applyAutoTopUpState(msg.autoTopUp);
       updateWalletUI();
@@ -7940,6 +7945,7 @@ let _openRoomPicker = null; // track which agent's room picker is open
 let _openWithdrawPanel = null; // track which agent's withdraw panel is open
 let _selectedFundAmount = {};  // track selected preset per agent { agentId: amount }
 let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
+let _agentUpdateCooldown = 0;      // timestamp — ignore myAgents broadcasts until this time
 
 // === Agent Stats ===
 
