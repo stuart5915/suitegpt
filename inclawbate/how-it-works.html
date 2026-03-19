@@ -1335,12 +1335,16 @@
         var totalWeight = BigInt(0);
         var sums = buckets.map(function() { return BigInt(0); });
         allVoters.forEach(function(v) {
-            var bal = BigInt(v.claws_balance || '0');
-            var w = bal > BigInt(0) ? bal : BigInt(1);
-            totalWeight += w;
-            buckets.forEach(function(b, i) {
-                sums[i] += BigInt(v.weights[b.id] || 0) * w;
-            });
+            try {
+                var rawBal = v.claws_balance || '0';
+                var bal = typeof rawBal === 'string' ? BigInt(rawBal) : BigInt(Math.floor(Number(rawBal)));
+                var wt = bal > BigInt(0) ? bal : BigInt(1);
+                totalWeight += wt;
+                var vw = v.weights || {};
+                buckets.forEach(function(b, i) {
+                    sums[i] += BigInt(vw[b.id] || 0) * wt;
+                });
+            } catch (e) { /* skip voter on BigInt conversion error */ }
         });
         if (totalWeight === BigInt(0)) return;
         synthesis = buckets.map(function(_, i) {
@@ -1374,15 +1378,17 @@
                         fetch('/api/inclawbate/claws-balances?addresses=' + addrs)
                             .then(function(r) { return r.json(); })
                             .then(function(bData) {
-                                if (bData.balances) {
-                                    allVoters.forEach(function(v) {
-                                        var bal = bData.balances[v.address.toLowerCase()];
-                                        if (bal && bal !== '0') v.claws_balance = bal;
-                                    });
-                                    recomputeSynthesis();
-                                    renderSynthBar();
-                                    renderVoters();
-                                }
+                                try {
+                                    if (bData.balances) {
+                                        allVoters.forEach(function(v) {
+                                            var bal = bData.balances[v.address.toLowerCase()];
+                                            if (bal && bal !== '0') v.claws_balance = bal;
+                                        });
+                                        recomputeSynthesis();
+                                        renderSynthBar();
+                                        renderVoters();
+                                    }
+                                } catch (e) { console.error('Balance refresh error:', e); }
                             })
                             .catch(function() { /* keep DB values */ });
                     }
@@ -1616,8 +1622,9 @@
             var tdDist = document.createElement('td');
             var bar = document.createElement('div');
             bar.className = 'voter-bar';
+            var w = v.weights || {};
             buckets.forEach(function(b) {
-                var pctVal = v.weights[b.id] || 0;
+                var pctVal = w[b.id] || 0;
                 if (pctVal === 0) return;
                 var seg = document.createElement('div');
                 seg.className = 'voter-bar-seg';
