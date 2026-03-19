@@ -514,6 +514,41 @@
             background:rgba(232,121,85,0.15);color:var(--lobster-400);font-size:0.65rem;font-weight:700;cursor:pointer;
         }
 
+        /* Project quick-insert section */
+        .draft-modal-projects-section { margin-top:10px; }
+        .draft-modal-projects-toggle {
+            display:flex;align-items:center;gap:6px;cursor:pointer;
+            font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;
+            color:var(--text-dim);user-select:none;padding:4px 0;
+        }
+        .draft-modal-projects-toggle:hover { color:var(--text-secondary); }
+        .draft-modal-projects-arrow { transition:transform 0.2s;font-size:0.6rem; }
+        .draft-modal-projects-section.open .draft-modal-projects-arrow { transform:rotate(90deg); }
+        .draft-modal-projects-list {
+            display:none;flex-wrap:wrap;gap:4px;margin-top:6px;
+            max-height:140px;overflow-y:auto;
+        }
+        .draft-modal-projects-section.open .draft-modal-projects-list { display:flex; }
+        .draft-modal-project {
+            display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+            border-radius:20px;border:1px solid var(--border-subtle);background:var(--bg-elevated);
+            font-size:0.7rem;font-weight:600;color:var(--text-secondary);cursor:pointer;
+            transition:all 0.15s;position:relative;
+        }
+        .draft-modal-project:hover { border-color:var(--lobster-400);color:var(--text-primary); }
+        .draft-modal-project-logo { width:16px;height:16px;border-radius:4px;object-fit:cover; }
+        .draft-modal-project-sub {
+            display:none;position:absolute;top:100%;left:0;margin-top:2px;
+            background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:8px;
+            padding:4px;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,0.4);min-width:120px;
+        }
+        .draft-modal-project:hover .draft-modal-project-sub { display:block; }
+        .draft-modal-project-opt {
+            display:block;width:100%;text-align:left;padding:5px 10px;border:none;
+            background:none;font-size:0.7rem;font-weight:600;color:var(--text-secondary);
+            cursor:pointer;border-radius:4px;font-family:var(--font-body);
+        }
+        .draft-modal-project-opt:hover { background:rgba(99,102,241,0.1);color:var(--text-primary); }
         .draft-modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-md); }
         .draft-modal-btn {
             padding:8px 20px;border-radius:var(--radius-md);font-family:var(--font-display);
@@ -2272,6 +2307,98 @@
     };
 
     var _editingSlotId = null;
+    var _incubationProjects = [];
+
+    // Load all active incubations for quick-insert
+    (async function loadIncubations() {
+        try {
+            var resp = await fetch('/api/inclawbate/inclawbator');
+            var data = await resp.json();
+            var projects = (data.projects || data || []).filter(function(p) {
+                return p.status === 'active' || p.status === 'launched';
+            });
+            _incubationProjects = projects.map(function(p) {
+                return {
+                    name: p.token_name || p.name || 'Unnamed',
+                    symbol: p.token_symbol || '',
+                    address: p.token_address || '',
+                    logo: p.logo_url || '',
+                    slug: p.slug || '',
+                    staking: !!p.staking_address
+                };
+            });
+        } catch(e) { _incubationProjects = []; }
+    })();
+
+    function renderProjectChips(ta) {
+        var container = document.getElementById('draftModalProjectsList');
+        container.innerHTML = '';
+        var countEl = document.getElementById('draftModalProjectsCount');
+
+        // Also include hardcoded ecosystem tokens
+        var extras = [
+            { name: 'CLAWS', symbol: 'CLAWS', address: '0x7ca47B141639B893C6782823C0b219f872056379', logo: '/inclawbate/assets/clawslogo.jpg' },
+            { name: 'PokerAI', symbol: 'POKERAI', address: '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07', logo: '/inclawbate/assets/pokerai-logo.png' },
+            { name: 'Salvation 4 Humanity', symbol: 'S4H', address: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07', logo: '/salvation4humanity/assets/s4hlogo.png' },
+            { name: 'Mirror Mind', symbol: 'MIND', address: '0x997494e831a2660F5d411BCe58695437617a7B07', logo: '/inclawbate/assets/mirrormind.png' }
+        ];
+
+        // Merge, dedup by address
+        var seen = {};
+        var all = extras.concat(_incubationProjects).filter(function(p) {
+            if (!p.name) return false;
+            var key = (p.address || p.name).toLowerCase();
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+
+        countEl.textContent = '(' + all.length + ')';
+        if (!all.length) {
+            container.innerHTML = '<span style="font-size:0.7rem;color:var(--text-dim)">No projects loaded</span>';
+            return;
+        }
+
+        all.forEach(function(p) {
+            var chip = document.createElement('div');
+            chip.className = 'draft-modal-project';
+
+            var logoHtml = p.logo ? '<img class="draft-modal-project-logo" src="' + p.logo + '" onerror="this.style.display=\'none\'">' : '';
+            var label = p.symbol ? p.symbol : p.name;
+
+            // Build sub-menu options
+            var opts = '';
+            if (p.symbol) opts += '<button class="draft-modal-project-opt" data-insert="$' + p.symbol + '">$' + p.symbol + '</button>';
+            opts += '<button class="draft-modal-project-opt" data-insert="' + p.name + '">' + p.name + '</button>';
+            if (p.address) {
+                var tokenPage = 'inclawbate.com/tokens/' + p.address;
+                opts += '<button class="draft-modal-project-opt" data-insert="' + tokenPage + '">Token page</button>';
+            }
+            if (p.staking && p.symbol) {
+                opts += '<button class="draft-modal-project-opt" data-insert="inclawbate.com/stake/' + p.symbol.toLowerCase() + '">Stake link</button>';
+            }
+
+            chip.innerHTML = logoHtml + '<span>' + label + '</span>'
+                + '<div class="draft-modal-project-sub">' + opts + '</div>';
+
+            // Wire up option clicks
+            chip.querySelectorAll('.draft-modal-project-opt').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var text = btn.getAttribute('data-insert');
+                    var start = ta.selectionStart, end = ta.selectionEnd;
+                    var before = ta.value.substring(0, start);
+                    var spaceBefore = before.length && before[before.length - 1] !== ' ' ? ' ' : '';
+                    ta.value = before + spaceBefore + text + ' ' + ta.value.substring(end);
+                    ta.selectionStart = ta.selectionEnd = start + spaceBefore.length + text.length + 1;
+                    ta.focus();
+                    updateDraftCount();
+                });
+            });
+
+            container.appendChild(chip);
+        });
+    }
 
     var QUICK_EMOJIS = ['\u{1F99E}', '\u{1F525}', '\u{1F680}', '\u{1F4CA}', '\u{26D3}\uFE0F', '\u{1F4A1}', '\u{1F3B0}', '\u{2728}', '\u{1F477}', '\u{1F30A}', '\u{1F4B0}', '\u{1F3AF}', '\u{1F40B}', '\u{1F916}', '\u{2705}'];
     var QUICK_INSERTS = [
@@ -2346,6 +2473,9 @@
             insertsRow.appendChild(chip);
         });
 
+        // Render incubation project chips
+        renderProjectChips(ta);
+
         // Reset image prompt
         document.getElementById('draftModalImgResult').style.display = 'none';
         document.getElementById('draftModalImgText').textContent = '';
@@ -2413,6 +2543,9 @@
             };
             insertsRow.appendChild(chip);
         });
+
+        // Render incubation project chips
+        renderProjectChips(ta);
 
         // Show existing image prompt if slot has one, otherwise reset
         var existingImgPrompt = slot.tweet_options && slot.tweet_options.image_prompt;
@@ -2861,6 +2994,16 @@
 
         <!-- Quick inserts -->
         <div class="draft-modal-inserts" id="draftModalInserts"></div>
+
+        <!-- Incubation projects quick-insert -->
+        <div class="draft-modal-projects-section" id="draftModalProjectsSection">
+            <div class="draft-modal-projects-toggle" onclick="this.parentElement.classList.toggle('open')">
+                <span class="draft-modal-projects-arrow">&#x25B6;</span>
+                Incubations
+                <span id="draftModalProjectsCount" style="opacity:0.5;font-weight:400"></span>
+            </div>
+            <div class="draft-modal-projects-list" id="draftModalProjectsList"></div>
+        </div>
 
         <!-- Tips -->
         <div class="draft-modal-tips">
