@@ -481,6 +481,29 @@
             </div>
         </div>
 
+        <!-- Research Log -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>Research Log</h2>
+                <button class="btn-secondary" onclick="toggleResearchForm()">+ Log Research</button>
+            </div>
+            <div class="new-form" id="researchForm">
+                <label>Paste your research conclusions below</label>
+                <textarea id="researchText" placeholder="Paste the full research output here — trends found, ideas proposed, analysis, etc." style="min-height:160px;" maxlength="20000"></textarea>
+                <label>Which idea did you pick? (optional)</label>
+                <input type="text" id="researchPick" placeholder="e.g. Idea #2 — Prediction Arena" maxlength="120">
+                <label>Why? (optional)</label>
+                <input type="text" id="researchWhy" placeholder="e.g. strong token flywheel, timely with March Madness" maxlength="200">
+                <div class="new-form-actions">
+                    <button class="btn-primary" onclick="saveResearch()">Save to Log</button>
+                    <button class="btn-secondary" onclick="toggleResearchForm()">Cancel</button>
+                </div>
+            </div>
+            <div id="researchLogList">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
         <!-- Active Incubations -->
         <div class="factory-section">
             <div class="factory-section-hdr">
@@ -569,7 +592,7 @@
         // ---------- Load ----------
         async function loadAll() {
             try {
-                await Promise.all([loadPipelines(), loadApps()]);
+                await Promise.all([loadPipelines(), loadApps(), loadResearchLogs()]);
             } catch (e) {
                 console.error('loadAll error:', e);
             }
@@ -1045,6 +1068,10 @@
             p += '   - Poll question with 4 options asking what feature to build next\n';
             p += '   - Draft 3 follow-up tweet ideas for the first week of daily posts\n\n';
 
+            // --- PAST RESEARCH ---
+            var researchInsights = getResearchInsights();
+            if (researchInsights) p += researchInsights;
+
             // --- PRIORITY TOGGLES ---
             var agentFirst = document.getElementById('toggleAgentFirst').classList.contains('active');
             var revPriority = document.getElementById('toggleRevenue').classList.contains('active');
@@ -1139,6 +1166,125 @@
             });
         };
 
+        // ---------- Research Log ----------
+        var RESEARCH_API = '/api/inclawbate/factory-research';
+        var _researchLogs = [];
+
+        window.toggleResearchForm = function() {
+            document.getElementById('researchForm').classList.toggle('open');
+        };
+
+        async function loadResearchLogs() {
+            try {
+                var r = await fetch(RESEARCH_API + '?wallet=' + _wallet);
+                if (!r.ok) { _researchLogs = []; renderResearchLogs(); return; }
+                var d = await r.json();
+                _researchLogs = d.logs || [];
+            } catch (e) {
+                _researchLogs = [];
+            }
+            renderResearchLogs();
+        }
+
+        function renderResearchLogs() {
+            var wrap = document.getElementById('researchLogList');
+            if (_researchLogs.length === 0) {
+                wrap.innerHTML = '<div class="empty-state">No research logged yet. Run your research, paste results here.</div>';
+                return;
+            }
+            var html = '';
+            _researchLogs.slice(0, 10).forEach(function(log) {
+                var date = new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                var preview = (log.conclusions || '').slice(0, 200);
+                html += '<div class="incubation-card">';
+                html += '<div class="incubation-header">';
+                html += '<span class="incubation-name">' + date + (log.picked_idea ? ' — ' + esc(log.picked_idea) : '') + '</span>';
+                html += '<span class="incubation-day" style="cursor:pointer;color:var(--lobster-300);" onclick="viewResearch(\'' + log.id + '\')">View</span>';
+                html += '</div>';
+                html += '<div class="incubation-meta">' + esc(preview) + (preview.length >= 200 ? '...' : '') + '</div>';
+                html += '</div>';
+            });
+            if (_researchLogs.length > 10) {
+                html += '<div class="empty-state" style="padding:var(--space-sm) 0;">Showing 10 of ' + _researchLogs.length + '</div>';
+            }
+            wrap.innerHTML = html;
+        }
+
+        window.viewResearch = function(id) {
+            var log = _researchLogs.find(function(l) { return l.id === id; });
+            if (!log) return;
+            var wrap = document.getElementById('researchLogList');
+            var date = new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            var html = '<div style="margin-bottom:var(--space-sm);">';
+            html += '<button class="btn-secondary" onclick="renderResearchLogs()" style="font-size:0.8rem;">\u2190 Back to list</button>';
+            html += '</div>';
+            html += '<div style="font-weight:700;color:var(--text-primary);margin-bottom:4px;">' + date + '</div>';
+            if (log.picked_idea) html += '<div style="color:var(--lobster-300);font-size:0.9rem;margin-bottom:4px;">Picked: ' + esc(log.picked_idea) + '</div>';
+            if (log.pick_reason) html += '<div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:8px;">Why: ' + esc(log.pick_reason) + '</div>';
+            html += '<div class="idea-prompt-box" style="max-height:400px;">' + esc(log.conclusions) + '</div>';
+            wrap.innerHTML = html;
+        };
+
+        window.saveResearch = async function() {
+            var text = document.getElementById('researchText').value.trim();
+            if (!text || text.length < 10) { alert('Paste your research conclusions (min 10 chars)'); return; }
+            var picked = document.getElementById('researchPick').value.trim();
+            var why = document.getElementById('researchWhy').value.trim();
+
+            try {
+                var r = await fetch(RESEARCH_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wallet: _wallet, conclusions: text, picked_idea: picked || null, pick_reason: why || null })
+                });
+                var d = await r.json();
+                if (d.error) { alert(d.error); return; }
+                if (d.log) {
+                    _researchLogs.unshift(d.log);
+                    document.getElementById('researchForm').classList.remove('open');
+                    document.getElementById('researchText').value = '';
+                    document.getElementById('researchPick').value = '';
+                    document.getElementById('researchWhy').value = '';
+                    renderResearchLogs();
+                }
+            } catch (e) {
+                alert('Failed to save research');
+            }
+        };
+
+        // Inject past research insights into prompt generator
+        function getResearchInsights() {
+            if (_researchLogs.length === 0) return '';
+            var p = '## PAST RESEARCH INSIGHTS (' + _researchLogs.length + ' sessions logged)\n';
+            p += 'Previous research has been conducted. Key learnings:\n\n';
+
+            // Show what ideas were picked and why
+            var picks = _researchLogs.filter(function(l) { return l.picked_idea; });
+            if (picks.length > 0) {
+                p += 'IDEAS THAT WERE SELECTED:\n';
+                picks.slice(0, 10).forEach(function(l) {
+                    var date = new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    p += '  - [' + date + '] ' + l.picked_idea;
+                    if (l.pick_reason) p += ' — Reason: ' + l.pick_reason;
+                    p += '\n';
+                });
+                p += '\n';
+            }
+
+            // Extract trends/themes from recent research (last 5)
+            var recent = _researchLogs.slice(0, 5);
+            p += 'RECENT RESEARCH SUMMARIES (last ' + recent.length + '):\n';
+            recent.forEach(function(l) {
+                var date = new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                // First 300 chars of each as context
+                var snippet = (l.conclusions || '').slice(0, 300).replace(/\n/g, ' ');
+                p += '  [' + date + '] ' + snippet + '...\n\n';
+            });
+
+            p += 'Use these insights to AVOID repeating the same suggestions and to BUILD ON what\'s been learned.\n\n';
+            return p;
+        }
+
         // ---------- Util ----------
         function esc(s) {
             if (!s) return '';
@@ -1148,7 +1294,7 @@
         }
 
         // ---------- Init ----------
-        console.log('[Factory] v2 init, wallet:', localStorage.getItem('connectedWallet'));
+        console.log('[Factory] v3 init, wallet:', localStorage.getItem('connectedWallet'));
         checkGate();
     })();
     </script>
