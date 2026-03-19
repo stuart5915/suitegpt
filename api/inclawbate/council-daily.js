@@ -614,11 +614,12 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Fetch non-RPC data in parallel first
-        const [claws, tasks, allocation] = await Promise.all([
+        // Fetch non-RPC data + lightweight RPC in parallel first
+        const [claws, tasks, allocation, stakerCount] = await Promise.all([
             fetchClawsPrice(),
             fetchTasks(),
-            fetchAllocationSynthesis()
+            fetchAllocationSynthesis(),
+            fetchStakerCount()
         ]);
 
         // RPC calls sequentially to avoid Base RPC rate limits
@@ -662,11 +663,8 @@ export default async function handler(req, res) {
             totalClawsValue: treasuryRaw?.totalClawsValue || 0,
         };
 
-        // Fetch staker count + yesterday's snapshot
-        const [stakerCount, yesterday] = await Promise.all([
-            fetchStakerCount(),
-            fetchYesterdaySnapshot()
-        ]);
+        // Fetch yesterday's snapshot for delta comparisons
+        const yesterday = await fetchYesterdaySnapshot();
 
         // Save today's snapshot
         await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
