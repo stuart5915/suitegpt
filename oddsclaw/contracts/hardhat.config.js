@@ -1,0 +1,38 @@
+require('@nomicfoundation/hardhat-toolbox');
+require('dotenv').config();
+
+module.exports = {
+  solidity: {
+    compilers: [
+      { version: '0.8.20', settings: { optimizer: { enabled: true, runs: 200 } } },
+      { version: '0.8.27', settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: 'cancun' } }
+    ]
+  },
+  networks: {
+    base: {
+      url: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      chainId: 8453
+    },
+    baseSepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      chainId: 84532
+    }
+  },
+  etherscan: {
+    apiKey: process.env.BASESCAN_API_KEY || '',
+    customChains: [
+      {
+        network: 'base',
+        chainId: 8453,
+        urls: { apiURL: 'https://api.etherscan.io/v2/api?chainid=8453', browserURL: 'https://basescan.org' }
+      },
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: { apiURL: 'https://api.etherscan.io/v2/api?chainid=84532', browserURL: 'https://sepolia.basescan.org' }
+      }
+    ]
+  }
+};
