@@ -379,10 +379,23 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'update_draft') {
-            const { slot_id, tweet_text, status } = req.body;
+            const { slot_id, tweet_text, status, image_prompt } = req.body;
             const updates = {};
             if (tweet_text !== undefined) updates.tweet_text = tweet_text;
             if (status) updates.status = status;
+
+            // If image_prompt provided, merge into tweet_options
+            if (image_prompt) {
+                const { data: existing } = await supabase
+                    .from('agent_schedule')
+                    .select('tweet_options')
+                    .eq('id', slot_id)
+                    .single();
+                const opts = existing?.tweet_options || {};
+                opts.image_prompt = image_prompt;
+                updates.tweet_options = opts;
+            }
+
             const { error } = await supabase
                 .from('agent_schedule')
                 .update(updates)

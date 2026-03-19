@@ -2414,9 +2414,15 @@
             insertsRow.appendChild(chip);
         });
 
-        // Reset image prompt
-        document.getElementById('draftModalImgResult').style.display = 'none';
-        document.getElementById('draftModalImgText').textContent = '';
+        // Show existing image prompt if slot has one, otherwise reset
+        var existingImgPrompt = slot.tweet_options && slot.tweet_options.image_prompt;
+        if (existingImgPrompt) {
+            document.getElementById('draftModalImgText').textContent = existingImgPrompt;
+            document.getElementById('draftModalImgResult').style.display = 'block';
+        } else {
+            document.getElementById('draftModalImgResult').style.display = 'none';
+            document.getElementById('draftModalImgText').textContent = '';
+        }
 
         updateDraftCount();
         document.getElementById('draftModal').classList.add('open');
@@ -2522,21 +2528,29 @@
         var auth = getAuth();
         if (!auth || !auth.token) return;
 
+        // Grab image prompt if one was generated in the modal
+        var imgResultEl = document.getElementById('draftModalImgResult');
+        var imgPrompt = imgResultEl && imgResultEl.style.display !== 'none'
+            ? (document.getElementById('draftModalImgText').textContent || '').trim()
+            : '';
+
         var btn = document.getElementById('draftModalSave');
         btn.disabled = true; btn.textContent = 'Saving...';
 
         try {
             if (_newDraftSlotTime && !_editingSlotId) {
                 // Creating a new slot from an available time
+                var payload = {
+                    action: 'book',
+                    scheduled_at: _newDraftSlotTime,
+                    tweet_text: newText,
+                    account: _activeAccount
+                };
+                if (imgPrompt) payload.tweet_options = { image_prompt: imgPrompt };
                 var r = await fetch('/api/inclawbate/agent-schedule', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                    body: JSON.stringify({
-                        action: 'book',
-                        scheduled_at: _newDraftSlotTime,
-                        tweet_text: newText,
-                        account: _activeAccount
-                    })
+                    body: JSON.stringify(payload)
                 });
                 var data = await r.json();
                 if (!r.ok) throw new Error(data.error || 'Failed to create slot');
@@ -2544,15 +2558,23 @@
                 _newDraftSlotTime = null;
             } else if (_editingSlotId) {
                 // Updating an existing slot
+                var updatePayload = { action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText };
+                if (imgPrompt) updatePayload.image_prompt = imgPrompt;
                 var r = await fetch('/api/inclawbate/schedule-autofill', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-                    body: JSON.stringify({ action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText })
+                    body: JSON.stringify(updatePayload)
                 });
                 var data = await r.json();
                 if (data.error) throw new Error(data.error);
                 var slot = _schedSlots.find(function(s) { return s.id === _editingSlotId; });
-                if (slot) slot.tweet_text = newText;
+                if (slot) {
+                    slot.tweet_text = newText;
+                    if (imgPrompt) {
+                        if (!slot.tweet_options) slot.tweet_options = {};
+                        slot.tweet_options.image_prompt = imgPrompt;
+                    }
+                }
             }
             closeDraftModal();
             renderSlots(_selectedDay);
