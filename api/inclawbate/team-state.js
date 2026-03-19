@@ -15,12 +15,13 @@ export default async function handler(req, res) {
     // GET — public read
     if (req.method === 'GET') {
         try {
-            const [focusRes, incubationRes, responsibilityRes, todoRes, doneRes] = await Promise.all([
+            const [focusRes, incubationRes, responsibilityRes, todoRes, doneRes, campaignRes] = await Promise.all([
                 supabase.from('team_state').select('id, content, author, created_at').eq('category', 'current').order('created_at', { ascending: true }),
                 supabase.from('team_state').select('id, content, author, created_at').eq('category', 'incubation').order('created_at', { ascending: true }),
                 supabase.from('team_state').select('id, content, author, created_at').eq('category', 'responsibility').order('created_at', { ascending: true }),
                 supabase.from('team_state').select('id, content, author, created_at').eq('category', 'todo').order('created_at', { ascending: true }),
-                supabase.from('team_state').select('id, content, author, created_at').eq('category', 'done').order('created_at', { ascending: false }).limit(10)
+                supabase.from('team_state').select('id, content, author, created_at').eq('category', 'done').order('created_at', { ascending: false }).limit(10),
+                supabase.from('team_state').select('id, content, author, created_at').eq('category', 'campaign').order('created_at', { ascending: true })
             ]);
 
             const fmt = r => ({ id: r.id, content: r.content, author: r.author, date: r.created_at });
@@ -30,7 +31,8 @@ export default async function handler(req, res) {
                 incubations: (incubationRes.data || []).map(fmt),
                 responsibilities: (responsibilityRes.data || []).map(fmt),
                 backlog: (todoRes.data || []).map(fmt),
-                done: (doneRes.data || []).map(fmt)
+                done: (doneRes.data || []).map(fmt),
+                campaigns: (campaignRes.data || []).map(fmt)
             });
         } catch (err) {
             return res.status(500).json({ error: err.message });
