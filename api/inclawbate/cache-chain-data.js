@@ -158,6 +158,34 @@ export default async function handler(req, res) {
 
         if (saveErr) errors.push('Save error: ' + saveErr.message);
 
+        // ── Refresh voter balances (moved here from /daily to avoid RPC contention) ──
+        await delay(1000);
+        try {
+            const VOTE_STAKING = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+            const { data: voters } = await supabase
+                .from('allocation_votes')
+                .select('wallet_address, claws_balance');
+            if (voters && voters.length > 0) {
+                for (const v of voters) {
+                    if (v.wallet_address === 'council') continue;
+                    const paddedAddr = v.wallet_address.replace('0x', '').toLowerCase().padStart(64, '0');
+                    const balData = '0x70a08231' + paddedAddr;
+                    const walletBal = await rpcCall('eth_call', [{ to: CLAWS_ADDRESS, data: balData }, 'latest']);
+                    await delay(500);
+                    const stakedBal = await rpcCall('eth_call', [{ to: VOTE_STAKING, data: balData }, 'latest']);
+                    await delay(500);
+                    const w = walletBal ? BigInt(walletBal) : BigInt(0);
+                    const s = stakedBal ? BigInt(stakedBal) : BigInt(0);
+                    const newBal = (w + s).toString();
+                    if (newBal !== v.claws_balance) {
+                        await supabase.from('allocation_votes')
+                            .update({ claws_balance: newBal })
+                            .eq('wallet_address', v.wallet_address);
+                    }
+                }
+            }
+        } catch (e) { errors.push('Voter refresh: ' + e.message); }
+
         return res.status(200).json({ ok: true, cache, errors: errors.length ? errors : undefined });
 
     } catch (err) {

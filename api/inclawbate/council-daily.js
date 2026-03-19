@@ -218,12 +218,16 @@ async function fetchAllocationSynthesis() {
             .select('wallet_address, weights, claws_balance');
         if (!allRows || allRows.length === 0) return null;
 
-        // Separate council row from community votes
+        // Separate council row and admin/treasury wallet from community votes
+        const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
         const councilRow = allRows.find(v => v.wallet_address === COUNCIL_ROW_KEY);
         const council = councilRow
             ? BUCKET_IDS.map(id => councilRow.weights[id] || 0)
             : null;
-        const communityVotes = allRows.filter(v => v.wallet_address !== COUNCIL_ROW_KEY);
+        const communityVotes = allRows.filter(v =>
+            v.wallet_address !== COUNCIL_ROW_KEY &&
+            v.wallet_address.toLowerCase() !== ADMIN_WALLET
+        );
 
         if (communityVotes.length === 0 && !council) return null;
 
@@ -614,9 +618,6 @@ export default async function handler(req, res) {
             angelStats.floorPrice = angelFloor?.floorPrice ?? null;
             angelStats.floorCurrency = angelFloor?.floorCurrency ?? 'ETH';
         }
-
-        // Refresh voter balances (still needed, but isolated RPC calls)
-        await refreshVoterBalances();
 
         // Treasury breakdown
         const lpValue = claws?.liquidity || 0;
