@@ -64,6 +64,16 @@ var EXTRA_TOKENS = [
         status: 'active',
         tier: 'incubated',
         created_at: '2026-03-18T00:00:00Z'
+    },
+    {
+        id: 'oddsclaw',
+        token_name: 'OddsClaw',
+        token_symbol: 'ODDS',
+        token_address: '0x3a70Ce6D5DB46348B6930505cf55261c17Cd4B07',
+        logo_url: '/inclawbate/assets/oddsclaw-logo.png',
+        status: 'active',
+        tier: 'ecosystem',
+        created_at: '2026-03-19T00:00:00Z'
     }
 ];
 

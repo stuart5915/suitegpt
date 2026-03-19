@@ -11,7 +11,6 @@ const supabase = createClient(
 const DISPUTE_WINDOW_HOURS = 24;
 
 async function fetchPrice(source) {
-    // source format: "coingecko:ethereum" or "dexscreener:0xABC..."
     const [provider, id] = (source || '').split(':');
 
     if (provider === 'dexscreener') {
@@ -46,9 +45,53 @@ function compare(price, target, comparator) {
     }
 }
 
+// Distribute pool to winners proportionally (same logic as main API)
+async function creditWinners(marketId, outcome, market) {
+    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+    if (totalPool <= 0) return;
+
+    const { data: winners } = await supabase
+        .from('oddsclaw_positions')
+        .select('*')
+        .eq('market_id', marketId)
+        .eq('side', outcome)
+        .gt('shares', 0)
+        .eq('claimed', false);
+
+    if (!winners || winners.length === 0) {
+        // No winners — return pool to creator
+        await supabase.rpc('oddsclaw_credit_wallet', {
+            p_wallet: market.creator_wallet, p_amount: totalPool
+        }).catch(() => {});
+        return;
+    }
+
+    const totalWinningShares = winners.reduce((sum, p) => sum + parseFloat(p.shares), 0);
+
+    for (const pos of winners) {
+        const shares = parseFloat(pos.shares);
+        const payout = (shares / totalWinningShares) * totalPool;
+
+        await supabase.rpc('oddsclaw_credit_wallet', {
+            p_wallet: pos.wallet_address, p_amount: payout
+        });
+
+        await supabase.from('oddsclaw_positions')
+            .update({ claimed: true, claimed_amount: payout })
+            .eq('id', pos.id);
+    }
+
+    // Mark losers
+    const losingSide = outcome === 'yes' ? 'no' : 'yes';
+    await supabase.from('oddsclaw_positions')
+        .update({ claimed: true, claimed_amount: 0 })
+        .eq('market_id', marketId)
+        .eq('side', losingSide)
+        .gt('shares', 0)
+        .eq('claimed', false);
+}
+
 export default async function handler(req, res) {
-    // Only allow cron or manual trigger
-    const authHeader = req.headers.authorization;
     const cronSecret = req.headers['x-vercel-cron'];
 
     try {
@@ -89,8 +132,8 @@ export default async function handler(req, res) {
                 })
                 .eq('id', market.id);
 
-            // Credit winners
-            await creditWinners(market.id, outcome);
+            // Distribute pool to winners
+            await creditWinners(market.id, outcome, market);
 
             resolved++;
             results.push({ id: market.id, slug: market.slug, outcome, price, target });
@@ -107,47 +150,4 @@ export default async function handler(req, res) {
         console.error('OddsClaw resolve error:', err);
         return res.status(500).json({ error: 'Resolve failed' });
     }
-}
-
-async function creditWinners(marketId, outcome) {
-    const { data: winners } = await supabase
-        .from('oddsclaw_positions')
-        .select('*')
-        .eq('market_id', marketId)
-        .eq('side', outcome)
-        .gt('shares', 0)
-        .eq('claimed', false);
-
-    if (!winners || winners.length === 0) return;
-
-    for (const pos of winners) {
-        const payout = parseFloat(pos.shares);
-        const { data: walletData } = await supabase
-            .from('oddsclaw_wallets')
-            .select('odds_balance')
-            .eq('wallet_address', pos.wallet_address)
-            .single();
-
-        const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-        if (walletData) {
-            await supabase.from('oddsclaw_wallets')
-                .update({ odds_balance: balance + payout })
-                .eq('wallet_address', pos.wallet_address);
-        } else {
-            await supabase.from('oddsclaw_wallets')
-                .insert({ wallet_address: pos.wallet_address, odds_balance: payout });
-        }
-
-        await supabase.from('oddsclaw_positions')
-            .update({ claimed: true, claimed_amount: payout })
-            .eq('id', pos.id);
-    }
-
-    const losingSide = outcome === 'yes' ? 'no' : 'yes';
-    await supabase.from('oddsclaw_positions')
-        .update({ claimed: true, claimed_amount: 0 })
-        .eq('market_id', marketId)
-        .eq('side', losingSide)
-        .gt('shares', 0)
-        .eq('claimed', false);
 }

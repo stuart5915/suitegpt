@@ -427,6 +427,26 @@
         .trade-submit:disabled { opacity: 0.4; cursor: not-allowed; }
         .trade-submit.buy-yes { background: var(--accent-yes); }
         .trade-submit.buy-no { background: var(--accent-no); }
+        .trade-submit.sell-yes { background: linear-gradient(135deg, #b45309, #f59e0b); }
+        .trade-submit.sell-no { background: linear-gradient(135deg, #b45309, #f59e0b); }
+
+        /* Position sell button */
+        .position-actions { margin-top: 8px; }
+        .sell-btn {
+            background: var(--accent-odds-bg);
+            border: 1px solid var(--accent-odds);
+            color: var(--accent-odds);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 5px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: all 0.15s;
+        }
+        .sell-btn:hover { background: var(--accent-odds); color: #000; }
 
         /* Trade history table */
         .trades-table {
@@ -884,6 +904,8 @@
     var _currentFilter = 'all';
     var _currentMarket = null;
     var _tradeSide = 'yes';
+    var _tradeDir = 'buy'; // 'buy' or 'sell'
+    var _sellShares = 0; // shares available when selling
 
     // ── Toast ──
     function toast(msg, ms) {
@@ -1071,7 +1093,7 @@
                         '<button class="side-btn" id="sideNo" onclick="setSide(\'no\')">NO</button>' +
                     '</div>' +
                     '<div class="trade-input-group">' +
-                        '<div class="trade-input-label"><span>Amount (ODDS)</span><span id="tradeBalance"></span></div>' +
+                        '<div class="trade-input-label"><span id="tradeInputLabel">' + (_tradeDir === 'sell' ? 'Shares to sell' : 'Amount (ODDS)') + '</span><span id="tradeBalance"></span></div>' +
                         '<input class="trade-input" id="tradeAmount" type="number" step="1" min="1" placeholder="100" oninput="updateEstimate()">' +
                         '<div class="quick-amounts">' +
                             '<button class="quick-amt" onclick="setTradeAmount(50)">50</button>' +
@@ -1086,7 +1108,7 @@
                         '<div class="trade-estimate-row"><span>Fee (2%)</span><span id="estFee">—</span></div>' +
                         '<div class="trade-estimate-row"><span>Potential payout</span><span id="estPayout">—</span></div>' +
                     '</div>' +
-                    '<button class="trade-submit buy-yes" id="tradeSubmit" onclick="submitTrade()">Buy YES</button>' +
+                    '<button class="trade-submit ' + (_tradeDir === 'sell' ? 'sell-' : 'buy-') + _tradeSide + '" id="tradeSubmit" onclick="submitTrade()">' + (_tradeDir === 'sell' ? 'Sell' : 'Buy') + ' ' + _tradeSide.toUpperCase() + '</button>' +
                 '</div>';
             }
 
@@ -1148,6 +1170,20 @@
                 var balEl = document.getElementById('tradeBalance');
                 if (balEl) balEl.textContent = 'Balance: ' + fmtNum(_balance) + ' ODDS';
             }
+
+            // If opened in sell mode, pre-fill shares and update UI
+            if (_tradeDir === 'sell' && _sellShares > 0) {
+                var sideYes = document.getElementById('sideYes');
+                var sideNo = document.getElementById('sideNo');
+                if (sideYes) sideYes.className = 'side-btn' + (_tradeSide === 'yes' ? ' active-yes' : '');
+                if (sideNo) sideNo.className = 'side-btn' + (_tradeSide === 'no' ? ' active-no' : '');
+                var lbl = document.getElementById('tradeInputLabel');
+                if (lbl) lbl.textContent = 'Shares to sell';
+                var inp = document.getElementById('tradeAmount');
+                if (inp) { inp.value = _sellShares.toFixed(2); inp.max = _sellShares; }
+                updateTradeButton();
+                updateEstimate();
+            }
         } catch (err) {
             console.error('Market detail error:', err);
             wrap.innerHTML = '<div class="empty-state">Failed to load market</div>';
@@ -1156,13 +1192,12 @@
 
     window.setSide = function(side) {
         _tradeSide = side;
+        _tradeDir = 'buy'; // switching side resets to buy mode
         document.getElementById('sideYes').className = 'side-btn' + (side === 'yes' ? ' active-yes' : '');
         document.getElementById('sideNo').className = 'side-btn' + (side === 'no' ? ' active-no' : '');
-        var btn = document.getElementById('tradeSubmit');
-        if (btn) {
-            btn.textContent = 'Buy ' + side.toUpperCase();
-            btn.className = 'trade-submit buy-' + side;
-        }
+        updateTradeButton();
+        var lbl = document.getElementById('tradeInputLabel');
+        if (lbl) lbl.textContent = 'Amount (ODDS)';
         updateEstimate();
     };
 
@@ -1183,22 +1218,41 @@
         }
         var yp = parseFloat(_currentMarket.yes_pool);
         var np = parseFloat(_currentMarket.no_pool);
-        var fee = amount * 0.02;
-        var net = amount - fee;
 
-        var shares;
-        if (_tradeSide === 'yes') {
-            shares = yp - (yp * np) / (np + net);
+        if (_tradeDir === 'sell') {
+            // Sell estimate: amount = shares to sell
+            var oddsOut;
+            if (_tradeSide === 'yes') {
+                oddsOut = np - (yp * np) / (yp + amount);
+                if (oddsOut >= np) oddsOut = np * 0.99;
+            } else {
+                oddsOut = yp - (yp * np) / (np + amount);
+                if (oddsOut >= yp) oddsOut = yp * 0.99;
+            }
+            var sFee = oddsOut * 0.02;
+            var sPayout = oddsOut - sFee;
+            document.getElementById('estShares').textContent = amount.toFixed(2) + ' shares';
+            document.getElementById('estPrice').textContent = (sPayout / amount).toFixed(4) + ' ODDS/share';
+            document.getElementById('estFee').textContent = sFee.toFixed(2) + ' ODDS';
+            document.getElementById('estPayout').textContent = sPayout.toFixed(2) + ' ODDS';
         } else {
-            shares = np - (yp * np) / (yp + net);
+            // Buy estimate: amount = ODDS to spend
+            var fee = amount * 0.02;
+            var net = amount - fee;
+            var shares;
+            if (_tradeSide === 'yes') {
+                shares = yp - (yp * np) / (np + net);
+            } else {
+                shares = np - (yp * np) / (yp + net);
+            }
+            shares = Math.max(0, shares);
+            var price = shares > 0 ? net / shares : 0;
+            var totalPool = yp + np + net; // pool after this trade
+            document.getElementById('estShares').textContent = shares.toFixed(2);
+            document.getElementById('estPrice').textContent = price.toFixed(4) + ' ODDS';
+            document.getElementById('estFee').textContent = fee.toFixed(2) + ' ODDS';
+            document.getElementById('estPayout').textContent = shares.toFixed(2) + ' ODDS (if correct)';
         }
-        shares = Math.max(0, shares);
-        var price = shares > 0 ? net / shares : 0;
-
-        document.getElementById('estShares').textContent = shares.toFixed(2);
-        document.getElementById('estPrice').textContent = price.toFixed(4) + ' ODDS';
-        document.getElementById('estFee').textContent = fee.toFixed(2) + ' ODDS';
-        document.getElementById('estPayout').textContent = shares.toFixed(2) + ' ODDS (if correct)';
     }
 
     window.submitTrade = async function() {
@@ -1208,26 +1262,39 @@
 
         var btn = document.getElementById('tradeSubmit');
         btn.disabled = true;
-        btn.textContent = 'Trading...';
+        btn.textContent = _tradeDir === 'sell' ? 'Selling...' : 'Trading...';
 
         try {
+            var body = {
+                action: 'trade',
+                wallet: _wallet,
+                market_id: _currentMarket.id,
+                side: _tradeSide,
+                direction: _tradeDir
+            };
+            if (_tradeDir === 'sell') {
+                body.shares_amount = amount;
+            } else {
+                body.odds_amount = amount;
+            }
+
             var r = await fetch(API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'trade',
-                    wallet: _wallet,
-                    market_id: _currentMarket.id,
-                    side: _tradeSide,
-                    odds_amount: amount,
-                    direction: 'buy'
-                })
+                body: JSON.stringify(body)
             });
             var d = await r.json();
             if (d.success) {
-                toast('Bought ' + d.shares.toFixed(2) + ' ' + _tradeSide.toUpperCase() + ' shares!');
-                _currentMarket.yes_pool = d.new_probs ? (d.new_probs.no * 2000).toString() : _currentMarket.yes_pool;
-                _currentMarket.no_pool = d.new_probs ? (d.new_probs.yes * 2000).toString() : _currentMarket.no_pool;
+                if (_tradeDir === 'sell') {
+                    toast('Sold ' + amount.toFixed(2) + ' shares for ' + d.payout.toFixed(2) + ' ODDS!');
+                } else {
+                    toast('Bought ' + d.shares.toFixed(2) + ' ' + _tradeSide.toUpperCase() + ' shares!');
+                }
+                // Update pools from actual API response
+                if (d.yes_pool !== undefined) {
+                    _currentMarket.yes_pool = d.yes_pool.toString();
+                    _currentMarket.no_pool = d.no_pool.toString();
+                }
                 loadBalance();
                 openMarket(_currentMarket.id);
             } else {
@@ -1238,11 +1305,31 @@
         }
 
         btn.disabled = false;
-        btn.textContent = 'Buy ' + _tradeSide.toUpperCase();
+        updateTradeButton();
+    };
+
+    function updateTradeButton() {
+        var btn = document.getElementById('tradeSubmit');
+        if (!btn) return;
+        if (_tradeDir === 'sell') {
+            btn.textContent = 'Sell ' + _tradeSide.toUpperCase();
+            btn.className = 'trade-submit sell-' + _tradeSide;
+        } else {
+            btn.textContent = 'Buy ' + _tradeSide.toUpperCase();
+            btn.className = 'trade-submit buy-' + _tradeSide;
+        }
+    }
+
+    window.openSellPanel = function(marketId, side, shares) {
+        _tradeDir = 'sell';
+        _tradeSide = side;
+        _sellShares = parseFloat(shares);
+        openMarket(marketId);
     };
 
     window.quickTrade = function(marketId, side) {
         _tradeSide = side;
+        _tradeDir = 'buy';
         openMarket(marketId);
     };
 
@@ -1297,6 +1384,7 @@
                 }
                 var pnl = currentVal - parseFloat(p.total_cost);
 
+                var canSell = p.market_status === 'active' && parseFloat(p.shares) > 0;
                 html += '<div class="position-card">' +
                     '<div class="position-header">' +
                         '<span class="position-question" onclick="openMarket(\'' + p.market_id + '\')">' + esc(p.market_question || 'Market') + '</span>' +
@@ -1308,6 +1396,7 @@
                         '<span>Cost: <strong>' + parseFloat(p.total_cost).toFixed(2) + '</strong></span>' +
                         '<span>PnL: <strong style="color:' + (pnl >= 0 ? 'var(--accent-yes)' : 'var(--accent-no)') + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '</strong></span>' +
                     '</div>' +
+                    (canSell ? '<div class="position-actions"><button class="sell-btn" onclick="openSellPanel(\'' + p.market_id + '\',\'' + p.side + '\',' + parseFloat(p.shares).toFixed(6) + ')">Sell Shares</button></div>' : '') +
                 '</div>';
             });
             wrap.innerHTML = html;

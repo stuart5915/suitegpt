@@ -1,6 +1,6 @@
 // OddsClaw — Prediction Market API
 // GET: list markets, market detail, positions, leaderboard
-// POST: create market, trade, resolve, claim, dispute
+// POST: create market, trade (buy/sell), resolve, dispute, faucet
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -22,8 +22,8 @@ const MARKET_CREATION_COST = 100; // ODDS burned to create
 const MIN_INITIAL_LIQUIDITY = 200; // minimum ODDS to seed pool
 const DISPUTE_STAKE = 500; // ODDS to file a dispute
 const DISPUTE_WINDOW_HOURS = 24;
+const PLATFORM_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'; // fee collection
 
-// Slug generator
 function slugify(text) {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 }
@@ -38,40 +38,8 @@ function cors(req, res) {
 }
 
 // ──────────────────────────────────────────────
-// AMM Math (constant product: x * y = k)
+// AMM Math (for estimates — actual trades use DB functions)
 // ──────────────────────────────────────────────
-function calcBuyShares(yesPool, noPool, side, oddsAmount) {
-    const fee = oddsAmount * TRADING_FEE;
-    const net = oddsAmount - fee;
-    if (net <= 0) return { shares: 0, fee, price: 0 };
-
-    let shares;
-    if (side === 'yes') {
-        // Buy YES: add ODDS to NO pool, take shares from YES pool
-        shares = yesPool - (yesPool * noPool) / (noPool + net);
-        if (shares >= yesPool) shares = yesPool * 0.99; // cap at 99% of pool
-    } else {
-        shares = noPool - (yesPool * noPool) / (yesPool + net);
-        if (shares >= noPool) shares = noPool * 0.99;
-    }
-    const price = shares > 0 ? net / shares : 0;
-    return { shares: Math.max(0, shares), fee, price };
-}
-
-function calcSellPayout(yesPool, noPool, side, shares) {
-    let oddsOut;
-    if (side === 'yes') {
-        oddsOut = noPool - (yesPool * noPool) / (yesPool + shares);
-        if (oddsOut >= noPool) oddsOut = noPool * 0.99;
-    } else {
-        oddsOut = yesPool - (yesPool * noPool) / (noPool + shares);
-        if (oddsOut >= yesPool) oddsOut = yesPool * 0.99;
-    }
-    const fee = oddsOut * TRADING_FEE;
-    const netPayout = oddsOut - fee;
-    return { payout: Math.max(0, netPayout), fee, grossPayout: oddsOut };
-}
-
 function getProbs(yesPool, noPool) {
     const total = yesPool + noPool;
     if (total === 0) return { yes: 0.5, no: 0.5 };
@@ -123,7 +91,6 @@ async function getMarketDetail(req, res) {
 
     if (error || !market) return res.status(404).json({ error: 'Market not found' });
 
-    // Get recent trades
     const { data: trades } = await supabase
         .from('oddsclaw_trades')
         .select('*')
@@ -175,7 +142,7 @@ async function getPositions(req, res) {
 }
 
 async function getLeaderboard(req, res) {
-    const { data, error } = await supabase
+    const { data } = await supabase
         .from('oddsclaw_leaderboard')
         .select('*')
         .order('total_pnl', { ascending: false })
@@ -205,17 +172,18 @@ async function createMarket(req, res) {
     const liquidity = Math.max(MIN_INITIAL_LIQUIDITY, parseFloat(initial_liquidity) || MIN_INITIAL_LIQUIDITY);
     const totalCost = MARKET_CREATION_COST + liquidity;
 
-    // Check balance
-    const { data: walletData } = await supabase
-        .from('oddsclaw_wallets')
-        .select('odds_balance')
-        .eq('wallet_address', w)
-        .single();
-
-    const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-    if (balance < totalCost) {
-        return res.status(400).json({ error: `Need ${totalCost} ODDS (${MARKET_CREATION_COST} creation fee + ${liquidity} liquidity). You have ${balance.toFixed(2)}` });
+    // Atomic debit — checks balance + debits in one locked operation
+    const { data: newBal, error: debitErr } = await supabase.rpc('oddsclaw_debit_wallet', {
+        p_wallet: w, p_amount: totalCost
+    });
+    if (debitErr) {
+        return res.status(400).json({ error: debitErr.message || `Need ${totalCost} ODDS (${MARKET_CREATION_COST} fee + ${liquidity} liquidity)` });
     }
+
+    // Credit creation fee to platform wallet (not burned — platform revenue)
+    await supabase.rpc('oddsclaw_credit_wallet', {
+        p_wallet: PLATFORM_WALLET, p_amount: MARKET_CREATION_COST
+    });
 
     // Generate unique slug
     let slug = slugify(question);
@@ -223,14 +191,6 @@ async function createMarket(req, res) {
     if (existing) slug = slug + '-' + Date.now().toString(36);
 
     const halfLiquidity = liquidity / 2;
-
-    // Debit wallet
-    const { error: debitErr } = await supabase
-        .from('oddsclaw_wallets')
-        .update({ odds_balance: balance - totalCost })
-        .eq('wallet_address', w);
-
-    if (debitErr) return res.status(500).json({ error: 'Failed to debit wallet' });
 
     // Create market
     const { data: market, error: createErr } = await supabase
@@ -260,7 +220,8 @@ async function createMarket(req, res) {
 
     if (createErr) {
         // Refund on failure
-        await supabase.from('oddsclaw_wallets').update({ odds_balance: balance }).eq('wallet_address', w);
+        await supabase.rpc('oddsclaw_credit_wallet', { p_wallet: w, p_amount: totalCost });
+        await supabase.rpc('oddsclaw_debit_wallet', { p_wallet: PLATFORM_WALLET, p_amount: MARKET_CREATION_COST }).catch(() => {});
         console.error('Market creation error:', createErr);
         return res.status(500).json({ error: 'Failed to create market' });
     }
@@ -273,7 +234,7 @@ async function createMarket(req, res) {
 }
 
 async function trade(req, res) {
-    const { wallet, market_id, side, odds_amount: rawAmount, direction } = req.body;
+    const { wallet, market_id, side, odds_amount: rawAmount, shares_amount: rawShares, direction } = req.body;
 
     const w = (wallet || '').toLowerCase();
     if (!w) return res.status(400).json({ error: 'Wallet required' });
@@ -281,168 +242,60 @@ async function trade(req, res) {
     if (!side || !['yes', 'no'].includes(side)) return res.status(400).json({ error: 'Side must be yes or no' });
 
     const dir = direction || 'buy';
-    const amount = parseFloat(rawAmount);
-    if (!amount || amount <= 0) return res.status(400).json({ error: 'Amount must be positive' });
-
-    // Get market
-    const { data: market, error: mErr } = await supabase
-        .from('oddsclaw_markets')
-        .select('*')
-        .eq('id', market_id)
-        .single();
-
-    if (mErr || !market) return res.status(404).json({ error: 'Market not found' });
-    if (market.status !== 'active') return res.status(400).json({ error: 'Market is not active' });
-    if (new Date(market.close_time) <= new Date()) return res.status(400).json({ error: 'Market is closed for trading' });
-
-    let yesPool = parseFloat(market.yes_pool);
-    let noPool = parseFloat(market.no_pool);
 
     if (dir === 'buy') {
-        // Check balance
-        const { data: walletData } = await supabase
-            .from('oddsclaw_wallets')
-            .select('odds_balance')
-            .eq('wallet_address', w)
-            .single();
+        const amount = parseFloat(rawAmount);
+        if (!amount || amount <= 0) return res.status(400).json({ error: 'Amount must be positive' });
 
-        const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-        if (balance < amount) return res.status(400).json({ error: `Insufficient balance. Have ${balance.toFixed(2)}, need ${amount}` });
+        // Atomic buy — locks market + wallet, calculates AMM, updates everything
+        const { data, error } = await supabase.rpc('oddsclaw_execute_buy', {
+            p_wallet: w,
+            p_market_id: market_id,
+            p_side: side,
+            p_amount: amount,
+            p_fee_rate: TRADING_FEE,
+            p_platform_wallet: PLATFORM_WALLET
+        });
 
-        const { shares, fee, price } = calcBuyShares(yesPool, noPool, side, amount);
-        if (shares <= 0) return res.status(400).json({ error: 'Trade too small' });
-
-        // Update pools
-        if (side === 'yes') {
-            noPool += (amount - fee);
-            yesPool -= shares;
-        } else {
-            yesPool += (amount - fee);
-            noPool -= shares;
+        if (error) {
+            return res.status(400).json({ error: error.message || 'Trade failed' });
         }
-
-        // Debit wallet
-        await supabase.from('oddsclaw_wallets')
-            .update({ odds_balance: balance - amount })
-            .eq('wallet_address', w);
-
-        // Upsert position
-        const { data: existingPos } = await supabase
-            .from('oddsclaw_positions')
-            .select('*')
-            .eq('market_id', market_id)
-            .eq('wallet_address', w)
-            .eq('side', side)
-            .single();
-
-        if (existingPos) {
-            const newShares = parseFloat(existingPos.shares) + shares;
-            const newCost = parseFloat(existingPos.total_cost) + amount;
-            const newAvg = newCost / newShares;
-            await supabase.from('oddsclaw_positions')
-                .update({ shares: newShares, total_cost: newCost, avg_price: newAvg })
-                .eq('id', existingPos.id);
-        } else {
-            await supabase.from('oddsclaw_positions')
-                .insert({ market_id, wallet_address: w, side, shares, avg_price: price, total_cost: amount });
-        }
-
-        // Update market
-        await supabase.from('oddsclaw_markets')
-            .update({
-                yes_pool: yesPool,
-                no_pool: noPool,
-                total_volume: parseFloat(market.total_volume) + amount,
-                trade_count: (market.trade_count || 0) + 1
-            })
-            .eq('id', market_id);
-
-        // Record trade
-        await supabase.from('oddsclaw_trades')
-            .insert({
-                market_id, wallet_address: w, side, direction: 'buy',
-                shares, price, odds_amount: amount, fee_odds: fee,
-                yes_pool_after: yesPool, no_pool_after: noPool
-            });
 
         return res.status(200).json({
             success: true,
-            shares: parseFloat(shares.toFixed(4)),
-            price: parseFloat(price.toFixed(6)),
-            fee: parseFloat(fee.toFixed(4)),
-            new_probs: getProbs(yesPool, noPool)
+            shares: parseFloat(data.shares),
+            price: parseFloat(data.price),
+            fee: parseFloat(data.fee),
+            yes_pool: parseFloat(data.yes_pool),
+            no_pool: parseFloat(data.no_pool),
+            new_probs: getProbs(parseFloat(data.yes_pool), parseFloat(data.no_pool))
         });
 
     } else if (dir === 'sell') {
-        // Sell shares
-        const { data: pos } = await supabase
-            .from('oddsclaw_positions')
-            .select('*')
-            .eq('market_id', market_id)
-            .eq('wallet_address', w)
-            .eq('side', side)
-            .single();
+        const shares = parseFloat(rawShares || rawAmount); // accept either field name
+        if (!shares || shares <= 0) return res.status(400).json({ error: 'Shares amount must be positive' });
 
-        if (!pos || parseFloat(pos.shares) < amount) {
-            return res.status(400).json({ error: `Insufficient shares. Have ${pos ? parseFloat(pos.shares).toFixed(4) : 0}` });
+        // Atomic sell — locks market + position, calculates AMM, updates everything
+        const { data, error } = await supabase.rpc('oddsclaw_execute_sell', {
+            p_wallet: w,
+            p_market_id: market_id,
+            p_side: side,
+            p_shares: shares,
+            p_fee_rate: TRADING_FEE,
+            p_platform_wallet: PLATFORM_WALLET
+        });
+
+        if (error) {
+            return res.status(400).json({ error: error.message || 'Sell failed' });
         }
-
-        const { payout, fee, grossPayout } = calcSellPayout(yesPool, noPool, side, amount);
-
-        // Update pools
-        if (side === 'yes') {
-            yesPool += amount;
-            noPool -= grossPayout;
-        } else {
-            noPool += amount;
-            yesPool -= grossPayout;
-        }
-
-        // Credit wallet
-        const { data: walletData } = await supabase
-            .from('oddsclaw_wallets')
-            .select('odds_balance')
-            .eq('wallet_address', w)
-            .single();
-
-        const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-        await supabase.from('oddsclaw_wallets')
-            .update({ odds_balance: balance + payout })
-            .eq('wallet_address', w);
-
-        // Update position
-        const newShares = parseFloat(pos.shares) - amount;
-        const realizedPnl = payout - (parseFloat(pos.avg_price) * amount);
-        await supabase.from('oddsclaw_positions')
-            .update({
-                shares: newShares,
-                realized_pnl: parseFloat(pos.realized_pnl) + realizedPnl
-            })
-            .eq('id', pos.id);
-
-        // Update market
-        await supabase.from('oddsclaw_markets')
-            .update({
-                yes_pool: yesPool,
-                no_pool: noPool,
-                total_volume: parseFloat(market.total_volume) + payout,
-                trade_count: (market.trade_count || 0) + 1
-            })
-            .eq('id', market_id);
-
-        // Record trade
-        await supabase.from('oddsclaw_trades')
-            .insert({
-                market_id, wallet_address: w, side, direction: 'sell',
-                shares: amount, price: payout / amount, odds_amount: payout, fee_odds: fee,
-                yes_pool_after: yesPool, no_pool_after: noPool
-            });
 
         return res.status(200).json({
             success: true,
-            payout: parseFloat(payout.toFixed(4)),
-            fee: parseFloat(fee.toFixed(4)),
-            new_probs: getProbs(yesPool, noPool)
+            payout: parseFloat(data.payout),
+            fee: parseFloat(data.fee),
+            yes_pool: parseFloat(data.yes_pool),
+            no_pool: parseFloat(data.no_pool),
+            new_probs: getProbs(parseFloat(data.yes_pool), parseFloat(data.no_pool))
         });
     }
 
@@ -482,17 +335,23 @@ async function resolveMarket(req, res) {
         })
         .eq('id', market_id);
 
-    // Credit winners
+    // Distribute pool to winners (or refund on void)
     if (outcome !== 'void') {
-        await creditWinners(market_id, outcome);
+        await creditWinners(market_id, outcome, market);
     } else {
-        await refundAll(market_id);
+        await refundAll(market_id, market);
     }
 
     return res.status(200).json({ success: true, outcome, dispute_deadline: disputeDeadline.toISOString() });
 }
 
-async function creditWinners(marketId, outcome) {
+// ──────────────────────────────────────────────
+// Resolution: distribute pool to winners proportionally
+// ──────────────────────────────────────────────
+async function creditWinners(marketId, outcome, market) {
+    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+    if (totalPool <= 0) return;
+
     // Get all positions on winning side
     const { data: winners } = await supabase
         .from('oddsclaw_positions')
@@ -502,34 +361,30 @@ async function creditWinners(marketId, outcome) {
         .gt('shares', 0)
         .eq('claimed', false);
 
-    if (!winners || winners.length === 0) return;
+    if (!winners || winners.length === 0) {
+        // No winners — return pool to market creator
+        await supabase.rpc('oddsclaw_credit_wallet', {
+            p_wallet: market.creator_wallet, p_amount: totalPool
+        }).catch(() => {});
+        return;
+    }
 
+    // Total winning shares
+    const totalWinningShares = winners.reduce((sum, p) => sum + parseFloat(p.shares), 0);
+
+    // Each winner gets proportional share of the entire pool
     for (const pos of winners) {
-        const payout = parseFloat(pos.shares); // 1 share = 1 ODDS on win
-        // Credit wallet
-        const { data: walletData } = await supabase
-            .from('oddsclaw_wallets')
-            .select('odds_balance')
-            .eq('wallet_address', pos.wallet_address)
-            .single();
+        const shares = parseFloat(pos.shares);
+        const payout = (shares / totalWinningShares) * totalPool;
 
-        const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
+        await supabase.rpc('oddsclaw_credit_wallet', {
+            p_wallet: pos.wallet_address, p_amount: payout
+        });
 
-        if (walletData) {
-            await supabase.from('oddsclaw_wallets')
-                .update({ odds_balance: balance + payout })
-                .eq('wallet_address', pos.wallet_address);
-        } else {
-            await supabase.from('oddsclaw_wallets')
-                .insert({ wallet_address: pos.wallet_address, odds_balance: payout });
-        }
-
-        // Mark claimed
         await supabase.from('oddsclaw_positions')
             .update({ claimed: true, claimed_amount: payout })
             .eq('id', pos.id);
 
-        // Update leaderboard
         await updateLeaderboard(pos.wallet_address, payout - parseFloat(pos.total_cost), payout, true);
     }
 
@@ -553,7 +408,10 @@ async function creditWinners(marketId, outcome) {
     }
 }
 
-async function refundAll(marketId) {
+async function refundAll(marketId, market) {
+    const totalPool = parseFloat(market.yes_pool) + parseFloat(market.no_pool);
+    if (totalPool <= 0) return;
+
     const { data: positions } = await supabase
         .from('oddsclaw_positions')
         .select('*')
@@ -561,24 +419,27 @@ async function refundAll(marketId) {
         .gt('shares', 0)
         .eq('claimed', false);
 
-    if (!positions) return;
+    if (!positions || positions.length === 0) {
+        // No positions — return pool to creator
+        await supabase.rpc('oddsclaw_credit_wallet', {
+            p_wallet: market.creator_wallet, p_amount: totalPool
+        }).catch(() => {});
+        return;
+    }
+
+    // Proportional refund from pool based on what each person invested
+    const totalCost = positions.reduce((sum, p) => sum + parseFloat(p.total_cost), 0);
 
     for (const pos of positions) {
-        const refund = parseFloat(pos.total_cost);
-        const { data: walletData } = await supabase
-            .from('oddsclaw_wallets')
-            .select('odds_balance')
-            .eq('wallet_address', pos.wallet_address)
-            .single();
+        // Each person gets their proportion of what's left in the pool
+        const refund = totalCost > 0
+            ? (parseFloat(pos.total_cost) / totalCost) * totalPool
+            : 0;
 
-        const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-        if (walletData) {
-            await supabase.from('oddsclaw_wallets')
-                .update({ odds_balance: balance + refund })
-                .eq('wallet_address', pos.wallet_address);
-        } else {
-            await supabase.from('oddsclaw_wallets')
-                .insert({ wallet_address: pos.wallet_address, odds_balance: refund });
+        if (refund > 0) {
+            await supabase.rpc('oddsclaw_credit_wallet', {
+                p_wallet: pos.wallet_address, p_amount: refund
+            });
         }
 
         await supabase.from('oddsclaw_positions')
@@ -636,20 +497,13 @@ async function disputeMarket(req, res) {
     if (market.status !== 'resolved') return res.status(400).json({ error: 'Market must be resolved to dispute' });
     if (new Date() > new Date(market.dispute_deadline)) return res.status(400).json({ error: 'Dispute window has closed' });
 
-    // Check balance for stake
-    const { data: walletData } = await supabase
-        .from('oddsclaw_wallets')
-        .select('odds_balance')
-        .eq('wallet_address', w)
-        .single();
-
-    const balance = walletData ? parseFloat(walletData.odds_balance) : 0;
-    if (balance < DISPUTE_STAKE) return res.status(400).json({ error: `Need ${DISPUTE_STAKE} ODDS to dispute. Have ${balance.toFixed(2)}` });
-
-    // Debit stake
-    await supabase.from('oddsclaw_wallets')
-        .update({ odds_balance: balance - DISPUTE_STAKE })
-        .eq('wallet_address', w);
+    // Atomic debit for stake
+    const { error: debitErr } = await supabase.rpc('oddsclaw_debit_wallet', {
+        p_wallet: w, p_amount: DISPUTE_STAKE
+    });
+    if (debitErr) {
+        return res.status(400).json({ error: debitErr.message || `Need ${DISPUTE_STAKE} ODDS to dispute` });
+    }
 
     // Create dispute
     const { data: dispute, error } = await supabase
@@ -662,18 +516,17 @@ async function disputeMarket(req, res) {
         .single();
 
     if (error) {
-        await supabase.from('oddsclaw_wallets').update({ odds_balance: balance }).eq('wallet_address', w);
+        await supabase.rpc('oddsclaw_credit_wallet', { p_wallet: w, p_amount: DISPUTE_STAKE });
         return res.status(500).json({ error: 'Failed to create dispute' });
     }
 
-    // Mark market as disputed
     await supabase.from('oddsclaw_markets').update({ status: 'disputed' }).eq('id', market_id);
 
     return res.status(200).json({ success: true, dispute });
 }
 
 // ──────────────────────────────────────────────
-// Give test balance (for testing before token launch)
+// Test faucet (disabled once real token is live)
 // ──────────────────────────────────────────────
 async function faucet(req, res) {
     const { wallet } = req.body;
@@ -689,15 +542,11 @@ async function faucet(req, res) {
     if (existing) {
         const bal = parseFloat(existing.odds_balance);
         if (bal >= 1000) return res.status(400).json({ error: 'You already have enough test ODDS' });
-        await supabase.from('oddsclaw_wallets')
-            .update({ odds_balance: bal + 10000 })
-            .eq('wallet_address', w);
-    } else {
-        await supabase.from('oddsclaw_wallets')
-            .insert({ wallet_address: w, odds_balance: 10000 });
     }
 
-    return res.status(200).json({ success: true, balance: existing ? parseFloat(existing.odds_balance) + 10000 : 10000 });
+    const newBal = await supabase.rpc('oddsclaw_credit_wallet', { p_wallet: w, p_amount: 10000 });
+
+    return res.status(200).json({ success: true, balance: parseFloat(newBal.data) || 10000 });
 }
 
 // ──────────────────────────────────────────────
