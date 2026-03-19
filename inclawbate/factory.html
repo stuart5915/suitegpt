@@ -372,11 +372,141 @@
 
         .loading { text-align: center; padding: var(--space-lg); color: var(--text-dim); }
 
+        /* Signal Board */
+        .signal-board-btn {
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-lg);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: var(--font-display);
+            width: 100%;
+            transition: opacity 0.15s;
+            letter-spacing: 0.02em;
+        }
+        .signal-board-btn:hover { opacity: 0.9; }
+        .signal-board-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .signal-suggestions { margin-top: var(--space-md); }
+
+        .suggestion-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            position: relative;
+        }
+        .suggestion-rank {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 2px 8px;
+        }
+        .suggestion-name {
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .suggestion-category {
+            font-size: 0.75rem;
+            color: var(--lobster-400);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .suggestion-desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .suggestion-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .suggestion-tag {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-dim);
+        }
+        .suggestion-tag.revenue { border-color: rgba(34,197,94,0.3); color: var(--green); }
+        .suggestion-tag.agent { border-color: rgba(99,102,241,0.3); color: #818cf8; }
+        .suggestion-details {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .suggestion-details strong { color: var(--text-secondary); }
+        .suggestion-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 6px;
+            margin-top: var(--space-md);
+        }
+        .category-cell {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            font-size: 0.75rem;
+            text-align: center;
+            position: relative;
+        }
+        .category-cell-name {
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .category-cell-count {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .category-cell.empty .category-cell-count { color: var(--red, #ef4444); }
+        .category-cell.low .category-cell-count { color: var(--yellow, #eab308); }
+        .category-cell.medium .category-cell-count { color: var(--lobster-300); }
+        .category-cell.high .category-cell-count { color: var(--green, #22c55e); }
+
+        .signal-toggle {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: var(--font-body);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .signal-toggle:hover { color: var(--text-secondary); }
+
         @media (max-width: 600px) {
             .factory-page { padding: var(--space-md) var(--space-sm) var(--space-3xl); }
             .factory-hero h1 { font-size: 1.6rem; }
             .pipeline-action { display: none; }
             .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .category-grid { grid-template-columns: repeat(3, 1fr); }
         }
     </style>
 </head>
@@ -446,6 +576,17 @@
             <div id="pipelineWrap">
                 <div class="loading">Loading pipeline...</div>
             </div>
+        </div>
+
+        <!-- Signal Board — What Should I Build? -->
+        <div class="factory-section">
+            <div class="factory-section-hdr">
+                <h2>What Should I Build?</h2>
+                <button class="signal-toggle" id="toggleCategoryMap" onclick="toggleCatMap()">Show category map</button>
+            </div>
+            <button class="signal-board-btn" id="signalBtn" onclick="runSignals()">Analyze Ecosystem & Suggest Ideas</button>
+            <div id="categoryMapWrap" style="display:none;"></div>
+            <div id="signalSuggestions" class="signal-suggestions"></div>
         </div>
 
         <!-- Idea Generator -->
@@ -807,6 +948,170 @@
             document.getElementById('statClaws').textContent = claws > 0 ? (claws / 1000).toFixed(1) + 'K' : '0';
             document.getElementById('statVotes').textContent = votes;
         }
+
+        // ---------- Signal Board — What Should I Build? ----------
+        var _signalData = null;
+        var _catMapVisible = false;
+
+        window.runSignals = async function() {
+            var btn = document.getElementById('signalBtn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing ecosystem...';
+            var wrap = document.getElementById('signalSuggestions');
+            wrap.innerHTML = '<div class="loading">Loading all apps, categorizing, scoring gaps...</div>';
+
+            try {
+                var r = await fetch(API + '/factory-signals?wallet=' + _wallet);
+                if (!r.ok) throw new Error('API error ' + r.status);
+                _signalData = await r.json();
+                renderSignalSuggestions();
+                renderCategoryMap();
+            } catch (err) {
+                console.error('Signal board error:', err);
+                wrap.innerHTML = '<div class="empty-state">Failed to load signals — check console</div>';
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Refresh Suggestions';
+        };
+
+        function renderSignalSuggestions() {
+            var wrap = document.getElementById('signalSuggestions');
+            if (!_signalData || !_signalData.suggestions || _signalData.suggestions.length === 0) {
+                wrap.innerHTML = '<div class="empty-state">No suggestions found — you may have covered everything!</div>';
+                return;
+            }
+            var html = '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:var(--space-sm);">' +
+                'Based on ' + _signalData.total_apps + ' existing apps across ' + _signalData.total_categories_covered + '/' + _signalData.total_categories + ' categories</div>';
+
+            _signalData.suggestions.slice(0, 5).forEach(function(s, i) {
+                html += '<div class="suggestion-card">' +
+                    '<div class="suggestion-rank">#' + (i + 1) + ' — score ' + s.score + '</div>' +
+                    '<div class="suggestion-name">' + esc(s.name) + '</div>' +
+                    '<div class="suggestion-category">' + esc(s.category) + (s.category_count === 0 ? ' — NO apps yet' : ' — ' + s.category_count + ' app' + (s.category_count !== 1 ? 's' : '')) + '</div>' +
+                    '<div class="suggestion-desc">' + esc(s.description) + '</div>' +
+                    '<div class="suggestion-meta">' +
+                        '<span class="suggestion-tag revenue">$ ' + esc(s.revenue_model) + '</span>' +
+                        '<span class="suggestion-tag agent">Agent: ' + esc(s.agent_plan) + '</span>' +
+                    '</div>' +
+                    '<div class="suggestion-details"><strong>Why:</strong> ' + esc(s.why) + '</div>' +
+                    '<div class="suggestion-actions">' +
+                        '<button class="btn-primary" style="font-size:0.8rem;padding:6px 14px;" onclick="startFromSuggestion(\'' + esc(s.name).replace(/'/g, "\\'") + '\',\'' + esc(s.description).replace(/'/g, "\\'") + '\')">Start Pipeline</button>' +
+                        '<button class="btn-secondary" style="font-size:0.8rem;padding:6px 14px;" onclick="deepDiveSuggestion(\'' + esc(s.name).replace(/'/g, "\\'") + '\',\'' + esc(s.category).replace(/'/g, "\\'") + '\',\'' + esc(s.description).replace(/'/g, "\\'") + '\')">Deep Dive Prompt</button>' +
+                    '</div>' +
+                '</div>';
+            });
+
+            if (_signalData.suggestions.length > 5) {
+                html += '<button class="signal-toggle" onclick="showMoreSuggestions()" id="showMoreBtn">Show ' + (_signalData.suggestions.length - 5) + ' more suggestions</button>';
+            }
+
+            wrap.innerHTML = html;
+        }
+
+        window.showMoreSuggestions = function() {
+            if (!_signalData) return;
+            var wrap = document.getElementById('signalSuggestions');
+            var html = '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:var(--space-sm);">' +
+                'All ' + _signalData.suggestions.length + ' suggestions from ' + _signalData.total_apps + ' existing apps</div>';
+
+            _signalData.suggestions.forEach(function(s, i) {
+                html += '<div class="suggestion-card">' +
+                    '<div class="suggestion-rank">#' + (i + 1) + ' — score ' + s.score + '</div>' +
+                    '<div class="suggestion-name">' + esc(s.name) + '</div>' +
+                    '<div class="suggestion-category">' + esc(s.category) + (s.category_count === 0 ? ' — NO apps yet' : ' — ' + s.category_count + ' app' + (s.category_count !== 1 ? 's' : '')) + '</div>' +
+                    '<div class="suggestion-desc">' + esc(s.description) + '</div>' +
+                    '<div class="suggestion-meta">' +
+                        '<span class="suggestion-tag revenue">$ ' + esc(s.revenue_model) + '</span>' +
+                        '<span class="suggestion-tag agent">Agent: ' + esc(s.agent_plan) + '</span>' +
+                    '</div>' +
+                    '<div class="suggestion-details"><strong>Why:</strong> ' + esc(s.why) + '</div>' +
+                    '<div class="suggestion-actions">' +
+                        '<button class="btn-primary" style="font-size:0.8rem;padding:6px 14px;" onclick="startFromSuggestion(\'' + esc(s.name).replace(/'/g, "\\'") + '\',\'' + esc(s.description).replace(/'/g, "\\'") + '\')">Start Pipeline</button>' +
+                        '<button class="btn-secondary" style="font-size:0.8rem;padding:6px 14px;" onclick="deepDiveSuggestion(\'' + esc(s.name).replace(/'/g, "\\'") + '\',\'' + esc(s.category).replace(/'/g, "\\'") + '\',\'' + esc(s.description).replace(/'/g, "\\'") + '\')">Deep Dive Prompt</button>' +
+                    '</div>' +
+                '</div>';
+            });
+
+            wrap.innerHTML = html;
+        };
+
+        function renderCategoryMap() {
+            var wrap = document.getElementById('categoryMapWrap');
+            if (!_signalData || !_signalData.categories) return;
+            var html = '<div class="category-grid">';
+            _signalData.categories.forEach(function(c) {
+                var level = c.count === 0 ? 'empty' : c.count <= 2 ? 'low' : c.count <= 5 ? 'medium' : 'high';
+                html += '<div class="category-cell ' + level + '" title="' + c.apps.join(', ') + '">' +
+                    '<div class="category-cell-name">' + esc(c.name) + '</div>' +
+                    '<div class="category-cell-count">' + c.count + '</div>' +
+                    '<div style="font-size:0.65rem;color:var(--text-dim);">' + c.ideas_remaining + ' ideas left</div>' +
+                '</div>';
+            });
+            html += '</div>';
+            wrap.innerHTML = html;
+        }
+
+        window.toggleCatMap = function() {
+            var wrap = document.getElementById('categoryMapWrap');
+            var btn = document.getElementById('toggleCategoryMap');
+            _catMapVisible = !_catMapVisible;
+            wrap.style.display = _catMapVisible ? 'block' : 'none';
+            btn.textContent = _catMapVisible ? 'Hide category map' : 'Show category map';
+        };
+
+        window.startFromSuggestion = function(name, desc) {
+            // Pre-fill the new incubation form
+            var form = document.querySelector('.new-form');
+            if (form) {
+                form.classList.add('open');
+                var nameInput = document.getElementById('newAppName');
+                var descInput = document.getElementById('newAppDesc');
+                if (nameInput) nameInput.value = name;
+                if (descInput) descInput.value = desc;
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        window.deepDiveSuggestion = function(name, category, desc) {
+            // Build a focused research prompt for this specific idea
+            var prompt = '# DEEP DIVE: ' + name + '\n\n';
+            prompt += 'I want to build "' + name + '" — ' + desc + '\n\n';
+            prompt += 'Category: ' + category + '\n\n';
+            prompt += '## CONTEXT\n';
+            prompt += '- Platform: Inclawbate (inclawbate.com) — Web3 incubation platform on Base L2\n';
+            prompt += '- This app will get its OWN token launched via Clanker (ERC-20 on Base)\n';
+            prompt += '- Token MUST have real utility tied to the app (not just speculative)\n';
+            prompt += '- CLAWS staking pool will be created (users stake app token → earn CLAWS rewards)\n';
+            prompt += '- 3-10 AI agents will be deployed to use this app 24/7 via OpenClaw skill endpoints\n';
+            prompt += '- This should be a COMPLEX, production-grade product — NOT a simple toy\n\n';
+
+            if (_signalData && _signalData.categories) {
+                var cat = _signalData.categories.find(function(c) { return c.name === category; });
+                if (cat && cat.apps.length > 0) {
+                    prompt += '## EXISTING SIMILAR APPS (avoid overlap)\n';
+                    cat.apps.forEach(function(a) { prompt += '- ' + a + '\n'; });
+                    prompt += '\n';
+                }
+            }
+
+            prompt += '## PLEASE PROVIDE\n';
+            prompt += '1. **App Design** — Detailed feature list, user flows, what makes it unique\n';
+            prompt += '2. **Token Mechanics** — Name, symbol, utility within the app (how users spend/earn it)\n';
+            prompt += '3. **Revenue Model** — How the app generates fees/income\n';
+            prompt += '4. **Agent Integration Plan** — What OpenClaw skill endpoints to expose, what agents do 24/7\n';
+            prompt += '5. **Technical Architecture** — Key components, APIs, smart contracts needed\n';
+            prompt += '6. **Growth Strategy** — How to get first 100 users, viral loops, retention hooks\n';
+            prompt += '7. **Tweet + Poll Draft** — Launch tweet for @inclawbator + poll asking community what to improve\n';
+
+            // Show in the idea prompt box
+            var ideaWrap = document.getElementById('ideaWrap');
+            ideaWrap.innerHTML = '<div class="idea-prompt-box" id="ideaPrompt">' + esc(prompt) + '</div>' +
+                '<div class="idea-actions">' +
+                    '<button class="btn-primary" onclick="copyPrompt()">Copy Prompt</button>' +
+                '</div>';
+            ideaWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
 
         // ---------- Idea Generator ----------
         window.toggleAudience = function(el) {
