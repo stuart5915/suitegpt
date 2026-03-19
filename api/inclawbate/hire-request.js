@@ -71,7 +71,13 @@ export default async function handler(req, res) {
 
         // Notify the council group
         if (COUNCIL_CHAT_ID) {
-            notifyHuman(COUNCIL_CHAT_ID, msg).catch(() => {});
+            try {
+                await notifyHuman(COUNCIL_CHAT_ID, msg);
+            } catch (tgErr) {
+                console.error('TG notification failed:', tgErr);
+            }
+        } else {
+            console.warn('No INCLAWBATE_COUNCIL_CHAT_ID set — skipping TG notification');
         }
 
         return res.status(200).json({ success: true, id: hireReq.id });

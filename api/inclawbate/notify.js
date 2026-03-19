@@ -10,19 +10,20 @@ export function escHtml(str) {
 }
 
 export async function notifyHuman(telegramChatId, text) {
-    if (!BOT_TOKEN || !telegramChatId) return;
+    if (!BOT_TOKEN) { console.warn('notifyHuman: no INCLAWBATE_TELEGRAM_BOT_TOKEN'); return; }
+    if (!telegramChatId) { console.warn('notifyHuman: no chat ID'); return; }
 
-    try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: telegramChatId,
-                text,
-                parse_mode: 'HTML'
-            })
-        });
-    } catch (err) {
-        // Silent fail — don't block API response for notification failure
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chat_id: telegramChatId,
+            text,
+            parse_mode: 'HTML'
+        })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+        console.error('Telegram API error:', data.description, '| chat_id:', telegramChatId);
     }
 }
