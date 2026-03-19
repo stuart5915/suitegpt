@@ -523,35 +523,38 @@ async function executeTool(name, args) {
 // ── Session store ──
 const sessions = new Map();
 
-async function callGroq(messages, retries = 2) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
+// Model fallback chain: try best model first, fall back to faster ones on rate limit
+const MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'gemma2-9b-it'
+];
+
+async function callGroq(messages) {
+  for (let i = 0; i < MODELS.length; i++) {
+    const model = MODELS[i];
     try {
       const res = await fetch(GROQ_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages,
-          tools: TOOLS,
-          tool_choice: 'auto',
-          max_tokens: 512
-        })
+        body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
       });
       const data = await res.json();
       if (data.error) {
-        console.error('Groq error (attempt ' + (attempt + 1) + '):', data.error);
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        const errMsg = data.error.message || data.error.type || '';
+        const isRateLimit = res.status === 429 || errMsg.includes('rate_limit') || errMsg.includes('limit') || errMsg.includes('capacity') || errMsg.includes('overloaded');
+        console.error('Groq error (' + model + '):', errMsg);
+        if (isRateLimit && i < MODELS.length - 1) {
+          // Rate limited — immediately try next model, no delay
           continue;
         }
+        // Non-rate-limit error or last model — return it
+        return data;
       }
       return data;
     } catch (e) {
-      console.error('Groq fetch error (attempt ' + (attempt + 1) + '):', e.message);
-      if (attempt < retries) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
-      }
+      console.error('Groq fetch error (' + model + '):', e.message);
+      if (i < MODELS.length - 1) continue;
       return { error: { message: e.message } };
     }
   }
