@@ -145,7 +145,62 @@ async function loadTokenData() {
         }
     } catch (e) { /* DexScreener unavailable */ }
 
+    // 4. GeckoTerminal fallback if DexScreener had no data
+    if (!market) {
+        try {
+            var network = address.startsWith('0x') ? 'base' : 'solana';
+            var gtRes = await fetch('https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/' + address);
+            if (gtRes.ok) {
+                var gtData = await gtRes.json();
+                var attrs = gtData.data && gtData.data.attributes;
+                if (attrs) {
+                    var gtPrice = parseFloat(attrs.price_usd) || 0;
+                    var gtMcap = parseFloat(attrs.market_cap_usd) || parseFloat(attrs.fdv_usd) || 0;
+                    var gtVol = attrs.volume_usd ? parseFloat(attrs.volume_usd.h24) || 0 : 0;
+                    var gtLiq = parseFloat(attrs.total_reserve_in_usd) || 0;
+                    market = {
+                        priceUsd: gtPrice,
+                        marketCap: gtMcap,
+                        volume24h: gtVol,
+                        priceChange24h: null,
+                        liquidity: gtLiq,
+                        chainId: network,
+                        pairAddress: '',
+                        dexId: 'geckoterminal'
+                    };
+                    if (!project) {
+                        project = {
+                            token_name: attrs.name || 'Unknown Token',
+                            token_symbol: attrs.symbol || '???',
+                            token_address: address,
+                            logo_url: attrs.image_url || '',
+                            tier: 'permissionless',
+                            is_clanker: false
+                        };
+                    }
+                    // Fill in logo from GeckoTerminal if project has none
+                    if (!project.logo_url && attrs.image_url) {
+                        project.logo_url = attrs.image_url;
+                    }
+                }
+            }
+        } catch (e) { /* GeckoTerminal unavailable */ }
+    }
+
     if (!project) return showNotFound();
+
+    // Detect chain from address format if not set
+    if (!project.chain) {
+        if (address.startsWith('0x')) {
+            project.chain = 'base';
+        } else {
+            project.chain = 'solana';
+        }
+    }
+    // Override with DexScreener chainId if available
+    if (market && market.chainId) {
+        project.chain = market.chainId;
+    }
 
     state.project = project;
     state.market = market;
@@ -227,7 +282,8 @@ function render() {
     var change = m ? formatPct(m.priceChange24h) : '--';
     var changeCls = m && m.priceChange24h >= 0 ? 'positive' : (m && m.priceChange24h < 0 ? 'negative' : '');
     var liq = m ? formatUsd(m.liquidity) : '--';
-    var chain = m ? (m.chainId || 'base').charAt(0).toUpperCase() + (m.chainId || 'base').slice(1) : 'Base';
+    var chainRaw = (m && m.chainId) || p.chain || 'base';
+    var chain = chainRaw.charAt(0).toUpperCase() + chainRaw.slice(1);
 
     html += '<div class="td-stats">'
         + '<div class="td-stat"><div class="td-stat-label">Market Cap</div><div class="td-stat-value">' + mcap + '</div></div>'
