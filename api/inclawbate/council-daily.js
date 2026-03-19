@@ -520,16 +520,26 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
     const date = getDateStr();
     const price = claws?.price || 0;
-    let tweet = `🦞 $CLAWS Daily | ${date}\n\n`;
+    let tweet = `🦞 $CLAWS Daily | ${date}\n`;
 
     // Price
     if (claws) {
         tweet += `💰 ${formatPrice(claws.price)}\n`;
     }
 
-    // Staking — the money shot
+    // Treasury + incubations + link (top block)
+    tweet += `\n`;
+    if (treasury?.total) {
+        tweet += `🏦 Treasury: ${formatUsd(treasury.total)}\n`;
+    }
+    if (tasks.incubations.length) {
+        tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
+    }
+    tweet += `inclawbate.com/how-it-works\n`;
+
+    // Staking
+    tweet += `\n\n📊 Staking Rewards\n`;
     if (supply) {
-        tweet += `\n📊 Staking Rewards\n`;
         tweet += `Current Rate: ${formatNum(supply.dailyRewards)} $CLAWS/day\n`;
         if (price > 0) {
             const annualUsd = supply.dailyRewards * 365 * price;
@@ -538,8 +548,9 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         tweet += `Value Staked: ~${formatUsd(supply.staked * price)}\n`;
         if (supply.apy > 0) tweet += `APY: ${supply.apy.toFixed(0)}%\n`;
         if (stakerCount > 0) tweet += `Stakers: ${stakerCount}\n`;
-        tweet += `\n🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
+        tweet += `🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
+    tweet += `https://www.inclawbate.com/stake/claws\n`;
 
     // Angel NFT Rewards
     if (angelStats) {
@@ -551,36 +562,10 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         }
         if (angelStats.floorPrice != null) {
             tweet += `NFT Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
-            // APY based on floor price: (annual CLAWS value) / (floor price in USD) * 100
-            const ethPrice = treasury?.ethPrice || 0;
-            const floorUsd = angelStats.floorPrice * ethPrice;
-            if (floorUsd > 0 && price > 0 && angelStats.holders > 0) {
-                const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
-                const angelApy = (perHolderDaily * 365 * price / floorUsd * 100);
-                tweet += `APY: ${angelApy.toFixed(0)}%\n`;
-            }
         }
         if (angelStats.holders > 0) tweet += `Holders: ${angelStats.holders}\n`;
         tweet += `opensea.io/collection/inclawbate-angel\n`;
     }
-
-    // Treasury — total with delta only
-    if (treasury?.total) {
-        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-        let line = `\n🏦 Treasury: ${formatUsd(treasury.total)}`;
-        if (treasuryChange && treasuryChange.diff !== 0) {
-            const sign = treasuryChange.diff >= 0 ? '+' : '-';
-            line += ` (${sign}${formatUsd(Math.abs(treasuryChange.diff))})`;
-        }
-        tweet += line + `\n`;
-    }
-
-    // Incubations — count only
-    if (tasks.incubations.length) {
-        tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
-    }
-
-    tweet += `\ninclawbate.com/how-it-works`;
 
     return tweet;
 }
