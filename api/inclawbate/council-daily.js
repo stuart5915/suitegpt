@@ -633,8 +633,9 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     // Angel NFT Rewards
     if (angelStats) {
         tweet += `\n😇 Angel NFT Rewards\n`;
-        tweet += `${formatNum(angelStats.dailyRewards)} $CLAWS/day to ${angelStats.holders} holders\n`;
+        tweet += `${formatNum(angelStats.dailyRewards)} $CLAWS/day\n`;
         tweet += `Pool: ${formatNum(angelStats.totalDeposited)} $CLAWS\n`;
+        tweet += `opensea.io/collection/inclawbate-angel\n`;
     }
 
     // Treasury — total with delta only
