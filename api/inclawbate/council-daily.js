@@ -77,7 +77,25 @@ async function fetchClawsPrice() {
 const TOTAL_SUPPLY = 100e9; // 100B CLAWS
 
 const BASIS_VAULT_VALUE = 0; // $USD — hardcoded until Basis Vault is deployed, then read on-chain
+const ANGEL_NFT_SLUG = 'inclawbate-angel';
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function fetchAngelFloorPrice() {
+    // Scrape floor price from OpenSea collection page (no API key needed)
+    try {
+        const res = await fetch(`https://opensea.io/collection/${ANGEL_NFT_SLUG}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bot/1.0)' }
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        // Extract floor price from embedded JSON: "floorPrice":{"pricePerItem":{"token":{"unit":X.X
+        const match = html.match(/"floorPrice":\{"pricePerItem":\{"token":\{"unit":([0-9.]+)/);
+        if (match) {
+            return { floorPrice: parseFloat(match[1]), floorCurrency: 'ETH' };
+        }
+        return null;
+    } catch (e) { return null; }
+}
 
 // ── Cached Chain Data ──
 // Reads staking, angel, and treasury data from Supabase cache
@@ -384,14 +402,24 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     if (angelStats) {
         const price = claws?.price || 0;
         msg += `\n<b>😇 Angel NFT Rewards</b>\n`;
-        msg += `Reward Pool: ${formatNum(angelStats.totalDeposited)} CLAWS`;
-        if (price > 0) msg += ` ≈ ${formatUsd(angelStats.totalDeposited * price)}`;
+        msg += `Current Rate: ${formatNum(angelStats.dailyRewards)} CLAWS/day`;
+        if (price > 0) msg += ` ≈ ${formatUsd(angelStats.dailyRewards * price)}/day`;
         msg += `\n`;
-        msg += `Daily: ${formatNum(angelStats.dailyRewards)} CLAWS`;
-        if (price > 0) msg += ` ≈ ${formatUsd(angelStats.dailyRewards * price)}`;
-        msg += `\n`;
-        msg += `Holders Earning: ${angelStats.holders}\n`;
-        msg += `Claimed: ${formatNum(angelStats.totalClaimed)} CLAWS\n`;
+        if (price > 0) {
+            msg += `Annual: ~${formatUsd(angelStats.dailyRewards * 365 * price)}\n`;
+        }
+        if (angelStats.floorPrice != null) {
+            msg += `NFT Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
+            const ethPr = treasury?.ethPrice || 0;
+            const floorUsd = angelStats.floorPrice * ethPr;
+            if (floorUsd > 0 && price > 0 && angelStats.holders > 0) {
+                const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
+                const angelApy = (perHolderDaily * 365 * price / floorUsd * 100);
+                msg += `APY: ${angelApy.toFixed(1)}%\n`;
+            }
+        }
+        if (angelStats.holders > 0) msg += `Holders: ${angelStats.holders}\n`;
+        if (angelStats.totalClaimed > 0) msg += `Claimed: ${formatNum(angelStats.totalClaimed)} CLAWS\n`;
         msg += `Remaining: ${formatNum(angelStats.rewardsRemaining)} CLAWS\n`;
     }
 
@@ -512,8 +540,23 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     // Angel NFT Rewards
     if (angelStats) {
         tweet += `\n😇 Angel NFT Rewards\n`;
-        tweet += `${formatNum(angelStats.dailyRewards)} $CLAWS/day\n`;
-        tweet += `Pool: ${formatNum(angelStats.totalDeposited)} $CLAWS\n`;
+        tweet += `Current Rate: ${formatNum(angelStats.dailyRewards)} $CLAWS/day\n`;
+        if (price > 0) {
+            const angelAnnualUsd = angelStats.dailyRewards * 365 * price;
+            tweet += `~${formatUsd(angelAnnualUsd)} USD/year in rewards\n`;
+        }
+        if (angelStats.floorPrice != null) {
+            tweet += `NFT Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
+            // APY based on floor price: (annual CLAWS value) / (floor price in USD) * 100
+            const ethPrice = treasury?.ethPrice || 0;
+            const floorUsd = angelStats.floorPrice * ethPrice;
+            if (floorUsd > 0 && price > 0 && angelStats.holders > 0) {
+                const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
+                const angelApy = (perHolderDaily * 365 * price / floorUsd * 100);
+                tweet += `APY: ${angelApy.toFixed(0)}%\n`;
+            }
+        }
+        if (angelStats.holders > 0) tweet += `Holders: ${angelStats.holders}\n`;
         tweet += `opensea.io/collection/inclawbate-angel\n`;
     }
 
@@ -552,11 +595,12 @@ export default async function handler(req, res) {
 
     try {
         // Fetch non-RPC data + chain data cache in parallel
-        const [claws, tasks, allocation, chainCache] = await Promise.all([
+        const [claws, tasks, allocation, chainCache, angelFloor] = await Promise.all([
             fetchClawsPrice(),
             fetchTasks(),
             fetchAllocationSynthesis(),
-            fetchChainDataCache()
+            fetchChainDataCache(),
+            fetchAngelFloorPrice()
         ]);
 
         const clawsPrice = claws?.price || 0;
@@ -566,6 +610,10 @@ export default async function handler(req, res) {
         const stakerCount = chainCache?.staking?.stakerCount || 0;
         const treasuryRaw = cachedTreasuryToRaw(chainCache?.treasury, clawsPrice);
         const angelStats = chainCache?.angel || null;
+        if (angelStats) {
+            angelStats.floorPrice = angelFloor?.floorPrice ?? null;
+            angelStats.floorCurrency = angelFloor?.floorCurrency ?? 'ETH';
+        }
 
         // Refresh voter balances (still needed, but isolated RPC calls)
         await refreshVoterBalances();

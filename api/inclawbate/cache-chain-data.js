@@ -54,25 +54,22 @@ export default async function handler(req, res) {
     try {
         const errors = [];
 
-        // ── Staking reads (with delays between each) ──
-        const contractTotal = ethCall(CLAWS_ADDRESS, balanceOfData(STAKING_CONTRACT)).then(v => v / 1e18);
-        await delay(300);
+        // ── Staking reads (fully sequential to avoid rate limits) ──
+        const contractTotalVal = await ethCall(CLAWS_ADDRESS, balanceOfData(STAKING_CONTRACT)) / 1e18;
+        await delay(500);
 
         const storageRes = await rpcCall('eth_getStorageAt', [STAKING_CONTRACT, '0x6', 'latest']);
         const userStaked = storageRes ? Number(BigInt(storageRes)) / 1e18 : 0;
-        await delay(300);
+        await delay(500);
 
-        const contractTotalVal = await contractTotal;
-        const inLP = ethCall(CLAWS_ADDRESS, balanceOfData(LP_POOL)).then(v => v / 1e18);
-        await delay(300);
+        const inLPVal = await ethCall(CLAWS_ADDRESS, balanceOfData(LP_POOL)) / 1e18;
+        await delay(500);
 
-        const rewardRate = ethCall(STAKING_CONTRACT, '0x7b0a47ee').then(v => v / 1e18); // rewardRate()
-        await delay(300);
+        const rewardRateVal = await ethCall(STAKING_CONTRACT, '0x7b0a47ee') / 1e18; // rewardRate()
+        await delay(500);
 
-        const stakerCount = ethCall(STAKING_CONTRACT, '0xdff69787'); // stakerCount() — raw uint
-        await delay(300);
-
-        const [inLPVal, rewardRateVal, stakerCountVal] = await Promise.all([inLP, rewardRate, stakerCount]);
+        const stakerCountVal = await ethCall(STAKING_CONTRACT, '0xdff69787'); // stakerCount() — raw uint
+        await delay(500);
 
         const rewardsPool = contractTotalVal - userStaked;
         const dailyRewards = rewardRateVal * 86400;
@@ -90,22 +87,18 @@ export default async function handler(req, res) {
             stakerCount: stakerCountVal
         };
 
-        // ── Angel NFT reads ──
-        await delay(500); // generous pause before angel reads
+        // ── Angel NFT reads (fully sequential to avoid rate limits) ──
+        await delay(1000);
 
-        const angelRewardRate = ethCall(ANGEL_REWARDS_CONTRACT, '0x7b0a47ee').then(v => v / 1e18);
-        await delay(300);
-        const angelDeposited = ethCall(ANGEL_REWARDS_CONTRACT, '0x1f4c74fd').then(v => v / 1e18);
-        await delay(300);
-        const angelClaimed = ethCall(ANGEL_REWARDS_CONTRACT, '0xa34b0f76').then(v => v / 1e18);
-        await delay(300);
-        const angelHolders = ethCall(ANGEL_REWARDS_CONTRACT, '0x362f04c0'); // raw uint
-        await delay(300);
-        const angelRemaining = ethCall(ANGEL_REWARDS_CONTRACT, '0x7a5c08ae').then(v => v / 1e18);
-
-        const [arRate, arDeposited, arClaimed, arHolders, arRemaining] = await Promise.all([
-            angelRewardRate, angelDeposited, angelClaimed, angelHolders, angelRemaining
-        ]);
+        const arRate = await ethCall(ANGEL_REWARDS_CONTRACT, '0x7b0a47ee') / 1e18;
+        await delay(500);
+        const arDeposited = await ethCall(ANGEL_REWARDS_CONTRACT, '0x1f4c74fd') / 1e18;
+        await delay(500);
+        const arClaimed = await ethCall(ANGEL_REWARDS_CONTRACT, '0xa34b0f76') / 1e18;
+        await delay(500);
+        const arHolders = await ethCall(ANGEL_REWARDS_CONTRACT, '0x362f04c0'); // raw uint
+        await delay(500);
+        const arRemaining = await ethCall(ANGEL_REWARDS_CONTRACT, '0x7a5c08ae') / 1e18;
 
         const angel = {
             dailyRewards: arRate * 86400,
@@ -115,22 +108,20 @@ export default async function handler(req, res) {
             rewardsRemaining: arRemaining
         };
 
-        // ── Treasury reads ──
-        await delay(500);
+        // ── Treasury reads (fully sequential) ──
+        await delay(1000);
 
-        const walletClaws = ethCall(CLAWS_ADDRESS, balanceOfData(TREASURY_WALLET_RAW)).then(v => v / 1e18);
-        await delay(300);
-        const stakedClaws = ethCall(STAKING_CONTRACT, balanceOfData(TREASURY_WALLET_RAW)).then(v => v / 1e18);
-        await delay(300);
+        const wClaws = await ethCall(CLAWS_ADDRESS, balanceOfData(TREASURY_WALLET_RAW)) / 1e18;
+        await delay(500);
+        const sClaws = await ethCall(STAKING_CONTRACT, balanceOfData(TREASURY_WALLET_RAW)) / 1e18;
+        await delay(500);
         const earnedCalldata = '0x008cc262000000000000000000000000' + TREASURY_WALLET_RAW.toLowerCase();
-        const unclaimedClaws = ethCall(STAKING_CONTRACT, earnedCalldata).then(v => v / 1e18);
-        await delay(300);
+        const uClaws = await ethCall(STAKING_CONTRACT, earnedCalldata) / 1e18;
+        await delay(500);
 
         // ETH balance
         const ethBalResult = await rpcCall('eth_getBalance', [TREASURY_WALLET, 'latest']);
         const ethBalance = ethBalResult ? Number(BigInt(ethBalResult)) / 1e18 : 0;
-
-        const [wClaws, sClaws, uClaws] = await Promise.all([walletClaws, stakedClaws, unclaimedClaws]);
 
         // ETH price from DexScreener (not RPC)
         let ethPrice = 0;
