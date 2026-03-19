@@ -562,6 +562,63 @@ async function callGroq(messages) {
   }
 }
 
+// Generate human-readable replies directly from tool data — skips the second LLM call
+function generateDirectReply(tool, resultJson, args) {
+  try {
+    const d = JSON.parse(resultJson || '{}');
+    if (d.error) return d.hint || d.error;
+
+    switch (tool) {
+      case 'get_ecosystem_info':
+        return `Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.\n\nYou can launch tokens, deploy staking pools, create AI marketing agents, airdrop tokens, hire the Council, and get full incubation — all at inclawbate.com.\n\nThe ecosystem runs on $CLAWS on Base: ${d.token?.address || ''}`;
+
+      case 'get_incubation_info':
+        return `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`;
+
+      case 'launch_token_info':
+        return "I've opened the token launch form! I'll need a few details:\n• Token name\n• Symbol\n• Description\n\nOptionally: image URL, website, X handle, and Telegram. Which chain — Base or Solana?";
+
+      case 'configure_token_launch':
+        if (d.ready) return "All required fields are filled! Review the details on the form and click Deploy when you're ready.";
+        return "Got it, I've updated the form. Still need: " + (d.missing_required || []).join(', ') + ". What's next?";
+
+      case 'create_agent_info':
+        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nAgents are free to create. Head to " + (d.url || 'inclawbate.com/dashboard');
+
+      case 'get_token_analytics': {
+        if (d.message) return d.message;
+        const change = d.price_change_24h ? ` (${d.price_change_24h > 0 ? '+' : ''}${d.price_change_24h}% 24h)` : '';
+        return `**${d.token || 'Token'}** (${d.symbol || '?'}) on ${d.chain || 'Base'}:\n• Price: $${d.price_usd}${change}\n• 24h Volume: $${Number(d.volume_24h || 0).toLocaleString()}\n• Liquidity: $${Number(d.liquidity_usd || 0).toLocaleString()}\n• FDV: $${Number(d.fdv || 0).toLocaleString()}`;
+      }
+
+      case 'get_staking_stats':
+        return `Staking stats:\n• Total stakers: ${d.total_stakers}\n• TVL: ${d.tvl_usd}\n• APY: ${d.estimated_apy || 'N/A'}\n• Total distributed: ${d.total_distributed_usd || d.total_distributed}\n\nStake at: ${d.staking_url || 'inclawbate.com/stake'}` + (d.wallet_position ? `\n\nYour position: ${d.wallet_position.staked} staked (${d.wallet_position.share} share)` : '');
+
+      case 'book_promo':
+        return `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`;
+
+      case 'disperse_tokens':
+        return "Here's how to airdrop tokens:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nDisperse contract: " + (d.contract || '');
+
+      case 'deploy_staking':
+        return "Here's how staking deployment works:\n" + (d.process || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nCost: " + (d.cost || 'Free') + "\n\nContact: " + (d.contact?.telegram || 't.me/StuartDeFi');
+
+      case 'hire_inclawbator':
+        if (d.posted) return d.message + "\n\n" + d.what_happens_next;
+        return d.message || d.error || 'Request submitted!';
+
+      case 'health_check':
+        // Let LLM interpret health checks — they need nuanced advice
+        return null;
+
+      default:
+        return null;
+    }
+  } catch (e) {
+    return null; // Fall back to LLM
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -614,18 +671,20 @@ export default async function handler(req, res) {
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
       }
 
-      // Get final response after tool execution
+      // For most tools, generate response directly (saves a Groq call = 2x throughput)
+      const lastToolResult = history.filter(m => m.role === 'tool').pop();
+      let directReply = generateDirectReply(functionCalled, lastToolResult?.content, toolArgs);
+
+      if (directReply) {
+        // Direct response — no second LLM call needed
+        history.push({ role: 'assistant', content: directReply });
+        return res.status(200).json({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+      }
+
+      // Complex tools (health_check) — use LLM to interpret
       data = await callGroq(history);
       if (data.error) {
-        // Fallback: build user-friendly response from tool result
-        const lastTool = history.filter(m => m.role === 'tool').pop();
-        let fallback = 'Let me try that again — ask me something else!';
-        if (functionCalled === 'launch_token_info') fallback = "I've opened the token launch form! What do you want to call your token?";
-        else if (functionCalled === 'configure_token_launch') {
-          try { const td = JSON.parse(lastTool.content); fallback = td.ready ? "All set! Review and click Deploy." : "Got it! Still need: " + (td.missing_required || []).join(', '); } catch(e) { fallback = "I've updated the form!"; }
-        } else {
-          try { const td = JSON.parse(lastTool.content); fallback = td.message || td.how || td.what || JSON.stringify(td); } catch(e) {}
-        }
+        const fallback = 'I ran the check but had trouble summarizing. Try again in a moment!';
         history.push({ role: 'assistant', content: fallback });
         return res.status(200).json({ reply: fallback, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
       }
@@ -634,11 +693,6 @@ export default async function handler(req, res) {
 
     let reply = choice?.message?.content || '';
     reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
-
-    if (!reply && functionCalled) {
-      const lastTool = history.filter(m => m.role === 'tool').pop();
-      try { const td = JSON.parse(lastTool.content); reply = td.message || td.how || td.what || 'Done!'; } catch(e) { reply = 'Done!'; }
-    }
     if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
 
     history.push({ role: 'assistant', content: reply });
