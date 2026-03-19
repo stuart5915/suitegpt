@@ -74,6 +74,12 @@ async function loadOverview() {
 
     renderProfileCard(profile);
 
+    // Update "View all" link to filter apps by this creator
+    const viewAllLink = document.getElementById('myAppsViewAll');
+    if (viewAllLink && profile.wallet_address) {
+        viewAllLink.href = '/apps?creator_wallet=' + encodeURIComponent(profile.wallet_address);
+    }
+
     // Build apps query from all available identifiers
     const appParams = new URLSearchParams();
     if (profile.id) appParams.set('creator_id', profile.id);
