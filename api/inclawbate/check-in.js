@@ -86,7 +86,7 @@ export default async function handler(req, res) {
 
             // If they have incubations but no responsibilities, ask about the incubation
             if (questions.length === 0 && data.incubations.length > 0) {
-                questions.push(data.incubations[0] + ' — how's it going?');
+                questions.push(data.incubations[0] + ' — how is it going?');
             }
 
             if (questions.length === 0) continue;
