@@ -680,13 +680,13 @@ export default async function handler(req, res) {
             fetchStakerCount()
         ]);
 
-        // Angel rewards — sequential RPC reads (after stakerCount to avoid rate limit)
-        const angelStats = await fetchAngelRewards();
-
         // RPC calls sequentially to avoid Base RPC rate limits
         const supply = await fetchStakingAndLP();
         const clawsPrice = claws?.price || 0;
         const treasuryRaw = await fetchTreasury(clawsPrice);
+
+        // Angel rewards — after core staking/treasury reads
+        const angelStats = await fetchAngelRewards();
 
         // Refresh voter balances last (lower priority, most RPC-heavy)
         await refreshVoterBalances();
