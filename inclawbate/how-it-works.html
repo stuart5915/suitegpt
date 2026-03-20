@@ -1339,11 +1339,11 @@
             try {
                 var rawBal = v.claws_balance || '0';
                 var bal = typeof rawBal === 'string' ? BigInt(rawBal) : BigInt(Math.floor(Number(rawBal)));
-                var wt = bal > BigInt(0) ? bal : BigInt(1);
-                totalWeight += wt;
+                if (bal === BigInt(0)) return; // skip 0-balance wallets
+                totalWeight += bal;
                 var vw = v.weights || {};
                 buckets.forEach(function(b, i) {
-                    sums[i] += BigInt(vw[b.id] || 0) * wt;
+                    sums[i] += BigInt(vw[b.id] || 0) * bal;
                 });
             } catch (e) { /* skip voter on BigInt conversion error */ }
         });
@@ -1591,7 +1591,7 @@
             return;
         }
         if (empty) empty.style.display = 'none';
-        allVoters.forEach(function(v) {
+        allVoters.filter(function(v) { return v.claws_balance && v.claws_balance !== 0 && v.claws_balance !== '0'; }).forEach(function(v) {
             var tr = document.createElement('tr');
             /* Address */
             var tdAddr = document.createElement('td');

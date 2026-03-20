@@ -126,8 +126,9 @@ function computeSynthesis(votes) {
 
     for (const vote of votes) {
         const bal = BigInt(vote.claws_balance || '0');
-        // Minimum weight of 1 so even 0-balance wallets get a voice
-        const weight = bal > BigInt(0) ? bal : BigInt(1);
+        // Skip 0-balance wallets — no CLAWS = no vote weight
+        if (bal === BigInt(0)) continue;
+        const weight = bal;
         totalWeight += weight;
 
         BUCKET_IDS.forEach((id, i) => {
@@ -148,10 +149,12 @@ function computeSynthesis(votes) {
         let adjusted = synthesis.map(v => Math.round(v * scale));
         const adjTotal = adjusted.reduce((a, b) => a + b, 0);
         if (adjTotal !== 100) adjusted[0] += (100 - adjTotal);
-        return { synthesis: adjusted, totalVoters: votes.length, totalWeight: totalWeight.toString() };
+        const activeVoters = votes.filter(v => BigInt(v.claws_balance || '0') > BigInt(0)).length;
+        return { synthesis: adjusted, totalVoters: activeVoters, totalWeight: totalWeight.toString() };
     }
 
-    return { synthesis, totalVoters: votes.length, totalWeight: totalWeight.toString() };
+    const activeVoters = votes.filter(v => BigInt(v.claws_balance || '0') > BigInt(0)).length;
+    return { synthesis, totalVoters: activeVoters, totalWeight: totalWeight.toString() };
 }
 
 export default async function handler(req, res) {
