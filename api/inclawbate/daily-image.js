@@ -6,9 +6,13 @@
 // CUSTOMIZATION:
 //   - Colors: edit COLORS object below
 //   - Layout: edit the element tree in handler()
-//   - Card size: change width/height at the bottom
+//   - Card size: change WIDTH/HEIGHT constants
 
-import { ImageResponse } from '@vercel/og';
+import satori from 'satori';
+import sharp from 'sharp';
+
+const WIDTH = 1200;
+const HEIGHT = 630;
 
 // ── Brand Colors (edit these to change the look) ──
 const COLORS = {
@@ -21,6 +25,22 @@ const COLORS = {
     red: '#ef4444',
     border: '#2a2a3e',
 };
+
+// ── Load font (cached after first call) ──
+let fontCache = null;
+async function loadFont() {
+    if (fontCache) return fontCache;
+    // Fetch Inter Regular + Bold from Google Fonts CDN
+    const [regular, bold] = await Promise.all([
+        fetch('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff').then(r => r.arrayBuffer()),
+        fetch('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.woff').then(r => r.arrayBuffer()),
+    ]);
+    fontCache = [
+        { name: 'Inter', data: regular, weight: 400, style: 'normal' },
+        { name: 'Inter', data: bold, weight: 700, style: 'normal' },
+    ];
+    return fontCache;
+}
 
 // ── Element helper (like React.createElement, no React needed) ──
 function h(type, props, ...children) {
@@ -44,7 +64,7 @@ function statRow(label, value, valueColor) {
         }
     },
         h('span', { style: { color: COLORS.muted } }, label),
-        h('span', { style: { color: valueColor || COLORS.text, fontWeight: 600 } }, String(value))
+        h('span', { style: { color: valueColor || COLORS.text, fontWeight: 700 } }, String(value))
     );
 }
 
@@ -61,13 +81,13 @@ function card(children, extraStyle) {
 
 function cardLabel(text) {
     return h('div', {
-        style: { display: 'flex', fontSize: 15, color: COLORS.muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }
-    }, text);
+        style: { display: 'flex', fontSize: 15, color: COLORS.muted, marginBottom: 6, letterSpacing: 1 }
+    }, text.toUpperCase());
 }
 
 function cardValue(text) {
     return h('div', {
-        style: { display: 'flex', fontSize: 32, fontWeight: 800, color: COLORS.text }
+        style: { display: 'flex', fontSize: 32, fontWeight: 700, color: COLORS.text }
     }, String(text));
 }
 
@@ -77,103 +97,106 @@ function cardTitle(text) {
     }, text);
 }
 
-// ── Handler (Node.js serverless function) ──
+// ── Handler ──
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'GET only' });
     }
 
-    const url = new URL(req.url, `https://${req.headers.host}`);
-    const p = (key, fallback) => url.searchParams.get(key) || fallback || '\u2014';
-
-    const changeNum = parseFloat(p('change', '0'));
-    const changeColor = changeNum >= 0 ? COLORS.green : COLORS.red;
-    const changeText = (changeNum >= 0 ? '+' : '') + changeNum.toFixed(1) + '% today';
-
-    const element = h('div', {
-        style: {
-            display: 'flex', flexDirection: 'column',
-            width: '100%', height: '100%',
-            backgroundColor: COLORS.bg, padding: 40,
-            color: COLORS.text, fontFamily: 'sans-serif',
-        }
-    },
-        // ── Header ──
-        h('div', {
-            style: {
-                display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', marginBottom: 28,
-            }
-        },
-            h('div', { style: { display: 'flex', alignItems: 'center', fontSize: 36, fontWeight: 800 } },
-                h('span', { style: { marginRight: 12 } }, '\uD83E\uDD9E'),
-                '$CLAWS Daily'
-            ),
-            h('div', { style: { display: 'flex', fontSize: 22, color: COLORS.muted } }, p('date'))
-        ),
-
-        // ── Top row: Price / Treasury / Incubations ──
-        h('div', { style: { display: 'flex', marginBottom: 20 } },
-            card([
-                cardLabel('\uD83D\uDCB0 Price'),
-                cardValue(p('price')),
-                h('div', { style: { display: 'flex', fontSize: 18, color: changeColor, marginTop: 4 } }, changeText),
-            ], { marginRight: 16 }),
-
-            card([
-                cardLabel('\uD83C\uDFE6 Treasury'),
-                cardValue(p('treasury')),
-            ], { marginRight: 16 }),
-
-            card([
-                cardLabel('\uD83E\uDD9E Incubations'),
-                cardValue(p('incubations')),
-                h('div', { style: { display: 'flex', fontSize: 18, color: COLORS.muted, marginTop: 4 } }, 'active'),
-            ])
-        ),
-
-        // ── Bottom row: Staking / Angel ──
-        h('div', { style: { display: 'flex', flex: 1 } },
-            card([
-                cardTitle('\uD83D\uDCCA Staking Rewards'),
-                statRow('Rate', p('stakingRate') + ' /day'),
-                statRow('Annual', '~' + p('stakingAnnual') + '/yr'),
-                statRow('APY', p('stakingApy') + '%', COLORS.green),
-                statRow('Value Staked', '~' + p('stakedValue')),
-                statRow('Stakers', p('stakers')),
-            ], { marginRight: 16 }),
-
-            card([
-                cardTitle('\uD83D\uDE07 Angel NFT Rewards'),
-                statRow('Rate', p('angelRate') + ' /day'),
-                statRow('Annual', '~' + p('angelAnnual') + '/yr'),
-                statRow('NFT Floor', p('angelFloor')),
-                statRow('Holders', p('angelHolders')),
-            ])
-        ),
-
-        // ── Footer ──
-        h('div', {
-            style: {
-                display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', marginTop: 20, paddingTop: 16,
-                borderTop: '1px solid ' + COLORS.border, fontSize: 20,
-            }
-        },
-            h('span', null, '\uD83D\uDD12 ' + p('locked') + '% out of circulation'),
-            h('span', { style: { color: COLORS.muted } }, 'inclawbate.com')
-        )
-    );
-
     try {
-        const imageResponse = new ImageResponse(element, { width: 1200, height: 630 });
-        const buffer = Buffer.from(await imageResponse.arrayBuffer());
+        const url = new URL(req.url, `https://${req.headers.host}`);
+        const p = (key, fallback) => url.searchParams.get(key) || fallback || '—';
+
+        const changeNum = parseFloat(p('change', '0'));
+        const changeColor = changeNum >= 0 ? COLORS.green : COLORS.red;
+        const changeText = (changeNum >= 0 ? '+' : '') + changeNum.toFixed(1) + '% today';
+
+        const element = h('div', {
+            style: {
+                display: 'flex', flexDirection: 'column',
+                width: '100%', height: '100%',
+                backgroundColor: COLORS.bg, padding: 40,
+                color: COLORS.text, fontFamily: 'Inter',
+            }
+        },
+            // Header
+            h('div', {
+                style: {
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', marginBottom: 28,
+                }
+            },
+                h('div', { style: { display: 'flex', alignItems: 'center', fontSize: 36, fontWeight: 700 } },
+                    '$CLAWS Daily'
+                ),
+                h('div', { style: { display: 'flex', fontSize: 22, color: COLORS.muted } }, p('date'))
+            ),
+
+            // Top row: Price / Treasury / Incubations
+            h('div', { style: { display: 'flex', marginBottom: 20 } },
+                card([
+                    cardLabel('Price'),
+                    cardValue(p('price')),
+                    h('div', { style: { display: 'flex', fontSize: 18, color: changeColor, marginTop: 4 } }, changeText),
+                ], { marginRight: 16 }),
+
+                card([
+                    cardLabel('Treasury'),
+                    cardValue(p('treasury')),
+                ], { marginRight: 16 }),
+
+                card([
+                    cardLabel('Incubations'),
+                    cardValue(p('incubations')),
+                    h('div', { style: { display: 'flex', fontSize: 18, color: COLORS.muted, marginTop: 4 } }, 'active'),
+                ])
+            ),
+
+            // Bottom row: Staking / Angel
+            h('div', { style: { display: 'flex', flex: 1 } },
+                card([
+                    cardTitle('Staking Rewards'),
+                    statRow('Rate', p('stakingRate') + ' /day'),
+                    statRow('Annual', '~' + p('stakingAnnual') + '/yr'),
+                    statRow('APY', p('stakingApy') + '%', COLORS.green),
+                    statRow('Value Staked', '~' + p('stakedValue')),
+                    statRow('Stakers', p('stakers')),
+                ], { marginRight: 16 }),
+
+                card([
+                    cardTitle('Angel NFT Rewards'),
+                    statRow('Rate', p('angelRate') + ' /day'),
+                    statRow('Annual', '~' + p('angelAnnual') + '/yr'),
+                    statRow('NFT Floor', p('angelFloor')),
+                    statRow('Holders', p('angelHolders')),
+                ])
+            ),
+
+            // Footer
+            h('div', {
+                style: {
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', marginTop: 20, paddingTop: 16,
+                    borderTop: '1px solid #2a2a3e', fontSize: 20,
+                }
+            },
+                h('span', null, p('locked') + '% out of circulation'),
+                h('span', { style: { color: COLORS.muted } }, 'inclawbate.com')
+            )
+        );
+
+        // Load fonts + render SVG → PNG
+        const fonts = await loadFont();
+        const svg = await satori(element, { width: WIDTH, height: HEIGHT, fonts });
+        const png = await sharp(Buffer.from(svg)).png().toBuffer();
+
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Cache-Control', 'no-cache, no-store');
-        return res.send(buffer);
+        return res.send(png);
+
     } catch (err) {
-        console.error('Daily image generation error:', err);
-        return res.status(500).json({ error: err.message });
+        console.error('Daily image error:', err);
+        return res.status(500).json({ error: err.message, stack: err.stack });
     }
 }
