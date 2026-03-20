@@ -173,6 +173,25 @@ export default async function handler(req, res) {
     // GET — return synthesis + individual votes + council allocation
     if (req.method === 'GET') {
         try {
+            // One-time restore of correct on-chain balances (verified locally via RPC)
+            if (req.query.fix === 'restore2') {
+                const fixes = {
+                    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd': '1365193972602627527416268262',
+                    '0x612abfe54269515f0cc63b4a12fee32d48889ff2': '1005170918949221126768270768',
+                    '0x1ecafe4a4c9960659d1d14257e4989dbf0dcf2cd': '333225933380531489641258631',
+                    '0xba9b369a75e216cc9d73c9f3f916c939a5755a08': '3069604908176768714053772',
+                    '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3': '1008860714798496041677981449'
+                };
+                const results = [];
+                for (const [addr, bal] of Object.entries(fixes)) {
+                    await supabase.from('allocation_votes')
+                        .update({ claws_balance: bal })
+                        .eq('wallet_address', addr);
+                    results.push({ address: addr, restored: bal });
+                }
+                return res.status(200).json({ fixed: results });
+            }
+
             // Admin refresh: GET ?refresh=admin to re-fetch all on-chain balances (single batch)
             if (req.query.refresh === 'admin') {
                 const { data: rows } = await supabase
@@ -189,9 +208,9 @@ export default async function handler(req, res) {
                     const fresh = freshBalances[v.wallet_address.toLowerCase()] || '0';
                     const oldBal = BigInt(v.claws_balance || '0');
                     const newBal = BigInt(fresh);
-                    // Safety: never overwrite a non-zero balance with 0 (RPC failure)
-                    if (newBal === BigInt(0) && oldBal > BigInt(0)) {
-                        results.push({ address: v.wallet_address, old: v.claws_balance, new: fresh, skipped: 'kept existing (RPC returned 0)' });
+                    // Safety: never overwrite with a LOWER balance (staking RPCs fail from Vercel)
+                    if (newBal < oldBal) {
+                        results.push({ address: v.wallet_address, old: v.claws_balance, new: fresh, skipped: 'kept existing (new < old, likely RPC failure)' });
                         continue;
                     }
                     await supabase.from('allocation_votes')
@@ -309,13 +328,24 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: 'Council allocation set', council: weights });
         }
 
-        // Community vote — regular CLAWS holder
-        const clawsBalance = await getClawsBalance(address);
+        // Community vote — keep existing balance, only fetch for NEW voters
+        const addrLower = address.toLowerCase();
+        const { data: existing } = await supabase
+            .from('allocation_votes')
+            .select('claws_balance')
+            .eq('wallet_address', addrLower)
+            .maybeSingle();
+
+        let clawsBalance = existing ? (existing.claws_balance || '0').toString() : null;
+        if (!clawsBalance || clawsBalance === '0') {
+            // New voter or had 0 — try to fetch on-chain
+            clawsBalance = await getClawsBalance(address);
+        }
 
         const { error: upsertErr } = await supabase
             .from('allocation_votes')
             .upsert({
-                wallet_address: address.toLowerCase(),
+                wallet_address: addrLower,
                 weights,
                 claws_balance: clawsBalance,
                 signature,
