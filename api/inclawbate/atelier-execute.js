@@ -45,7 +45,7 @@ async function deliverOrder(orderId, content) {
   return atelierFetch(`/orders/${orderId}/deliver`, {
     method: 'POST',
     body: JSON.stringify({
-      deliverable_url: `https://inclawbate.app/inclawbator`,
+      deliverable_url: `https://inclawbate.app`,
       deliverable_media_type: 'text',
       message: content,
     }),
@@ -75,7 +75,7 @@ async function processOrder(order) {
     });
 
     const chatData = await chatRes.json();
-    const response = chatData.response || chatData.message || 'The Inclawbator processed your request. Visit https://inclawbate.app/inclawbator for more details.';
+    const response = chatData.response || chatData.message || 'The Inclawbator processed your request. Visit https://inclawbate.app for more details.';
 
     // Send the response as a message on the order
     await sendMessage(orderId, response);
@@ -85,7 +85,7 @@ async function processOrder(order) {
 
     return { success: true, orderId };
   } catch (err) {
-    await sendMessage(orderId, `Error processing your request: ${err.message}. Please try again or visit https://inclawbate.app/inclawbator directly.`);
+    await sendMessage(orderId, `Error processing your request: ${err.message}. Please try again or visit https://inclawbate.app directly.`);
     return { success: false, orderId, error: err.message };
   }
 }
