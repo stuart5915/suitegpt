@@ -940,9 +940,9 @@
 
     // ── Preview ──
     // SDK scripts to inject into preview so AppDB/CLAWS/Realtime don't crash
-    var SDK_TAGS = '<script src="https://inclawbate.com/js/claws-sdk.js" data-preview="true"><\/script>' +
-        '<script src="https://inclawbate.com/js/appdb-sdk.js" data-app-id="preview"><\/script>' +
-        '<script src="https://inclawbate.com/js/realtime-sdk.js" data-app-id="preview"><\/script>';
+    var SDK_TAGS = '<script src="https://inclawbate.app/js/claws-sdk.js" data-preview="true"><\/script>' +
+        '<script src="https://inclawbate.app/js/appdb-sdk.js" data-app-id="preview"><\/script>' +
+        '<script src="https://inclawbate.app/js/realtime-sdk.js" data-app-id="preview"><\/script>';
 
     function injectSDKs(code) {
         // Inject SDK scripts right after <head> so they load before app code
@@ -1487,7 +1487,7 @@
         els.publishSlug.value = '';
         els.publishResult.innerHTML = '';
         els.publishConfirm.disabled = true;
-        els.slugPreview.textContent = 'inclawbate.com/s/...';
+        els.slugPreview.textContent = 'inclawbate.app/s/...';
 
         // Show/hide delete button
         var delBtn = document.getElementById('publishDeleteBtn');
@@ -1536,7 +1536,7 @@
     function onSlugInput() {
         var raw = els.publishSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 63);
         els.publishSlug.value = raw;
-        els.slugPreview.textContent = raw ? 'inclawbate.com/s/' + raw : 'inclawbate.com/s/...';
+        els.slugPreview.textContent = raw ? 'inclawbate.app/s/' + raw : 'inclawbate.app/s/...';
         els.publishConfirm.disabled = !raw || raw.length < 2;
     }
 
@@ -1545,7 +1545,7 @@
         if (!confirm('Delete "' + (state.editingApp.name || state.editingApp.slug) + '"? This cannot be undone.')) return;
 
         var profile = getProfile();
-        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'anonymous@inclawbate.com';
+        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.app' : 'anonymous@inclawbate.app';
 
         els.publishResult.innerHTML = 'Deleting...';
         els.publishResult.className = 'publish-result';
@@ -1595,7 +1595,7 @@
         els.publishResult.className = 'publish-result';
 
         var profile = getProfile();
-        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : '';
+        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.app' : '';
 
         // Collect new fields
         var appName = (document.getElementById('publishName') || {}).value || state.title;

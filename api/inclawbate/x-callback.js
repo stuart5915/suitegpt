@@ -6,8 +6,8 @@ import { createHmac, randomBytes } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
 ];
@@ -17,7 +17,7 @@ const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const JWT_SECRET = process.env.INCLAWBATE_JWT_SECRET;
 if (!JWT_SECRET) throw new Error('INCLAWBATE_JWT_SECRET env var is required');
 const JWT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const REDIRECT_URI = 'https://inclawbate.com/launch';
+const REDIRECT_URI = 'https://inclawbate.app/launch';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,

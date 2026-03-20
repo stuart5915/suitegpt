@@ -16,8 +16,8 @@ const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
     'http://localhost:3000',

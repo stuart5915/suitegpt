@@ -7,7 +7,7 @@ import {
 } from "@virtuals-protocol/game";
 import { createServer } from "http";
 
-const API = process.env.INCLAWBATE_API || "https://inclawbate.com/api/inclawbate";
+const API = process.env.INCLAWBATE_API || "https://inclawbate.app/api/inclawbate";
 
 // ── Helpers ──
 
@@ -59,10 +59,10 @@ const browseApps = new GameFunction({
         slug: a.slug,
         description: a.description || a.tagline,
         category: a.category,
-        url: "https://inclawbate.com/apps/" + a.slug,
+        url: "https://inclawbate.app/apps/" + a.slug,
       }));
-      if (!apps.length) return ok({ message: "No apps found matching that query. Try a different search or browse all at https://inclawbate.com/apps" });
-      return ok({ count: apps.length, apps, browse_all: "https://inclawbate.com/apps" });
+      if (!apps.length) return ok({ message: "No apps found matching that query. Try a different search or browse all at https://inclawbate.app/apps" });
+      return ok({ count: apps.length, apps, browse_all: "https://inclawbate.app/apps" });
     } catch (e) {
       return fail("Failed to fetch apps: " + e.message);
     }
@@ -74,7 +74,7 @@ const browseApps = new GameFunction({
 const suggestAppIdeas = new GameFunction({
   name: "suggest_app_ideas",
   description:
-    "Suggest app ideas someone could build themselves on Inclawbate. Use this when someone asks what they could build, wants project ideas, or is looking for inspiration. Always point them to inclawbate.com/build to start building.",
+    "Suggest app ideas someone could build themselves on Inclawbate. Use this when someone asks what they could build, wants project ideas, or is looking for inspiration. Always point them to inclawbate.app/build to start building.",
   args: [
     { name: "interest", description: "What the person is interested in (e.g. DeFi, gaming, social, NFTs, AI)" },
   ],
@@ -121,8 +121,8 @@ const suggestAppIdeas = new GameFunction({
     ];
     return ok({
       ideas: selected,
-      build_url: "https://inclawbate.com/build",
-      message: "Pick any of these and start building at inclawbate.com/build — no code needed, AI builds it for you!",
+      build_url: "https://inclawbate.app/build",
+      message: "Pick any of these and start building at inclawbate.app/build — no code needed, AI builds it for you!",
     });
   },
 });
@@ -138,7 +138,7 @@ const getEcosystemInfo = new GameFunction({
     return ok({
       name: "Inclawbate",
       tagline: "Anyone Can Build. Everyone Gets Paid.",
-      website: "https://inclawbate.com",
+      website: "https://inclawbate.app",
       description:
         "Inclawbate is a Web3 ecosystem where AI agents hire humans, apps are built by anyone, and tokens share revenue with their communities.",
       key_features: [
@@ -157,10 +157,10 @@ const getEcosystemInfo = new GameFunction({
         role: "The Inclawbate ecosystem token — used for app unlocks, credits, payments, and staking",
       },
       links: {
-        app_store: "https://inclawbate.com/apps",
-        inclawbator: "https://inclawbate.com/inclawbator",
-        skills: "https://inclawbate.com/skills",
-        build: "https://inclawbate.com/build",
+        app_store: "https://inclawbate.app/apps",
+        inclawbator: "https://inclawbate.app/inclawbator",
+        skills: "https://inclawbate.app/skills",
+        build: "https://inclawbate.app/build",
         x: "https://x.com/inclawbate",
         telegram: "https://t.me/StuartDeFi",
       },
@@ -269,7 +269,7 @@ const getIncubationInfo = new GameFunction({
         "Staking contract deployment with CLAWS reward distribution",
         "LP fee sharing setup — token holders earn from trading activity",
         "Branding and logo design",
-        "Landing page / website on inclawbate.com",
+        "Landing page / website on inclawbate.app",
         "Listing in the Inclawbator ecosystem directory",
         "Marketing support and community building",
         "X/Twitter presence setup",
@@ -288,7 +288,7 @@ const getIncubationInfo = new GameFunction({
         "5. Revenue sharing begins — LP fees distributed to stakers",
       ],
       cost: "Incubation is free. Inclawbate takes a small fee split from LP trading fees (configurable).",
-      apply_url: "https://inclawbate.com/inclawbator#incubate",
+      apply_url: "https://inclawbate.app/inclawbator#incubate",
       contact: {
         telegram: "https://t.me/StuartDeFi",
         x: "https://x.com/stuman",
@@ -321,7 +321,7 @@ You help people in 3 ways:
 
 1. DISCOVER APPS — Use browse_apps to recommend existing apps from our app store. If someone describes a need, search for relevant apps first.
 
-2. BUILD SOMETHING — Use suggest_app_ideas to inspire people to build their own apps. Always point them to inclawbate.com/build where AI builds apps for them with no code needed.
+2. BUILD SOMETHING — Use suggest_app_ideas to inspire people to build their own apps. Always point them to inclawbate.app/build where AI builds apps for them with no code needed.
 
 3. INCUBATION — ONLY when someone explicitly wants the Inclawbate team to build something FOR them (token launch, staking, website, branding, marketing). This is a hands-on service. Before using request_incubation, ALWAYS confirm with the user first: explain what incubation includes, ask if they're ready to submit, and collect their contact info (Telegram or X handle) so the team can reach them.
 

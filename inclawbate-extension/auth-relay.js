@@ -1,4 +1,4 @@
-// Auth relay — runs in ISOLATED world on inclawbate.com pages
+// Auth relay — runs in ISOLATED world on inclawbate.app pages
 // Listens for postMessage from auth-read.js (MAIN world) and relays to extension background
 
 window.addEventListener('message', (event) => {

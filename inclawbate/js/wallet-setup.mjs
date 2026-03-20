@@ -12,7 +12,7 @@ const appKit = createAppKit({
   metadata: {
     name: 'Inclawbate UBI',
     description: 'Stake CLAWNCH to earn passive UBI from the agent economy',
-    url: 'https://inclawbate.com',
+    url: 'https://inclawbate.app',
     icons: []
   },
   enableCoinbase: true,

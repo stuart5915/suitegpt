@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
     try {
         // Determine callback URL
-        const host = req.headers['x-forwarded-host'] || req.headers.host || 'inclawbate.com';
+        const host = req.headers['x-forwarded-host'] || req.headers.host || 'inclawbate.app';
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const callbackUrl = `${protocol}://${host}/api/inclawbate/x-connect-callback`;
 

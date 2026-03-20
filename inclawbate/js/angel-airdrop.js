@@ -24,7 +24,7 @@
 
     var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
-    var API_BASE = 'https://www.inclawbate.com/api/inclawbate';
+    var API_BASE = 'https://www.inclawbate.app/api/inclawbate';
 
     // ── State ──
     var state = {

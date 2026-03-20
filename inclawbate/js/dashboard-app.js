@@ -420,7 +420,7 @@ function openEditDetailsModal(app, cardEl) {
             </label>
             <label class="edit-details-label">Slug
                 <div style="display:flex;align-items:center;gap:4px">
-                    <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem;white-space:nowrap">inclawbate.com/s/</span>
+                    <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem;white-space:nowrap">inclawbate.app/s/</span>
                     <input type="text" class="edit-details-input" id="edSlug" value="${esc(app.slug || '')}" maxlength="80" style="margin:0;font-family:var(--font-mono)" placeholder="my-app-name">
                 </div>
             </label>

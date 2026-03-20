@@ -10,8 +10,8 @@ const supabase = createClient(
 );
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
     'https://oddsclaw.app',

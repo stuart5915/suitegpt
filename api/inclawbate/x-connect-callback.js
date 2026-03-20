@@ -41,17 +41,17 @@ export default async function handler(req, res) {
 
     // User denied
     if (!oauth_verifier) {
-        return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=denied');
+        return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=denied');
     }
 
     if (!oauth_token) {
-        return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
+        return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=error');
     }
 
     const X_API_KEY = process.env.INCLAWBATE_X_API_KEY;
     const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET;
     if (!X_API_KEY || !X_API_SECRET) {
-        return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
+        return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=error');
     }
 
     try {
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
             .single();
 
         if (!temp) {
-            return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=expired');
+            return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=expired');
         }
 
         // Exchange for access token
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
         const body = await resp.text();
         if (!resp.ok) {
             console.error('X access_token error:', body);
-            return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
+            return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=error');
         }
 
         const params = new URLSearchParams(body);
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
         const screenName = params.get('screen_name');
 
         if (!accessToken || !accessSecret) {
-            return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
+            return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=error');
         }
 
         // Store tokens on the project
@@ -130,10 +130,10 @@ export default async function handler(req, res) {
             .eq('oauth_token', oauth_token);
 
         // Redirect back with success
-        return res.redirect(302, `https://inclawbate.com/inclawbator?x_connect=success&handle=${screenName || ''}`);
+        return res.redirect(302, `https://inclawbate.app/inclawbator?x_connect=success&handle=${screenName || ''}`);
 
     } catch (e) {
         console.error('x-connect-callback error:', e);
-        return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
+        return res.redirect(302, 'https://inclawbate.app/inclawbator?x_connect=error');
     }
 }

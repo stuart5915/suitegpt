@@ -3,7 +3,7 @@
 // POST from Telegram webhook → process → sendMessage back
 
 const BOT_TOKEN = process.env.INCLAWBATOR_BOT_TOKEN;
-const AGENT_CHAT_URL = 'https://inclawbate.com/api/inclawbate/agent-chat';
+const AGENT_CHAT_URL = 'https://inclawbate.app/api/inclawbate/agent-chat';
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 // ── Command shortcuts — translated to natural language for agent-chat ──

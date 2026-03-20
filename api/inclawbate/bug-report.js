@@ -16,8 +16,8 @@ const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
 const recentReports = new Map(); // wallet → timestamp (in-memory, resets on cold start)
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
     'http://localhost:3000',

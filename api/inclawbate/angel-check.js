@@ -50,7 +50,7 @@ export async function checkAngelHolder(wallet) {
 export default async function handler(req, res) {
     // CORS
     const origin = req.headers.origin;
-    const allowed = ['https://inclawbate.com', 'https://www.inclawbate.com', 'https://inclawbate.app', 'https://www.inclawbate.app'];
+    const allowed = ['https://inclawbate.app', 'https://www.inclawbate.app', 'https://inclawbate.app', 'https://www.inclawbate.app'];
     if (allowed.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }

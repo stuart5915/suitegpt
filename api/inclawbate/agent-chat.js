@@ -6,7 +6,7 @@ const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_KEYS = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
 let groqKeyIndex = 0;
 function nextGroqKey() { const k = GROQ_KEYS[groqKeyIndex % GROQ_KEYS.length]; groqKeyIndex++; return k; }
-const APP_API = 'https://inclawbate.com/api/inclawbate';
+const APP_API = 'https://inclawbate.app/api/inclawbate';
 
 const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosystem AI agent.
 

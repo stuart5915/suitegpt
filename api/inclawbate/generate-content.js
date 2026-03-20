@@ -7,8 +7,8 @@ import { authenticateRequest } from './x-callback.js';
 // Angel free pass removed — only admin wallet gets free access
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app'
 ];

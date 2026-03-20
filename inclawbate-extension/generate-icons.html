@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icons</title></head>
+<body>
+<p>Right-click each image and "Save image as" to save the icons:</p>
+<canvas id="c48" width="48" height="48"></canvas>
+<canvas id="c128" width="128" height="128"></canvas>
+<script>
+function drawIcon(canvas) {
+    const ctx = canvas.getContext('2d');
+    const s = canvas.width;
+
+    // Background
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, s, s, s * 0.2);
+    ctx.fill();
+
+    // Lobster emoji
+    ctx.font = `${s * 0.55}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🦞', s / 2, s / 2 + s * 0.02);
+}
+drawIcon(document.getElementById('c48'));
+drawIcon(document.getElementById('c128'));
+
+// Auto-download
+['c48', 'c128'].forEach(id => {
+    const canvas = document.getElementById(id);
+    const link = document.createElement('a');
+    link.download = `icon${canvas.width}.png`;
+    link.href = canvas.toDataURL();
+    document.body.appendChild(link);
+    const img = document.createElement('img');
+    img.src = link.href;
+    img.style.margin = '10px';
+    document.body.appendChild(img);
+});
+</script>
+</body>
+</html>

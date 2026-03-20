@@ -8,8 +8,8 @@ import { authenticateRequest } from './x-callback.js';
 const stripe = new Stripe((process.env.INCLAWBATE_STRIPE_SECRET_KEY || '').trim());
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
 ];

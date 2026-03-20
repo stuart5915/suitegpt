@@ -647,7 +647,7 @@ async function executeSend(provider) {
                 agent_name: agentName,
                 payment_amount: amount,
                 payment_tx: tx,
-                message: initialMessage || `Hired via inclawbate.com \u2014 ${amount} CLAWNCH sent.`
+                message: initialMessage || `Hired via inclawbate.app \u2014 ${amount} CLAWNCH sent.`
             })
         });
 

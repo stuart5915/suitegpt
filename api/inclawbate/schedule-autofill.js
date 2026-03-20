@@ -249,7 +249,7 @@ function randomNarrativeScene(pillarName) {
 }
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com', 'https://www.inclawbate.com',
+    'https://inclawbate.app', 'https://www.inclawbate.app',
     'https://inclawbate.app', 'https://www.inclawbate.app',
     'http://localhost:3000', 'http://localhost:5500',
 ];

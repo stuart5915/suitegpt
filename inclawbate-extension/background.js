@@ -1,7 +1,7 @@
 // Background service worker — handles API calls, hotkey commands, and badge
 
-const DEFAULT_API_URL = 'https://www.inclawbate.com/api/inclawbate/generate-reply';
-const CREDITS_URL = 'https://inclawbate.com/api/inclawbate/credits';
+const DEFAULT_API_URL = 'https://www.inclawbate.app/api/inclawbate/generate-reply';
+const CREDITS_URL = 'https://inclawbate.app/api/inclawbate/credits';
 
 // ── Badge: poll for unread messages ──
 async function updateBadge() {
@@ -56,7 +56,7 @@ chrome.commands.onCommand.addListener((command) => {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'set-api-key') {
-        // Relay from auth-relay.js on inclawbate.com after wallet connect or OAuth
+        // Relay from auth-relay.js on inclawbate.app after wallet connect or OAuth
         const toStore = {};
         if (message.apiKey) toStore.apiKey = message.apiKey;
         if (message.token) toStore.token = message.token;

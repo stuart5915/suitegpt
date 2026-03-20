@@ -70,7 +70,7 @@ function renderPage(app, related, totalApps) {
     const descShort = desc.length > 160 ? desc.slice(0, 157) + '...' : desc;
     const cat = CATEGORY_LABELS[app.category] || 'App';
     const catIcon = CATEGORY_ICONS[app.category] || '\u{1F4E6}';
-    const url = `https://inclawbate.com/app/${app.slug}`;
+    const url = `https://inclawbate.app/app/${app.slug}`;
     const appUrl = `/s/${app.slug}`;
     const price = app.claws_price > 0 ? `${app.claws_price} CLAWS` : 'Free';
     const creator = app.creator_x_handle ? `@${escapeHtml(app.creator_x_handle)}` : '';

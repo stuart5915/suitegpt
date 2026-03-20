@@ -624,7 +624,7 @@ export default async function handler(req, res) {
 
                 // Only claim apps that are still anonymous
                 const cleanSlugs = slugs.slice(0, 20).map(s => s.toLowerCase().trim());
-                const email = user.x_handle ? user.x_handle + '@inclawbate.com' : 'anonymous@inclawbate.com';
+                const email = user.x_handle ? user.x_handle + '@inclawbate.app' : 'anonymous@inclawbate.app';
                 const { data: claimed, error: claimErr } = await supabase
                     .from('user_apps')
                     .update({
@@ -634,7 +634,7 @@ export default async function handler(req, res) {
                         user_id: user.sub
                     })
                     .in('slug', cleanSlugs)
-                    .eq('publisher_email', 'anonymous@inclawbate.com')
+                    .eq('publisher_email', 'anonymous@inclawbate.app')
                     .select('slug');
 
                 if (claimErr) throw claimErr;

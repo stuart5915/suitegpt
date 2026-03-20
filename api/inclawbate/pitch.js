@@ -13,8 +13,8 @@ const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.INCLAWBATE_ADMIN_CHAT_ID;
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app'
 ];

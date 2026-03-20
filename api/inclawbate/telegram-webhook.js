@@ -638,7 +638,7 @@ async function handleTreasury(chatId) {
         // 5. Council allocation
         let councilWeights = null;
         try {
-            const host = 'www.inclawbate.com';
+            const host = 'www.inclawbate.app';
             const allocRes = await fetch(`https://${host}/api/inclawbate/allocation-vote`);
             const allocData = await allocRes.json();
             if (allocData.council) councilWeights = allocData.council;
@@ -784,7 +784,7 @@ export default async function handler(req, res) {
             else {
                 await sendMsg(chatId, '⏳ Generating daily post...');
                 try {
-                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.inclawbate.com';
+                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.inclawbate.app';
                     const protocol = host.includes('localhost') ? 'http' : 'https';
                     const r = await fetch(`${protocol}://${host}/api/inclawbate/council-daily`, { method: 'POST' });
                     if (r.ok) await sendMsg(chatId, '✅ Daily post sent!');

@@ -7,8 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
 ];

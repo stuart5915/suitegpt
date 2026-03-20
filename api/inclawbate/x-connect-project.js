@@ -13,11 +13,11 @@ const supabase = createClient(
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const REDIRECT_URI = 'https://inclawbate.com/agents';
+const REDIRECT_URI = 'https://inclawbate.app/agents';
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app',
     'http://localhost:3000',

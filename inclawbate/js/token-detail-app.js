@@ -22,7 +22,7 @@ EXTRA_TOKENS[CLAWS_ADDRESS.toLowerCase()] = {
     description: 'The utility token of the Inclawbate ecosystem.',
     staking_address: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40',
     is_clanker: false,
-    website_url: 'https://inclawbate.com',
+    website_url: 'https://inclawbate.app',
     x_handle: 'inclawbate'
 };
 EXTRA_TOKENS[S4H_ADDRESS.toLowerCase()] = {

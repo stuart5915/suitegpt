@@ -1,4 +1,4 @@
--- Build Studio tables for inclawbate.com/build
+-- Build Studio tables for inclawbate.app/build
 -- Chat-based AI builder: users describe what they want, Claude generates HTML, live preview
 
 -- ── Sessions ──

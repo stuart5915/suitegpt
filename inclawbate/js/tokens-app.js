@@ -275,7 +275,7 @@ function renderTable() {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
         }
         if (p.token_address && symbol) {
-            var logoAbsolute = p.logo_url ? (p.logo_url.startsWith('http') ? p.logo_url : 'https://inclawbate.com' + p.logo_url) : '';
+            var logoAbsolute = p.logo_url ? (p.logo_url.startsWith('http') ? p.logo_url : 'https://inclawbate.app' + p.logo_url) : '';
             actions += '<button class="btn-wallet" onclick="event.stopPropagation();addTokenToWallet(\'' + p.token_address + '\',\'' + symbol + '\',18,\'' + logoAbsolute + '\')" title="Add $' + symbol + ' to wallet">+ Wallet</button>';
         }
 

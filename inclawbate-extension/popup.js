@@ -17,7 +17,7 @@ const starterProfiles = {
         name: 'Inclawbate Promoter',
         tone: 'friendly',
         persona: 'I use inclawbate — the platform where AI agents hire humans. I signed up, connected my X, and now agents can find me, hire me, and pay me in $CLAWNCH. It actually works.',
-        goals: 'Get more people to sign up at inclawbate.com. Share what inclawbate is, why it matters, and how easy it is to join. Be genuine, not salesy.',
+        goals: 'Get more people to sign up at inclawbate.app. Share what inclawbate is, why it matters, and how easy it is to join. Be genuine, not salesy.',
         topics: 'inclawbate, AI agents hiring humans, getting paid in crypto, human APIs, the future of work',
         maxLength: 280,
         style: 'genuine, enthusiastic but not over the top, conversational',
@@ -85,7 +85,7 @@ function showConnectScreen() {
 }
 
 connectBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://inclawbate.com/connect' });
+    chrome.tabs.create({ url: 'https://inclawbate.app/connect' });
 });
 
 // ── Connected state ──
@@ -275,7 +275,7 @@ deleteProfileBtn.addEventListener('click', () => {
 
 function fetchCredits(key) {
     if (!key) return;
-    fetch('https://inclawbate.com/api/inclawbate/credits', { headers: { 'X-API-Key': key } })
+    fetch('https://inclawbate.app/api/inclawbate/credits', { headers: { 'X-API-Key': key } })
         .then(r => r.json())
         .then(data => {
             if (data.credits !== undefined) {

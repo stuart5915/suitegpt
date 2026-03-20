@@ -121,7 +121,7 @@
             if (!response || response.error) {
                 if (response?.error === 'NO_CREDITS') {
                     panel.querySelector('.inclawbate-panel-body').innerHTML =
-                        `<div class="inclawbate-error">No credits remaining.<br><a href="https://inclawbate.com/deposit" target="_blank" style="color:#ef4444;">Buy credits</a></div>`;
+                        `<div class="inclawbate-error">No credits remaining.<br><a href="https://inclawbate.app/deposit" target="_blank" style="color:#ef4444;">Buy credits</a></div>`;
                 } else {
                     panel.querySelector('.inclawbate-panel-body').innerHTML =
                         `<div class="inclawbate-error">Error: ${response?.error || 'No response from background'}</div>`;

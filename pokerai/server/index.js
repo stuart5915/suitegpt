@@ -30,8 +30,8 @@ const server = http.createServer(app);
 
 app.use(cors({
   origin: [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://pokerai.app',
     'https://www.pokerai.app',
     /https:\/\/stuart-hollinger-landing[a-z0-9-]*\.vercel\.app$/,

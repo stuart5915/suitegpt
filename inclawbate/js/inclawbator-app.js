@@ -1628,7 +1628,7 @@ async function handleSolanaLaunch() {
             name: name,
             symbol: symbol,
             description: desc,
-            image_url: (document.getElementById('launchImageUrl') || {}).value || 'https://www.inclawbate.com/inclawbate/assets/inclawbate-logo.png'
+            image_url: (document.getElementById('launchImageUrl') || {}).value || 'https://www.inclawbate.app/inclawbate/assets/inclawbate-logo.png'
         });
         if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
 
@@ -1809,7 +1809,7 @@ async function handleCardanoLaunch() {
             name: name,
             symbol: symbol,
             description: desc,
-            image_url: imageUrl || 'https://www.inclawbate.com/inclawbate/assets/inclawbate-logo.png',
+            image_url: imageUrl || 'https://www.inclawbate.app/inclawbate/assets/inclawbate-logo.png',
             creator_cardano_address: cardanoAddr
         });
         if (mintResult.error) throw new Error('Mint failed: ' + mintResult.error);

@@ -11,8 +11,8 @@ import { authenticateRequest } from './x-callback.js';
 import { randomBytes } from 'crypto';
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app'
 ];

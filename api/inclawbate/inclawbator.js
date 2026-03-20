@@ -113,8 +113,8 @@ async function verifyBurnTx(txHash, fromWallet, expectedAmount) {
 const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
 const ALLOWED_ORIGINS = [
-    'https://inclawbate.com',
-    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://inclawbate.app',
     'https://www.inclawbate.app'
 ];

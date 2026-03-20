@@ -16,16 +16,16 @@ export default async function handler(req, res) {
 
     const urls = [
         // Main pages
-        { loc: 'https://inclawbate.com/', priority: '1.0', changefreq: 'daily' },
-        { loc: 'https://inclawbate.com/apps', priority: '0.9', changefreq: 'daily' },
-        { loc: 'https://inclawbate.com/tools', priority: '0.8', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/build', priority: '0.8', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/stake', priority: '0.7', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/blog', priority: '0.7', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/dashboard', priority: '0.6', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/agents', priority: '0.6', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/schedule', priority: '0.6', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.com/explore', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/', priority: '1.0', changefreq: 'daily' },
+        { loc: 'https://inclawbate.app/apps', priority: '0.9', changefreq: 'daily' },
+        { loc: 'https://inclawbate.app/tools', priority: '0.8', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/build', priority: '0.8', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/stake', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/blog', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/dashboard', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/agents', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/schedule', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/explore', priority: '0.6', changefreq: 'weekly' },
     ];
 
     // Add all app landing pages
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         for (const app of apps) {
             const lastmod = (app.updated_at || app.created_at || '').slice(0, 10);
             urls.push({
-                loc: `https://inclawbate.com/app/${app.slug}`,
+                loc: `https://inclawbate.app/app/${app.slug}`,
                 priority: '0.6',
                 changefreq: 'monthly',
                 lastmod: lastmod || undefined,

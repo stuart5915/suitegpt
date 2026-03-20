@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         }
 
         // If no email provided, check if anonymous publishing is allowed
-        const publishEmail = email || 'anonymous@inclawbate.com';
+        const publishEmail = email || 'anonymous@inclawbate.app';
         if (!email) {
             const { data: setting } = await supabase
                 .from('platform_settings')
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
 
             if (updateErr) throw updateErr;
 
-            return res.json({ success: true, url: `https://inclawbate.com/s/${cleanSlug}`, updated: true });
+            return res.json({ success: true, url: `https://inclawbate.app/s/${cleanSlug}`, updated: true });
         }
 
         // NEW publish — check availability
@@ -219,12 +219,12 @@ export default async function handler(req, res) {
                 name: name || cleanSlug,
                 email: publishEmail,
                 business_name: name,
-                message: `Published site: https://inclawbate.com/s/${cleanSlug}`,
+                message: `Published site: https://inclawbate.app/s/${cleanSlug}`,
                 source: (source || 'clients') + '-publish',
             }),
         }).catch(() => {});
 
-        return res.json({ success: true, url: `https://inclawbate.com/s/${cleanSlug}` });
+        return res.json({ success: true, url: `https://inclawbate.app/s/${cleanSlug}` });
 
     } catch (err) {
         console.error('publish-site error:', err);

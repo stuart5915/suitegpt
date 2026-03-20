@@ -762,7 +762,7 @@ window.addTokenToWallet = async function(address, symbol, decimals, image) {
 
 // Legacy alias
 window.addClawsToWallet = function() {
-    window.addTokenToWallet('0x7ca47B141639B893C6782823C0b219f872056379', 'CLAWS', 18, 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg');
+    window.addTokenToWallet('0x7ca47B141639B893C6782823C0b219f872056379', 'CLAWS', 18, 'https://inclawbate.app/inclawbate/assets/clawslogo.jpg');
 };
 
 var _connectedProvider = null; // stores the provider used during successful connection
@@ -886,7 +886,7 @@ function renderPoolPage(pool, key) {
     }
     // Add token to wallet button
     if (pool.token) {
-        var logoUrl = pool.logo ? (pool.logo.startsWith('http') ? pool.logo : 'https://inclawbate.com' + pool.logo) : '';
+        var logoUrl = pool.logo ? (pool.logo.startsWith('http') ? pool.logo : 'https://inclawbate.app' + pool.logo) : '';
         linksHtml += '<button onclick="addTokenToWallet(\'' + pool.token + '\',\'' + pool.ticker + '\',18,\'' + logoUrl + '\')" class="pool-link pool-link--wallet">&#128176; Add $' + pool.ticker + ' to Wallet</button>';
     }
     document.getElementById('poolLinks').innerHTML = linksHtml;

@@ -735,7 +735,7 @@ export default async function handler(req, res) {
             ).filter(Boolean).join(' / ') : '',
         });
         imageParams.set('_t', Date.now()); // cache-bust so TG always fetches fresh
-        const imageUrl = `https://www.inclawbate.com/api/inclawbate/daily-image?${imageParams}`;
+        const imageUrl = `https://www.inclawbate.app/api/inclawbate/daily-image?${imageParams}`;
         await sendPhoto(COUNCIL_CHAT_ID, imageUrl);
 
         // Post text to council group
