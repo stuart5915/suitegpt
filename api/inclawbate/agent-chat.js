@@ -1,6 +1,8 @@
 // Inclawbate Homepage Chat — Groq-powered (free, fast)
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
+import { launchToken, disperseTokens } from './onchain-actions.js';
+
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
 const GROQ_KEYS = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
@@ -14,7 +16,7 @@ Inclawbate is a self-sustaining engine that generates, manages, and distributes 
 
 You have 11 tools. Match the user's intent to the right one:
 
-LAUNCH A TOKEN — Use launch_token_info first, then configure_token_launch as you gather details (name, symbol, description required; chain: base or solana; optional: image, website, X handle, telegram). Call configure_token_launch multiple times as info comes in. Tell them to click Deploy when ready.
+LAUNCH A TOKEN — Use deploy_token when you have at least name and symbol. Gather details conversationally (name, symbol required; description, image, website, X handle, telegram optional). Once you have name + symbol, deploy immediately — the token launches on Base via Clanker automatically. No wallet connection needed from the user.
 
 DEPLOY STAKING — Use deploy_staking when someone wants a staking pool for their token. Deployed via the Staking Factory on Base.
 
@@ -28,7 +30,7 @@ MARKETING AGENT — Use create_agent_info when someone wants an AI agent that au
 
 BOOK PROMO — Use book_promo when someone wants to promote their project through the @inclawbate X account.
 
-AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets.
+AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Requires token_address, recipients (array of addresses), and amounts (array of numbers). Executes the airdrop automatically on Base.
 
 HIRE THE COUNCIL — Use hire_inclawbator when someone needs human help (design, dev, marketing, content, strategy). You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
@@ -63,16 +65,8 @@ const TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'launch_token_info',
-      description: 'Open the token launch form. Use this FIRST when someone wants to launch a token, before gathering details.',
-      parameters: { type: 'object', properties: {} }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'configure_token_launch',
-      description: 'Fill in token details on the launch form. Call as you gather info — can call multiple times.',
+      name: 'deploy_token',
+      description: 'Deploy a token on Base via Clanker. Requires name and symbol. Call this once you have at least those two fields.',
       parameters: {
         type: 'object',
         properties: {
@@ -82,9 +76,9 @@ const TOOLS = [
           image_url: { type: 'string', description: 'Token logo image URL' },
           website_url: { type: 'string', description: 'Project website URL' },
           x_handle: { type: 'string', description: 'X/Twitter handle' },
-          telegram_url: { type: 'string', description: 'Telegram group URL' },
-          chain: { type: 'string', enum: ['base', 'solana'], description: 'Chain: base (Clanker) or solana (Bags/Meteora)' }
-        }
+          telegram_url: { type: 'string', description: 'Telegram group URL' }
+        },
+        required: ['token_name', 'token_symbol']
       }
     }
   },
@@ -141,12 +135,15 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'disperse_tokens',
-      description: 'Airdrop or distribute tokens to multiple wallets using the Disperse contract on Base.',
+      description: 'Airdrop or distribute tokens to multiple wallets on Base. Executes the transaction automatically.',
       parameters: {
         type: 'object',
         properties: {
-          token_address: { type: 'string', description: 'Token contract address to distribute' }
-        }
+          token_address: { type: 'string', description: 'Token contract address to distribute' },
+          recipients: { type: 'array', items: { type: 'string' }, description: 'Array of wallet addresses' },
+          amounts: { type: 'array', items: { type: 'number' }, description: 'Array of token amounts (human readable, not wei)' }
+        },
+        required: ['token_address', 'recipients', 'amounts']
       }
     }
   },
@@ -227,31 +224,21 @@ function getIncubationInfo() {
   });
 }
 
-function launchTokenInfo() {
-  return JSON.stringify({
-    action: 'show_launch_form',
-    message: 'Token launch form is now open. Ask the user for: token name, symbol, and description (required). Image URL, website, and socials are optional.',
-    note: 'Base launches via Clanker with automatic Uniswap V3 liquidity. Solana launches via Bags/Meteora.'
-  });
-}
-
-function configureTokenLaunch(args) {
-  const fields = {};
-  if (args.token_name) fields.token_name = args.token_name;
-  if (args.token_symbol) fields.token_symbol = args.token_symbol.toUpperCase();
-  if (args.description) fields.description = args.description;
-  if (args.image_url) fields.image_url = args.image_url;
-  if (args.website_url) fields.website_url = args.website_url;
-  if (args.x_handle) fields.x_handle = args.x_handle.replace(/^@/, '');
-  if (args.telegram_url) fields.telegram_url = args.telegram_url;
-  if (args.chain) fields.chain = args.chain;
-  const filled = Object.keys(fields);
-  const missing = ['token_name', 'token_symbol', 'description'].filter(f => !fields[f]);
-  return JSON.stringify({
-    action: 'fill_launch_form', fields, filled_count: filled.length,
-    missing_required: missing, ready: missing.length === 0,
-    message: missing.length === 0 ? 'All required fields filled! User can review and click Deploy.' : 'Still need: ' + missing.join(', ')
-  });
+async function deployTokenAction(args) {
+  try {
+    const result = await launchToken({
+      name: args.token_name,
+      symbol: args.token_symbol,
+      description: args.description,
+      image_url: args.image_url,
+      website_url: args.website_url,
+      x_handle: args.x_handle,
+      telegram_url: args.telegram_url
+    });
+    return JSON.stringify(result);
+  } catch (err) {
+    return JSON.stringify({ error: err.message, hint: 'Token deployment failed. Try again or contact the Council.' });
+  }
 }
 
 function createAgentInfo() {
@@ -343,23 +330,17 @@ function bookPromoInfo(args) {
   });
 }
 
-function disperseTokensInfo(args) {
-  return JSON.stringify({
-    action: 'open_airdrop',
-    how: 'Distribute tokens to multiple wallets in one transaction using the Disperse contract on Base.',
-    steps: [
-      'Open the Airdrop tool on inclawbate.app',
-      'Connect your wallet',
-      'Enter the token contract address' + (args.token_address ? ' (' + args.token_address + ')' : ''),
-      'Paste your recipient list (address, amount per line)',
-      'Approve token spend, then execute',
-      'All recipients get tokens in one transaction'
-    ],
-    contract: '0xD152f549545093347A162Dce210e7293f1452150',
-    url: 'https://inclawbate.app/inclawbator',
-    note: 'Batches up to 200 recipients per transaction.',
-    token: args.token_address || null
-  });
+async function disperseTokensAction(args) {
+  try {
+    const result = await disperseTokens({
+      token_address: args.token_address,
+      recipients: args.recipients,
+      amounts: args.amounts
+    });
+    return JSON.stringify(result);
+  } catch (err) {
+    return JSON.stringify({ error: err.message, hint: 'Airdrop failed. Make sure the token address is correct and the operator wallet has enough tokens.' });
+  }
 }
 
 function deployStakingInfo(args) {
@@ -509,13 +490,12 @@ async function executeTool(name, args) {
   switch (name) {
     case 'get_ecosystem_info': return getEcosystemInfo();
     case 'get_incubation_info': return getIncubationInfo();
-    case 'launch_token_info': return launchTokenInfo();
-    case 'configure_token_launch': return configureTokenLaunch(args);
+    case 'deploy_token': return await deployTokenAction(args);
     case 'create_agent_info': return createAgentInfo();
     case 'get_token_analytics': return await getTokenAnalytics(args);
     case 'get_staking_stats': return await getStakingStats(args);
     case 'book_promo': return bookPromoInfo(args);
-    case 'disperse_tokens': return disperseTokensInfo(args);
+    case 'disperse_tokens': return await disperseTokensAction(args);
     case 'deploy_staking': return deployStakingInfo(args);
     case 'health_check': return await healthCheck(args);
     case 'hire_inclawbator': return await hireInclawbatorInfo(args);
@@ -575,12 +555,9 @@ function generateDirectReply(tool, resultJson, args) {
       case 'get_incubation_info':
         return `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`;
 
-      case 'launch_token_info':
-        return "I've opened the token launch form! I'll need a few details:\n• Token name\n• Symbol\n• Description\n\nOptionally: image URL, website, X handle, and Telegram. Which chain — Base or Solana?";
-
-      case 'configure_token_launch':
-        if (d.ready) return "All required fields are filled! Review the details on the form and click Deploy when you're ready.";
-        return "Got it, I've updated the form. Still need: " + (d.missing_required || []).join(', ') + ". What's next?";
+      case 'deploy_token':
+        if (d.success) return `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• DEX: ${d.dex_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic Uniswap liquidity. Anyone can trade it now.`;
+        return d.error || 'Token deployment failed. Try again.';
 
       case 'create_agent_info':
         return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nAgents are free to create. Head to " + (d.url || 'inclawbate.app/dashboard');
@@ -598,7 +575,8 @@ function generateDirectReply(tool, resultJson, args) {
         return `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`;
 
       case 'disperse_tokens':
-        return "Here's how to airdrop tokens:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nDisperse contract: " + (d.contract || '');
+        if (d.success) return `Airdrop complete!\n\n• Recipients: ${d.recipients_count}\n• Total distributed: ${d.total_distributed}\n• Tx: ${d.basescan_url}`;
+        return d.error || 'Airdrop failed. Try again.';
 
       case 'deploy_staking':
         return "Here's how staking deployment works:\n" + (d.process || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nCost: " + (d.cost || 'Free') + "\n\nContact: " + (d.contact?.telegram || 't.me/StuartDeFi');
