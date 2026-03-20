@@ -67,25 +67,18 @@ const SLOT_ANGLES = {
 };
 
 // Brand archetype — injected into all image prompt generation
-const BRAND_IMAGE_CONTEXT = `CHARACTER DESCRIPTION (include in EVERY image prompt — describe visually, no brand names):
-A stylized 3D cartoon lobster character, coral-red shell with a glossy sheen, big round expressive eyes, two large claws it uses like hands, and two curved antennae. Chunky rounded proportions like a Pixar character. Confident personality, slight smirk.
+const BRAND_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
 
-RENDER RULES:
-- 3D render, polished surfaces, cinematic lighting, depth of field
-- Dark background (near-black). Accent lighting in coral-red and seafoam-teal neon
-- 1:1 square format. One clear focal point.
-- NO text in image. NO white backgrounds. NO flat illustration. NO realistic humans.
+CHARACTER: A stylized 3D cartoon coral-red lobster with glossy shell, big round eyes, two large claws (used as hands), Pixar-like proportions.
+STYLE: 3D cinematic render, dark background, coral-red and teal neon accents, depth of field, 1:1.
+NO: text in image, white backgrounds, flat illustration, realistic humans, brand names.
 
-VARIETY IS CRITICAL — every image must feel distinct:
-- Vary the lobster's POSE: sitting, standing, leaping, meditating, running, presenting, building, waving, thinking, flexing, relaxing, flying
-- Vary the CAMERA ANGLE: close-up face, full body wide, over-the-shoulder, low angle looking up, bird's eye, dramatic dutch angle, side profile
-- Vary the ENVIRONMENT: underwater cave, neon city rooftop, futuristic workshop, cozy lounge, space station, trading floor, garden, stage, apartment, ocean depths
-- Vary the MOOD: triumphant, contemplative, playful, intense, cozy, epic, mysterious, celebratory
-- Vary the LIGHTING: warm golden, cool blue-teal, dramatic rim light, soft ambient, neon-soaked, spotlight, sunrise/sunset colors
-- DO NOT repeat the same "standing confidently in dark void" setup. Each image should look like a different frame from a different scene.`;
+PROCESS — follow these steps:
+1. Read the tweet. What is it literally about? (e.g. "108 apps" = many apps, "staking" = passive income, "build first app" = building/creating, "poll" = choosing between options)
+2. Turn that concept into a VISUAL SCENE the lobster is in (e.g. "108 apps" → lobster surrounded by a galaxy of 100+ tiny floating glowing app screens, "staking" → lobster meditating with gold coins orbiting, "poll" → lobster holding up two glowing objects weighing them)
+3. Pick a unique pose, environment, and camera angle that fits`;
 
-// Scene templates per pillar — 3D mascot focused
-// Scene starting points per pillar — concrete visual descriptions only, no brand names
+// Scene starting points per pillar
 const PILLAR_SCENE_HINTS = {
     'App Spotlight': 'The lobster interacting with a glowing holographic app or screen. Vary: presenting to an audience, swiping through UI mid-air, holding up a completed project, or demo-ing on a floating tablet.',
     'Builder Shoutout': 'The lobster at a workstation — coding, building, tinkering. Vary: late-night grind with empty coffee cups, triumphant just-finished pose, pair-programming with a smaller sea creature, or surrounded by floating code.',
@@ -541,22 +534,12 @@ RULES:
 - NEVER use vague filler like "various" or "popular ones"
 - NEVER say "price is up" or "pumping" unless the data above shows positive 24h change. If price is DOWN, focus on building/fundamentals/community. NEVER fabricate market claims.
 
-IMAGE PROMPT (this is critical — the image must illustrate the tweet):
+IMAGE PROMPT:
 ${BRAND_IMAGE_CONTEXT}
-${sceneHint ? 'SCENE IDEA (adapt to fit tweet): ' + sceneHint : ''}
-${narrativeScene ? 'VISUAL INSPIRATION: ' + narrativeScene : ''}
-
-After writing the tweet, ask yourself: "What is this tweet ABOUT?" Then describe the lobster character DOING that thing in concrete visual terms.
-- Tweet about staking → the lobster meditating cross-legged on a glowing platform with gold coins orbiting around it and green upward arrows in background
-- Tweet about building → the lobster at a glowing keyboard with a completed app interface floating above the screen, surrounded by holographic code
-- Tweet about community → the lobster at the entrance of a neon-lit lounge waving, with smaller sea creatures visible inside
-- Tweet about growth → the lobster on a rooftop at night looking up at rising holographic charts against a starry sky
-
-IMPORTANT: Describe everything visually. Do NOT use brand names, product names, or terms the image model won't understand. "A coral-red lobster character at a glowing workstation" is good. "The Inclawbate mascot at The Workshop" is bad — the image model doesn't know what those are.
 
 Output format:
-TWEET: [the tweet — can include \\n for line breaks]
-IMAGE: [2-3 sentence visual description — the coral-red 3D lobster character doing something SPECIFIC to the tweet. Include: pose, environment, lighting, camera angle. Dark background, coral and teal neon accents, cinematic 3D render, 1:1]`;
+TWEET: [the tweet]
+IMAGE: [2-3 sentences. What is this tweet about? Show the lobster DOING that thing. Be specific and visual. Dark background, coral/teal neon, cinematic 3D render, 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -1086,42 +1069,21 @@ CRITICAL — NO FALSE CLAIMS:
 
 Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching image prompt.
 
-THE IMAGE PROMPT IS THE MOST IMPORTANT PART. Read the tweet you just wrote, then craft an image that ILLUSTRATES the specific content of that tweet. Not a generic brand image — a scene that someone could look at and understand what the tweet is about.
-
-IMAGE PROMPT RULES:
+IMAGE PROMPTS — THIS IS THE MOST IMPORTANT PART:
 ${BRAND_IMAGE_CONTEXT}
 
-SCENE IDEA for today's pillar (${pillar.name}) — use as a starting point, then customize for each tweet:
-${sceneHint}
+EXAMPLES of tweet → image connection:
+- Tweet "108 apps and counting" → "The coral-red 3D lobster character floating in a vast dark space, surrounded by over a hundred tiny glowing app interface screens arranged in a spiral galaxy pattern. The lobster spreads its claws wide in amazement. Bird's eye camera angle, teal and coral neon reflections on each screen, cinematic 3D render, 1:1"
+- Tweet "staking rewards are real" → "Close-up of the coral-red 3D lobster character sitting cross-legged on a floating crystal platform, eyes closed peacefully. Dozens of gold coins orbit around it in slow rings. Soft green upward arrows pulse in the background. Warm golden lighting from below, dark void, cinematic 3D render, 1:1"
+- Tweet "which app would you build first" → "The coral-red 3D lobster character standing at a crossroads, each path lit by a different neon color. One claw points left, the other right. Floating question marks and app icons hover above each path. Low angle looking up, dramatic teal and coral split lighting, cinematic 3D render, 1:1"
 
-VISUAL INSPIRATION (pick ONE per tweet and adapt it — do NOT reuse the same one):
-${narrativeScenesList}
-
-HOW TO WRITE A GOOD IMAGE PROMPT:
-1. Read your tweet. What is it ABOUT? (staking? building an app? community? a specific product?)
-2. Describe the lobster character DOING that thing — a specific action, pose, and expression
-3. Place it in a concrete environment (a workshop, a rooftop, a lounge, a trading floor, underwater, in space, etc.)
-4. Vary the camera angle (close-up, wide shot, low angle, over-the-shoulder, bird's eye)
-5. Add visual details that connect to the tweet content
-6. End with: dark background, coral and teal neon accent lighting, cinematic 3D render, 1:1
-
-CRITICAL: Describe everything in pure visual terms. Do NOT use brand names, product names, or made-up location names. The image model has NO context about your brand. Write the prompt so ANY image model could render it perfectly.
-- GOOD: "A stylized 3D coral-red lobster character meditating cross-legged on a floating platform, gold coins orbiting around it, green upward arrows in background, dark void, teal rim lighting, cinematic render, 1:1"
-- BAD: "The Inclawbate lobster mascot in Staking Zen pose at The Trading Floor with CLAWS tokens" (image model doesn't know what any of this means)
-
-BAD IMAGE PROMPTS (DO NOT DO THIS):
-- "3D lobster mascot in a cool pose with coral and teal lighting" (too generic, could be any tweet)
-- "The lobster standing confidently" (no action, no connection to tweet content)
-- "Lobster with holographic screens" (vague, not specific to the tweet)
-- Any prompt that uses brand-specific names like "Inclawbate", "CLAWS", "The Workshop", "The Arena" etc. without describing what they look like
-
-Each of the ${emptyHours.length} images MUST look visually distinct — different pose, different environment, different camera angle, different lighting mood.
+Each image MUST look different — vary pose, environment, camera angle, and lighting.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — Posts at ${getTimeOfDay(h)}. ${getGreetingRule(h)}`).join('\n')}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentence visual description — the 3D coral-red lobster character doing something SPECIFIC to the tweet. Include: pose, environment, camera angle, lighting. Dark background, coral and teal neon accents, cinematic 3D render, 1:1]
+IMAGE: [2-3 sentences. What is this tweet about? Show the lobster DOING that specific thing. Be concrete and visual. Dark background, coral/teal neon, cinematic 3D render, 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 
