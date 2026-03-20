@@ -302,15 +302,13 @@ export default async function handler(req, res) {
             .eq('agent_status', 'active');
 
         if (queryErr) throw queryErr;
-        if (!projects || projects.length === 0) {
-            return res.status(200).json({ message: 'No active agents' });
-        }
+        // Don't bail early — scheduled slots still need processing even with no active agents
 
         // Split into two tracks: own X account vs shared @inclawbator
         const ownXProjects = [];
         const sharedProjects = [];
 
-        for (const p of projects) {
+        for (const p of (projects || [])) {
             const hasOwnX = p.x_access_token && p.x_refresh_token;
             if (hasOwnX) {
                 ownXProjects.push(p);
@@ -343,31 +341,7 @@ export default async function handler(req, res) {
         const errors = [];
         const sharedSlotsRemaining = SHARED_DAILY_CAP - (sharedPostsToday || 0);
 
-        // ── TRACK 1: Own X account projects — process normally, no slot limits ──
-        const currentHour = new Date().getUTCHours();
-
-        for (const project of ownXProjects) {
-            if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
-
-            const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
-
-            // Schedule-times based: post only during scheduled UTC hours
-            if (Array.isArray(project.agent_schedule_times) && project.agent_schedule_times.length > 0) {
-                if (!project.agent_schedule_times.includes(currentHour)) continue;
-                // Prevent double-fire within cron window (45 min cooldown)
-                if (now - lastPost < 45 * 60 * 1000) continue;
-            } else {
-                // Legacy interval-based fallback
-                const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
-                if (now - lastPost < intervalMs) continue;
-            }
-
-            const result = await processAgentPost(project, errors);
-            if (result === 'posted') posted++;
-            else if (result === 'dormant') dormant++;
-        }
-
-        // ── TRACK 2: Scheduled @inclawbator slots (calendar bookings) ──
+        // ── TRACK 1 (PRIORITY): Scheduled slots — run FIRST so they don't get cut off by timeout ──
         let scheduledPosted = 0;
         const { data: dueSlots } = await supabase
             .from('agent_schedule')
@@ -554,6 +528,30 @@ export default async function handler(req, res) {
 
                 errors.push(`${project.name}: ${postErr.message}`);
             }
+        }
+
+        // ── TRACK 2: Agent projects (own X account) — lower priority, runs after scheduled slots ──
+        const currentHour = new Date().getUTCHours();
+
+        for (const project of ownXProjects) {
+            if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
+
+            const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
+
+            // Schedule-times based: post only during scheduled UTC hours
+            if (Array.isArray(project.agent_schedule_times) && project.agent_schedule_times.length > 0) {
+                if (!project.agent_schedule_times.includes(currentHour)) continue;
+                // Prevent double-fire within cron window (45 min cooldown)
+                if (now - lastPost < 45 * 60 * 1000) continue;
+            } else {
+                // Legacy interval-based fallback
+                const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
+                if (now - lastPost < intervalMs) continue;
+            }
+
+            const result = await processAgentPost(project, errors);
+            if (result === 'posted') posted++;
+            else if (result === 'dormant') dormant++;
         }
 
         return res.status(200).json({
