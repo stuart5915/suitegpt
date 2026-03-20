@@ -1147,7 +1147,6 @@
     var DECIMALS = 1e18;
 
     var buckets = [
-        { name: 'Staking',    addr: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40', color: '#4ade80' },
         { name: 'Uniswap LP', addr: '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F', color: '#a78bfa' },
         { name: 'Treasury',   addr: '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd', color: '#fbbf24' },
     ];
@@ -1177,31 +1176,58 @@
     var TREASURY_ADDR    = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 
     async function loadDistribution() {
-        var selector = '0x70a08231';
+        var balSelector = '0x70a08231'; // balanceOf(address)
+        var totalStakedSelector = '0x817b1cd2'; // totalStaked()
+
+        // Fetch bucket balances, staking contract split, and treasury staked balance in parallel
         var results = [];
+        var stakingContractBal = 0, totalStakedVal = 0, treasuryStakedBal = 0;
 
-        await Promise.all(buckets.map(async function(b, idx) {
-            var padded = b.addr.slice(2).toLowerCase().padStart(64, '0');
-            var raw = await rpcCall(CLAWS, selector + padded);
-            var bal = Number(BigInt(raw)) / DECIMALS;
-            results[idx] = bal;
-        }));
+        await Promise.all([
+            // Regular buckets (LP, Treasury wallet balance)
+            ...buckets.map(async function(b, idx) {
+                var padded = b.addr.slice(2).toLowerCase().padStart(64, '0');
+                var raw = await rpcCall(CLAWS, balSelector + padded);
+                results[idx] = Number(BigInt(raw)) / DECIMALS;
+            }),
+            // Staking contract total CLAWS balance
+            (async function() {
+                var padded = STAKING_CONTRACT.slice(2).toLowerCase().padStart(64, '0');
+                var raw = await rpcCall(CLAWS, balSelector + padded);
+                stakingContractBal = Number(BigInt(raw)) / DECIMALS;
+            })(),
+            // totalStaked() on staking contract
+            (async function() {
+                var raw = await rpcCall(STAKING_CONTRACT, totalStakedSelector);
+                totalStakedVal = Number(BigInt(raw)) / DECIMALS;
+            })(),
+            // Treasury's staked balance in staking contract
+            (async function() {
+                var padded = TREASURY_ADDR.slice(2).toLowerCase().padStart(64, '0');
+                var raw = await rpcCall(STAKING_CONTRACT, balSelector + padded);
+                treasuryStakedBal = Number(BigInt(raw)) / DECIMALS;
+            })()
+        ]);
 
-        // Treasury wallet also has CLAWS staked — add staked balance
+        // Add treasury's staked balance to treasury bucket
         var treasuryIdx = buckets.findIndex(function(b) { return b.addr === TREASURY_ADDR; });
-        if (treasuryIdx !== -1) {
-            var padded = TREASURY_ADDR.slice(2).toLowerCase().padStart(64, '0');
-            var stakedRaw = await rpcCall(STAKING_CONTRACT, selector + padded);
-            var stakedBal = Number(BigInt(stakedRaw)) / DECIMALS;
-            results[treasuryIdx] += stakedBal;
-        }
+        if (treasuryIdx !== -1) results[treasuryIdx] += treasuryStakedBal;
 
-        var knownTotal = results.reduce(function(a, b) { return a + b; }, 0);
-        var communityBal = TOTAL_SUPPLY - knownTotal;
+        // Split staking contract into Staked vs Rewards
+        var rewardsBal = stakingContractBal - totalStakedVal;
+        if (rewardsBal < 0) rewardsBal = 0;
 
-        var segments = buckets.map(function(b, i) {
-            return { name: b.name, balance: results[i], pct: (results[i] / TOTAL_SUPPLY * 100), color: b.color };
+        // Build segments: Staked, Rewards, then regular buckets, then Community
+        var segments = [
+            { name: 'Staked CLAWS', balance: totalStakedVal, pct: (totalStakedVal / TOTAL_SUPPLY * 100), color: '#4ade80' },
+            { name: 'Reward Pool',  balance: rewardsBal,     pct: (rewardsBal / TOTAL_SUPPLY * 100),     color: '#2dd4bf' },
+        ];
+        buckets.forEach(function(b, i) {
+            segments.push({ name: b.name, balance: results[i], pct: (results[i] / TOTAL_SUPPLY * 100), color: b.color });
         });
+
+        var knownTotal = segments.reduce(function(a, s) { return a + s.balance; }, 0);
+        var communityBal = TOTAL_SUPPLY - knownTotal;
         segments.push({ name: 'Community / Other', balance: communityBal, pct: (communityBal / TOTAL_SUPPLY * 100), color: '#60a5fa' });
 
         renderDonut(segments);
