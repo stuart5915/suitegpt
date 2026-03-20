@@ -10,7 +10,7 @@ const supabase = createClient(
 );
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
-const ADMIN_USERNAME = 'StuartDeFi';
+const ADMIN_USERNAMES = ['StuartDeFi', 'FreefoRaLLey'];
 
 function esc(str) {
     if (!str) return '';
@@ -46,7 +46,7 @@ async function sendMsg(chatId, text) {
 }
 
 function isAdmin(username) {
-    return username && username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
+    return username && ADMIN_USERNAMES.some(a => a.toLowerCase() === username.toLowerCase());
 }
 
 // ── /state — shows focus + active projects + numbered backlog ──
