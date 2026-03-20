@@ -19,6 +19,31 @@ const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655']; // @FreefoRaLLey
 const VALID_HOURS = [1, 13, 16, 19, 22];
 
+// Time-of-day context for AI prompts (UTC hours → ET labels)
+function getTimeOfDay(utcHour) {
+    const map = { 13: 'morning (9 AM ET)', 16: 'midday (12 PM ET)', 19: 'afternoon (3 PM ET)', 22: 'evening (6 PM ET)', 1: 'night (9 PM ET)' };
+    return map[utcHour] || 'unknown';
+}
+function getGreetingRule(utcHour) {
+    if (utcHour === 13) return 'Morning slot — "gm" is OK.';
+    return 'This is an ' + getTimeOfDay(utcHour) + ' slot — do NOT say "gm", "good morning", or any morning greeting. Use time-appropriate openers like "gn" for night, or no greeting at all.';
+}
+
+const ECOSYSTEM_LINKS = `- Website: inclawbate.com
+- Dashboard: inclawbate.com/dashboard
+- App builder (AI, no code): inclawbate.com/build
+- All apps: inclawbate.com/apps
+- Staking ($CLAWS): inclawbate.com/stake
+- Agent skills: inclawbate.com/skills
+- Free tools: inclawbate.com/tools
+- X Schedule: inclawbate.com/schedule
+- Incubator: inclawbate.com/inclawbator
+- PokerAI (poker vs AI, real USDC): pokerai.app
+- OddsClaw (prediction markets): oddsclaw.app
+- Telegram community: t.me/inclawbate
+- Token: $CLAWS on Base
+Pick 0-2 links per tweet. Vary which ones you use — don't always default to inclawbate.com. Match the link to the tweet topic (staking tweet → /stake, builder tweet → /build, poker tweet → pokerai.app, etc).`;
+
 // Content pillars by day of week (0=Sun)
 const PILLARS = [
     { name: 'Weekly Recap',       emoji: '\u{1F4CA}', needsImage: true,  desc: 'Recap what shipped this week, platform stats, what\'s coming next' },
@@ -42,79 +67,78 @@ const SLOT_ANGLES = {
 };
 
 // Brand archetype — injected into all image prompt generation
-const BRAND_IMAGE_CONTEXT = `INCLAWBATE VISUAL BRAND (follow this STRICTLY):
+const BRAND_IMAGE_CONTEXT = `CHARACTER DESCRIPTION (include in EVERY image prompt — describe visually, no brand names):
+A stylized 3D cartoon lobster character, coral-red shell with a glossy sheen, big round expressive eyes, two large claws it uses like hands, and two curved antennae. Chunky rounded proportions like a Pixar character. Confident personality, slight smirk.
 
-THE MASCOT (must appear in every image):
-- 3D rendered anthropomorphic coral-red lobster character with glossy segmented shell, large expressive round eyes with white catchlight highlights, big prominent claws (used as hands), and two curved antennae
-- Chunky, rounded, approachable proportions (like a Pixar/Fortnite character). Confident posture, builder energy, slightly cocky grin. NOT cute/kawaii/chibi.
-- Shell colors: coral red (#e5533d) body, darker (#c9442e, #b83c28) on segments. Glossy subsurface scattering sheen.
+RENDER RULES:
+- 3D render, polished surfaces, cinematic lighting, depth of field
+- Dark background (near-black). Accent lighting in coral-red and seafoam-teal neon
+- 1:1 square format. One clear focal point.
+- NO text in image. NO white backgrounds. NO flat illustration. NO realistic humans.
 
-RENDER STYLE:
-- 3D rendered, Octane render quality. NOT flat illustration, NOT 2D, NOT pixel art.
-- Polished smooth surfaces with cinematic lighting. Volumetric light, rim lighting in coral and teal.
-- Depth of field — subject sharp, background softly blurred.
-- Dark backgrounds ALWAYS (#06060b to #0d0d1a). Never white/bright.
-
-COLORS: Coral red (#e5533d) primary, seafoam teal (#4db6ac) secondary, dark void backgrounds, warm gold (#d4a574) for coins/premium. Coral + teal neon glow on edges.
-
-DON'T: No white backgrounds. No flat illustration. No stock photos. No realistic humans. No text in image. No pure blue. No cluttered compositions. No horror/scary vibes.
-
-FORMAT: 1:1 aspect ratio. Single focal point (the lobster). Clean composition.`;
+VARIETY IS CRITICAL — every image must feel distinct:
+- Vary the lobster's POSE: sitting, standing, leaping, meditating, running, presenting, building, waving, thinking, flexing, relaxing, flying
+- Vary the CAMERA ANGLE: close-up face, full body wide, over-the-shoulder, low angle looking up, bird's eye, dramatic dutch angle, side profile
+- Vary the ENVIRONMENT: underwater cave, neon city rooftop, futuristic workshop, cozy lounge, space station, trading floor, garden, stage, apartment, ocean depths
+- Vary the MOOD: triumphant, contemplative, playful, intense, cozy, epic, mysterious, celebratory
+- Vary the LIGHTING: warm golden, cool blue-teal, dramatic rim light, soft ambient, neon-soaked, spotlight, sunrise/sunset colors
+- DO NOT repeat the same "standing confidently in dark void" setup. Each image should look like a different frame from a different scene.`;
 
 // Scene templates per pillar — 3D mascot focused
+// Scene starting points per pillar — concrete visual descriptions only, no brand names
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': '3D lobster in "presenter" pose, one claw gesturing toward a large floating holographic app interface that glows coral and teal. Dark void background with hexagonal grid. Volumetric light spills from the screen onto the shell.',
-    'Builder Shoutout': '3D lobster in "builder" pose, sitting at a futuristic dark workstation typing on a glowing keyboard. Multiple holographic code screens float around. Dark moody atmosphere with volumetric fog. Late-night coding energy.',
-    'DeFi / CLAWS Update': '3D lobster in "thinker" pose (claw on chin), floating in a dark void surrounded by orbiting holographic charts, token coins, and teal yield arrows. A large coral-and-gold CLAWS coin floats center. Space-like background.',
-    'Weekly Recap': '3D lobster in "celebrator" pose, both claws raised triumphantly. Mosaic of miniature floating app screens and token charts connected by glowing coral threads behind. Coral and teal confetti particles. Festive but professional.',
-    'How-To / Tips': '3D lobster in "presenter" pose, pointing a claw at floating step-by-step instruction panels glowing coral. Dark clean background with subtle grid. Teacher energy — confident, helpful. Minimal clean composition.',
-    'Community Vibes': '3D lobster in "greeter" pose, waving warmly at entrance of a neon-lit crypto lounge with coral and teal neon on dark walls. Smaller lobster characters at glowing workstations inside. Warm inviting atmosphere with volumetric haze.',
-    'Incubation CTA': '3D lobster in "boss" pose — standing powerfully atop a glowing platform of stacked app icons and token coins, claws crossed confidently. Coral energy radiates upward creating dramatic uplighting. Dark epic background with rising teal embers.',
+    'App Spotlight': 'The lobster interacting with a glowing holographic app or screen. Vary: presenting to an audience, swiping through UI mid-air, holding up a completed project, or demo-ing on a floating tablet.',
+    'Builder Shoutout': 'The lobster at a workstation — coding, building, tinkering. Vary: late-night grind with empty coffee cups, triumphant just-finished pose, pair-programming with a smaller sea creature, or surrounded by floating code.',
+    'DeFi / CLAWS Update': 'The lobster surrounded by floating charts, gold coins, or financial visualizations. Vary: meditating among orbiting coins, tending a glowing garden of growing crystal assets, analyzing holographic data, or watching charts from a rooftop.',
+    'Weekly Recap': 'Celebratory or reflective. Vary: claws raised in victory with confetti, looking out over a neon cityscape from a rooftop at night, surrounded by a mosaic of tiny floating screens, or high-fiving smaller characters.',
+    'How-To / Tips': 'Teaching or explaining. Vary: pointing at floating step-by-step instruction panels, mentoring a tiny shrimp character, demonstrating on a glowing screen, or in a cozy study with books and holographic notes.',
+    'Community Vibes': 'Social energy. Vary: greeting at a neon-lit lounge entrance, on a small stage with a crowd, hanging out with other sea creatures at a bar, competitive gaming face-off, or casual group hangout.',
+    'Incubation CTA': 'Powerful or aspirational. Vary: standing on a glowing elevated platform, walking through a swirling energy portal, leading a march of smaller lobster characters, or nurturing glowing orbs in a warm chamber.',
 };
 
-// Narrative scenarios per pillar — drawn from NARRATIVE.md for richer, varied image prompts
+// Concrete scene ideas per pillar — purely visual, no brand-specific terms
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'The lobster at The Workshop, hunched over a holographic workbench, manipulating glowing UI components mid-air. Screens display a nearly-finished app. Crab Engineer gives thumbs-up from behind.',
-        'Shipping Day — the lobster holds up a freshly completed app like a trophy, glowing with achievement energy. The app floats up to join a constellation of other apps above The Reef.',
-        'The lobster and the shrimp newbie side by side, the lobster gently showing how to use the app on a floating screen. The shrimp\'s eyes light up. Wholesome teaching moment.',
-        'The Arena — the lobster on stage presenting an app under spotlights. Holographic scoreboards and crowds of mini lobsters watching. App showcase energy.',
+        'The lobster hunched over a glowing workbench, manipulating floating UI components mid-air with its claws. Multiple translucent screens nearby showing a nearly-finished interface. A smaller crab character gives a thumbs-up from behind. Warm workshop lighting.',
+        'The lobster holding up a glowing completed project like a trophy, beaming with pride. The project floats upward to join a constellation of other glowing objects above. Achievement energy, upward camera angle.',
+        'The lobster and a tiny shrimp character side by side, the lobster gently showing something on a floating screen. The shrimp looks amazed. Soft warm lighting, mentoring energy.',
+        'The lobster on a spotlit stage presenting something on a large holographic display. Audience of small sea creatures watching. Conference/demo energy, dramatic stage lighting.',
     ],
     'Builder Shoutout': [
-        'The All-Nighter — 3 AM at The Workshop, dark except for one screen\'s glow. The lobster hunches over the keyboard, shell slightly dimmer. Empty energy cans nearby. On screen: an app coming together beautifully.',
-        'Collaboration — two lobsters at adjacent workstations, teal data streams flowing between screens. They high-claw in the middle as they merge their work. Partnership energy.',
-        'Code Review — the lobster and the Crab Engineer side by side, both looking at a holographic code review. The crab tightens a bolt on the code (literally). Bug squashing energy.',
-        'The Build Session — late night at The Workshop, multiple screens open, claws flying across keyboard. Coffee mugs piled up. Focused, determined energy.',
+        'Late night, dark room lit only by a glowing computer screen. The lobster hunched over a keyboard, focused. Empty energy drink cans and coffee mugs scattered around. On-screen: beautiful code or UI coming together. Moody blue-teal lighting.',
+        'Two lobster characters at adjacent workstations, glowing data streams connecting their screens. They reach across to high-five (high-claw) in the middle. Collaboration energy, warm dual-toned lighting.',
+        'The lobster and a crab character examining a floating holographic code review together. The crab holds a wrench, tightening something in the code. Debugging energy, focused expressions.',
+        'The lobster at a workstation surrounded by multiple floating screens, claws flying across a glowing keyboard. Coffee mugs piled up. Intense late-night coding session. Dramatic rim lighting.',
     ],
     'DeFi / CLAWS Update': [
-        'Staking Zen — the lobster meditates on a floating coral platform. Token coins orbit slowly around it like electrons. Yield arrows glow upward. Peaceful passive income energy.',
-        'Checking the Charts — the lobster at The Trading Floor, one claw holding a phone with a price chart. Other sea creatures peek over its shoulder. Tense but analytical.',
-        'Yield Farming — the lobster tends a garden where glowing token coins grow from coral stalks. Watering them with a teal data stream. Each plant is a different yield source.',
-        'Whale Watching — the lobster and mini lobsters on The Rooftop, looking up as a massive whale swims overhead leaving a trail of teal sparkles. Awe and respect.',
+        'The lobster floating cross-legged in a meditation pose on a coral platform. Glowing gold coins orbit slowly around it like electrons. Soft green upward arrows in the background. Peaceful, zen, passive income energy.',
+        'The lobster on a futuristic trading floor, one claw holding a device showing a price chart. Other small sea creatures peek over its shoulder curiously. Analytical energy, teal and gold accents.',
+        'The lobster tending a bioluminescent garden where glowing crystal formations grow from coral stalks. Watering them with a stream of teal light. Each crystal is a different color. Yield farming metaphor.',
+        'The lobster and smaller characters on a rooftop at night, looking up in awe as a massive whale silhouette passes overhead leaving a trail of sparkles. Dramatic scale contrast, deep blue and teal.',
     ],
     'How-To / Tips': [
-        'Teaching a Newbie — the lobster kneels to the shrimp\'s level, gently showing it how to use the app builder on a floating screen. Patient mentoring energy.',
-        'The Workshop — holographic screens everywhere, token blueprints pinned to coral walls, glowing keyboards built into rock formations. The lobster explains step by step.',
-        'The Octopus Multitasker juggling 8 tools while the lobster watches and takes notes. Productivity content energy.',
-        'Morning Routine — the lobster wakes in its coral apartment, checks holographic notifications: "3 new apps shipped overnight." Grabs a glowing coffee mug. Cozy tutorial energy.',
+        'The lobster kneeling down to a tiny shrimp\'s eye level, gently pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight on both characters.',
+        'A cozy workshop filled with floating holographic screens, glowing blueprints pinned to coral walls, keyboards built into rock formations. The lobster gestures step-by-step at instruction panels.',
+        'A cartoon octopus juggling 8 different glowing tools while the lobster watches and takes notes on a floating tablet. Humorous productivity energy, bright and fun.',
+        'The lobster waking up in a cozy coral-themed apartment, stretching, looking at floating notification bubbles. Grabbing a glowing coffee mug. Morning routine, cozy warm tones.',
     ],
     'Community Vibes': [
-        'The Meetup — The Lounge packed with different sea creatures. The lobster on a small stage with a holographic presentation. Everyone engaged, some on holographic tablets.',
-        'Meme War — two lobsters face off across a table, rapidly creating memes on holographic screens. Other creatures watch and vote with teal/coral light beams. Competitive but fun.',
-        'The Group Photo — all characters lined up: lobster center, mini lobsters, Crab Engineer, Octopus, Shrimp Newbie, Pufferfish. Teal and coral lighting. Team photo energy.',
-        'Lunch Break — the lobster in The Lounge with other sea creatures, eating kelp noodles. A mini lobster shows off an app on their phone. Slice-of-life energy.',
+        'A neon-lit underwater lounge packed with different cartoon sea creatures. The lobster on a small stage with a holographic presentation. Everyone engaged. Warm community gathering energy.',
+        'Two lobsters face off across a table, rapidly creating images on holographic screens. Smaller creatures watch and cast votes with beams of light. Playful competitive energy, split teal/coral lighting.',
+        'Group photo lineup: the lobster center, flanked by various cartoon sea creatures (crab, octopus, shrimp, pufferfish, smaller lobsters). Teal and coral backdrop. Team photo energy, everyone posing.',
+        'The lobster in a cozy lounge booth with other sea creatures, sharing a meal. One small character shows something on a tiny glowing phone. Casual hangout, warm ambient lighting.',
     ],
     'Incubation CTA': [
-        'The Incubator — a warm egg-shaped chamber with soft coral lighting. The lobster tends to glowing idea-orbs, nurturing projects from concept to launch. Cozy but powerful.',
-        'The Portal — the lobster stands before a massive swirling coral-and-teal portal. On the other side: a thriving ecosystem of apps, tokens, builders. The lobster steps forward confidently.',
-        'The Throne — the lobster sits on a throne of stacked app icons and token coins. Not arrogant — earned. Workshop visible behind, tools still out. "Built this from scratch" energy.',
-        'The Army — an army of mini lobsters marching forward, each carrying a different tool. The main lobster leads from the front. Coral banners flowing. "We\'re coming."',
+        'A warm egg-shaped glowing chamber with soft coral lighting. The lobster inside, carefully tending to luminous floating orbs of different colors. Nurturing, incubation energy. Close-up shot.',
+        'The lobster standing before a massive swirling portal of coral and teal energy. Through the portal: a thriving city of lights and floating structures. The lobster steps forward boldly. Epic wide shot.',
+        'The lobster seated on an elevated platform made of stacked glowing geometric shapes. Workshop tools visible behind. Earned authority, not arrogant. Low camera angle looking up.',
+        'An army of smaller lobster characters marching forward in formation, each carrying a different glowing tool. The main lobster leads from the front. Coral-colored banners waving. Movement energy, wide cinematic shot.',
     ],
     'Weekly Recap': [
-        'Hitting 100 Apps — The Arena packed. A massive holographic number glows above. Confetti everywhere. The lobster stands center stage, claws raised. Mini lobsters cheering.',
-        'The Vision — the lobster on The Rooftop at night, looking up at a constellation forming the Inclawbate logo. Stars connect with teal lines. Visionary epic energy.',
-        'The Origin — deep in the ocean, a glowing coral egg cracks open. A tiny lobster claw reaches out. The first light is coral-red. Origin story energy.',
-        'First Sale / First User — the lobster stares at a notification hologram: "1 new user on your app." Pure joy. Claws trembling. A single teal sparkle. Triumphant but intimate.',
+        'A packed arena scene. A massive holographic number glows above the stage. Confetti and particles everywhere. The lobster center stage, claws raised. Smaller characters cheering. Celebration energy.',
+        'The lobster alone on a rooftop at night, looking up at a sky full of stars connected by glowing teal lines forming a constellation. Contemplative, visionary. Wide shot, dramatic sky.',
+        'Deep underwater, a glowing coral egg cracking open with warm light pouring out. A tiny lobster claw reaching out from inside. Origin story energy. Dramatic lighting, close-up.',
+        'The lobster staring at a small floating notification bubble, face lit by its glow. Expression of pure joy and disbelief. Intimate moment, tight close-up, soft background bokeh.',
     ],
 };
 
@@ -154,51 +178,51 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'Weekly Recap': '3D lobster in "celebrator" pose on The Rooftop, looking over a glowing digital reef city. Holographic stats and app screens float around. Festive coral and teal confetti. Epic cinematic wide shot.',
-    'Product Highlight': '3D lobster in "presenter" pose at The Workshop, demonstrating a product on a large holographic display. Tools and prototypes visible. Coral neon glow from the screen, teal accent lighting.',
-    'Builder Story': '3D lobster in "builder" pose at a workstation inside The Workshop. Code screens and app UIs floating. Crab Engineer nearby. Dark moody atmosphere, volumetric fog.',
-    'Brand & Vision': '3D lobster in power pose on The Rooftop at night, looking up at a massive constellation forming the Inclawbate logo. Stars connect with teal lines. Epic, visionary, cinematic wide shot.',
-    'Education': '3D lobster in "presenter" pose, teaching The Shrimp Newbie with floating step-by-step panels. Clean dark background. Patient mentoring energy. Teal data flows.',
-    'Community Engagement': '3D lobster in "greeter" pose at The Lounge, surrounded by mini lobsters and Pufferfish. Neon-lit crypto bar, coral and teal signs. Party but productive energy.',
-    'Ecosystem Update': '3D lobster in "thinker" pose at The Vault, surrounded by orbiting token coins, charts trending up, treasury metrics. Gold and coral lighting. Data-driven energy.',
+    'Weekly Recap': 'Celebratory or reflective. Vary between: the lobster on a rooftop overlooking a glowing neon cityscape, claws raised with confetti, reviewing a mosaic of floating screens, or group celebration with smaller characters.',
+    'Product Highlight': 'Demo or showcase energy. Vary between: presenting on a large holographic display, interacting with a floating product interface, showing off a prototype to a crowd, or hands-on building at a glowing workstation.',
+    'Builder Story': 'Building or creating. Vary between: late-night coding session with coffee cups, pair-programming with a crab character, triumphant just-finished moment, or focused deep-work at a futuristic desk.',
+    'Brand & Vision': 'Epic or aspirational. Vary between: standing on a rooftop at night looking at stars, walking through a glowing energy portal, leading a march of smaller characters, or power pose on an elevated platform.',
+    'Education': 'Teaching or explaining. Vary between: mentoring a tiny shrimp character, pointing at floating instruction panels, demonstrating on a screen, or in a cozy study surrounded by holographic notes.',
+    'Community Engagement': 'Social energy. Vary between: greeting at a neon lounge entrance, on stage with a crowd, gaming face-off with another character, or casual group hangout at a bar.',
+    'Ecosystem Update': 'Data or finance energy. Vary between: surrounded by floating charts and gold coins, meditating among orbiting tokens, tending a glowing crystal garden, or analyzing holographic data at a futuristic terminal.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
     'Weekly Recap': [
-        'The Vision — the lobster on The Rooftop at night, looking up at a constellation forming the Inclawbate logo. Visionary epic energy.',
-        'Hitting 100 Apps — The Arena packed. A massive holographic number glows above. Confetti. The lobster center stage, claws raised.',
-        'The Group Photo — all characters lined up: lobster center, mini lobsters, Crab Engineer, Octopus. Team photo energy.',
+        'The lobster on a rooftop at night, looking up at a sky full of stars connected by glowing teal lines. Contemplative, visionary energy. Wide cinematic shot.',
+        'A packed arena scene with a massive glowing holographic number above the stage. Confetti everywhere. The lobster center stage, claws raised. Smaller characters cheering.',
+        'Group photo: the lobster center, flanked by a crab, an octopus, smaller lobsters, and a pufferfish. Teal and coral backdrop. Team photo energy.',
     ],
     'Product Highlight': [
-        'Shipping Day — the lobster holds up a freshly completed product like a trophy. The Crab Engineer gives thumbs-up.',
-        'The Workshop — holographic screens everywhere. The lobster demonstrates a feature to a crowd of mini lobsters.',
-        'The Arena — the lobster on stage presenting a product under spotlights. Holographic scoreboards and crowds watching.',
+        'The lobster holding up a glowing completed project like a trophy, beaming with pride. A smaller crab character gives a thumbs-up from behind. Achievement energy.',
+        'A workshop filled with holographic screens. The lobster demonstrating a feature on a large floating display to a crowd of smaller characters watching attentively.',
+        'The lobster on a spotlit stage presenting to an audience. Large holographic scoreboards and screens behind. Product launch energy, dramatic stage lighting.',
     ],
     'Builder Story': [
-        'The All-Nighter — 3 AM at The Workshop, dark except for one screen\'s glow. On screen: an app coming together.',
-        'Collaboration — two lobsters at adjacent workstations, teal data streams flowing between screens. They high-claw.',
-        'Teaching a Newbie — the lobster kneels to the Shrimp Newbie\'s level, showing how to build. Eyes light up.',
+        'Late night, dark room lit only by a screen\'s glow. The lobster hunched over a keyboard, focused. Empty energy cans nearby. On-screen: something beautiful coming together.',
+        'Two lobster characters at side-by-side workstations, glowing data streams connecting their screens. They reach across for a high-five (high-claw). Collaboration energy.',
+        'The lobster kneeling down to a tiny shrimp\'s eye level, pointing at a floating screen showing how to build something. The shrimp\'s eyes light up. Mentoring energy.',
     ],
     'Brand & Vision': [
-        'The Origin — deep in the ocean, a glowing coral egg cracks open. A tiny lobster claw reaches out. Origin story.',
-        'The Portal — the lobster before a massive swirling coral-and-teal portal. A thriving ecosystem on the other side.',
-        'The Throne — lobster on a throne of stacked app icons and token coins. Workshop visible behind. "Built this from scratch."',
-        'The Army — mini lobsters marching forward, each carrying a tool. The main lobster leads. Coral banners flowing.',
+        'Deep underwater, a glowing coral egg cracking open, warm light pouring out. A tiny claw reaching from inside. Origin story energy, dramatic close-up lighting.',
+        'The lobster standing before a massive swirling portal of coral and teal energy. Through it: a thriving city of lights. The lobster steps forward. Epic wide shot.',
+        'The lobster seated on an elevated platform of stacked glowing geometric shapes. Tools visible behind. Earned authority. Low camera angle.',
+        'A march of smaller lobster characters, each carrying a different glowing tool. The main lobster leads from the front. Coral-colored banners. Movement energy, wide cinematic shot.',
     ],
     'Education': [
-        'Teaching a Newbie — the lobster gently showing the Shrimp how to use the platform. Patient mentoring.',
-        'The Octopus Multitasker juggling 8 tools while the lobster takes notes. Productivity energy.',
-        'The Workshop with clear diagrams and step-by-step panels floating in the air. Educational but cool.',
+        'The lobster gently mentoring a tiny shrimp character, pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight.',
+        'A cartoon octopus juggling 8 different glowing tools while the lobster watches and takes notes on a tablet. Humorous productivity energy.',
+        'A workshop with clear floating diagrams and step-by-step instruction panels in the air. The lobster gestures at each panel. Clean, educational composition.',
     ],
     'Community Engagement': [
-        'The Meetup — The Lounge packed with sea creatures. The lobster on stage. Community energy.',
-        'Meme War — two lobsters creating memes on holographic screens. Others voting. Competitive but fun.',
-        'GM Post — sunrise over the reef. Lobster on The Rooftop, coffee in claw. Fresh new day energy.',
+        'A neon-lit underwater lounge packed with various cartoon sea creatures. The lobster on a small stage. Community gathering energy, warm ambient lighting.',
+        'Two lobsters facing off across a table, creating things on holographic screens. Smaller creatures voting with beams of light. Playful competition, split teal/coral lighting.',
+        'Sunrise over a coral reef landscape. The lobster on a rooftop, coffee mug in claw, watching the sky. Fresh morning energy, warm golden light.',
     ],
     'Ecosystem Update': [
-        'Staking Zen — lobster meditating on a floating platform. Token coins orbiting. Yield arrows glowing upward.',
-        'Checking the Charts — at The Trading Floor. One claw holding phone with chart. Analytical.',
-        'Whale Watching — lobster and mini lobsters on The Rooftop as a massive whale swims overhead trailing teal sparkles.',
+        'The lobster floating cross-legged in meditation, gold coins orbiting slowly around it. Soft green upward arrows in background. Peaceful zen energy.',
+        'The lobster at a futuristic trading terminal, one claw on a device showing a chart. Other small sea creatures peeking over its shoulder. Analytical energy.',
+        'The lobster and smaller characters on a rooftop at night, looking up in awe at a massive whale silhouette passing overhead, trailing sparkles. Deep blue and teal.',
     ],
 };
 
@@ -497,11 +521,10 @@ Real data (use ONLY these numbers):
 - Recent apps: ${recentAppList || '(not available — do NOT reference specific apps)'}
 ${ctx.claws ? `- $CLAWS price: $${ctx.claws.price} (24h: ${ctx.claws.change24h > 0 ? '+' : ''}${ctx.claws.change24h.toFixed(1)}%, ${ctx.claws.direction.toUpperCase()})${ctx.claws.volume24h >= 5000 ? `\n- $CLAWS 24h volume: $${ctx.claws.volume24h >= 1000 ? (ctx.claws.volume24h/1000).toFixed(1) + 'k' : ctx.claws.volume24h.toFixed(0)}` : '\n- $CLAWS volume: LOW — do NOT mention volume'}${ctx.claws.marketCap >= 50000 ? `\n- $CLAWS mcap: $${ctx.claws.marketCap >= 1000000 ? (ctx.claws.marketCap/1000000).toFixed(2) + 'M' : (ctx.claws.marketCap/1000).toFixed(0) + 'k'}` : ''}
 - If price is DOWN/FLAT, do NOT say "price is up" or imply pumping. Use EXACT numbers — do NOT inflate.` : '- Token: $CLAWS on Base (no live price data — do NOT mention price direction)'}
-- Website: inclawbate.com
-- App builder: inclawbate.com/build
-- Staking: inclawbate.com/stake
-- PokerAI: pokerai.app
-- Tools: inclawbate.com/tools
+${ECOSYSTEM_LINKS}
+
+TIME OF DAY: This tweet posts at ${getTimeOfDay(slotDate.getUTCHours())}.
+${getGreetingRule(slotDate.getUTCHours())}
 
 STYLE EXAMPLES (match this vibe):
 ${exampleBlock}
@@ -520,18 +543,20 @@ RULES:
 
 IMAGE PROMPT (this is critical — the image must illustrate the tweet):
 ${BRAND_IMAGE_CONTEXT}
-${sceneHint ? 'BASE SCENE (adapt to tweet content): ' + sceneHint : ''}
-${narrativeScene ? 'NARRATIVE INSPIRATION: ' + narrativeScene : ''}
+${sceneHint ? 'SCENE IDEA (adapt to fit tweet): ' + sceneHint : ''}
+${narrativeScene ? 'VISUAL INSPIRATION: ' + narrativeScene : ''}
 
-After writing the tweet, ask yourself: "What is this tweet ABOUT?" Then show the lobster DOING that thing.
-- Tweet about staking → lobster meditating with orbiting coins and APY charts
-- Tweet about building → lobster at workstation with holographic app floating above
-- Tweet about community → lobster greeting others at The Lounge
-- Tweet about growth → lobster on The Rooftop watching stats rise
+After writing the tweet, ask yourself: "What is this tweet ABOUT?" Then describe the lobster character DOING that thing in concrete visual terms.
+- Tweet about staking → the lobster meditating cross-legged on a glowing platform with gold coins orbiting around it and green upward arrows in background
+- Tweet about building → the lobster at a glowing keyboard with a completed app interface floating above the screen, surrounded by holographic code
+- Tweet about community → the lobster at the entrance of a neon-lit lounge waving, with smaller sea creatures visible inside
+- Tweet about growth → the lobster on a rooftop at night looking up at rising holographic charts against a starry sky
+
+IMPORTANT: Describe everything visually. Do NOT use brand names, product names, or terms the image model won't understand. "A coral-red lobster character at a glowing workstation" is good. "The Inclawbate mascot at The Workshop" is bad — the image model doesn't know what those are.
 
 Output format:
 TWEET: [the tweet — can include \\n for line breaks]
-IMAGE: [2-3 sentence prompt — lobster doing something SPECIFIC to the tweet, narrative location, dark background, coral+teal lighting, Octane render, 1:1]`;
+IMAGE: [2-3 sentence visual description — the coral-red 3D lobster character doing something SPECIFIC to the tweet. Include: pose, environment, lighting, camera angle. Dark background, coral and teal neon accents, cinematic 3D render, 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -1027,11 +1052,7 @@ REAL PLATFORM DATA (use these exact numbers, do NOT make up stats):
 - Popular apps: ${topAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
 - Recent apps: ${recentAppList || '(not available — do NOT reference specific apps, talk about the platform generally)'}
 ${clawsDataBlock}
-- Website: inclawbate.com
-- App builder: inclawbate.com/build (AI builds apps, no code)
-- Staking: inclawbate.com/stake
-- PokerAI: pokerai.app (poker against AI, real USDC)
-- Tools: inclawbate.com/tools (50+ free tools)
+${ECOSYSTEM_LINKS}
 
 TODAY'S PILLAR: ${pillar.name}
 Description: ${pillar.desc}
@@ -1051,8 +1072,9 @@ RULES:
 - NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
 - NEVER use vague filler like "various", "popular ones", "top apps" without naming them. Either use specific app names from the data above, or don't mention apps at all. Be concrete or be general about the platform — never vaguely in between.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
-- Include inclawbate.com when it fits naturally (not every tweet)
+- Vary which ecosystem links you include — match the link to the tweet topic, don't always default to inclawbate.com
 - Each tweet should feel DIFFERENT from the others — vary tone and structure
+- TIME-AWARE GREETINGS: Each slot has a post time listed above. "gm" is ONLY for the 9 AM ET slot. Do NOT use "gm" or "good morning" for afternoon/evening/night slots. Use "gn" for night if you want a greeting, or just skip greetings entirely.
 
 CRITICAL — NO FALSE CLAIMS:
 - NEVER say "price is up", "pumping", "mooning", "bullish" unless the 24h change data above is actually positive
@@ -1069,36 +1091,37 @@ THE IMAGE PROMPT IS THE MOST IMPORTANT PART. Read the tweet you just wrote, then
 IMAGE PROMPT RULES:
 ${BRAND_IMAGE_CONTEXT}
 
-BASE SCENE for today's pillar (${pillar.name}) — use as a starting point, then customize based on the tweet:
+SCENE IDEA for today's pillar (${pillar.name}) — use as a starting point, then customize for each tweet:
 ${sceneHint}
 
-NARRATIVE SCENES (pick elements — locations, characters, props, moods — to make each image vivid):
+VISUAL INSPIRATION (pick ONE per tweet and adapt it — do NOT reuse the same one):
 ${narrativeScenesList}
 
 HOW TO WRITE A GOOD IMAGE PROMPT:
-1. Read your tweet. Identify the KEY SUBJECT (staking? an app? building? community?)
-2. Choose a scene/location that fits (The Workshop for building, The Trading Floor for DeFi, The Lounge for community, The Rooftop for vision)
-3. Show the lobster DOING something related to the tweet (presenting an app, tending yield gardens, meditating with orbiting coins, coding at a workstation)
-4. Add specific visual details from the tweet content (if tweet mentions "staking APY" show charts and yield arrows, if it mentions "100+ apps" show a constellation of floating app screens)
-5. End with: dark background, coral+teal lighting, Octane render quality, 1:1
+1. Read your tweet. What is it ABOUT? (staking? building an app? community? a specific product?)
+2. Describe the lobster character DOING that thing — a specific action, pose, and expression
+3. Place it in a concrete environment (a workshop, a rooftop, a lounge, a trading floor, underwater, in space, etc.)
+4. Vary the camera angle (close-up, wide shot, low angle, over-the-shoulder, bird's eye)
+5. Add visual details that connect to the tweet content
+6. End with: dark background, coral and teal neon accent lighting, cinematic 3D render, 1:1
 
-GOOD EXAMPLES:
-TWEET: staking apy just increased. more claws locked, better yields. passive income is real. inclawbate.com/stake
-IMAGE: 3D rendered Inclawbate lobster mascot in "Staking Zen" pose, meditating on a floating coral platform surrounded by orbiting CLAWS token coins. A large holographic APY chart trends upward behind it with glowing green arrows. Yield streams in teal (#4db6ac) flow from coins into the lobster. Dark void background with warm coral (#e5533d) rim lighting. Volumetric light, cinematic depth of field, Octane render quality, 1:1.
-
-TWEET: someone just built a full app on inclawbate in 10 minutes. no code. just vibes.
-IMAGE: 3D rendered Inclawbate lobster mascot at The Workshop, claws flying across a glowing keyboard with a completed app floating above the screen — fully formed with UI elements, buttons, and data flowing through it. The Shrimp Newbie watches in amazement from behind. Dark workshop with coral neon signs and teal holographic code streams. Cinematic depth of field, Octane render quality, 1:1.
+CRITICAL: Describe everything in pure visual terms. Do NOT use brand names, product names, or made-up location names. The image model has NO context about your brand. Write the prompt so ANY image model could render it perfectly.
+- GOOD: "A stylized 3D coral-red lobster character meditating cross-legged on a floating platform, gold coins orbiting around it, green upward arrows in background, dark void, teal rim lighting, cinematic render, 1:1"
+- BAD: "The Inclawbate lobster mascot in Staking Zen pose at The Trading Floor with CLAWS tokens" (image model doesn't know what any of this means)
 
 BAD IMAGE PROMPTS (DO NOT DO THIS):
 - "3D lobster mascot in a cool pose with coral and teal lighting" (too generic, could be any tweet)
-- "The lobster standing confidently" (no connection to tweet content)
-- "Lobster with holographic screens" (vague, doesn't reflect specific tweet)
+- "The lobster standing confidently" (no action, no connection to tweet content)
+- "Lobster with holographic screens" (vague, not specific to the tweet)
+- Any prompt that uses brand-specific names like "Inclawbate", "CLAWS", "The Workshop", "The Arena" etc. without describing what they look like
 
-${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}"`).join('\n')}
+Each of the ${emptyHours.length} images MUST look visually distinct — different pose, different environment, different camera angle, different lighting mood.
+
+${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — Posts at ${getTimeOfDay(h)}. ${getGreetingRule(h)}`).join('\n')}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentence image prompt — 3D lobster mascot doing something SPECIFIC to the tweet, in a narrative location, dark background, coral+teal lighting, Octane render quality, 1:1]
+IMAGE: [2-3 sentence visual description — the 3D coral-red lobster character doing something SPECIFIC to the tweet. Include: pose, environment, camera angle, lighting. Dark background, coral and teal neon accents, cinematic 3D render, 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 

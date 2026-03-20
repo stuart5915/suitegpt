@@ -16,7 +16,7 @@ const supabase = createClient(
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY || (process.env.GROQ_API_KEYS || '').split(',')[0]?.trim() || '';
 const DAILY_POST_CAP = 40; // global cap across all agents
 const SHARED_DAILY_CAP = 12; // max posts/day on shared @inclawbator account
 const CREDIT_COST = 10; // base cost
@@ -287,9 +287,8 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    if (!GROQ_API_KEY) {
-        return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
-    }
+    // GROQ key only needed for AI tweet generation — don't block the whole heartbeat
+    // Scheduled slots with pre-written tweet_text can still post without GROQ
 
     try {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -384,7 +383,8 @@ export default async function handler(req, res) {
 
             // Auto-fill slots (no project) — already have tweet_text, just post it
             const slotAccount = slot.account || 'inclawbator';
-            if (!project && slot.tweet_text && slot.booked_by_wallet === 'system-autofill') {
+            // Slots with pre-written tweet_text (autofill or user-booked without project)
+            if (!project && slot.tweet_text) {
                 try {
                     // Upload image if present in tweet_options
                     const opts = slot.tweet_options || {};
@@ -398,7 +398,31 @@ export default async function handler(req, res) {
                             errors.push({ slot: slot.id, warning: 'Image upload failed: ' + imgErr.message });
                         }
                     }
+                    // Post main tweet + thread parts if present
+                    const threadParts = (opts.thread_parts || []).filter(p => p && p.trim());
                     const tweetId = await postTweetShared(slot.tweet_text, mediaIds, slotAccount);
+
+                    // Post thread replies
+                    if (tweetId && threadParts.length > 0) {
+                        let prevId = tweetId;
+                        for (const part of threadParts) {
+                            try {
+                                await new Promise(r => setTimeout(r, 500));
+                                const url = 'https://api.twitter.com/2/tweets';
+                                const replyAuth = buildOAuth1Header('POST', url, {}, slotAccount);
+                                const replyResp = await fetch(url, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': replyAuth, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: part.trim(), reply: { in_reply_to_tweet_id: prevId } })
+                                });
+                                const replyData = await replyResp.json();
+                                if (replyData.data?.id) prevId = replyData.data.id;
+                            } catch(threadErr) {
+                                errors.push({ slot: slot.id, warning: 'Thread reply failed: ' + threadErr.message });
+                            }
+                        }
+                    }
+
                     await supabase.from('agent_schedule')
                         .update({ status: 'posted', tweet_id: tweetId })
                         .eq('id', slot.id);
@@ -466,7 +490,7 @@ export default async function handler(req, res) {
                     const genResult = await generateTweet(projectWithPersona);
                     tweetText = genResult.text;
                 }
-                if (!tweetText || tweetText.length > 280) {
+                if (!tweetText || tweetText.length > 4000) {
                     throw new Error('Generated tweet invalid or too long');
                 }
 
