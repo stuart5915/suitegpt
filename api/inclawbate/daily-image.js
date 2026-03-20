@@ -1,5 +1,5 @@
 // Inclawbate — Daily Stats Card Image
-// Square 1080x1080 for max X display. BIG text, minimal chrome.
+// Square 1080x1080 for max X display. BIG text, full-width rows.
 
 import satori from 'satori';
 import sharp from 'sharp';
@@ -8,11 +8,11 @@ const WIDTH = 1080;
 const HEIGHT = 1080;
 
 const BG = '#0d0d14';
-const CARD = '#16162a';
 const WHITE = '#ffffff';
-const GRAY = '#8888a0';
+const GRAY = '#7a7a90';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
+const DIVIDER = '#2a2a3e';
 
 let fontCache = null;
 async function loadFont() {
@@ -33,11 +33,15 @@ function h(type, props, ...children) {
     return { type, props: { ...(props || {}), children: flat.length === 0 ? undefined : flat.length === 1 ? flat[0] : flat } };
 }
 
-function statLine(label, value, color) {
-    return h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 } },
-        h('span', { style: { fontSize: 44, color: GRAY } }, label),
-        h('span', { style: { fontSize: 44, color: color || WHITE, fontWeight: 700 } }, String(value))
+function stat(label, value, color) {
+    return h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 } },
+        h('span', { style: { fontSize: 38, color: GRAY } }, label),
+        h('span', { style: { fontSize: 38, color: color || WHITE, fontWeight: 700 } }, String(value))
     );
+}
+
+function divider() {
+    return h('div', { style: { display: 'flex', height: 2, backgroundColor: DIVIDER, marginTop: 16, marginBottom: 16 } });
 }
 
 export default async function handler(req, res) {
@@ -62,59 +66,59 @@ export default async function handler(req, res) {
             }
         },
             // Header
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 } },
-                h('div', { style: { fontSize: 64, fontWeight: 700 } }, '$CLAWS Daily'),
-                h('div', { style: { fontSize: 38, color: GRAY } }, p('date', ''))
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 } },
+                h('div', { style: { fontSize: 58, fontWeight: 700 } }, '$CLAWS Daily'),
+                h('div', { style: { fontSize: 34, color: GRAY } }, p('date', ''))
             ),
 
-            // Price + change
-            h('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 12 } },
-                h('span', { style: { fontSize: 88, fontWeight: 700 } }, p('price', '—')),
-                h('span', { style: { fontSize: 44, color: chColor, marginLeft: 20 } }, chText)
+            // Price
+            h('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 10 } },
+                h('span', { style: { fontSize: 82, fontWeight: 700 } }, p('price', '—')),
+                h('span', { style: { fontSize: 40, color: chColor, marginLeft: 16 } }, chText)
             ),
 
-            // Treasury line
-            h('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 8 } },
-                h('span', { style: { fontSize: 44, color: GRAY } }, 'Treasury'),
-                h('span', { style: { fontSize: 64, fontWeight: 700, marginLeft: 20 } }, p('treasury', '—')),
-                td ? h('span', { style: { fontSize: 36, color: tdColor, marginLeft: 14 } }, '(' + td + ')') : null,
+            // Treasury
+            h('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 6 } },
+                h('span', { style: { fontSize: 38, color: GRAY } }, 'Treasury'),
+                h('span', { style: { fontSize: 58, fontWeight: 700, marginLeft: 16 } }, p('treasury', '—')),
+                td ? h('span', { style: { fontSize: 32, color: tdColor, marginLeft: 12 } }, td) : null,
             ),
-            // Treasury sub
-            h('div', { style: { display: 'flex', fontSize: 30, color: GRAY, marginBottom: 32 } },
+            h('div', { style: { display: 'flex', fontSize: 26, color: GRAY, marginBottom: 6 } },
                 h('span', null, 'LP ' + p('treasuryLp', '—')),
-                h('span', { style: { marginLeft: 28, marginRight: 28 } }, '|'),
-                h('span', null, 'ETH ' + p('treasuryEth', '—')),
-                p('treasuryEthDaily') ? h('span', { style: { color: GREEN, marginLeft: 8 } }, p('treasuryEthDaily')) : null,
-                h('span', { style: { marginLeft: 28, marginRight: 28 } }, '|'),
+                h('span', { style: { marginLeft: 20, marginRight: 20 } }, '|'),
+                h('span', null, 'ETH ' + p('treasuryEth', '')),
+                p('treasuryEthDaily') ? h('span', { style: { color: GREEN, marginLeft: 6 } }, p('treasuryEthDaily')) : null,
+                h('span', { style: { marginLeft: 20, marginRight: 20 } }, '|'),
                 h('span', null, p('treasuryClaws', '—')),
             ),
 
-            // Divider
-            h('div', { style: { display: 'flex', height: 2, backgroundColor: '#2a2a3e', marginBottom: 28 } }),
+            divider(),
 
-            // CLAWS Staking
-            h('div', { style: { display: 'flex', fontSize: 48, fontWeight: 700, marginBottom: 14 } }, 'CLAWS Staking'),
-            statLine('Total Staked', p('stakingTotal', '—')),
-            statLine('Distribution', p('stakingRate', '—')),
-            statLine('APY', p('stakingApy', '—') + '%', GREEN),
-            statLine('Stakers', p('stakers', '—')),
+            // CLAWS Staking — full width
+            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 10 } }, 'CLAWS Staking'),
+            stat('Total Staked', p('stakingTotal', '—')),
+            stat('Distribution', p('stakingRate', '—')),
+            stat('APY', p('stakingApy', '—') + '%', GREEN),
+            stat('Stakers', p('stakers', '—')),
+
+            divider(),
+
+            // Angel NFT — full width
+            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 10 } }, 'Angel NFT Rewards'),
+            stat('Distribution', p('angelRate', '—')),
+            stat('Annual', p('angelAnnual', '—')),
+            stat('NFT Floor', p('angelFloor', '—')),
+            p('angelApy') && p('angelApy') !== '—' ? stat('APY', p('angelApy') + '%', GREEN) : null,
+            stat('Holders', p('angelHolders', '—')),
 
             // Spacer
-            h('div', { style: { display: 'flex', height: 2, backgroundColor: '#2a2a3e', marginTop: 22, marginBottom: 28 } }),
-
-            // Angel NFT
-            h('div', { style: { display: 'flex', fontSize: 48, fontWeight: 700, marginBottom: 14 } }, 'Angel NFT Rewards'),
-            statLine('Distribution', p('angelRate', '—')),
-            statLine('Annual', p('angelAnnual', '—')),
-            statLine('Floor / APY', p('angelFloor', '—') + (p('angelApy') && p('angelApy') !== '—' ? '  |  ' + p('angelApy') + '%' : ''), p('angelApy') && p('angelApy') !== '—' ? GREEN : WHITE),
-            statLine('Holders', p('angelHolders', '—')),
+            h('div', { style: { display: 'flex', flex: 1 } }),
 
             // Footer
-            h('div', { style: { display: 'flex', flex: 1 } }),
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: '2px solid #2a2a3e' } },
-                h('span', { style: { fontSize: 34, fontWeight: 700 } }, p('locked', '—') + '% locked'),
-                h('span', { style: { fontSize: 34, color: GRAY } }, p('incubations', '0') + ' incubations'),
-                h('span', { style: { fontSize: 34, color: GRAY } }, 'inclawbate.com')
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '2px solid #2a2a3e' } },
+                h('span', { style: { fontSize: 30, fontWeight: 700 } }, p('locked', '—') + '% locked'),
+                h('span', { style: { fontSize: 30, color: GRAY } }, p('incubations', '0') + ' incubations'),
+                h('span', { style: { fontSize: 30, color: GRAY } }, 'inclawbate.com')
             )
         );
 
