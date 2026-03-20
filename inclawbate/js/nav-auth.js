@@ -917,3 +917,11 @@
         return { txHash: txHash };
     };
 })();
+
+// ── Inject Bug Report Widget (all pages) ──
+(function() {
+    var s = document.createElement('script');
+    s.src = '/inclawbate/js/bug-report.js';
+    s.defer = true;
+    document.body.appendChild(s);
+})();
