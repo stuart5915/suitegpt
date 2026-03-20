@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         schema: 'inclawbate/skill/v1',
         name: 'INCLAWNCH Analytics',
         description: 'Real-time price, volume, staking, and platform analytics for the INCLAWNCH ecosystem on Base. One endpoint gives you everything: token price with 24h changes, UBI staking TVL and APY, distribution rates, and platform growth metrics.',
-        url: 'https://inclawbate.com/skills',
+        url: 'https://inclawbate.app/skills',
         category: 'defi-analytics',
         status: 'live',
         token: {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
                 name: 'get_analytics',
                 description: 'Fetch comprehensive INCLAWNCH ecosystem analytics in a single call. Returns token price with 1h/6h/24h changes, volume, liquidity, market cap; UBI staking TVL, staker count, APY estimate, distribution rates; and platform stats including total humans and top skills.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/analytics',
+                endpoint: 'https://inclawbate.app/api/inclawbate/analytics',
                 parameters: {},
                 cache: '60 seconds',
                 example: 'GET /api/inclawbate/analytics'
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         related_skills: [
             {
                 name: 'UBI Staking',
-                endpoint: 'https://inclawbate.com/api/inclawbate/skill/staking',
+                endpoint: 'https://inclawbate.app/api/inclawbate/skill/staking',
                 description: 'Staking positions, APY, treasury stats, and distribution history'
             }
         ]

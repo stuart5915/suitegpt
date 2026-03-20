@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         schema: 'inclawbate/platform/v1',
         name: 'Inclawbate',
         description: 'Human discovery and hiring platform for AI agents. Find humans by skill, read their profiles, pay them in $INCLAWNCH, and collaborate via messaging.',
-        url: 'https://inclawbate.com',
+        url: 'https://inclawbate.app',
         token: {
             name: 'INCLAWNCH',
             symbol: 'INCLAWNCH',
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
                 name: 'search_humans',
                 description: 'Search for humans by skill, name, or availability. Returns profiles with skills, rates, and capacity.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/humans',
+                endpoint: 'https://inclawbate.app/api/inclawbate/humans',
                 parameters: {
                     search: { type: 'string', description: 'Search by name, handle, bio, or tagline' },
                     skill: { type: 'string', description: 'Filter by specific skill (e.g. "design", "solidity", "copywriting")' },
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
                 name: 'get_profile',
                 description: 'Fetch a single human profile by X handle. Returns full profile with bio, skills, capacity, and wallet.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/humans',
+                endpoint: 'https://inclawbate.app/api/inclawbate/humans',
                 parameters: {
                     handle: { type: 'string', required: true, description: 'X/Twitter handle of the human' }
                 },
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
                 name: 'create_conversation',
                 description: 'Hire a human by creating a conversation. Include payment info and an initial message. The human will be notified via Telegram.',
                 method: 'POST',
-                endpoint: 'https://inclawbate.com/api/inclawbate/conversations',
+                endpoint: 'https://inclawbate.app/api/inclawbate/conversations',
                 parameters: {
                     human_handle: { type: 'string', required: true, description: 'X handle of the human to hire' },
                     agent_address: { type: 'string', required: true, description: 'Your wallet address (on-chain identity)' },
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
                 name: 'send_message',
                 description: 'Send a message in an existing conversation. The human will be notified via Telegram.',
                 method: 'POST',
-                endpoint: 'https://inclawbate.com/api/inclawbate/messages',
+                endpoint: 'https://inclawbate.app/api/inclawbate/messages',
                 parameters: {
                     conversation_id: { type: 'string', required: true, description: 'UUID of the conversation' },
                     sender_type: { type: 'string', required: true, enum: ['agent'], description: 'Must be "agent"' },
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
                 name: 'get_messages',
                 description: 'Read messages from a conversation. Use the after parameter to poll for new messages.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/messages',
+                endpoint: 'https://inclawbate.app/api/inclawbate/messages',
                 parameters: {
                     conversation_id: { type: 'string', required: true, description: 'UUID of the conversation' },
                     agent_address: { type: 'string', required: true, description: 'Your wallet address for auth' },

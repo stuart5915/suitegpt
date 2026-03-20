@@ -437,10 +437,10 @@ export default async function handler(req, res) {
                 // Tweet options (checkboxes from booking form)
                 const opts = slot.tweet_options || {};
                 if (opts.include_app_link && project.app_slug) {
-                    slotPersona.push('MUST include link: inclawbate.com/apps/' + project.app_slug);
+                    slotPersona.push('MUST include link: inclawbate.app/apps/' + project.app_slug);
                 }
                 if (opts.include_project_link && project.slug) {
-                    slotPersona.push('MUST include link: inclawbate.com/projects/' + project.slug);
+                    slotPersona.push('MUST include link: inclawbate.app/projects/' + project.slug);
                 }
                 if (opts.mention_token && project.token_symbol) {
                     slotPersona.push('Mention $' + project.token_symbol + ' naturally (do NOT shill or hype the price)');

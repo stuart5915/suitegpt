@@ -203,7 +203,7 @@ function getEcosystemInfo() {
     name: 'Inclawbate',
     tagline: 'Anyone Can Build. Everyone Gets Paid.',
     mission: 'A self-sustaining engine that generates, manages, and distributes value forever.',
-    website: 'https://inclawbate.com',
+    website: 'https://inclawbate.app',
     what_you_can_do: [
       'Launch tokens on Base or Solana',
       'Deploy staking pools with automatic CLAWS rewards',
@@ -213,8 +213,8 @@ function getEcosystemInfo() {
       'Hire the Council — vetted humans for design, dev, marketing',
       'Get full-service incubation (token + staking + branding + marketing)'
     ],
-    token: { name: 'CLAWS', address: '0x7ca47B141639B893C6782823C0b219f872056379', chain: 'Base', staking: 'https://inclawbate.com/stake' },
-    links: { stake: 'https://inclawbate.com/stake', inclawbator: 'https://inclawbate.com/inclawbator', telegram: 'https://t.me/inclawbate' }
+    token: { name: 'CLAWS', address: '0x7ca47B141639B893C6782823C0b219f872056379', chain: 'Base', staking: 'https://inclawbate.app/stake' },
+    links: { stake: 'https://inclawbate.app/stake', inclawbator: 'https://inclawbate.app/inclawbator', telegram: 'https://t.me/inclawbate' }
   });
 }
 
@@ -258,14 +258,14 @@ function createAgentInfo() {
   return JSON.stringify({
     how: 'Create an AI marketing agent that auto-posts to X/Twitter about your project.',
     steps: [
-      'Go to inclawbate.com/dashboard → "My Agents" tab',
+      'Go to inclawbate.app/dashboard → "My Agents" tab',
       'Click "Create New Agent"',
       'Choose a vibe (degen, builder, scholar, academic, or custom)',
       'Set name, posts per day (1-8), optional profile pic',
       'Connect an X/Twitter account to the agent',
       'Agent starts auto-posting based on its persona and schedule'
     ],
-    url: 'https://inclawbate.com/dashboard',
+    url: 'https://inclawbate.app/dashboard',
     note: 'Agents are free to create. They need credits to run — buy from dashboard.'
   });
 }
@@ -304,7 +304,7 @@ async function getStakingStats(args) {
       total_distributed: data.treasury?.total_distributed || '0',
       total_distributed_usd: data.treasury?.total_distributed_usd ? '$' + Number(data.treasury.total_distributed_usd).toLocaleString() : '$0',
       last_distribution: data.treasury?.last_distribution_at || null,
-      staking_url: 'https://inclawbate.com/stake',
+      staking_url: 'https://inclawbate.app/stake',
       buy_claws: 'https://app.uniswap.org/swap?outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base'
     };
     if (args.wallet && data.wallet_position) {
@@ -318,7 +318,7 @@ async function getStakingStats(args) {
     }
     return JSON.stringify(result);
   } catch (e) {
-    return JSON.stringify({ error: 'Could not fetch staking stats', staking_url: 'https://inclawbate.com/stake' });
+    return JSON.stringify({ error: 'Could not fetch staking stats', staking_url: 'https://inclawbate.app/stake' });
   }
 }
 
@@ -348,7 +348,7 @@ function disperseTokensInfo(args) {
     action: 'open_airdrop',
     how: 'Distribute tokens to multiple wallets in one transaction using the Disperse contract on Base.',
     steps: [
-      'Open the Airdrop tool on inclawbate.com',
+      'Open the Airdrop tool on inclawbate.app',
       'Connect your wallet',
       'Enter the token contract address' + (args.token_address ? ' (' + args.token_address + ')' : ''),
       'Paste your recipient list (address, amount per line)',
@@ -356,7 +356,7 @@ function disperseTokensInfo(args) {
       'All recipients get tokens in one transaction'
     ],
     contract: '0xD152f549545093347A162Dce210e7293f1452150',
-    url: 'https://inclawbate.com/inclawbator',
+    url: 'https://inclawbate.app/inclawbator',
     note: 'Batches up to 200 recipients per transaction.',
     token: args.token_address || null
   });
@@ -370,7 +370,7 @@ function deployStakingInfo(args) {
       'The Staking Factory deploys a pool linked to your token',
       'inclawbate.base.eth is auto-registered as a reward depositor',
       '20% of your token\'s LP fees auto-convert to CLAWS and fund staker rewards',
-      'Your staking page goes live at inclawbate.com/stake'
+      'Your staking page goes live at inclawbate.app/stake'
     ],
     whats_included: ['Staking contract (Synthetix-style)', 'Dual depositor authorization', 'Auto CLAWS reward pipeline', 'Staking UI', 'Analytics dashboard'],
     cost: 'Free — included with incubation. 20% LP fee split funds the rewards.',
@@ -570,7 +570,7 @@ function generateDirectReply(tool, resultJson, args) {
 
     switch (tool) {
       case 'get_ecosystem_info':
-        return `Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.\n\nYou can launch tokens, deploy staking pools, create AI marketing agents, airdrop tokens, hire the Council, and get full incubation — all at inclawbate.com.\n\nThe ecosystem runs on $CLAWS on Base: ${d.token?.address || ''}`;
+        return `Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.\n\nYou can launch tokens, deploy staking pools, create AI marketing agents, airdrop tokens, hire the Council, and get full incubation — all at inclawbate.app.\n\nThe ecosystem runs on $CLAWS on Base: ${d.token?.address || ''}`;
 
       case 'get_incubation_info':
         return `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`;
@@ -583,7 +583,7 @@ function generateDirectReply(tool, resultJson, args) {
         return "Got it, I've updated the form. Still need: " + (d.missing_required || []).join(', ') + ". What's next?";
 
       case 'create_agent_info':
-        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nAgents are free to create. Head to " + (d.url || 'inclawbate.com/dashboard');
+        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nAgents are free to create. Head to " + (d.url || 'inclawbate.app/dashboard');
 
       case 'get_token_analytics': {
         if (d.message) return d.message;
@@ -592,7 +592,7 @@ function generateDirectReply(tool, resultJson, args) {
       }
 
       case 'get_staking_stats':
-        return `Staking stats:\n• Total stakers: ${d.total_stakers}\n• TVL: ${d.tvl_usd}\n• APY: ${d.estimated_apy || 'N/A'}\n• Total distributed: ${d.total_distributed_usd || d.total_distributed}\n\nStake at: ${d.staking_url || 'inclawbate.com/stake'}` + (d.wallet_position ? `\n\nYour position: ${d.wallet_position.staked} staked (${d.wallet_position.share} share)` : '');
+        return `Staking stats:\n• Total stakers: ${d.total_stakers}\n• TVL: ${d.tvl_usd}\n• APY: ${d.estimated_apy || 'N/A'}\n• Total distributed: ${d.total_distributed_usd || d.total_distributed}\n\nStake at: ${d.staking_url || 'inclawbate.app/stake'}` + (d.wallet_position ? `\n\nYour position: ${d.wallet_position.staked} staked (${d.wallet_position.share} share)` : '');
 
       case 'book_promo':
         return `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`;

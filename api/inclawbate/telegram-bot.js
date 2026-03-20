@@ -68,8 +68,8 @@ const SITE_TOOLS = new Set([
 ]);
 
 function addSiteNote(reply, toolName) {
-    if (SITE_TOOLS.has(toolName) && !reply.includes('inclawbate.com')) {
-        return reply + '\n\n🌐 Head to inclawbate.com to complete this action.';
+    if (SITE_TOOLS.has(toolName) && !reply.includes('inclawbate.app')) {
+        return reply + '\n\n🌐 Head to inclawbate.app to complete this action.';
     }
     return reply;
 }

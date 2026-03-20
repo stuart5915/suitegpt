@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '2px solid #2a2a3e' } },
                 h('span', { style: { fontSize: 30, fontWeight: 700 } }, p('locked', '—') + '% locked'),
                 h('span', { style: { fontSize: 30, color: GRAY } }, p('incubations', '0') + ' incubations'),
-                h('span', { style: { fontSize: 30, color: GRAY } }, 'inclawbate.com')
+                h('span', { style: { fontSize: 30, color: GRAY } }, 'inclawbate.app')
             )
         );
 

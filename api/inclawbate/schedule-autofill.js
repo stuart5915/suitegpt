@@ -29,20 +29,20 @@ function getGreetingRule(utcHour) {
     return 'This is an ' + getTimeOfDay(utcHour) + ' slot — do NOT say "gm", "good morning", or any morning greeting. Use time-appropriate openers like "gn" for night, or no greeting at all.';
 }
 
-const ECOSYSTEM_LINKS = `- Website: inclawbate.com
-- Dashboard: inclawbate.com/dashboard
-- App builder (AI, no code): inclawbate.com/build
-- All apps: inclawbate.com/apps
-- Staking ($CLAWS): inclawbate.com/stake
-- Agent skills: inclawbate.com/skills
-- Free tools: inclawbate.com/tools
-- X Schedule: inclawbate.com/schedule
-- Incubator: inclawbate.com/inclawbator
+const ECOSYSTEM_LINKS = `- Website: inclawbate.app
+- Dashboard: inclawbate.app/dashboard
+- App builder (AI, no code): inclawbate.app/build
+- All apps: inclawbate.app/apps
+- Staking ($CLAWS): inclawbate.app/stake
+- Agent skills: inclawbate.app/skills
+- Free tools: inclawbate.app/tools
+- X Schedule: inclawbate.app/schedule
+- Incubator: inclawbate.app/inclawbator
 - PokerAI (poker vs AI, real USDC): pokerai.app
 - OddsClaw (prediction markets): oddsclaw.app
 - Telegram community: t.me/inclawbate
 - Token: $CLAWS on Base
-Pick 0-2 links per tweet. Vary which ones you use — don't always default to inclawbate.com. Match the link to the tweet topic (staking tweet → /stake, builder tweet → /build, poker tweet → pokerai.app, etc).`;
+Pick 0-2 links per tweet. Vary which ones you use — don't always default to inclawbate.app. Match the link to the tweet topic (staking tweet → /stake, builder tweet → /build, poker tweet → pokerai.app, etc).`;
 
 // Content pillars by day of week (0=Sun)
 const PILLARS = [
@@ -159,15 +159,15 @@ const INCLAWBATE_SLOT_ANGLES = {
 const INCLAWBATE_STYLE_EXAMPLES = [
     `we don't have employees. we have builders. anyone can build, everyone gets paid.`,
     `inclawbate isn't a company. it's a perpetual engine. generate value, manage it, distribute it. forever.`,
-    `staking APY is live. deposit CLAWS, earn yield. no lockup, no tricks. inclawbate.com/stake`,
+    `staking APY is live. deposit CLAWS, earn yield. no lockup, no tricks. inclawbate.app/stake`,
     `PokerAI had its biggest week yet. more hands played, more rake recycled, more agents learning. the liquidity engine works.`,
-    `100+ apps live. all built by regular people using AI. no dev team needed. just an idea and inclawbate.com/build`,
+    `100+ apps live. all built by regular people using AI. no dev team needed. just an idea and inclawbate.app/build`,
     `the treasury grew again this week. every app, every stake, every poker hand. it all feeds the engine.`,
-    `gm. the future of building is typing what you want and hitting enter. inclawbate.com`,
+    `gm. the future of building is typing what you want and hitting enter. inclawbate.app`,
     `no VC. no board. no roadmap decided by people who don't build. just builders and users. that's inclawbate.`,
     // Formatted style (with line breaks)
-    `Imagine turning your wildest ideas into full crypto projects... in DAYS.\n\nLaunch an app + token + staking pool - all in ONE platform\n\n@inclawbate makes it happen:\n-Describe your vision\n-AI builds & deploys it\n-You focus on building\n\nStart here inclawbate.com`,
-    `the perpetual engine, explained:\n\n1. builders create apps\n2. apps generate revenue\n3. revenue feeds the treasury\n4. treasury rewards builders\n5. repeat forever\n\nno VCs. no exit. just value flowing.\n\ninclawbate.com`,
+    `Imagine turning your wildest ideas into full crypto projects... in DAYS.\n\nLaunch an app + token + staking pool - all in ONE platform\n\n@inclawbate makes it happen:\n-Describe your vision\n-AI builds & deploys it\n-You focus on building\n\nStart here inclawbate.app`,
+    `the perpetual engine, explained:\n\n1. builders create apps\n2. apps generate revenue\n3. revenue feeds the treasury\n4. treasury rewards builders\n5. repeat forever\n\nno VCs. no exit. just value flowing.\n\ninclawbate.app`,
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
@@ -250,6 +250,7 @@ function randomNarrativeScene(pillarName) {
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com', 'https://www.inclawbate.com',
+    'https://inclawbate.app', 'https://www.inclawbate.app',
     'http://localhost:3000', 'http://localhost:5500',
 ];
 
@@ -823,7 +824,7 @@ const STYLE_EXAMPLES = [
     // Stats flex
     `100+ apps live on inclawbate rn. all built by regular people using AI. no devs needed.`,
     // FOMO/CTA
-    `we're taking on new builds at inclawbate. you bring the idea, we bring the AI. spots filling up. inclawbate.com`,
+    `we're taking on new builds at inclawbate. you bring the idea, we bring the AI. spots filling up. inclawbate.app`,
     // One-liner
     `gm. the future of app development is typing what you want and hitting enter.`,
     // Degen energy
@@ -831,8 +832,8 @@ const STYLE_EXAMPLES = [
     // Thread-starter style
     `built ClawCard in weeks, not months. inclawbate handled the code while i focused on the product. if you're sitting on an idea, stop waiting.`,
     // Formatted with line breaks
-    `what inclawbate actually does:\n\n-you describe an app idea\n-AI builds it in minutes\n-it's live instantly with a real URL\n-you earn from it\n\nno code. no waiting. no gatekeepers.\n\ntry it: inclawbate.com/build`,
-    `the app store of the future isn't controlled by Apple or Google.\n\nit's built by regular people.\nwith AI.\non-chain.\n\n100+ apps live. growing daily.\n\ninclawbate.com`,
+    `what inclawbate actually does:\n\n-you describe an app idea\n-AI builds it in minutes\n-it's live instantly with a real URL\n-you earn from it\n\nno code. no waiting. no gatekeepers.\n\ntry it: inclawbate.app/build`,
+    `the app store of the future isn't controlled by Apple or Google.\n\nit's built by regular people.\nwith AI.\non-chain.\n\n100+ apps live. growing daily.\n\ninclawbate.app`,
 ];
 
 // Fetch real platform stats for accurate content
@@ -931,7 +932,7 @@ const STYLE_INSTRUCTIONS = {
 - 1-2 tweets: SHORT one-liners (under 100 chars). Punchy, meme energy. Example: "gm. the future of app development is typing what you want and hitting enter."
 - 1-2 tweets: MEDIUM length (100-180 chars). Hook + detail. Example: "someone just built a full staking dashboard on inclawbate in 10 minutes. no code. just vibes."
 - 1-2 tweets: LONG FORMATTED (200-500 chars) with LINE BREAKS (\\n). Use bullet points (-), numbered lists, or stacked lines for visual impact. Include a CTA at the end. Example:
-"what inclawbate actually does:\\n\\n-you describe an app idea\\n-AI builds it in minutes\\n-it's live instantly\\n-you earn from it\\n\\nno code. no waiting.\\n\\ninclawbate.com/build"
+"what inclawbate actually does:\\n\\n-you describe an app idea\\n-AI builds it in minutes\\n-it's live instantly\\n-you earn from it\\n\\nno code. no waiting.\\n\\ninclawbate.app/build"
 
 IMPORTANT: The long formatted tweets MUST use \\n for line breaks. They should look like structured posts with clear visual hierarchy. Vary which slots get which format.`,
 
@@ -947,7 +948,7 @@ IMPORTANT: The long formatted tweets MUST use \\n for line breaks. They should l
 - Include a hook/opener, body content, and a CTA/closer
 - Visual hierarchy matters — make it scannable
 - Example:
-"the perpetual engine, explained:\\n\\n1. builders create apps\\n2. apps generate revenue\\n3. revenue feeds the treasury\\n4. treasury rewards builders\\n5. repeat forever\\n\\nno VCs. no exit.\\n\\ninclawbate.com"
+"the perpetual engine, explained:\\n\\n1. builders create apps\\n2. apps generate revenue\\n3. revenue feeds the treasury\\n4. treasury rewards builders\\n5. repeat forever\\n\\nno VCs. no exit.\\n\\ninclawbate.app"
 
 CRITICAL: Every tweet MUST have multiple \\n line breaks. No single-line tweets.`,
 
@@ -1055,7 +1056,7 @@ RULES:
 - NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
 - NEVER use vague filler like "various", "popular ones", "top apps" without naming them. Either use specific app names from the data above, or don't mention apps at all. Be concrete or be general about the platform — never vaguely in between.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
-- Vary which ecosystem links you include — match the link to the tweet topic, don't always default to inclawbate.com
+- Vary which ecosystem links you include — match the link to the tweet topic, don't always default to inclawbate.app
 - Each tweet should feel DIFFERENT from the others — vary tone and structure
 - TIME-AWARE GREETINGS: Each slot has a post time listed above. "gm" is ONLY for the 9 AM ET slot. Do NOT use "gm" or "good morning" for afternoon/evening/night slots. Use "gn" for night if you want a greeting, or just skip greetings entirely.
 

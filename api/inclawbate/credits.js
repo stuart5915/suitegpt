@@ -12,7 +12,9 @@ import { randomBytes } from 'crypto';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 // Deposit constants
@@ -360,7 +362,7 @@ export default async function handler(req, res) {
         if (action === 'deposit') {
             const user = authenticateRequest(req);
             if (!user) {
-                return res.status(401).json({ error: 'Authentication required. Log in at inclawbate.com/launch first.' });
+                return res.status(401).json({ error: 'Authentication required. Log in at inclawbate.app/launch first.' });
             }
 
             const { tx_hash } = req.body;

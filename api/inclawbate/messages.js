@@ -8,7 +8,9 @@ import { notifyHuman, escHtml } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const supabase = createClient(
@@ -226,7 +228,7 @@ export default async function handler(req, res) {
                 if (human?.telegram_chat_id) {
                     const preview = content ? escHtml(content.trim().slice(0, 200)) : '📎 File attachment';
                     await notifyHuman(human.telegram_chat_id,
-                        `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
+                        `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.app/dashboard`
                     );
                 }
             }
@@ -259,7 +261,7 @@ export default async function handler(req, res) {
                         const senderName = sender?.x_name || sender?.x_handle || 'Someone';
                         const preview = content ? escHtml(content.trim().slice(0, 200)) : '📎 File attachment';
                         await notifyHuman(payer.telegram_chat_id,
-                            `💬 <b>Reply from ${escHtml(senderName)}</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
+                            `💬 <b>Reply from ${escHtml(senderName)}</b>\n\n"${preview}"\n\n👉 inclawbate.app/dashboard`
                         );
                     }
                 }

@@ -7,7 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';

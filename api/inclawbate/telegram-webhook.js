@@ -67,7 +67,7 @@ async function handleState(chatId) {
     const done = doneRes.data || [];
 
     let msg = '🦞 <b>INCLAWBATE STATE</b>\n';
-    msg += '<i>inclawbate.com/how-it-works</i>\n';
+    msg += '<i>inclawbate.app/how-it-works</i>\n';
 
     if (focus.length) {
         msg += `\n🔥 <b>FOCUS (${focus.length})</b>\n`;
@@ -304,12 +304,12 @@ async function handleStart(chatId, handle) {
     }
 
     await supabase.from('human_profiles').update({ telegram_chat_id: String(chatId) }).eq('id', profile.id);
-    await sendMsg(chatId, `✅ Connected! inclawbate.com/u/${esc(profile.x_handle)}`);
+    await sendMsg(chatId, `✅ Connected! inclawbate.app/u/${esc(profile.x_handle)}`);
 }
 
 // ── /research — daily marketing research prompt anyone can grab ──
 
-const RESEARCH_PROMPT = `You are a marketing researcher for Inclawbate (inclawbate.com) — an incubator that helps ANYONE build and launch projects. We've helped golf equipment manufacturers, churches, app creators, token launchers, and everything in between. Our motto: "Anyone Can Build."
+const RESEARCH_PROMPT = `You are a marketing researcher for Inclawbate (inclawbate.app) — an incubator that helps ANYONE build and launch projects. We've helped golf equipment manufacturers, churches, app creators, token launchers, and everything in between. Our motto: "Anyone Can Build."
 
 Daily research report:
 
@@ -362,7 +362,7 @@ async function handleMarketingPovs(chatId, args) {
         let msg = `${p.emoji} <b>${p.name}</b>\n\n`;
         msg += `<b>Angle:</b> ${esc(p.angle)}\n`;
         msg += `<b>Target:</b> ${esc(p.target)}\n\n`;
-        msg += `📖 Full details: inclawbate.com/tools\n`;
+        msg += `📖 Full details: inclawbate.app/tools\n`;
         msg += `\n<i>Use /marketingpovs to see all perspectives</i>`;
         await sendMsg(chatId, msg);
         return;
@@ -495,7 +495,7 @@ async function handleTelos(chatId) {
     msg += 'Telos → Memory → Code → Value → Council → repeat forever\n';
     msg += 'Revenue from products funds treasury, council allocates, builders build more. The flywheel.\n\n';
 
-    msg += '🔗 inclawbate.com/how-it-works';
+    msg += '🔗 inclawbate.app/how-it-works';
 
     await sendMsg(chatId, msg);
 }
@@ -671,7 +671,7 @@ async function handleTreasury(chatId) {
         msg += '📈 <b>Staking</b>\n';
         msg += `APY: ${apy.toFixed(1)}%\n`;
         msg += `Daily Rewards: ${fmtB(dailyRewards)} CLAWS\n`;
-        msg += `🔗 inclawbate.com/stake/claws\n\n`;
+        msg += `🔗 inclawbate.app/stake/claws\n\n`;
 
         msg += '🏛️ <b>Treasury Holdings</b>\n';
         if (totalClaws > 0) {
@@ -694,7 +694,7 @@ async function handleTreasury(chatId) {
             msg += '<i>No council allocation set yet</i>\n';
         }
 
-        msg += '\n🔗 <a href="https://www.inclawbate.com/how-it-works">Full State → inclawbate.com/how-it-works</a>';
+        msg += '\n🔗 <a href="https://www.inclawbate.app/how-it-works">Full State → inclawbate.app/how-it-works</a>';
 
         await sendMsg(chatId, msg);
     } catch (err) {

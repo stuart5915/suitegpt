@@ -12,7 +12,9 @@ const supabase = createClient(
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const PUBLIC_FIELDS = 'wallet_address,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,contact_method,created_at';

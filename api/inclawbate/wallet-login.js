@@ -13,7 +13,9 @@ const supabase = createClient(
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 export default async function handler(req, res) {

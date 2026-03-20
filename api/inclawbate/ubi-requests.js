@@ -9,7 +9,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const supabase = createClient(

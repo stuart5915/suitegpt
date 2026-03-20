@@ -10,6 +10,8 @@ const stripe = new Stripe((process.env.INCLAWBATE_STRIPE_SECRET_KEY || '').trim(
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
 ];
 
 const PRICE_PER_CREDIT = 0.005; // $0.005 per credit
@@ -62,7 +64,7 @@ export default async function handler(req, res) {
                         product_data: {
                             name: tierCents ? `Inclawbate Credits — ${credits.toLocaleString()} Bundle` : 'Inclawbate Credits',
                             description: `${credits.toLocaleString()} credits for Build Studio`,
-                            images: ['https://inclawbate.com/assets/logo-banner.jpg'],
+                            images: ['https://inclawbate.app/assets/logo-banner.jpg'],
                         },
                         unit_amount: amountCents,
                     },
@@ -70,8 +72,8 @@ export default async function handler(req, res) {
                 },
             ],
             mode: 'payment',
-            success_url: `https://inclawbate.com${basePath}?payment=success&credits=${credits}`,
-            cancel_url: `https://inclawbate.com${basePath}?payment=cancelled`,
+            success_url: `https://inclawbate.app${basePath}?payment=success&credits=${credits}`,
+            cancel_url: `https://inclawbate.app${basePath}?payment=cancelled`,
             metadata: {
                 product: 'inclawbate',
                 profileId: user.sub,

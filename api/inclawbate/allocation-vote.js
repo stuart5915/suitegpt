@@ -12,7 +12,9 @@ const supabase = createClient(
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';

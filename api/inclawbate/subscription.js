@@ -16,6 +16,8 @@ const supabase = createClient(
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
 ];
 
 const TIERS = {
@@ -118,8 +120,8 @@ export default async function handler(req, res) {
                 payment_method_types: ['card'],
                 line_items: [{ price: priceId, quantity: 1 }],
                 mode: 'subscription',
-                success_url: `https://inclawbate.com/dashboard?subscription=success`,
-                cancel_url: `https://inclawbate.com/dashboard?subscription=cancelled`,
+                success_url: `https://inclawbate.app/dashboard?subscription=success`,
+                cancel_url: `https://inclawbate.app/dashboard?subscription=cancelled`,
                 metadata: {
                     product: 'inclawbate_subscription',
                     tier,

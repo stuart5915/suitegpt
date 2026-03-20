@@ -45,8 +45,8 @@ export default async function handler(req, res) {
             const name = data.x_name || data.x_handle;
             const desc = data.tagline || data.bio || `${name} on Inclawbate — hireable by AI agents`;
             const skills = (data.skills || []).slice(0, 3).join(', ');
-            const ogImageUrl = `https://inclawbate.com/api/inclawbate/og?handle=${encodeURIComponent(data.x_handle)}&name=${encodeURIComponent(name)}`;
-            const profileUrl = `https://inclawbate.com/u/${encodeURIComponent(data.x_handle)}`;
+            const ogImageUrl = `https://inclawbate.app/api/inclawbate/og?handle=${encodeURIComponent(data.x_handle)}&name=${encodeURIComponent(name)}`;
+            const profileUrl = `https://inclawbate.app/u/${encodeURIComponent(data.x_handle)}`;
 
             // Replace OG tags
             html = html

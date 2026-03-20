@@ -106,7 +106,7 @@ export default function handler(req) {
                         },
                         // Footer
                         { type: 'div', props: { style: { display: 'flex', justifyContent: 'center', padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' }, children: [
-                            { type: 'span', props: { style: { fontSize: '16px', color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase' }, children: 'inclawbate.com' } },
+                            { type: 'span', props: { style: { fontSize: '16px', color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase' }, children: 'inclawbate.app' } },
                         ] } },
                     ].filter(Boolean),
                 },
@@ -165,7 +165,7 @@ export default function handler(req) {
                     },
                     // Footer
                     { type: 'div', props: { style: { display: 'flex', justifyContent: 'center', padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' }, children: [
-                        { type: 'span', props: { style: { fontSize: '16px', color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase' }, children: 'inclawbate.com' } },
+                        { type: 'span', props: { style: { fontSize: '16px', color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase' }, children: 'inclawbate.app' } },
                     ] } },
                 ].filter(Boolean),
             },

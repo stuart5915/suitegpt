@@ -381,7 +381,7 @@ function getDateStr() {
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
     const date = getDateStr();
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<a href="https://www.inclawbate.com/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.com/how-it-works</a>\n\n`;
+    msg += `<a href="https://www.inclawbate.app/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.app/how-it-works</a>\n\n`;
 
     // Stats
     msg += `<b>📊 CLAWS Stats</b>\n`;
@@ -429,7 +429,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
             if (stakerCount > 0) msg += `\nStakers: ${stakerCount}`;
-            msg += `\nStake: https://www.inclawbate.com/stake/claws\n`;
+            msg += `\nStake: https://www.inclawbate.app/stake/claws\n`;
         }
     }
 
@@ -495,7 +495,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     if (allocation) {
         msg += `\n<b>🗳 Community</b> (${allocation.voterCount} vote${allocation.voterCount !== 1 ? 's' : ''})\n`;
         msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.community[i]}%`).join(' · ') + `\n`;
-        msg += `<a href="https://www.inclawbate.com/how-it-works">Vote: inclawbate.com/how-it-works</a>\n`;
+        msg += `<a href="https://www.inclawbate.app/how-it-works">Vote: inclawbate.app/how-it-works</a>\n`;
     }
 
     // Focus / Incubations / Backlog
@@ -549,9 +549,9 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `\n📋 ${tasks.backlog.length} in backlog\n`;
     }
 
-    msg += `<i>Full state: inclawbate.com/how-it-works</i>\n`;
+    msg += `<i>Full state: inclawbate.app/how-it-works</i>\n`;
 
-    msg += `\n🔗 inclawbate.com`;
+    msg += `\n🔗 inclawbate.app`;
 
     return msg;
 }
@@ -574,7 +574,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     if (tasks.incubations.length) {
         tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
     }
-    tweet += `https://www.inclawbate.com/how-it-works\n`;
+    tweet += `https://www.inclawbate.app/how-it-works\n`;
 
     // Staking
     tweet += `\n📊 Staking Rewards\n`;
@@ -589,7 +589,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         if (stakerCount > 0) tweet += `Stakers: ${stakerCount}\n`;
         tweet += `🔒 ${supply.lockedPct}% $CLAWS out of circulation\n`;
     }
-    tweet += `https://www.inclawbate.com/stake/claws\n`;
+    tweet += `https://www.inclawbate.app/stake/claws\n`;
 
     // Angel NFT Rewards
     if (angelStats) {

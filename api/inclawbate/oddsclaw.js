@@ -12,6 +12,8 @@ const supabase = createClient(
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
     'https://oddsclaw.app',
     'https://www.oddsclaw.app',
     'http://localhost:3000'

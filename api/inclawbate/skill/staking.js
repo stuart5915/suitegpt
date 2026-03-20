@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         schema: 'inclawbate/skill/v1',
         name: 'UBI Staking',
         description: 'Full access to the Inclawbate UBI staking system on Base. Read treasury stats, wallet positions, and leaderboards. Stake and unstake INCLAWNCH tokens. Toggle auto-compounding. Powered by daily UBI distributions to all stakers.',
-        url: 'https://inclawbate.com/ubi',
+        url: 'https://inclawbate.app/ubi',
         category: 'defi-staking',
         status: 'live',
         token: {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
                 name: 'get_treasury_stats',
                 description: 'Fetch UBI treasury overview: total stakers, TVL, APY estimate, distribution rates, total distributed, and top 20 stakers leaderboard. No parameters needed.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/staking',
+                endpoint: 'https://inclawbate.app/api/inclawbate/staking',
                 parameters: {},
                 cache: '60 seconds',
                 example: 'GET /api/inclawbate/staking'
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
                 name: 'get_wallet_position',
                 description: 'Fetch a specific wallet\'s staking position: total staked, share percentage, estimated daily/weekly rewards, auto-stake preference, total rewards received, and active stake history.',
                 method: 'GET',
-                endpoint: 'https://inclawbate.com/api/inclawbate/staking',
+                endpoint: 'https://inclawbate.app/api/inclawbate/staking',
                 parameters: {
                     wallet: { type: 'string', required: true, description: 'EVM wallet address (e.g. 0x...)' }
                 },
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
                 name: 'stake_inclawnch',
                 description: 'Stake INCLAWNCH tokens into the UBI pool. First transfer INCLAWNCH to the deposit wallet on Base via ERC20 transfer, then call this endpoint with the transaction hash. The API verifies the on-chain transfer and records the stake. Stakers earn daily UBI distributions proportional to their stake.',
                 method: 'POST',
-                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                endpoint: 'https://inclawbate.app/api/inclawbate/ubi',
                 parameters: {
                     action: { type: 'string', required: true, value: 'fund', description: 'Must be "fund"' },
                     tx_hash: { type: 'string', required: true, description: 'Transaction hash of the ERC20 transfer to the deposit wallet (0x + 64 hex chars)' },
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
                 name: 'unstake_inclawnch',
                 description: 'Unstake all INCLAWNCH tokens. No lock period — request anytime. Tokens are returned to your wallet within 24 hours (instantly if the unstake wallet has sufficient balance).',
                 method: 'POST',
-                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                endpoint: 'https://inclawbate.app/api/inclawbate/ubi',
                 parameters: {
                     action: { type: 'string', required: true, value: 'unstake', description: 'Must be "unstake"' },
                     wallet_address: { type: 'string', required: true, description: 'Your wallet address' },
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
                 name: 'toggle_auto_stake',
                 description: 'Toggle auto-compounding of UBI rewards. When enabled, daily reward distributions are automatically re-staked instead of sent to your wallet — compounding your position over time.',
                 method: 'POST',
-                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                endpoint: 'https://inclawbate.app/api/inclawbate/ubi',
                 parameters: {
                     action: { type: 'string', required: true, value: 'toggle-auto-stake', description: 'Must be "toggle-auto-stake"' },
                     wallet_address: { type: 'string', required: true, description: 'Your wallet address' }
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         related_skills: [
             {
                 name: 'INCLAWNCH Analytics',
-                endpoint: 'https://inclawbate.com/api/inclawbate/skill/analytics',
+                endpoint: 'https://inclawbate.app/api/inclawbate/skill/analytics',
                 description: 'Token price, volume, liquidity, and broader ecosystem metrics'
             }
         ]

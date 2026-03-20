@@ -9,7 +9,9 @@ import { notifyHuman, escHtml } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app',
 ];
 
 const supabase = createClient(
@@ -258,7 +260,7 @@ async function notifyMatchingInclawbators(gig) {
     });
 
     const TIMELINE_LABEL = { asap: 'ASAP', week: 'This week', norush: 'No rush' };
-    const msg = `🦞 <b>New gig posted!</b>\n\n<i>${escHtml(gig.description.slice(0, 200))}</i>\n\nCategory: ${escHtml(gig.category)}\nBudget: ${Number(gig.budget_claws).toLocaleString()} CLAWS\nTimeline: ${TIMELINE_LABEL[gig.timeline] || gig.timeline}\nBy: ${gig.hirer_handle ? '@' + escHtml(gig.hirer_handle) : 'anonymous'}\n\nGo to inclawbate.com/inclawbator to apply!`;
+    const msg = `🦞 <b>New gig posted!</b>\n\n<i>${escHtml(gig.description.slice(0, 200))}</i>\n\nCategory: ${escHtml(gig.category)}\nBudget: ${Number(gig.budget_claws).toLocaleString()} CLAWS\nTimeline: ${TIMELINE_LABEL[gig.timeline] || gig.timeline}\nBy: ${gig.hirer_handle ? '@' + escHtml(gig.hirer_handle) : 'anonymous'}\n\nGo to inclawbate.app/inclawbator to apply!`;
 
     // Send to up to 20 matching inclawbators
     const toNotify = matching.slice(0, 20);

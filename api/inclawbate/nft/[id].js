@@ -13,8 +13,8 @@ export default function handler(req, res) {
     const metadata = {
         name: `Inclawbate Angel #${tokenId}`,
         description: 'A founding badge for the original INCLAWNCH holders who believed from the start. Angel holders earn 2x UBI rewards and periodic bonus CLAWS airdrops. Only 828 can ever exist.',
-        image: 'https://inclawbate.com/inclawbate/assets/angelnft.jpg',
-        external_url: 'https://inclawbate.com/angel',
+        image: 'https://inclawbate.app/inclawbate/assets/angelnft.jpg',
+        external_url: 'https://inclawbate.app/angel',
         attributes: [
             { trait_type: 'Tier', value: 'Founding Angel' },
             { trait_type: 'Max Supply', value: '828', display_type: 'number' },

@@ -10,7 +10,9 @@ import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'.toLowerCase();
@@ -147,7 +149,7 @@ export default async function handler(req, res) {
     if (action === 'create') {
         const user = authenticateRequest(req);
         if (!user) {
-            return res.status(401).json({ error: 'Authentication required. Log in at inclawbate.com/launch first.' });
+            return res.status(401).json({ error: 'Authentication required. Log in at inclawbate.app/launch first.' });
         }
 
         const { tx_hash, shipping, product = 'lobster-putter' } = req.body;

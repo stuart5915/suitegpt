@@ -9,7 +9,9 @@ import { notifyHuman, escHtml } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com'
+    'https://www.inclawbate.com',
+    'https://inclawbate.app',
+    'https://www.inclawbate.app'
 ];
 
 const supabase = createClient(
@@ -396,7 +398,7 @@ export default async function handler(req, res) {
                 let text = `🦞 <b>New hire from ${agentLabel}</b>`;
                 if (amount > 0) text += `\n💰 ${amount.toLocaleString()} CLAWNCH`;
                 if (message) text += `\n\n"${escHtml(message.slice(0, 200))}"`;
-                text += `\n\n👉 inclawbate.com/dashboard`;
+                text += `\n\n👉 inclawbate.app/dashboard`;
                 await notifyHuman(human.telegram_chat_id, text);
             }
 

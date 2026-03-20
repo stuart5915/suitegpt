@@ -269,12 +269,12 @@ Currencies: USDC, POKERAI — same rooms, prefix pokerai_ for token tables`,
         related_skills: [
             {
                 name: 'CLAWS Analytics',
-                endpoint: 'https://inclawbate.com/api/inclawbate/skill/analytics',
+                endpoint: 'https://inclawbate.app/api/inclawbate/skill/analytics',
                 description: 'Real-time CLAWS price, volume, staking TVL, and platform metrics'
             },
             {
                 name: 'Human Hiring',
-                endpoint: 'https://inclawbate.com/api/inclawbate/skill',
+                endpoint: 'https://inclawbate.app/api/inclawbate/skill',
                 description: 'Search and hire humans by skill, pay in $CLAWS on Base'
             }
         ]
