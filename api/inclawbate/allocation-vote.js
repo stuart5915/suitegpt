@@ -167,25 +167,6 @@ export default async function handler(req, res) {
     // GET — return synthesis + individual votes + council allocation
     if (req.method === 'GET') {
         try {
-            // One-time fix: restore balances corrupted by failed RPC refresh
-            if (req.query.fix_balances === 'restore_20260320') {
-                const fixes = {
-                    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd': '1365193972602627527416268262',
-                    '0x612abfe54269515f0cc63b4a12fee32d48889ff2': '1005170918949221126768270768',
-                    '0x1ecafe4a4c9960659d1d14257e4989dbf0dcf2cd': '333225933380531489641258631',
-                    '0xba9b369a75e216cc9d73c9f3f916c939a5755a08': '3069604908176768714053772',
-                    '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3': '1008860714798496041677981449'
-                };
-                const results = [];
-                for (const [addr, bal] of Object.entries(fixes)) {
-                    await supabase.from('allocation_votes')
-                        .update({ claws_balance: bal })
-                        .eq('wallet_address', addr);
-                    results.push({ address: addr, restored: bal });
-                }
-                return res.status(200).json({ fixed: results });
-            }
-
             // Admin refresh: GET ?refresh=admin to re-fetch all on-chain balances (single batch)
             if (req.query.refresh === 'admin') {
                 const { data: rows } = await supabase
