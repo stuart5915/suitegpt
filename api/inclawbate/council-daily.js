@@ -380,22 +380,32 @@ function getDateStr() {
 
 function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
     const date = getDateStr();
-    let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<a href="https://www.inclawbate.app/how-it-works">Treasury allocation is governed by the CLAWS Council. Holders vote at inclawbate.app/how-it-works</a>\n\n`;
+    const price = claws?.price || 0;
 
-    // Stats
-    msg += `<b>📊 CLAWS Stats</b>\n`;
+    // ── Always-visible header (compact) ──
+    let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
+    msg += `<a href="https://www.inclawbate.app/how-it-works">inclawbate.app/how-it-works</a>\n\n`;
+
     if (claws) {
         const arrow = claws.change24h >= 0 ? '📈' : '📉';
-        msg += `Price: ${formatPrice(claws.price)}\n`;
-        msg += `${arrow} ${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}% today | ${formatUsd(claws.volume24h)} volume\n`;
-        msg += `Liquidity: ${formatUsd(claws.liquidity)} | MCap: ${formatUsd(claws.mcap)}\n`;
-    } else {
-        msg += `<i>Price data unavailable</i>\n`;
+        msg += `💰 ${formatPrice(claws.price)} ${arrow} ${claws.change24h >= 0 ? '+' : ''}${Number(claws.change24h).toFixed(1)}% · Vol ${formatUsd(claws.volume24h)}\n`;
+    }
+    if (treasury?.total) {
+        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
+        msg += `🏦 Treasury ${formatUsd(treasury.total)}${formatDelta(treasuryChange)}\n`;
+    }
+    if (supply) {
+        msg += `🔒 ${supply.lockedPct}% locked`;
+        if (supply.apy > 0) msg += ` · ${supply.apy.toFixed(0)}% APY`;
+        if (stakerCount > 0) msg += ` · ${stakerCount} stakers`;
+        msg += `\n`;
+    }
+    if (tasks.incubations.length) {
+        msg += `🦞 ${tasks.incubations.length} incubations\n`;
     }
 
+    // ── Expandable: Supply & Staking ──
     if (supply) {
-        const price = claws?.price || 0;
         const treasuryWallet = treasury?.walletClaws || 0;
         const angelLocked = angelStats?.rewardsRemaining || 0;
         const accounted = supply.staked + supply.rewardsPool + supply.inLP + treasuryWallet + angelLocked;
@@ -404,7 +414,8 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         const rewardsPct = (supply.rewardsPool / TOTAL_SUPPLY * 100).toFixed(1);
         const treasuryPct = (treasuryWallet / TOTAL_SUPPLY * 100).toFixed(1);
 
-        msg += `\n<b>🔒 Supply Breakdown (100B)</b>\n`;
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>📊 Supply &amp; Staking</b>\n\n`;
         msg += `Staked: ${formatNum(supply.staked)} (${supply.stakedPct}%)`;
         if (price > 0) msg += ` ≈ ${formatUsd(supply.staked * price)}`;
         msg += `\n`;
@@ -417,34 +428,32 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         if (price > 0) msg += ` ≈ ${formatUsd(supply.inLP * price)}`;
         msg += `\n`;
         if (treasuryWallet > 0) {
-            msg += `Treasury Wallet: ${formatNum(treasuryWallet)} (${treasuryPct}%)`;
+            msg += `Treasury: ${formatNum(treasuryWallet)} (${treasuryPct}%)`;
             if (price > 0) msg += ` ≈ ${formatUsd(treasuryWallet * price)}`;
             msg += `\n`;
         }
         msg += `Circulating: ${formatNum(circulating)} (${circulatingPct}%)\n`;
-        msg += `Total Locked: ${supply.lockedPct}%\n`;
         if (supply.apy > 0) {
-            msg += `\n<b>💰 Staking</b>\n`;
-            msg += `APY: ${supply.apy.toFixed(1)}%\n`;
-            msg += `Daily Rewards: ${formatNum(supply.dailyRewards)} CLAWS`;
+            msg += `\nAPY: ${supply.apy.toFixed(1)}%\n`;
+            msg += `Daily: ${formatNum(supply.dailyRewards)} CLAWS`;
             if (price > 0) msg += ` ≈ ${formatUsd(supply.dailyRewards * price)}`;
-            if (stakerCount > 0) msg += `\nStakers: ${stakerCount}`;
-            msg += `\nStake: https://www.inclawbate.app/stake/claws\n`;
+            msg += `\nStake: inclawbate.app/stake/claws`;
         }
+        msg += `</blockquote>`;
     }
 
-    // Angel NFT Rewards
+    // ── Expandable: Angel NFT ──
     if (angelStats) {
-        const price = claws?.price || 0;
-        msg += `\n<b>😇 Angel NFT Rewards</b>\n`;
-        msg += `Current Rate: ${formatNum(angelStats.dailyRewards)} CLAWS/day`;
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>😇 Angel NFT Rewards</b>\n\n`;
+        msg += `Rate: ${formatNum(angelStats.dailyRewards)} CLAWS/day`;
         if (price > 0) msg += ` ≈ ${formatUsd(angelStats.dailyRewards * price)}/day`;
         msg += `\n`;
         if (price > 0) {
             msg += `Annual: ~${formatUsd(angelStats.dailyRewards * 365 * price)}\n`;
         }
         if (angelStats.floorPrice != null) {
-            msg += `NFT Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
+            msg += `Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
             const ethPr = treasury?.ethPrice || 0;
             const floorUsd = angelStats.floorPrice * ethPr;
             if (floorUsd > 0 && price > 0 && angelStats.holders > 0) {
@@ -455,25 +464,14 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
         if (angelStats.holders > 0) msg += `Holders: ${angelStats.holders}\n`;
         if (angelStats.totalClaimed > 0) msg += `Claimed: ${formatNum(angelStats.totalClaimed)} CLAWS\n`;
-        msg += `Remaining: ${formatNum(angelStats.rewardsRemaining)} CLAWS\n`;
+        msg += `Remaining: ${formatNum(angelStats.rewardsRemaining)} CLAWS`;
+        msg += `</blockquote>`;
     }
 
-    // Active campaigns
-    if (tasks.campaigns.length) {
-        msg += `\n<b>📣 Active Campaigns</b>\n`;
-        tasks.campaigns.forEach(c => { msg += `• ${esc(c)}\n`; });
-    }
-
-    // Team expenses
-    if (tasks.expenses.length) {
-        msg += `\n<b>💸 Team / Monthly Expenses</b>\n`;
-        tasks.expenses.forEach(e => { msg += `• ${esc(e)}\n`; });
-    }
-
-    // Treasury breakdown
+    // ── Expandable: Treasury ──
     if (treasury?.total) {
-        const treasuryChange = calcChange(treasury.total, yesterday?.treasury_total);
-        msg += `\n<b>🏦 Treasury</b> ${formatUsd(treasury.total)}${formatDelta(treasuryChange)}\n`;
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>🏦 Treasury Breakdown</b>\n\n`;
         if (treasury.totalClaws > 0) {
             msg += `CLAWS: ${formatNum(treasury.totalClaws)} (${formatUsd(treasury.totalClawsValue)})\n`;
             msg += `  Wallet: ${formatNum(treasury.walletClaws)} · Staked: ${formatNum(treasury.stakedClaws)} · Unclaimed: ${formatNum(treasury.unclaimedClaws)}\n`;
@@ -481,75 +479,89 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
         if (treasury.ethBalance > 0) {
             msg += `ETH: ${treasury.ethBalance.toFixed(4)}`;
-            if (treasury.dailyEthAdd > 0) {
-                msg += ` (+${treasury.dailyEthAdd.toFixed(4)} today)`;
+            if (treasury.dailyEthAdd > 0) msg += ` (+${treasury.dailyEthAdd.toFixed(4)}/day)`;
+            msg += `\n`;
+        }
+        if (treasury.basisVault > 0) msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
+        msg += `</blockquote>`;
+    }
+
+    // ── Expandable: Community Votes ──
+    if (allocation) {
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>🗳 Community Votes</b> (${allocation.voterCount} voter${allocation.voterCount !== 1 ? 's' : ''})\n\n`;
+        BUCKET_IDS.forEach((id, i) => {
+            if (allocation.community[i] > 0) msg += `${BUCKET_LABELS[id]}: ${allocation.community[i]}%\n`;
+        });
+        msg += `\nVote: inclawbate.app/how-it-works`;
+        msg += `</blockquote>`;
+    }
+
+    // ── Expandable: State ──
+    const hasState = tasks.done.length || tasks.focus.length || tasks.incubations.length || tasks.backlog.length;
+    if (hasState) {
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>📋 State</b>\n\n`;
+
+        if (tasks.done.length) {
+            msg += `✅ Done\n`;
+            tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
+            msg += `\n`;
+        }
+        if (tasks.focus.length) {
+            msg += `🔥 Focus\n`;
+            tasks.focus.forEach(t => { msg += `→ ${esc(t)}\n`; });
+            msg += `\n`;
+        }
+        if (tasks.incubations.length) {
+            msg += `🦞 Incubations (${tasks.incubations.length})\n`;
+            for (const inc of tasks.incubations) {
+                const name = inc.content.replace(/\s*-\s*(?:inclawbate|@\w+)$/i, '').trim();
+                const author = inc.author || '';
+                const hasOwner = author && author !== 'admin' && author !== '@StuartDeFi';
+                msg += `• ${esc(name)}${hasOwner ? ' — ' + esc(author) : ''}\n`;
             }
             msg += `\n`;
         }
-        if (treasury.basisVault > 0) {
-            msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
+        if (tasks.backlog.length) {
+            msg += `📋 ${tasks.backlog.length} in backlog`;
         }
+        msg += `</blockquote>`;
     }
 
-    // Allocation — community vote only
-    if (allocation) {
-        msg += `\n<b>🗳 Community</b> (${allocation.voterCount} vote${allocation.voterCount !== 1 ? 's' : ''})\n`;
-        msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.community[i]}%`).join(' · ') + `\n`;
-        msg += `<a href="https://www.inclawbate.app/how-it-works">Vote: inclawbate.app/how-it-works</a>\n`;
-    }
+    // ── Expandable: Team & Expenses ──
+    const hasTeam = tasks.responsibilities.length || tasks.expenses.length || tasks.campaigns.length;
+    if (hasTeam) {
+        msg += `\n<blockquote expandable>`;
+        msg += `<b>👥 Team &amp; Expenses</b>\n\n`;
 
-    // Focus / Incubations / Backlog
-    if (tasks.done.length) {
-        msg += `\n<b>✅ Done</b>\n`;
-        tasks.done.forEach(t => { msg += `• ${esc(t)}\n`; });
-    }
-
-    if (tasks.focus.length) {
-        msg += `\n<b>🔥 Focus</b>\n`;
-        tasks.focus.forEach(t => { msg += `→ ${esc(t)}\n`; });
-    }
-
-    if (tasks.incubations.length) {
-        msg += `\n<b>🦞 Incubations</b> (${tasks.incubations.length})\n`;
-        // Sort: unowned first, then owned. Strip " - inclawbate" etc. from content.
-        const owned = [];
-        const unowned = [];
-        for (const inc of tasks.incubations) {
-            const name = inc.content.replace(/\s*-\s*(?:inclawbate|@\w+)$/i, '').trim();
-            const author = inc.author || '';
-            const hasOwner = author && author !== 'admin' && author !== '@StuartDeFi';
-            if (hasOwner) {
-                owned.push(`• ${esc(name)} — ${esc(author)}`);
-            } else {
-                unowned.push(`• ${esc(name)} — <i>needs owner</i>`);
+        if (tasks.responsibilities.length) {
+            const byPerson = {};
+            for (const r of tasks.responsibilities) {
+                const person = r.author || 'unassigned';
+                if (!byPerson[person]) byPerson[person] = [];
+                const task = r.content.replace(/\s*-\s*@\w+$/i, '').trim();
+                byPerson[person].push(task);
             }
+            for (const [person, items] of Object.entries(byPerson)) {
+                msg += `<b>${esc(person)}</b>\n`;
+                items.forEach(t => { msg += `  • ${esc(t)}\n`; });
+            }
+            msg += `\n`;
         }
-        unowned.forEach(l => { msg += l + '\n'; });
-        owned.forEach(l => { msg += l + '\n'; });
-    }
 
-    if (tasks.responsibilities.length) {
-        msg += `\n<b>👥 Responsibilities</b>\n`;
-        // Group by author, extract task (strip trailing "- @handle" from content)
-        const byPerson = {};
-        for (const r of tasks.responsibilities) {
-            const person = r.author || 'unassigned';
-            if (!byPerson[person]) byPerson[person] = [];
-            // Strip "- @handle" suffix from content since we show the handle as header
-            const task = r.content.replace(/\s*-\s*@\w+$/i, '').trim();
-            byPerson[person].push(task);
+        if (tasks.expenses.length) {
+            msg += `💸 Monthly Expenses\n`;
+            tasks.expenses.forEach(e => { msg += `• ${esc(e)}\n`; });
+            msg += `\n`;
         }
-        for (const [person, items] of Object.entries(byPerson)) {
-            msg += `<b>${esc(person)}</b>\n`;
-            items.forEach(t => { msg += `  • ${esc(t)}\n`; });
+
+        if (tasks.campaigns.length) {
+            msg += `📣 Campaigns\n`;
+            tasks.campaigns.forEach(c => { msg += `• ${esc(c)}\n`; });
         }
+        msg += `</blockquote>`;
     }
-
-    if (tasks.backlog.length) {
-        msg += `\n📋 ${tasks.backlog.length} in backlog\n`;
-    }
-
-    msg += `<i>Full state: inclawbate.app/how-it-works</i>\n`;
 
     msg += `\n🔗 inclawbate.app`;
 
