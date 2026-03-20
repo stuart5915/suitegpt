@@ -30,42 +30,83 @@ const BASE_RPCS = [
 
 const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy'];
 
-async function rpcCall(to, data) {
+// Batched RPC — send all eth_call requests in a single HTTP request
+async function batchRpcCalls(calls) {
+    const batch = calls.map((c, i) => ({
+        jsonrpc: '2.0', id: i, method: 'eth_call',
+        params: [{ to: c.to, data: c.data }, 'latest']
+    }));
+
     for (const rpc of BASE_RPCS) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
+        const timeout = setTimeout(() => controller.abort(), 10000);
         try {
             const res = await fetch(rpc, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }),
+                body: JSON.stringify(batch),
                 signal: controller.signal
             });
             clearTimeout(timeout);
             const json = await res.json();
-            if (json.error || !json.result || json.result === '0x') continue;
-            return BigInt(json.result);
+
+            if (Array.isArray(json)) {
+                const results = new Array(calls.length).fill('0x0');
+                for (const item of json) {
+                    if (item.result && item.result !== '0x' && item.result.length > 2) {
+                        results[item.id] = item.result;
+                    }
+                }
+                return results;
+            }
         } catch (err) {
             clearTimeout(timeout);
-            console.error('RPC error for', to, 'via', rpc, err.message);
+            console.error('Batch RPC error via', rpc, err.message);
         }
     }
-    return BigInt(0);
+    return new Array(calls.length).fill('0x0');
 }
 
 async function getClawsBalance(address) {
     const paddedAddr = address.slice(2).toLowerCase().padStart(64, '0');
     const balanceOfData = '0x70a08231' + paddedAddr;
 
-    // Parallel: wallet balance + staked in each contract
-    const [wallet, ...staked] = await Promise.all([
-        rpcCall(CLAWS_ADDRESS, balanceOfData),
-        ...STAKING_CONTRACTS.map(c => rpcCall(c, balanceOfData))
-    ]);
+    const contracts = [CLAWS_ADDRESS, ...STAKING_CONTRACTS];
+    const calls = contracts.map(c => ({ to: c, data: balanceOfData }));
+    const results = await batchRpcCalls(calls);
 
-    const total = wallet + staked.reduce((a, b) => a + b, BigInt(0));
-    console.log('Balance for', address, ':', total.toString(), '(wallet:', wallet.toString(), 'staked:', staked.map(s => s.toString()));
+    let total = BigInt(0);
+    for (const hex of results) {
+        try { total += BigInt(hex); } catch (e) { /* skip bad hex */ }
+    }
+    console.log('Balance for', address, ':', total.toString());
     return total.toString();
+}
+
+// Bulk fetch balances for multiple addresses in ONE batch request
+async function getClawsBalancesBulk(addresses) {
+    const contracts = [CLAWS_ADDRESS, ...STAKING_CONTRACTS];
+    const calls = [];
+    for (const addr of addresses) {
+        const paddedAddr = addr.slice(2).toLowerCase().padStart(64, '0');
+        const balanceOfData = '0x70a08231' + paddedAddr;
+        for (const c of contracts) {
+            calls.push({ to: c, data: balanceOfData });
+        }
+    }
+
+    const results = await batchRpcCalls(calls);
+    const balances = {};
+    const perAddr = contracts.length;
+
+    for (let i = 0; i < addresses.length; i++) {
+        let total = BigInt(0);
+        for (let j = 0; j < perAddr; j++) {
+            try { total += BigInt(results[i * perAddr + j]); } catch (e) { /* skip */ }
+        }
+        balances[addresses[i].toLowerCase()] = total.toString();
+    }
+    return balances;
 }
 
 function computeSynthesis(votes) {
@@ -119,15 +160,20 @@ export default async function handler(req, res) {
     // GET — return synthesis + individual votes + council allocation
     if (req.method === 'GET') {
         try {
-            // Admin refresh: POST ?refresh=admin to re-fetch all on-chain balances
+            // Admin refresh: GET ?refresh=admin to re-fetch all on-chain balances (single batch)
             if (req.query.refresh === 'admin') {
                 const { data: rows } = await supabase
                     .from('allocation_votes')
                     .select('wallet_address, claws_balance')
                     .neq('wallet_address', COUNCIL_ROW_KEY);
+                if (!rows || rows.length === 0) {
+                    return res.status(200).json({ refreshed: [] });
+                }
+                const addresses = rows.map(v => v.wallet_address);
+                const freshBalances = await getClawsBalancesBulk(addresses);
                 const results = [];
-                for (const v of (rows || [])) {
-                    const fresh = await getClawsBalance(v.wallet_address);
+                for (const v of rows) {
+                    const fresh = freshBalances[v.wallet_address.toLowerCase()] || '0';
                     await supabase.from('allocation_votes')
                         .update({ claws_balance: fresh })
                         .eq('wallet_address', v.wallet_address);
