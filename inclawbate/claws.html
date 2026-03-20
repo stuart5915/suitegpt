@@ -25,6 +25,38 @@
             padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
         }
 
+        /* ── Distribution Donut ── */
+        .dist-section { margin-bottom: var(--space-2xl); }
+        .dist-wrap {
+            display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;
+        }
+        .dist-chart-wrap { position: relative; width: 260px; height: 260px; flex-shrink: 0; }
+        .dist-chart-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .dist-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .dist-center-supply {
+            font-family: var(--font-mono); font-size: 1.1rem; font-weight: 800;
+            color: var(--text-primary); line-height: 1.2;
+        }
+        .dist-center-label {
+            font-family: var(--font-mono); font-size: 0.55rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim);
+        }
+        .dist-legend { display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
+        .dist-leg-item { display: flex; align-items: center; gap: 10px; }
+        .dist-leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+        .dist-leg-info { flex: 1; }
+        .dist-leg-name { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+        .dist-leg-sub { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); }
+        .dist-leg-pct { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800; color: var(--text-primary); }
+        .dist-loading { text-align: center; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding: 40px 0; }
+        @media (max-width: 640px) {
+            .dist-wrap { flex-direction: column; gap: 24px; }
+            .dist-chart-wrap { width: 220px; height: 220px; }
+        }
+
         /* ── Hero ── */
         .claws-hero { text-align: center; margin-bottom: var(--space-2xl); }
         .claws-hero h1 {
@@ -357,6 +389,17 @@
             <a href="#revenue" class="claws-quick-link">Revenue</a>
             <a href="#ecosystem" class="claws-quick-link">Ecosystem</a>
             <a href="/blog/claws-tokenomics" class="claws-quick-link">Tokenomics</a>
+        </div>
+    </div>
+
+    <!-- ═══ LIVE DISTRIBUTION ═══ -->
+    <div class="claws-section dist-section" id="distribution">
+        <div class="sec-label">Live On-Chain</div>
+        <div class="sec-title">Token Distribution</div>
+        <div class="sec-sub">100B total supply. Where every CLAWS token sits right now, read directly from Base.</div>
+
+        <div id="dist-content">
+            <div class="dist-loading">Reading on-chain data...</div>
         </div>
     </div>
 
@@ -1093,6 +1136,110 @@
             leaf.insertAdjacentHTML('beforeend', buildDetailHTML(data));
         });
     });
+})();
+</script>
+
+<script>
+/* ── Live Token Distribution Donut ── */
+(function() {
+    var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
+    var TOTAL_SUPPLY = 100000000000; // 100B
+    var DECIMALS = 1e18;
+
+    var buckets = [
+        { name: 'Staking Pool 1',   addr: '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6', color: '#4ade80' },
+        { name: 'Staking Pool 2',   addr: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40', color: '#2dd4bf' },
+        { name: 'Uniswap LP',       addr: '0xAc89E3dc50Cb062C9B6f9e7F4f41e5Eb103a203F', color: '#a78bfa' },
+        { name: 'Treasury',         addr: '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd', color: '#fbbf24' },
+    ];
+
+    var RPC_LIST = [
+        'https://base-rpc.publicnode.com',
+        'https://1rpc.io/base',
+        'https://mainnet.base.org'
+    ];
+
+    async function rpcCall(to, data) {
+        for (var i = 0; i < RPC_LIST.length; i++) {
+            try {
+                var resp = await fetch(RPC_LIST[i], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] })
+                });
+                var json = await resp.json();
+                if (json.result && json.result !== '0x') return json.result;
+            } catch (e) {}
+        }
+        return '0x0';
+    }
+
+    async function loadDistribution() {
+        var selector = '0x70a08231';
+        var results = [];
+
+        await Promise.all(buckets.map(async function(b, idx) {
+            var padded = b.addr.slice(2).toLowerCase().padStart(64, '0');
+            var raw = await rpcCall(CLAWS, selector + padded);
+            var bal = Number(BigInt(raw)) / DECIMALS;
+            results[idx] = bal;
+        }));
+
+        var knownTotal = results.reduce(function(a, b) { return a + b; }, 0);
+        var communityBal = TOTAL_SUPPLY - knownTotal;
+
+        var segments = buckets.map(function(b, i) {
+            return { name: b.name, balance: results[i], pct: (results[i] / TOTAL_SUPPLY * 100), color: b.color };
+        });
+        segments.push({ name: 'Community / Other', balance: communityBal, pct: (communityBal / TOTAL_SUPPLY * 100), color: '#60a5fa' });
+
+        renderDonut(segments);
+    }
+
+    function formatNum(n) {
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return Math.round(n).toLocaleString();
+    }
+
+    function renderDonut(segments) {
+        var container = document.getElementById('dist-content');
+        if (!container) return;
+
+        // Build SVG donut
+        var R = 100, r = 65, cx = 130, cy = 130;
+        var circumference = 2 * Math.PI * R;
+        var offset = 0;
+        var paths = '';
+
+        segments.forEach(function(seg) {
+            var len = (seg.pct / 100) * circumference;
+            paths += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="' + seg.color + '" stroke-width="' + (R - r) + '" stroke-dasharray="' + len + ' ' + (circumference - len) + '" stroke-dashoffset="' + (-offset) + '" style="transition:stroke-dasharray 0.6s ease"/>';
+            offset += len;
+        });
+
+        var svg = '<svg viewBox="0 0 260 260">' + paths + '</svg>';
+
+        // Legend
+        var legend = '';
+        segments.forEach(function(seg) {
+            legend += '<div class="dist-leg-item">'
+                + '<div class="dist-leg-dot" style="background:' + seg.color + '"></div>'
+                + '<div class="dist-leg-info"><div class="dist-leg-name">' + seg.name + '</div><div class="dist-leg-sub">' + formatNum(seg.balance) + ' CLAWS</div></div>'
+                + '<div class="dist-leg-pct">' + seg.pct.toFixed(1) + '%</div>'
+                + '</div>';
+        });
+
+        container.innerHTML = '<div class="dist-wrap">'
+            + '<div class="dist-chart-wrap">' + svg
+            + '<div class="dist-center"><div class="dist-center-supply">100B</div><div class="dist-center-label">Total Supply</div></div>'
+            + '</div>'
+            + '<div class="dist-legend">' + legend + '</div>'
+            + '</div>';
+    }
+
+    loadDistribution();
 })();
 </script>
 
