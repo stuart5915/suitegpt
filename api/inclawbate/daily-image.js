@@ -169,6 +169,7 @@ export default async function handler(req, res) {
                     statRow('Rate', p('angelRate') + ' /day'),
                     statRow('Annual', '~' + p('angelAnnual') + '/yr'),
                     statRow('NFT Floor', p('angelFloor')),
+                    p('angelApy') !== '—' ? statRow('APY', p('angelApy') + '%', COLORS.green) : null,
                     statRow('Holders', p('angelHolders')),
                 ])
             ),

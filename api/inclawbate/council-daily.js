@@ -593,6 +593,13 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
         }
         if (angelStats.floorPrice != null) {
             tweet += `NFT Floor: ${angelStats.floorPrice} ${angelStats.floorCurrency}\n`;
+            const ethPr = treasury?.ethPrice || 0;
+            const floorUsd = angelStats.floorPrice * ethPr;
+            if (floorUsd > 0 && price > 0 && angelStats.holders > 0) {
+                const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
+                const angelApy = (perHolderDaily * 365 * price / floorUsd * 100);
+                tweet += `APY: ${angelApy.toFixed(0)}%\n`;
+            }
         }
         if (angelStats.holders > 0) tweet += `Holders: ${angelStats.holders}\n`;
         tweet += `opensea.io/collection/inclawbate-angel\n`;
@@ -696,6 +703,14 @@ export default async function handler(req, res) {
             angelAnnual: angelStats && clawsPrice > 0 ? formatUsd(angelStats.dailyRewards * 365 * clawsPrice) : '—',
             angelFloor: angelStats?.floorPrice != null ? angelStats.floorPrice + ' ' + angelStats.floorCurrency : '—',
             angelHolders: angelStats?.holders > 0 ? String(angelStats.holders) : '—',
+            angelApy: (() => {
+                if (!angelStats || !angelStats.floorPrice || !angelStats.holders || clawsPrice <= 0) return '—';
+                const ethPr = treasuryData?.ethPrice || 0;
+                const floorUsd = angelStats.floorPrice * ethPr;
+                if (floorUsd <= 0) return '—';
+                const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
+                return (perHolderDaily * 365 * clawsPrice / floorUsd * 100).toFixed(0);
+            })(),
         });
         const imageUrl = `https://www.inclawbate.com/api/inclawbate/daily-image?${imageParams}`;
         await sendPhoto(COUNCIL_CHAT_ID, imageUrl);
