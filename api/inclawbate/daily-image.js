@@ -6,11 +6,9 @@
 // CUSTOMIZATION:
 //   - Colors: edit COLORS object below
 //   - Layout: edit the element tree in handler()
-//   - Card size: change width/height in ImageResponse options
+//   - Card size: change width/height at the bottom
 
 import { ImageResponse } from '@vercel/og';
-
-export const config = { runtime: 'edge' };
 
 // ── Brand Colors (edit these to change the look) ──
 const COLORS = {
@@ -79,10 +77,14 @@ function cardTitle(text) {
     }, text);
 }
 
-// ── Handler ──
+// ── Handler (Node.js serverless function) ──
 
-export default async function handler(req) {
-    const url = new URL(req.url);
+export default async function handler(req, res) {
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'GET only' });
+    }
+
+    const url = new URL(req.url, `https://${req.headers.host}`);
     const p = (key, fallback) => url.searchParams.get(key) || fallback || '\u2014';
 
     const changeNum = parseFloat(p('change', '0'));
@@ -164,5 +166,14 @@ export default async function handler(req) {
         )
     );
 
-    return new ImageResponse(element, { width: 1200, height: 630 });
+    try {
+        const imageResponse = new ImageResponse(element, { width: 1200, height: 630 });
+        const buffer = Buffer.from(await imageResponse.arrayBuffer());
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'no-cache, no-store');
+        return res.send(buffer);
+    } catch (err) {
+        console.error('Daily image generation error:', err);
+        return res.status(500).json({ error: err.message });
+    }
 }
