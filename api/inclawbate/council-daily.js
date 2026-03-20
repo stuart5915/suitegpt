@@ -574,7 +574,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     if (tasks.incubations.length) {
         tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
     }
-    tweet += `inclawbate.com/how-it-works\n`;
+    tweet += `https://www.inclawbate.com/how-it-works\n`;
 
     // Staking
     tweet += `\n📊 Staking Rewards\n`;
