@@ -456,12 +456,8 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         }
     }
 
-    // Allocation — council vs community
+    // Allocation — community vote only
     if (allocation) {
-        if (allocation.council) {
-            msg += `\n<b>⚖️ Council Allocation</b> <i>(active)</i>\n`;
-            msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.council[i]}%`).join(' · ') + `\n`;
-        }
         msg += `\n<b>🗳 Community</b> (${allocation.voterCount} vote${allocation.voterCount !== 1 ? 's' : ''})\n`;
         msg += BUCKET_IDS.map((id, i) => `${BUCKET_LABELS[id]} ${allocation.community[i]}%`).join(' · ') + `\n`;
         msg += `<a href="https://www.inclawbate.com/how-it-works">Vote: inclawbate.com/how-it-works</a>\n`;
