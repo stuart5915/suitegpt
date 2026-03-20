@@ -695,6 +695,27 @@
         .sched-slot--pending:hover { border-color:rgba(99,102,241,0.5); }
         .sched-tag--pending { background:rgba(99,102,241,0.15);color:#818cf8; }
         .sched-charcount { font-size:0.7rem;color:var(--text-dim);text-align:right;margin-top:4px; }
+
+        /* Thread UI */
+        .sched-add-thread-btn, .thread-remove-btn {
+            background:none;border:1px dashed rgba(255,255,255,0.15);color:var(--text-dim);
+            font-size:0.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;
+            width:100%;margin-top:8px;transition:all 0.15s;
+        }
+        .sched-add-thread-btn:hover { border-color:var(--lobster-400);color:var(--lobster-400); }
+        .thread-part { position:relative;margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px; }
+        .thread-part::before {
+            content:'';position:absolute;left:16px;top:-10px;width:2px;height:10px;
+            background:linear-gradient(180deg,transparent,var(--lobster-400));
+        }
+        .thread-label {
+            display:flex;align-items:center;justify-content:space-between;
+            font-size:0.7rem;font-weight:700;color:var(--text-dim);margin-bottom:4px;
+        }
+        .thread-remove-btn { width:auto;padding:2px 8px;margin:0;border:none;font-size:0.65rem;color:#f87171; }
+        .thread-remove-btn:hover { color:#ef4444;background:rgba(248,113,113,0.1); }
+        .thread-charcount { font-size:0.65rem;color:var(--text-dim);text-align:right;margin-top:2px; }
+        .thread-badge { display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;background:rgba(99,102,241,0.15);color:#818cf8;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:4px; }
         .review-card { background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:12px;padding:14px; }
         .review-card-header { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
         .review-card-logo { width:28px;height:28px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700; }
@@ -1132,9 +1153,11 @@
             <!-- User tweet text (non-admin) -->
             <div class="sched-field" id="schedUserFields">
                 <div class="sched-field-label">Write your tweet</div>
-                <textarea id="schedBookTweet" placeholder="What do you want @inclawbator to post? Write the exact tweet..." maxlength="280" oninput="updateBookCharCount()"></textarea>
+                <textarea id="schedBookTweet" placeholder="What do you want @inclawbator to post? Write the exact tweet..." maxlength="4000" oninput="updateBookCharCount()"></textarea>
+                <div id="bookThreadContainer"></div>
+                <button type="button" class="sched-add-thread-btn" onclick="window._addBookThread()">+ Add tweet to thread</button>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                    <div class="sched-charcount" id="schedBookCharCount">0/280</div>
+                    <div class="sched-charcount" id="schedBookCharCount">0 / 4,000</div>
                     <button type="button" class="sched-imgprompt-btn" id="imgPromptBtn" onclick="window._generateImagePrompt()">&#127912; Generate Image Prompt</button>
                 </div>
                 <div class="sched-imgprompt-result" id="imgPromptResult">
@@ -1532,6 +1555,10 @@
                 }
 
                 var slotOpts = booked.tweet_options || {};
+                var threadParts = slotOpts.thread_parts || [];
+                if (threadParts.length > 0) {
+                    html += '<span class="thread-badge">&#x1F9F5; Thread (' + (1 + threadParts.length) + ')</span>';
+                }
                 // Show image prompt only for drafts (not yet approved)
                 if (slotOpts.image_prompt && isDraft) {
                     html += '<div class="sched-img-prompt" id="imgPrompt_' + booked.id + '" onclick="event.stopPropagation()">';
@@ -1605,6 +1632,10 @@
                 }
 
                 var slotOpts2 = booked.tweet_options || {};
+                var threadParts2 = slotOpts2.thread_parts || [];
+                if (threadParts2.length > 0) {
+                    html += '<span class="thread-badge">&#x1F9F5; Thread (' + (1 + threadParts2.length) + ')</span>';
+                }
                 // Show image prompt for drafts/pending (same as autofill)
                 if (slotOpts2.image_prompt && (isDraft || isPending)) {
                     html += '<div class="sched-img-prompt" id="imgPrompt_' + booked.id + '" onclick="event.stopPropagation()">';
@@ -1824,7 +1855,8 @@
         document.getElementById('schedUserFields').style.display = 'block';
 
         document.getElementById('schedBookTweet').value = '';
-        document.getElementById('schedBookCharCount').textContent = '0/280';
+        document.getElementById('schedBookCharCount').textContent = '0 / 4,000';
+        document.getElementById('bookThreadContainer').innerHTML = '';
         document.getElementById('schedBookSuccess').style.display = 'none';
         document.getElementById('schedBookError').style.display = 'none';
         document.getElementById('schedBookBtn').disabled = false;
@@ -1934,12 +1966,17 @@
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + auth.token
                 },
-                body: JSON.stringify({
-                    action: 'book',
-                    scheduled_at: document.getElementById('schedBookSlotTime').value,
-                    tweet_text: tweetText,
-                    account: _activeAccount
-                })
+                body: JSON.stringify(function() {
+                    var p = {
+                        action: 'book',
+                        scheduled_at: document.getElementById('schedBookSlotTime').value,
+                        tweet_text: tweetText,
+                        account: _activeAccount
+                    };
+                    var tp = _getBookThreadParts();
+                    if (tp.length) p.tweet_options = { thread_parts: tp };
+                    return p;
+                }())
             });
 
             var data = await resp.json();
@@ -1976,7 +2013,7 @@
 
     window.updateSlot = async function() {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         var slotId = document.getElementById('schedBookForm').getAttribute('data-edit-id');
         if (!slotId) return;
@@ -2034,7 +2071,7 @@
         if (!confirm('Cancel this slot?')) return;
 
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         try {
             var resp = await fetch('/api/inclawbate/agent-schedule', {
@@ -2105,7 +2142,7 @@
 
     window._approveDraft = async function(slotId) {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
@@ -2126,7 +2163,7 @@
     window._postNow = async function(slotId) {
         if (!confirm('Post this tweet to X right now?')) return;
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         // Find the button and show loading state
         var btn = document.querySelector('[onclick*="_postNow(\\\'' + slotId + '\\\')"]');
@@ -2159,7 +2196,7 @@
 
     window._unapproveDraft = async function(slotId) {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
@@ -2178,7 +2215,7 @@
 
     window._approveAll = async function() {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
         if (!_selectedDay) return;
         var dayStr = _selectedDay.getFullYear() + '-' + String(_selectedDay.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDay.getDate()).padStart(2, '0');
 
@@ -2206,7 +2243,7 @@
     window._deleteSlot = async function(slotId) {
         if (!confirm('Delete this draft?')) return;
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
         try {
             var resp = await fetch('/api/inclawbate/schedule-autofill', {
                 method: 'POST',
@@ -2222,7 +2259,7 @@
 
     window._regenSlot = async function(slotId) {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
@@ -2482,6 +2519,9 @@
         document.getElementById('draftModalImgResult').style.display = 'none';
         document.getElementById('draftModalImgText').textContent = '';
 
+        // Clear thread parts
+        _clearDraftThreads();
+
         updateDraftCount();
         document.getElementById('draftModal').classList.add('open');
         setTimeout(function() { ta.focus(); }, 100);
@@ -2559,6 +2599,13 @@
             document.getElementById('draftModalImgText').textContent = '';
         }
 
+        // Load existing thread parts
+        _clearDraftThreads();
+        var tParts = slot.tweet_options && slot.tweet_options.thread_parts;
+        if (tParts && tParts.length) {
+            tParts.forEach(function(t) { _addDraftThread(t); });
+        }
+
         updateDraftCount();
         document.getElementById('draftModal').classList.add('open');
         setTimeout(function() { ta.focus(); }, 100);
@@ -2577,7 +2624,7 @@
 
     window._regenImgPrompt = async function(slotId) {
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
         // Find the button and show loading
         var btns = document.querySelectorAll('.sched-img-prompt-btn');
         btns.forEach(function(b) { if (b.title === 'New prompt') b.style.opacity = '0.5'; });
@@ -2645,23 +2692,23 @@
     window.updateDraftCount = function() {
         var len = (document.getElementById('draftModalText').value || '').length;
         var el = document.getElementById('draftModalCount');
-        el.textContent = len + '/280';
-        el.className = 'draft-modal-charcount' + (len > 280 ? ' over' : '');
+        el.textContent = len.toLocaleString() + ' / 4,000';
+        el.className = 'draft-modal-charcount' + (len > 4000 ? ' over' : '');
         var bar = document.getElementById('draftModalBar');
         if (bar) {
-            var pct = Math.min(len / 280 * 100, 100);
+            var pct = Math.min(len / 4000 * 100, 100);
             bar.style.width = pct + '%';
-            bar.className = 'draft-modal-charbar-fill' + (len > 260 && len <= 280 ? ' warn' : '') + (len > 280 ? ' over' : '');
+            bar.className = 'draft-modal-charbar-fill' + (len > 3800 && len <= 4000 ? ' warn' : '') + (len > 4000 ? ' over' : '');
         }
     };
 
     window.saveDraftModal = async function() {
         var newText = document.getElementById('draftModalText').value.trim();
         if (!newText) return;
-        if (newText.length > 280) { return; }
+        if (newText.length > 4000) { return; }
 
         var auth = getAuth();
-        if (!auth || !auth.token) return;
+        if (!auth || !auth.token) { alert('Please sign in first'); return; }
 
         // Grab image prompt if one was generated in the modal
         var imgResultEl = document.getElementById('draftModalImgResult');
@@ -2681,7 +2728,11 @@
                     tweet_text: newText,
                     account: _activeAccount
                 };
-                if (imgPrompt) payload.tweet_options = { image_prompt: imgPrompt };
+                var tOpts = {};
+                if (imgPrompt) tOpts.image_prompt = imgPrompt;
+                var threadParts = _getDraftThreadParts();
+                if (threadParts.length) tOpts.thread_parts = threadParts;
+                if (Object.keys(tOpts).length) payload.tweet_options = tOpts;
                 var r = await fetch('/api/inclawbate/agent-schedule', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
@@ -2695,6 +2746,8 @@
                 // Updating an existing slot
                 var updatePayload = { action: 'update_draft', slot_id: _editingSlotId, tweet_text: newText };
                 if (imgPrompt) updatePayload.image_prompt = imgPrompt;
+                var threadParts = _getDraftThreadParts();
+                updatePayload.thread_parts = threadParts;
                 var r = await fetch('/api/inclawbate/schedule-autofill', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
@@ -2721,6 +2774,96 @@
         }
     };
 
+    // ── Thread helpers ──
+    var _draftThreadCount = 0;
+    var _bookThreadCount = 0;
+
+    window._addDraftThread = function(text) {
+        _draftThreadCount++;
+        var idx = _draftThreadCount;
+        document.getElementById('draftThreadLabel').style.display = 'flex';
+        var container = document.getElementById('draftThreadContainer');
+        var part = document.createElement('div');
+        part.className = 'thread-part';
+        part.id = 'draftThread_' + idx;
+        part.innerHTML = '<div class="thread-label">Tweet ' + (idx + 1)
+            + '<button type="button" class="thread-remove-btn" onclick="window._removeDraftThread(' + idx + ')">Remove</button></div>'
+            + '<textarea class="draft-thread-ta" maxlength="4000" placeholder="Continue the thread..." oninput="window._updateThreadCount(this)">' + (text || '') + '</textarea>'
+            + '<div class="thread-charcount">' + (text ? text.length : 0) + ' / 4,000</div>';
+        container.appendChild(part);
+    };
+
+    window._removeDraftThread = function(idx) {
+        var el = document.getElementById('draftThread_' + idx);
+        if (el) el.remove();
+        // Renumber remaining
+        var parts = document.querySelectorAll('#draftThreadContainer .thread-part');
+        if (parts.length === 0) {
+            _draftThreadCount = 0;
+            document.getElementById('draftThreadLabel').style.display = 'none';
+        } else {
+            _draftThreadCount = parts.length;
+            parts.forEach(function(p, i) {
+                p.querySelector('.thread-label').firstChild.textContent = 'Tweet ' + (i + 2);
+            });
+        }
+    };
+
+    window._addBookThread = function(text) {
+        _bookThreadCount++;
+        var idx = _bookThreadCount;
+        var container = document.getElementById('bookThreadContainer');
+        var part = document.createElement('div');
+        part.className = 'thread-part';
+        part.id = 'bookThread_' + idx;
+        part.innerHTML = '<div class="thread-label">Tweet ' + (idx + 1)
+            + '<button type="button" class="thread-remove-btn" onclick="window._removeBookThread(' + idx + ')">Remove</button></div>'
+            + '<textarea class="book-thread-ta" maxlength="4000" placeholder="Continue the thread..." oninput="window._updateThreadCount(this)">' + (text || '') + '</textarea>'
+            + '<div class="thread-charcount">' + (text ? text.length : 0) + ' / 4,000</div>';
+        container.appendChild(part);
+    };
+
+    window._removeBookThread = function(idx) {
+        var el = document.getElementById('bookThread_' + idx);
+        if (el) el.remove();
+        var parts = document.querySelectorAll('#bookThreadContainer .thread-part');
+        _bookThreadCount = parts.length;
+        parts.forEach(function(p, i) {
+            p.querySelector('.thread-label').firstChild.textContent = 'Tweet ' + (i + 2);
+        });
+    };
+
+    window._updateThreadCount = function(ta) {
+        var cc = ta.parentElement.querySelector('.thread-charcount');
+        if (cc) cc.textContent = ta.value.length + ' / 4,000';
+    };
+
+    window._getDraftThreadParts = function() {
+        var parts = [];
+        document.querySelectorAll('#draftThreadContainer .draft-thread-ta').forEach(function(ta) {
+            var t = ta.value.trim();
+            if (t) parts.push(t);
+        });
+        return parts;
+    };
+
+    window._getBookThreadParts = function() {
+        var parts = [];
+        document.querySelectorAll('#bookThreadContainer .book-thread-ta').forEach(function(ta) {
+            var t = ta.value.trim();
+            if (t) parts.push(t);
+        });
+        return parts;
+    };
+
+    window._clearDraftThreads = function() {
+        _draftThreadCount = 0;
+        var c = document.getElementById('draftThreadContainer');
+        if (c) c.innerHTML = '';
+        var l = document.getElementById('draftThreadLabel');
+        if (l) l.style.display = 'none';
+    };
+
     // Wire up character counter + modal close (elements are after this script, so defer)
     document.addEventListener('DOMContentLoaded', function() {
         var dmt = document.getElementById('draftModalText');
@@ -2741,7 +2884,7 @@
     window.updateBookCharCount = function() {
         var ta = document.getElementById('schedBookTweet');
         var el = document.getElementById('schedBookCharCount');
-        if (ta && el) el.textContent = (ta.value || '').length + '/280';
+        if (ta && el) el.textContent = (ta.value || '').length + ' / 4,000';
     };
 
     window._generateImagePrompt = async function() {
@@ -2983,13 +3126,18 @@
             <span class="draft-modal-pillar-desc" id="draftModalPillarDesc"></span>
         </div>
 
-        <textarea id="draftModalText" maxlength="280" placeholder="Write tweet..."></textarea>
+        <div class="thread-label" id="draftThreadLabel" style="display:none">Tweet 1</div>
+        <textarea id="draftModalText" maxlength="4000" placeholder="Write tweet..."></textarea>
 
         <!-- Char bar -->
         <div class="draft-modal-charbar">
             <div class="draft-modal-charbar-track"><div class="draft-modal-charbar-fill" id="draftModalBar"></div></div>
-            <div class="draft-modal-charcount" id="draftModalCount">0/280</div>
+            <div class="draft-modal-charcount" id="draftModalCount">0 / 4,000</div>
         </div>
+
+        <!-- Thread parts -->
+        <div id="draftThreadContainer"></div>
+        <button type="button" class="sched-add-thread-btn" id="draftAddThreadBtn" onclick="window._addDraftThread()">+ Add tweet to thread</button>
 
         <!-- Quick emojis -->
         <div class="draft-modal-emoji-row" id="draftModalEmojis"></div>
@@ -3011,7 +3159,7 @@
         <div class="draft-modal-tips">
             <span class="draft-modal-tip">No @mentions</span>
             <span class="draft-modal-tip">Keep it conversational</span>
-            <span class="draft-modal-tip">280 chars max</span>
+            <span class="draft-modal-tip">4,000 chars max</span>
             <span class="draft-modal-tip">Links count as chars</span>
         </div>
 

@@ -125,8 +125,8 @@ export default async function handler(req, res) {
             if (!tweet_text || tweet_text.trim().length === 0) {
                 return res.status(400).json({ error: 'Tweet text is required' });
             }
-            if (tweet_text.length > 280) {
-                return res.status(400).json({ error: 'Tweet must be 280 characters or less' });
+            if (tweet_text.length > 4000) {
+                return res.status(400).json({ error: 'Tweet must be 4,000 characters or less' });
             }
 
             // Validate project if provided (optional — community members can book without one)
@@ -232,7 +232,7 @@ export default async function handler(req, res) {
             if (tone !== undefined) updates.tone = ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default';
             if (tweet_options !== undefined) updates.tweet_options = tweet_options || {};
             if (tweet_text !== undefined) {
-                if (tweet_text.length > 280) return res.status(400).json({ error: 'Tweet must be 280 characters or less' });
+                if (tweet_text.length > 4000) return res.status(400).json({ error: 'Tweet must be 4,000 characters or less' });
                 updates.tweet_text = tweet_text.trim();
             }
 
@@ -301,7 +301,7 @@ export default async function handler(req, res) {
             const updates = {};
             if (decision === 'approve') {
                 updates.status = 'scheduled';
-                if (tweet_text && tweet_text.trim().length > 0 && tweet_text.length <= 280) {
+                if (tweet_text && tweet_text.trim().length > 0 && tweet_text.length <= 4000) {
                     updates.tweet_text = tweet_text.trim();
                 }
             } else {

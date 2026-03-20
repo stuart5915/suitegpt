@@ -379,20 +379,23 @@ Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a spec
         }
 
         if (action === 'update_draft') {
-            const { slot_id, tweet_text, status, image_prompt } = req.body;
+            const { slot_id, tweet_text, status, image_prompt, thread_parts } = req.body;
             const updates = {};
             if (tweet_text !== undefined) updates.tweet_text = tweet_text;
             if (status) updates.status = status;
 
-            // If image_prompt provided, merge into tweet_options
-            if (image_prompt) {
+            // If image_prompt or thread_parts provided, merge into tweet_options
+            if (image_prompt || thread_parts !== undefined) {
                 const { data: existing } = await supabase
                     .from('agent_schedule')
                     .select('tweet_options')
                     .eq('id', slot_id)
                     .single();
                 const opts = existing?.tweet_options || {};
-                opts.image_prompt = image_prompt;
+                if (image_prompt) opts.image_prompt = image_prompt;
+                if (thread_parts !== undefined) {
+                    opts.thread_parts = Array.isArray(thread_parts) ? thread_parts.filter(t => t && t.trim()) : [];
+                }
                 updates.tweet_options = opts;
             }
 
@@ -503,7 +506,7 @@ ${exampleBlock}
 ${styleGuide ? styleGuide + '\n' : ''}
 
 RULES:
-- Under 280 characters (STRICT — \\n line breaks count as 1 char each)
+- Under 280 characters preferred (STRICT — \\n line breaks count as 1 char each). Max 4000 chars for long-form.
 - MUST be completely different from the rejected tweet — different angle, different structure, different words
 - No hashtags, no corporate speak, no em dashes
 - No @mentions, no names
@@ -548,7 +551,7 @@ IMAGE: [2-3 sentence prompt — lobster doing something SPECIFIC to the tweet, n
                 tweetText = tweetText.replace(/\\n/g, '\n').replace(/\n{3,}/g, '\n\n');
                 const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
 
-                if (!tweetText || tweetText.length > 280) {
+                if (!tweetText || tweetText.length > 4000) {
                     return res.status(500).json({ error: 'Generated tweet invalid or too long' });
                 }
 
@@ -682,8 +685,9 @@ Output ONLY the prompt, nothing else.`;
                     }
                 }
 
-                // Post via shared account
-                const tweetId = await postTweetShared(slot.tweet_text, mediaIds, slotAccount);
+                // Post via shared account (with thread support)
+                const threadParts = (slotOpts.thread_parts || []).filter(t => t && t.trim());
+                const tweetId = await postTweetShared(slot.tweet_text, mediaIds, slotAccount, threadParts);
 
                 // Mark as posted
                 await supabase
@@ -760,7 +764,7 @@ async function uploadMediaToX(imageUrl, account) {
     return data.media_id_string;
 }
 
-async function postTweetShared(text, mediaIds, account) {
+async function postTweetShared(text, mediaIds, account, threadParts) {
     const url = 'https://api.twitter.com/2/tweets';
     const authHeader = buildOAuth1Header('POST', url, {}, account);
     const payload = { text };
@@ -772,7 +776,29 @@ async function postTweetShared(text, mediaIds, account) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.title || 'X API post failed');
-    return data.data?.id || null;
+    const firstTweetId = data.data?.id || null;
+
+    // Post thread replies if present
+    if (firstTweetId && threadParts && threadParts.length > 0) {
+        let prevId = firstTweetId;
+        for (const part of threadParts) {
+            if (!part || !part.trim()) continue;
+            await new Promise(r => setTimeout(r, 500)); // small delay between thread tweets
+            const replyAuth = buildOAuth1Header('POST', url, {}, account);
+            const replyPayload = { text: part.trim(), reply: { in_reply_to_tweet_id: prevId } };
+            const replyResp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Authorization': replyAuth, 'Content-Type': 'application/json' },
+                body: JSON.stringify(replyPayload)
+            });
+            const replyData = await replyResp.json();
+            if (replyResp.ok && replyData.data?.id) {
+                prevId = replyData.data.id;
+            }
+        }
+    }
+
+    return firstTweetId;
 }
 
 // Tweet format examples — teach the AI what good @inclawbator tweets look like
@@ -893,7 +919,7 @@ const STYLE_INSTRUCTIONS = {
     mixed: `FORMAT VARIETY (CRITICAL — follow this distribution):
 - 1-2 tweets: SHORT one-liners (under 100 chars). Punchy, meme energy. Example: "gm. the future of app development is typing what you want and hitting enter."
 - 1-2 tweets: MEDIUM length (100-180 chars). Hook + detail. Example: "someone just built a full staking dashboard on inclawbate in 10 minutes. no code. just vibes."
-- 1-2 tweets: LONG FORMATTED (200-280 chars) with LINE BREAKS (\\n). Use bullet points (-), numbered lists, or stacked lines for visual impact. Include a CTA at the end. Example:
+- 1-2 tweets: LONG FORMATTED (200-500 chars) with LINE BREAKS (\\n). Use bullet points (-), numbered lists, or stacked lines for visual impact. Include a CTA at the end. Example:
 "what inclawbate actually does:\\n\\n-you describe an app idea\\n-AI builds it in minutes\\n-it's live instantly\\n-you earn from it\\n\\nno code. no waiting.\\n\\ninclawbate.com/build"
 
 IMPORTANT: The long formatted tweets MUST use \\n for line breaks. They should look like structured posts with clear visual hierarchy. Vary which slots get which format.`,
@@ -904,7 +930,7 @@ IMPORTANT: The long formatted tweets MUST use \\n for line breaks. They should l
 - No line breaks needed
 - Examples: "gm. the future is typing what you want and hitting enter." / "100+ apps. zero devs needed. inclawbate."`,
 
-    formatted: `FORMAT: ALL tweets must be LONG FORMATTED posts (200-280 chars) with LINE BREAKS (\\n).
+    formatted: `FORMAT: ALL tweets must be LONG FORMATTED posts (200-500 chars) with LINE BREAKS (\\n).
 - Use \\n for line breaks between sections
 - Use bullet points (-) or numbered lists for structure
 - Include a hook/opener, body content, and a CTA/closer
@@ -1013,7 +1039,7 @@ ${exampleBlock}
 ${styleGuide}
 
 RULES:
-- Each tweet MUST be under 280 characters (STRICT — count carefully, including \\n line breaks which each count as 1 char)
+- Each tweet should be under 280 characters for maximum engagement (up to 4000 allowed for long-form)
 - No hashtags ever
 - No "excited to announce", "thrilled", "game-changing", or any corporate speak
 - No em dashes (—)
@@ -1109,7 +1135,7 @@ Output ONLY the numbered entries. Nothing else.`;
                 // Clean up excessive blank lines (3+ newlines → 2)
                 tweet = tweet.replace(/\n{3,}/g, '\n\n');
                 const imagePrompt = imageMatch ? imageMatch[1].replace(/^["']|["']$/g, '').trim() : '';
-                if (tweet.length > 0 && tweet.length <= 280) {
+                if (tweet.length > 0 && tweet.length <= 4000) {
                     entries.push({ tweet, imagePrompt });
                 }
             }
@@ -1118,7 +1144,7 @@ Output ONLY the numbered entries. Nothing else.`;
         if (entries.length === 0) {
             rawText.split('\n')
                 .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '').replace(/^TWEET:\s*/i, '').trim())
-                .filter(l => l.length > 0 && l.length <= 280 && !/^IMAGE:/i.test(l))
+                .filter(l => l.length > 0 && l.length <= 4000 && !/^IMAGE:/i.test(l))
                 .forEach(t => entries.push({ tweet: t, imagePrompt: '' }));
         }
 
