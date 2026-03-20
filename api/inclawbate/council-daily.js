@@ -476,13 +476,12 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             msg += `CLAWS: ${formatNum(treasury.totalClaws)} (${formatUsd(treasury.totalClawsValue)})\n`;
             msg += `  Wallet: ${formatNum(treasury.walletClaws)} · Staked: ${formatNum(treasury.stakedClaws)} · Unclaimed: ${formatNum(treasury.unclaimedClaws)}\n`;
         }
-        msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}\n`;
+        msg += `CLAWS/ETH LP: ${formatUsd(treasury.clawsLp)}`;
         if (treasury.ethBalance > 0) {
-            msg += `ETH: ${treasury.ethBalance.toFixed(4)}`;
+            msg += `\nETH: ${treasury.ethBalance.toFixed(4)}`;
             if (treasury.dailyEthAdd > 0) msg += ` (+${treasury.dailyEthAdd.toFixed(4)}/day)`;
-            msg += `\n`;
         }
-        if (treasury.basisVault > 0) msg += `Basis Vault: ${formatUsd(treasury.basisVault)}\n`;
+        if (treasury.basisVault > 0) msg += `\nBasis Vault: ${formatUsd(treasury.basisVault)}`;
         msg += `</blockquote>`;
     }
 
