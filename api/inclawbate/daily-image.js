@@ -12,7 +12,7 @@ import satori from 'satori';
 import sharp from 'sharp';
 
 const WIDTH = 1200;
-const HEIGHT = 630;
+const HEIGHT = 750;
 
 // ── Brand Colors (edit these to change the look) ──
 const COLORS = {
@@ -30,7 +30,6 @@ const COLORS = {
 let fontCache = null;
 async function loadFont() {
     if (fontCache) return fontCache;
-    // Fetch Inter Regular + Bold from Google Fonts CDN
     const [regular, bold] = await Promise.all([
         fetch('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff').then(r => r.arrayBuffer()),
         fetch('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.woff').then(r => r.arrayBuffer()),
@@ -60,11 +59,23 @@ function statRow(label, value, valueColor) {
     return h('div', {
         style: {
             display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 10, fontSize: 21,
+            alignItems: 'center', marginBottom: 8, fontSize: 19,
         }
     },
         h('span', { style: { color: COLORS.muted } }, label),
         h('span', { style: { color: valueColor || COLORS.text, fontWeight: 700 } }, String(value))
+    );
+}
+
+function smallRow(label, value) {
+    return h('div', {
+        style: {
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', marginBottom: 4, fontSize: 15,
+        }
+    },
+        h('span', { style: { color: COLORS.muted } }, label),
+        h('span', { style: { color: '#ccccdd' } }, String(value))
     );
 }
 
@@ -73,7 +84,7 @@ function card(children, extraStyle) {
         style: {
             display: 'flex', flexDirection: 'column',
             backgroundColor: COLORS.card, borderRadius: 16,
-            padding: 24, flex: 1,
+            padding: 20, flex: 1,
             ...(extraStyle || {}),
         }
     }, ...children);
@@ -81,19 +92,19 @@ function card(children, extraStyle) {
 
 function cardLabel(text) {
     return h('div', {
-        style: { display: 'flex', fontSize: 15, color: COLORS.muted, marginBottom: 6, letterSpacing: 1 }
+        style: { display: 'flex', fontSize: 14, color: COLORS.muted, marginBottom: 4, letterSpacing: 1 }
     }, text.toUpperCase());
 }
 
-function cardValue(text) {
+function cardValue(text, extraStyle) {
     return h('div', {
-        style: { display: 'flex', fontSize: 32, fontWeight: 700, color: COLORS.text }
+        style: { display: 'flex', fontSize: 28, fontWeight: 700, color: COLORS.text, ...(extraStyle || {}) }
     }, String(text));
 }
 
 function cardTitle(text) {
     return h('div', {
-        style: { display: 'flex', fontSize: 21, fontWeight: 700, marginBottom: 16, color: COLORS.text }
+        style: { display: 'flex', fontSize: 19, fontWeight: 700, marginBottom: 12, color: COLORS.text }
     }, text);
 }
 
@@ -106,88 +117,103 @@ export default async function handler(req, res) {
 
     try {
         const url = new URL(req.url, `https://${req.headers.host}`);
-        const p = (key, fallback) => url.searchParams.get(key) || fallback || '—';
+        const p = (key, fallback) => url.searchParams.get(key) || fallback || '';
 
         const changeNum = parseFloat(p('change', '0'));
         const changeColor = changeNum >= 0 ? COLORS.green : COLORS.red;
-        const changeText = (changeNum >= 0 ? '+' : '') + changeNum.toFixed(1) + '% today';
+        const changeText = (changeNum >= 0 ? '+' : '') + changeNum.toFixed(1) + '%';
+        const treasuryDelta = p('treasuryDelta');
+        const treasuryDeltaColor = treasuryDelta.startsWith('+') ? COLORS.green : treasuryDelta.startsWith('-') ? COLORS.red : COLORS.muted;
 
         const element = h('div', {
             style: {
                 display: 'flex', flexDirection: 'column',
                 width: '100%', height: '100%',
-                backgroundColor: COLORS.bg, padding: 40,
+                backgroundColor: COLORS.bg, padding: 36,
                 color: COLORS.text, fontFamily: 'Inter',
             }
         },
-            // Header
+            // ── Header ──
             h('div', {
                 style: {
                     display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: 28,
+                    alignItems: 'center', marginBottom: 20,
                 }
             },
-                h('div', { style: { display: 'flex', alignItems: 'center', fontSize: 36, fontWeight: 700 } },
+                h('div', { style: { display: 'flex', alignItems: 'center', fontSize: 32, fontWeight: 700 } },
                     '$CLAWS Daily'
                 ),
-                h('div', { style: { display: 'flex', fontSize: 22, color: COLORS.muted } }, p('date'))
+                h('div', { style: { display: 'flex', fontSize: 20, color: COLORS.muted } }, p('date', 'Today'))
             ),
 
-            // Top row: Price / Treasury / Incubations
-            h('div', { style: { display: 'flex', marginBottom: 20 } },
+            // ── Top row: Price / Treasury (with breakdown) / Incubations ──
+            h('div', { style: { display: 'flex', marginBottom: 16 } },
+                // Price
                 card([
                     cardLabel('Price'),
-                    cardValue(p('price')),
-                    h('div', { style: { display: 'flex', fontSize: 18, color: changeColor, marginTop: 4 } }, changeText),
-                ], { marginRight: 16 }),
+                    cardValue(p('price', '—')),
+                    h('div', { style: { display: 'flex', fontSize: 16, color: changeColor, marginTop: 2 } }, changeText + ' today'),
+                ], { marginRight: 12, flex: 0.8 }),
 
+                // Treasury with breakdown
                 card([
                     cardLabel('Treasury'),
-                    cardValue(p('treasury')),
-                ], { marginRight: 16 }),
+                    h('div', { style: { display: 'flex', alignItems: 'center' } },
+                        cardValue(p('treasury', '—'), { marginRight: 8 }),
+                        treasuryDelta ? h('span', { style: { fontSize: 16, color: treasuryDeltaColor } }, '(' + treasuryDelta + ')') : null
+                    ),
+                    h('div', { style: { display: 'flex', flexDirection: 'column', marginTop: 8 } },
+                        smallRow('LP', p('treasuryLp', '—')),
+                        smallRow('ETH', p('treasuryEth', '—') + (p('treasuryEthDaily') ? '  ' + p('treasuryEthDaily') : '')),
+                        smallRow('CLAWS', p('treasuryClaws', '—')),
+                    ),
+                ], { marginRight: 12, flex: 1.4 }),
 
+                // Incubations
                 card([
                     cardLabel('Incubations'),
-                    cardValue(p('incubations')),
-                    h('div', { style: { display: 'flex', fontSize: 18, color: COLORS.muted, marginTop: 4 } }, 'active'),
-                ])
+                    cardValue(p('incubations', '0')),
+                    h('div', { style: { display: 'flex', fontSize: 16, color: COLORS.muted, marginTop: 2 } }, 'active'),
+                ], { flex: 0.6 })
             ),
 
-            // Bottom row: Staking / Angel
+            // ── Middle row: CLAWS Staking / Angel NFT ──
             h('div', { style: { display: 'flex', flex: 1 } },
                 card([
-                    cardTitle('Staking Rewards'),
-                    statRow('Rate', p('stakingRate') + ' /day'),
-                    statRow('Annual', '~' + p('stakingAnnual') + '/yr'),
-                    statRow('APY', p('stakingApy') + '%', COLORS.green),
-                    statRow('Value Staked', '~' + p('stakedValue')),
-                    statRow('Stakers', p('stakers')),
-                ], { marginRight: 16 }),
+                    cardTitle('CLAWS Staking'),
+                    statRow('Total Staked', p('stakingTotal', '—')),
+                    statRow('Distribution', p('stakingRate', '—')),
+                    statRow('Annual', p('stakingAnnual', '—')),
+                    statRow('APY', p('stakingApy', '—') + '%', COLORS.green),
+                    statRow('Stakers', p('stakers', '—')),
+                ], { marginRight: 12 }),
 
                 card([
                     cardTitle('Angel NFT Rewards'),
-                    statRow('Rate', p('angelRate') + ' /day'),
-                    statRow('Annual', '~' + p('angelAnnual') + '/yr'),
-                    statRow('NFT Floor', p('angelFloor')),
-                    p('angelApy') !== '—' ? statRow('APY', p('angelApy') + '%', COLORS.green) : null,
-                    statRow('Holders', p('angelHolders')),
+                    statRow('Distribution', p('angelRate', '—')),
+                    statRow('Annual', p('angelAnnual', '—')),
+                    statRow('NFT Floor', p('angelFloor', '—')),
+                    p('angelApy') && p('angelApy') !== '—' ? statRow('APY', p('angelApy') + '%', COLORS.green) : null,
+                    statRow('Holders', p('angelHolders', '—')),
                 ])
             ),
 
-            // Footer
+            // ── Footer: locked + community vote ──
             h('div', {
                 style: {
                     display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginTop: 20, paddingTop: 16,
-                    borderTop: '1px solid #2a2a3e', fontSize: 20,
+                    alignItems: 'center', marginTop: 14, paddingTop: 12,
+                    borderTop: '1px solid #2a2a3e', fontSize: 16,
                 }
             },
-                h('span', null, p('locked') + '% out of circulation'),
+                h('span', null, p('locked', '—') + '% locked'),
+                p('votes') ? h('span', { style: { color: COLORS.muted, fontSize: 14 } },
+                    'Community (' + p('voteCount', '0') + '): ' + p('votes')
+                ) : null,
                 h('span', { style: { color: COLORS.muted } }, 'inclawbate.com')
             )
         );
 
-        // Load fonts + render SVG → PNG
         const fonts = await loadFont();
         const svg = await satori(element, { width: WIDTH, height: HEIGHT, fonts });
         const png = await sharp(Buffer.from(svg)).png().toBuffer();

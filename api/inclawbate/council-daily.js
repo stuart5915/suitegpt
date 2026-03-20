@@ -687,20 +687,29 @@ export default async function handler(req, res) {
         const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
 
         // Generate and send daily stats image
+        const treasuryChange = calcChange(treasuryData?.total, yesterday?.treasury_total);
         const imageParams = new URLSearchParams({
             date,
             price: claws ? formatPricePlain(claws.price) : '—',
             change: String(claws?.change24h || 0),
+            // Treasury breakdown
             treasury: treasuryData?.total ? formatUsd(treasuryData.total) : '—',
+            treasuryDelta: treasuryChange ? ((treasuryChange.diff >= 0 ? '+' : '') + treasuryChange.pct + '%') : '',
+            treasuryLp: treasuryData?.clawsLp ? formatUsd(treasuryData.clawsLp) : '—',
+            treasuryEth: treasuryData?.ethBalance ? treasuryData.ethBalance.toFixed(2) + ' ETH' : '—',
+            treasuryEthDaily: treasuryData?.dailyEthAdd ? '+' + treasuryData.dailyEthAdd.toFixed(4) + '/day' : '',
+            treasuryClaws: treasuryData?.totalClaws ? formatNum(treasuryData.totalClaws) + ' CLAWS' : '—',
             incubations: String(tasks.incubations.length),
-            stakingRate: supply ? formatNum(supply.dailyRewards) : '—',
-            stakingAnnual: supply && clawsPrice > 0 ? formatUsd(supply.dailyRewards * 365 * clawsPrice) : '—',
+            // Staking in CLAWS terms
+            stakingTotal: supply ? formatNum(supply.staked) + ' CLAWS' : '—',
+            stakingRate: supply ? formatNum(supply.dailyRewards) + ' CLAWS/day' : '—',
+            stakingAnnual: supply ? formatNum(supply.dailyRewards * 365) + ' CLAWS/yr' : '—',
             stakingApy: supply?.apy > 0 ? supply.apy.toFixed(0) : '—',
             stakers: String(stakerCount || 0),
             locked: supply?.lockedPct || '—',
-            stakedValue: supply && clawsPrice > 0 ? formatUsd(supply.staked * clawsPrice) : '—',
-            angelRate: angelStats ? formatNum(angelStats.dailyRewards) : '—',
-            angelAnnual: angelStats && clawsPrice > 0 ? formatUsd(angelStats.dailyRewards * 365 * clawsPrice) : '—',
+            // Angel in CLAWS terms
+            angelRate: angelStats ? formatNum(angelStats.dailyRewards) + ' CLAWS/day' : '—',
+            angelAnnual: angelStats ? formatNum(angelStats.dailyRewards * 365) + ' CLAWS/yr' : '—',
             angelFloor: angelStats?.floorPrice != null ? angelStats.floorPrice + ' ' + angelStats.floorCurrency : '—',
             angelHolders: angelStats?.holders > 0 ? String(angelStats.holders) : '—',
             angelApy: (() => {
@@ -711,6 +720,11 @@ export default async function handler(req, res) {
                 const perHolderDaily = angelStats.dailyRewards / angelStats.holders;
                 return (perHolderDaily * 365 * clawsPrice / floorUsd * 100).toFixed(0);
             })(),
+            // Community vote synthesis
+            voteCount: allocation?.voterCount ? String(allocation.voterCount) : '0',
+            votes: allocation?.community ? BUCKET_IDS.map((id, i) =>
+                allocation.community[i] > 0 ? BUCKET_LABELS[id] + ' ' + allocation.community[i] + '%' : ''
+            ).filter(Boolean).join(' / ') : '',
         });
         const imageUrl = `https://www.inclawbate.com/api/inclawbate/daily-image?${imageParams}`;
         await sendPhoto(COUNCIL_CHAT_ID, imageUrl);
