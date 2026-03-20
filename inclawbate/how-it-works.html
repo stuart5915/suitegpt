@@ -1363,7 +1363,7 @@
 
     /* Fetch live synthesis + voters from API, then refresh balances via proxy */
     function fetchSynthesis() {
-        fetch(VOTE_API)
+        fetch(VOTE_API + '?t=' + Date.now())
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success && data.synthesis) {
@@ -1372,27 +1372,6 @@
                     allVoters = data.voters || [];
                     renderSynthBar();
                     renderVoters();
-
-                    /* Refresh balances via server proxy (avoids CORS) */
-                    var addrs = allVoters.map(function(v) { return v.address; }).join(',');
-                    if (addrs) {
-                        fetch('/api/inclawbate/claws-balances?addresses=' + addrs)
-                            .then(function(r) { return r.json(); })
-                            .then(function(bData) {
-                                try {
-                                    if (bData.balances) {
-                                        allVoters.forEach(function(v) {
-                                            var bal = bData.balances[v.address.toLowerCase()];
-                                            if (bal && bal !== '0') v.claws_balance = bal;
-                                        });
-                                        recomputeSynthesis();
-                                        renderSynthBar();
-                                        renderVoters();
-                                    }
-                                } catch (e) { console.error('Balance refresh error:', e); }
-                            })
-                            .catch(function() { /* keep DB values */ });
-                    }
                 }
             })
             .catch(function() { /* use defaults */ });
