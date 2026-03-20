@@ -6,6 +6,22 @@ const BOT_TOKEN = process.env.INCLAWBATOR_BOT_TOKEN;
 const AGENT_CHAT_URL = 'https://inclawbate.com/api/inclawbate/agent-chat';
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
+// ── Command shortcuts — translated to natural language for agent-chat ──
+const COMMANDS = {
+    '/launch':    'I want to launch a token',
+    '/stake':     'Show me how to deploy a staking pool',
+    '/airdrop':   'I want to airdrop tokens to multiple wallets',
+    '/promo':     'I want to promote my project on the @inclawbate X account',
+    '/agent':     'How do I create an AI marketing agent for X?',
+    '/health':    'Run a health check on my project',
+    '/hire':      'I need to hire the Council for help',
+    '/analytics': 'Show me token analytics',
+    '/staking':   'Show me CLAWS staking stats',
+    '/ecosystem': 'What is Inclawbate?',
+    '/incubate':  'Tell me about full incubation services',
+    '/help':      null // handled separately
+};
+
 // Send a message via Telegram Bot API
 async function sendTG(chatId, text, opts = {}) {
     const body = {
@@ -45,7 +61,7 @@ async function sendTyping(chatId) {
     });
 }
 
-// Tools that reference on-site UI — rephrase for Telegram context
+// Tools that reference on-site UI — add link for Telegram context
 const SITE_TOOLS = new Set([
     'launch_token_info', 'configure_token_launch', 'disperse_tokens',
     'create_agent_info', 'deploy_staking'
@@ -53,10 +69,29 @@ const SITE_TOOLS = new Set([
 
 function addSiteNote(reply, toolName) {
     if (SITE_TOOLS.has(toolName) && !reply.includes('inclawbate.com')) {
-        return reply + '\n\nHead to inclawbate.com to complete this action.';
+        return reply + '\n\n🌐 Head to inclawbate.com to complete this action.';
     }
     return reply;
 }
+
+const START_MSG =
+    "Hey! I'm the Inclawbator 🦞\n\n" +
+    "I'm the AI gateway to the Inclawbate ecosystem. Talk to me naturally, or use commands:\n\n" +
+    "🚀 *Launch*\n" +
+    "/launch — Launch a token on Base or Solana\n" +
+    "/stake — Deploy a staking pool\n" +
+    "/airdrop — Distribute tokens to wallets\n\n" +
+    "📈 *Grow*\n" +
+    "/promo — Book promotion on @inclawbate\n" +
+    "/agent — Create an AI marketing agent\n" +
+    "/health — Run a project health check\n" +
+    "/hire — Hire the Council (design, dev, marketing)\n\n" +
+    "📊 *Monitor*\n" +
+    "/analytics — Token price & volume\n" +
+    "/staking — CLAWS staking stats & APY\n" +
+    "/ecosystem — What is Inclawbate?\n" +
+    "/incubate — Full incubation services\n\n" +
+    "Or just tell me what you need — I understand plain English!";
 
 export default async function handler(req, res) {
     // GET = webhook verification / setup check
@@ -68,31 +103,28 @@ export default async function handler(req, res) {
     if (!BOT_TOKEN) return res.status(500).json({ error: 'INCLAWBATOR_BOT_TOKEN not set' });
 
     const update = req.body;
+    const msg = update.message;
+    if (!msg?.text) return res.status(200).json({ ok: true }); // ignore non-text
 
-    // Handle /start command
-    if (update.message?.text === '/start') {
-        await sendTG(update.message.chat.id,
-            "Hey! I'm the Inclawbator 🦞\n\n" +
-            "I can help you:\n" +
-            "• Launch tokens on Base or Solana\n" +
-            "• Check token prices & analytics\n" +
-            "• View staking stats & APY\n" +
-            "• Deploy staking pools\n" +
-            "• Hire the Council for design, dev, marketing\n" +
-            "• Book promotions on @inclawbate\n" +
-            "• Get full incubation services\n\n" +
-            "Just tell me what you need — no commands required. Talk naturally!"
-        );
+    const chatId = msg.chat.id;
+    const rawText = msg.text.trim();
+    const sessionId = `tg_${chatId}`;
+
+    // /start and /help — show menu
+    if (rawText === '/start' || rawText === '/help') {
+        await sendTG(chatId, START_MSG);
         return res.status(200).json({ ok: true });
     }
 
-    // Handle regular text messages
-    const msg = update.message;
-    if (!msg?.text) return res.status(200).json({ ok: true }); // ignore non-text (stickers, photos, etc.)
+    // Map commands to natural language prompts
+    const cmd = rawText.split(' ')[0].toLowerCase();
+    const cmdExtra = rawText.slice(cmd.length).trim();
+    let userText = rawText;
 
-    const chatId = msg.chat.id;
-    const userText = msg.text;
-    const sessionId = `tg_${chatId}`; // persistent session per TG user
+    if (COMMANDS[cmd] !== undefined) {
+        // Append any extra text the user typed after the command
+        userText = COMMANDS[cmd] + (cmdExtra ? '. ' + cmdExtra : '');
+    }
 
     // Show typing indicator
     await sendTyping(chatId);
@@ -105,7 +137,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 message: userText,
                 session_id: sessionId,
-                wallet: null // TG users don't have wallets connected (yet)
+                wallet: null
             })
         });
 
