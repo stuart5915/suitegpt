@@ -12,7 +12,7 @@ import satori from 'satori';
 import sharp from 'sharp';
 
 const WIDTH = 1200;
-const HEIGHT = 750;
+const HEIGHT = 660;
 
 // ── Brand Colors (edit these to change the look) ──
 const COLORS = {
