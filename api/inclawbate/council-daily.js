@@ -542,7 +542,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     tweet += `inclawbate.com/how-it-works\n`;
 
     // Staking
-    tweet += `\n\n📊 Staking Rewards\n`;
+    tweet += `\n📊 Staking Rewards\n`;
     if (supply) {
         tweet += `Current Rate: ${formatNum(supply.dailyRewards)} $CLAWS/day\n`;
         if (price > 0) {
