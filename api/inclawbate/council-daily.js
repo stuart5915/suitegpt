@@ -29,6 +29,19 @@ function esc(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+async function sendPhoto(chatId, photoUrl) {
+    if (!BOT_TOKEN || !chatId) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, photo: photoUrl })
+        });
+    } catch (e) {
+        console.error('Failed to send daily image:', e);
+    }
+}
+
 async function sendMsg(chatId, text) {
     if (!BOT_TOKEN || !chatId) return;
     const lines = text.split('\n');
@@ -648,10 +661,32 @@ export default async function handler(req, res) {
         await saveSnapshot(claws, supply, treasuryData, allocation?.voterCount);
 
         // Build messages
+        const date = getDateStr();
         const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
         const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
 
-        // Post to council group
+        // Generate and send daily stats image
+        const imageParams = new URLSearchParams({
+            date,
+            price: claws ? formatPrice(claws.price) : '—',
+            change: String(claws?.change24h || 0),
+            treasury: treasuryData?.total ? formatUsd(treasuryData.total) : '—',
+            incubations: String(tasks.incubations.length),
+            stakingRate: supply ? formatNum(supply.dailyRewards) : '—',
+            stakingAnnual: supply && clawsPrice > 0 ? formatUsd(supply.dailyRewards * 365 * clawsPrice) : '—',
+            stakingApy: supply?.apy > 0 ? supply.apy.toFixed(0) : '—',
+            stakers: String(stakerCount || 0),
+            locked: supply?.lockedPct || '—',
+            stakedValue: supply && clawsPrice > 0 ? formatUsd(supply.staked * clawsPrice) : '—',
+            angelRate: angelStats ? formatNum(angelStats.dailyRewards) : '—',
+            angelAnnual: angelStats && clawsPrice > 0 ? formatUsd(angelStats.dailyRewards * 365 * clawsPrice) : '—',
+            angelFloor: angelStats?.floorPrice != null ? angelStats.floorPrice + ' ' + angelStats.floorCurrency : '—',
+            angelHolders: angelStats?.holders > 0 ? String(angelStats.holders) : '—',
+        });
+        const imageUrl = `https://www.inclawbate.com/api/inclawbate/daily-image?${imageParams}`;
+        await sendPhoto(COUNCIL_CHAT_ID, imageUrl);
+
+        // Post text to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
 
         // Post the tweet version as a reply-friendly followup
