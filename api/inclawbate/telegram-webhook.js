@@ -67,7 +67,7 @@ async function handleState(chatId) {
     const done = doneRes.data || [];
 
     let msg = '🦞 <b>INCLAWBATE STATE</b>\n';
-    msg += '<i>inclawbate.app/how-it-works</i>\n';
+    msg += '<i>inclawbate.app/claws</i>\n';
 
     if (focus.length) {
         msg += `\n🔥 <b>FOCUS (${focus.length})</b>\n`;
@@ -495,7 +495,7 @@ async function handleTelos(chatId) {
     msg += 'Telos → Memory → Code → Value → Council → repeat forever\n';
     msg += 'Revenue from products funds treasury, council allocates, builders build more. The flywheel.\n\n';
 
-    msg += '🔗 inclawbate.app/how-it-works';
+    msg += '🔗 inclawbate.app/claws';
 
     await sendMsg(chatId, msg);
 }
@@ -694,7 +694,7 @@ async function handleTreasury(chatId) {
             msg += '<i>No council allocation set yet</i>\n';
         }
 
-        msg += '\n🔗 <a href="https://www.inclawbate.app/how-it-works">Full State → inclawbate.app/how-it-works</a>';
+        msg += '\n🔗 <a href="https://www.inclawbate.app/claws">Full State → inclawbate.app/claws</a>';
 
         await sendMsg(chatId, msg);
     } catch (err) {

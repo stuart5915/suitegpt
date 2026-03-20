@@ -384,7 +384,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
 
     // ── Always-visible header (compact) ──
     let msg = `🦞 <b>CLAWS Daily | ${date}</b>\n`;
-    msg += `<a href="https://www.inclawbate.app/how-it-works">inclawbate.app/how-it-works</a>\n\n`;
+    msg += `<a href="https://www.inclawbate.app/claws">inclawbate.app/claws</a>\n\n`;
 
     if (claws) {
         const arrow = claws.change24h >= 0 ? '📈' : '📉';
@@ -492,7 +492,7 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         BUCKET_IDS.forEach((id, i) => {
             if (allocation.community[i] > 0) msg += `${BUCKET_LABELS[id]}: ${allocation.community[i]}%\n`;
         });
-        msg += `\nVote: inclawbate.app/how-it-works`;
+        msg += `\nVote: inclawbate.app/claws`;
         msg += `</blockquote>`;
     }
 
@@ -585,7 +585,7 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     if (tasks.incubations.length) {
         tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
     }
-    tweet += `https://www.inclawbate.app/how-it-works\n`;
+    tweet += `https://www.inclawbate.app/claws\n`;
 
     // Staking
     tweet += `\n📊 Staking Rewards\n`;
