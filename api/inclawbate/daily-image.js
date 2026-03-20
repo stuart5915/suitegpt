@@ -95,7 +95,7 @@ export default async function handler(req, res) {
             divider(),
 
             // CLAWS Staking — full width
-            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 10 } }, 'CLAWS Staking'),
+            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 20 } }, 'CLAWS Staking'),
             stat('Total Staked', p('stakingTotal', '—')),
             stat('Distribution', p('stakingRate', '—')),
             stat('APY', p('stakingApy', '—') + '%', GREEN),
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
             divider(),
 
             // Angel NFT — full width
-            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 10 } }, 'Angel NFT Rewards'),
+            h('div', { style: { display: 'flex', fontSize: 42, fontWeight: 700, marginBottom: 20 } }, 'Angel NFT Rewards'),
             stat('Distribution', p('angelRate', '—')),
             stat('Annual', p('angelAnnual', '—')),
             stat('NFT Floor', p('angelFloor', '—')),
