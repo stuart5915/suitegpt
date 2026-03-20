@@ -165,13 +165,14 @@ function cachedTreasuryToRaw(treasury, clawsPrice) {
 // Treasury = LP TVL + staked CLAWS value + earned rewards value
 
 async function fetchTasks() {
-    const [doneRes, focusRes, incubationRes, responsibilityRes, todoRes, campaignRes] = await Promise.all([
+    const [doneRes, focusRes, incubationRes, responsibilityRes, todoRes, campaignRes, expenseRes] = await Promise.all([
         supabase.from('team_state').select('content').eq('category', 'done').order('created_at', { ascending: false }).limit(5),
         supabase.from('team_state').select('content').eq('category', 'current').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content, author').eq('category', 'incubation').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content, author').eq('category', 'responsibility').order('created_at', { ascending: true }),
         supabase.from('team_state').select('content').eq('category', 'todo').order('created_at', { ascending: true }),
-        supabase.from('team_state').select('content').eq('category', 'campaign').order('created_at', { ascending: true })
+        supabase.from('team_state').select('content').eq('category', 'campaign').order('created_at', { ascending: true }),
+        supabase.from('team_state').select('content').eq('category', 'expense').order('created_at', { ascending: true })
     ]);
     return {
         done: (doneRes.data || []).map(r => r.content),
@@ -179,7 +180,8 @@ async function fetchTasks() {
         incubations: (incubationRes.data || []).map(r => ({ content: r.content, author: r.author })),
         responsibilities: (responsibilityRes.data || []).map(r => ({ content: r.content, author: r.author })),
         backlog: (todoRes.data || []).map(r => r.content),
-        campaigns: (campaignRes.data || []).map(r => r.content)
+        campaigns: (campaignRes.data || []).map(r => r.content),
+        expenses: (expenseRes.data || []).map(r => r.content)
     };
 }
 
@@ -460,6 +462,12 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
     if (tasks.campaigns.length) {
         msg += `\n<b>📣 Active Campaigns</b>\n`;
         tasks.campaigns.forEach(c => { msg += `• ${esc(c)}\n`; });
+    }
+
+    // Team expenses
+    if (tasks.expenses.length) {
+        msg += `\n<b>💸 Team / Monthly Expenses</b>\n`;
+        tasks.expenses.forEach(e => { msg += `• ${esc(e)}\n`; });
     }
 
     // Treasury breakdown
