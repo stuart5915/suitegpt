@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$CLAWS — Inclawbate</title>
+    <meta name="description" content="The CLAWS token — governance, staking, treasury, and how to buy. The utility token powering the Inclawbate ecosystem on Base.">
+    <meta property="og:title" content="$CLAWS — Inclawbate">
+    <meta property="og:description" content="Everything about CLAWS: buy, stake, vote on treasury allocation, and earn yield.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.app/claws">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; }
+
+        .claws-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        /* ── Hero ── */
+        .claws-hero { text-align: center; margin-bottom: var(--space-2xl); }
+        .claws-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: 8px;
+        }
+        .claws-hero p {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin: 0 auto 16px;
+        }
+        .claws-addr {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .claws-addr:hover { border-color: var(--accent-primary); }
+        .claws-addr-copied {
+            font-size: 0.6rem;
+            color: #4ade80;
+            display: none;
+        }
+        .claws-quick-links {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .claws-quick-link {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid rgba(99,102,241,0.25);
+            border-radius: var(--radius-full);
+            transition: all 0.15s;
+        }
+        .claws-quick-link:hover { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.5); }
+
+        /* ── Section headers ── */
+        .sec-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-primary);
+            margin-bottom: 4px;
+        }
+        .sec-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .sec-sub {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-md);
+        }
+
+        /* ── Buy Section ── */
+        .buy-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .buy-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px;
+            text-align: center;
+        }
+        .buy-step-num {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+        }
+        .buy-step strong {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .buy-step span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .buy-cta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .buy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            transition: opacity 0.15s;
+        }
+        .buy-btn:hover { opacity: 0.85; }
+        .buy-btn--primary { background: var(--accent-gradient); color: #fff; }
+        .buy-btn--secondary { color: var(--accent-primary); border: 1px solid rgba(99,102,241,0.3); }
+
+        @media (max-width: 640px) {
+            .buy-steps { grid-template-columns: 1fr; }
+        }
+
+        /* ── Staking Section ── */
+        .stake-overview {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: var(--space-md);
+        }
+        .stake-overview-text { flex: 1; }
+        .stake-overview-text p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        @media (max-width: 640px) {
+            .stake-overview { flex-direction: column; }
+        }
+
+        /* ── Allocation Vote (ported from how-it-works) ── */
+        .alloc-section { margin-top: var(--space-lg); }
+        .alloc-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+        }
+        .alloc-synth-bar { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+        .alloc-synth-row { display: flex; align-items: center; gap: 10px; }
+        .alloc-synth-label {
+            font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600;
+            color: var(--text-secondary); width: 120px; flex-shrink: 0; text-align: right;
+            display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+        }
+        .alloc-synth-track {
+            flex: 1; height: 20px; background: rgba(255,255,255,0.04);
+            border-radius: var(--radius-full); overflow: hidden;
+        }
+        .alloc-synth-fill { height: 100%; border-radius: var(--radius-full); transition: width 0.4s ease; min-width: 2px; }
+        .alloc-synth-pct {
+            font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+            color: var(--text-primary); width: 36px; flex-shrink: 0; text-align: right;
+        }
+        @media (max-width: 480px) { .alloc-synth-label { width: 80px; font-size: 0.55rem; } }
+
+        .alloc-rows { display: flex; flex-direction: column; gap: 12px; margin-top: var(--space-lg); }
+        .alloc-row { display: grid; grid-template-columns: 140px 1fr 50px; align-items: center; gap: 12px; }
+        .alloc-row-label {
+            font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
+            color: var(--text-primary); display: flex; align-items: center; gap: 6px;
+        }
+        .alloc-row-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .alloc-row-slider {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+            border-radius: 3px; background: var(--bg-elevated); outline: none; cursor: pointer;
+        }
+        .alloc-row-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+            border-radius: 50%; background: var(--text-primary); border: 2px solid var(--bg-card); cursor: pointer;
+        }
+        .alloc-row-slider::-moz-range-thumb {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--text-primary); border: 2px solid var(--bg-card); cursor: pointer;
+        }
+        .alloc-row-pct { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--text-primary); text-align: right; }
+
+        .alloc-vote-area {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);
+        }
+        .alloc-vote-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px;
+            border-radius: var(--radius-full); background: var(--accent-gradient);
+            color: #fff; font-size: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.15s;
+        }
+        .alloc-vote-btn:hover { opacity: 0.85; }
+        .alloc-vote-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .alloc-vote-info { font-size: 0.7rem; color: var(--text-dim); }
+        .alloc-voter-count { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
+
+        @media (max-width: 768px) {
+            .alloc-row { grid-template-columns: 100px 1fr 40px; gap: 8px; }
+            .alloc-row-label { font-size: 0.7rem; }
+        }
+
+        /* Voter table */
+        .voters-table-wrap { margin-top: var(--space-lg); overflow-x: auto; }
+        .voters-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; font-family: var(--font-mono); }
+        .voters-table th {
+            text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.58rem; font-weight: 700;
+            color: var(--text-dim); padding: 6px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .voters-table td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
+        .voters-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .voter-addr { color: var(--accent-primary, #6366f1); font-weight: 600; }
+        .voter-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; min-width: 160px; background: rgba(255,255,255,0.04); }
+        .voter-bar-seg { height: 100%; transition: flex 0.2s; position: relative; }
+        .voter-bar-seg:hover::after {
+            content: attr(data-tip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: #fff; font-family: var(--font-mono); font-size: 0.55rem;
+            padding: 3px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; z-index: 10; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .voter-balance { color: var(--text-secondary); font-size: 0.7rem; font-weight: 600; }
+        .voter-time { color: var(--text-dim); font-size: 0.6rem; white-space: nowrap; }
+
+        /* ── Callout ── */
+        .callout {
+            background: rgba(99,102,241,0.06);
+            border: 1px solid rgba(99,102,241,0.15);
+            border-radius: var(--radius-lg);
+            padding: 14px 18px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-md);
+        }
+        .callout strong { color: var(--text-primary); }
+
+        /* ── Sections spacing ── */
+        .claws-section { margin-bottom: var(--space-2xl); }
+
+        /* ── CTA ── */
+        .claws-cta {
+            text-align: center;
+            padding: var(--space-xl) 0;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: var(--space-xl);
+        }
+        .claws-cta h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .claws-cta p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .claws-cta-links {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/inclawbator" class="nav-link nav-link-featured">Inclawbator</a>
+        <a href="/claws" class="nav-link">$CLAWS</a>
+        <a href="/stake" class="nav-link">Stake</a>
+        <a href="/how-it-works" class="nav-link">How It Works</a>
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/build">Build</a>
+                <a href="/inclawbations">Inclawbations</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/schedule">X Schedule</a>
+                <a href="/agents">Agents</a>
+                <a href="/tools">Tools</a>
+                <a href="/inclawbators">Inclawbators</a>
+            </div>
+        </div>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<div class="claws-page">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="claws-hero">
+        <h1>$CLAWS</h1>
+        <p>The utility token powering the Inclawbate ecosystem. Governance, staking, revenue sharing &mdash; all on Base.</p>
+        <div class="claws-addr" id="clawsAddr" onclick="navigator.clipboard.writeText('0x7ca47B141639B893C6782823C0b219f872056379');document.getElementById('copiedTxt').style.display='inline';setTimeout(function(){document.getElementById('copiedTxt').style.display='none'},1500)">
+            0x7ca47B...6379
+            <span class="claws-addr-copied" id="copiedTxt">copied!</span>
+        </div>
+        <div class="claws-quick-links">
+            <a href="#buy" class="claws-quick-link">Buy CLAWS</a>
+            <a href="#staking" class="claws-quick-link">Stake</a>
+            <a href="#vote" class="claws-quick-link">Vote</a>
+            <a href="/blog/claws-tokenomics" class="claws-quick-link">Tokenomics</a>
+        </div>
+    </div>
+
+    <!-- ═══ HOW TO BUY ═══ -->
+    <div class="claws-section" id="buy">
+        <div class="sec-label">Get Started</div>
+        <div class="sec-title">How to Buy CLAWS</div>
+        <div class="sec-sub">CLAWS is on Base (an Ethereum L2). Three steps to get it.</div>
+
+        <div class="buy-steps">
+            <div class="buy-step">
+                <div class="buy-step-num">1</div>
+                <strong>Get a wallet</strong>
+                <span>Coinbase Wallet, MetaMask, or any Base-compatible wallet.</span>
+            </div>
+            <div class="buy-step">
+                <div class="buy-step-num">2</div>
+                <strong>Get ETH on Base</strong>
+                <span>Bridge ETH to Base, or buy directly in your wallet.</span>
+            </div>
+            <div class="buy-step">
+                <div class="buy-step-num">3</div>
+                <strong>Swap for CLAWS</strong>
+                <span>Go to Uniswap and swap ETH for CLAWS.</span>
+            </div>
+        </div>
+
+        <div class="buy-cta">
+            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank" rel="noopener" class="buy-btn buy-btn--primary">Buy on Uniswap &rarr;</a>
+            <a href="https://dexscreener.com/base/0x7ca47B141639B893C6782823C0b219f872056379" target="_blank" rel="noopener" class="buy-btn buy-btn--secondary">View on DexScreener</a>
+        </div>
+    </div>
+
+    <!-- ═══ STAKING ═══ -->
+    <div class="claws-section" id="staking">
+        <div class="sec-label">Earn Yield</div>
+        <div class="sec-title">Stake CLAWS</div>
+        <div class="sec-sub">Stake your CLAWS to earn yield from the Inclawbate ecosystem. No lock. No tiers. Just deposit and earn.</div>
+
+        <div class="stake-overview">
+            <div class="stake-overview-text">
+                <p>Anyone can launch a token with the <a href="/inclawbator" style="color:#818cf8;">Inclawbator</a>, create a staking pool, and fund it with CLAWS as rewards. More projects = more pools = more ways to earn.</p>
+                <a href="/stake" class="buy-btn buy-btn--primary">Go to Staking &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ ALLOCATION VOTE ═══ -->
+    <div class="claws-section alloc-section" id="vote">
+        <div class="sec-label">Governance</div>
+        <div class="sec-title">Where Should Value Flow?</div>
+        <div class="sec-sub">Set your preferred allocation. Every CLAWS holder gets a vote, weighted by holdings. The synthesis drives how treasury value is distributed.</div>
+
+        <div class="alloc-card">
+            <div style="margin-bottom: 4px;">
+                <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">&mdash; Community Synthesis <span style="font-weight:400;color:var(--text-dim);opacity:0.6;">(token-weighted)</span></div>
+                <div class="alloc-synth-bar" id="alloc-synth-bar"><div style="width:100%;text-align:center;font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);padding:6px 0;">Loading votes...</div></div>
+                <div class="alloc-voter-count" id="alloc-voter-count"></div>
+            </div>
+
+            <div style="margin-top: var(--space-lg);">
+                <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Your Allocation</div>
+                <div class="alloc-rows" id="alloc-sliders"></div>
+                <div id="alloc-total" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:700;text-align:right;margin-top:6px;color:#4ade80;">Total: 100%</div>
+            </div>
+
+            <div class="alloc-vote-area">
+                <div class="alloc-vote-info">Connect wallet to cast your vote. Weight scales with your CLAWS stake.</div>
+                <button class="alloc-vote-btn" id="alloc-vote-btn">Connect Wallet</button>
+            </div>
+
+            <div class="callout" style="margin-top: var(--space-md);"><strong>Allocation is driven by community votes, weighted by CLAWS holdings.</strong></div>
+        </div>
+
+        <div class="voters-table-wrap">
+            <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">All Votes (publicly verifiable)</div>
+            <table class="voters-table">
+                <thead>
+                    <tr>
+                        <th>Address</th>
+                        <th>Distribution</th>
+                        <th>CLAWS Weight</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="voters-tbody"></tbody>
+            </table>
+            <div id="voters-empty" style="font-size:0.7rem;color:var(--text-dim);padding:16px 0;text-align:center;">No votes yet. Be the first.</div>
+        </div>
+    </div>
+
+    <!-- ═══ TRANSPARENCY ═══ -->
+    <div class="claws-section">
+        <div class="sec-label">Stay Updated</div>
+        <div class="sec-title">Transparency</div>
+        <div class="sec-sub">Daily treasury updates posted to Telegram. Every allocation decision, every transaction &mdash; visible to all.</div>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="buy-btn buy-btn--secondary">Join Telegram &rarr;</a>
+            <a href="/state" class="buy-btn buy-btn--secondary">View Live State &rarr;</a>
+        </div>
+    </div>
+
+    <!-- ═══ CTA ═══ -->
+    <div class="claws-cta">
+        <h2>Ready to get started?</h2>
+        <p>Buy CLAWS, stake it, and have a say in how the ecosystem grows.</p>
+        <div class="claws-cta-links">
+            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank" rel="noopener" class="buy-btn buy-btn--primary">Buy CLAWS &rarr;</a>
+            <a href="/stake" class="buy-btn buy-btn--secondary">Stake CLAWS</a>
+            <a href="/blog/claws-tokenomics" class="buy-btn buy-btn--secondary">Full Tokenomics</a>
+        </div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; we incubate anything for anyone.</p>
+        <div class="footer-links">
+            <a href="/state" class="footer-link">State</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="/whitepaper" class="footer-link">Whitepaper</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/privy-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+
+<script>
+/* ── Allocation Vote System ── */
+(function() {
+    var buckets = [
+        { id: 'reinvest',    label: 'Reinvest Treasury',  color: '#fbbf24', default: 25 },
+        { id: 'buy-claws',   label: 'Buy CLAWS',          color: '#e87955', default: 25 },
+        { id: 'claws-lp',    label: 'CLAWS/ETH LP',       color: '#2dd4bf', default: 15 },
+        { id: 'staking',     label: 'Staking Rewards',    color: '#4ade80', default: 15 },
+        { id: 'ecosystem',   label: 'Ecosystem Projects', color: '#a78bfa', default: 10 },
+        { id: 'grants',      label: 'Builder Grants',     color: '#60a5fa', default: 5 },
+        { id: 'philanthropy',label: 'Philanthropy',        color: '#f472b6', default: 5 },
+    ];
+
+    var values = buckets.map(function(b) { return b.default; });
+    var synthesis = buckets.map(function(b) { return b.default; });
+    var totalVoters = 0;
+    var connectedWallet = null;
+    var VOTE_API = '/api/inclawbate/allocation-vote';
+    var allVoters = [];
+
+    function recomputeSynthesis() {
+        if (!allVoters.length) return;
+        var totalWeight = BigInt(0);
+        var sums = buckets.map(function() { return BigInt(0); });
+        allVoters.forEach(function(v) {
+            try {
+                var rawBal = v.claws_balance || '0';
+                var bal = typeof rawBal === 'string' ? BigInt(rawBal) : BigInt(Math.floor(Number(rawBal)));
+                if (bal === BigInt(0)) return;
+                totalWeight += bal;
+                var vw = v.weights || {};
+                buckets.forEach(function(b, i) {
+                    sums[i] += BigInt(vw[b.id] || 0) * bal;
+                });
+            } catch (e) {}
+        });
+        if (totalWeight === BigInt(0)) return;
+        synthesis = buckets.map(function(_, i) { return Number(sums[i] / totalWeight); });
+        var total = synthesis.reduce(function(a, b) { return a + b; }, 0);
+        if (total > 0 && total !== 100) {
+            var scale = 100 / total;
+            synthesis = synthesis.map(function(v) { return Math.round(v * scale); });
+            var adjTotal = synthesis.reduce(function(a, b) { return a + b; }, 0);
+            if (adjTotal !== 100) synthesis[0] += (100 - adjTotal);
+        }
+    }
+
+    function fetchSynthesis() {
+        fetch(VOTE_API + '?t=' + Date.now())
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success && data.synthesis) {
+                    synthesis = data.synthesis;
+                    totalVoters = data.totalVoters || 0;
+                    allVoters = data.voters || [];
+                    renderSynthBar();
+                    renderVoters();
+                }
+            })
+            .catch(function() {});
+    }
+
+    function renderSynthBar() {
+        var bar = document.getElementById('alloc-synth-bar');
+        if (!bar) return;
+        bar.innerHTML = '';
+        var maxPct = Math.max.apply(null, synthesis.concat([1]));
+        buckets.forEach(function(b, i) {
+            var row = document.createElement('div');
+            row.className = 'alloc-synth-row';
+            var label = document.createElement('div');
+            label.className = 'alloc-synth-label';
+            label.textContent = b.label.split(' ').slice(0, 2).join(' ');
+            var track = document.createElement('div');
+            track.className = 'alloc-synth-track';
+            var fill = document.createElement('div');
+            fill.className = 'alloc-synth-fill';
+            fill.style.background = b.color;
+            fill.style.width = Math.max(synthesis[i] / maxPct * 100, synthesis[i] > 0 ? 3 : 0) + '%';
+            track.appendChild(fill);
+            var pct = document.createElement('div');
+            pct.className = 'alloc-synth-pct';
+            pct.textContent = synthesis[i] + '%';
+            row.appendChild(label);
+            row.appendChild(track);
+            row.appendChild(pct);
+            bar.appendChild(row);
+        });
+        var count = document.getElementById('alloc-voter-count');
+        if (count) count.textContent = totalVoters > 0
+            ? totalVoters + ' vote' + (totalVoters !== 1 ? 's' : '') + ' cast'
+            : '0 votes cast \u2014 be the first to set the direction';
+    }
+
+    function renderSliders() {
+        var container = document.getElementById('alloc-sliders');
+        if (!container) return;
+        container.innerHTML = '';
+        buckets.forEach(function(b, i) {
+            var row = document.createElement('div');
+            row.className = 'alloc-row';
+            var label = document.createElement('div');
+            label.className = 'alloc-row-label';
+            label.innerHTML = '<span class="alloc-row-dot" style="background:' + b.color + '"></span>' + b.label;
+            var slider = document.createElement('input');
+            slider.type = 'range';
+            slider.className = 'alloc-row-slider';
+            slider.min = '0'; slider.max = '100'; slider.value = values[i];
+            slider.dataset.idx = i; slider.style.accentColor = b.color;
+            slider.addEventListener('input', function() {
+                values[parseInt(this.dataset.idx)] = parseInt(this.value);
+                updatePcts();
+            });
+            var pct = document.createElement('div');
+            pct.className = 'alloc-row-pct';
+            pct.id = 'alloc-pct-' + i;
+            pct.textContent = values[i] + '%';
+            row.appendChild(label); row.appendChild(slider); row.appendChild(pct);
+            container.appendChild(row);
+        });
+    }
+
+    function updatePcts() {
+        var total = values.reduce(function(a, b) { return a + b; }, 0);
+        buckets.forEach(function(b, i) {
+            var pctEl = document.getElementById('alloc-pct-' + i);
+            if (pctEl) pctEl.textContent = values[i] + '%';
+        });
+        var totalEl = document.getElementById('alloc-total');
+        if (totalEl) {
+            totalEl.textContent = 'Total: ' + total + '%';
+            totalEl.style.color = total === 100 ? '#4ade80' : total > 100 ? '#ef4444' : '#fbbf24';
+        }
+    }
+
+    async function connectWallet() {
+        var btn = document.getElementById('alloc-vote-btn');
+        var info = document.querySelector('.alloc-vote-info');
+        if (connectedWallet && window.ethereum) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Sign & Cast Vote'; }
+            return connectedWallet;
+        }
+        if (!window.ethereum) {
+            if (info) info.textContent = 'No wallet detected. Install MetaMask or a Base-compatible wallet.';
+            return null;
+        }
+        try {
+            if (window._awaitProvider) await window._awaitProvider();
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            connectedWallet = accounts[0];
+            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== '0x2105') {
+                try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] }); } catch (e) {}
+            }
+            if (info) info.textContent = 'Connected: ' + connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4);
+            if (btn) { btn.disabled = false; btn.textContent = 'Sign & Cast Vote'; }
+            return connectedWallet;
+        } catch (err) {
+            if (info) info.textContent = 'Wallet connection failed. Try again.';
+            return null;
+        }
+    }
+
+    var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
+    var STAKING_ADDRS = ['0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6', '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40'];
+
+    async function fetchClawsBalance(wallet) {
+        var padded = wallet.slice(2).toLowerCase().padStart(64, '0');
+        var calldata = '0x70a08231' + padded;
+        var contracts = [CLAWS_ADDR].concat(STAKING_ADDRS);
+        var total = BigInt(0);
+        for (var i = 0; i < contracts.length; i++) {
+            try {
+                var result = await window.ethereum.request({ method: 'eth_call', params: [{ to: contracts[i], data: calldata }, 'latest'] });
+                if (result && result !== '0x' && result.length > 2) total += BigInt(result);
+            } catch (e) {}
+        }
+        return total.toString();
+    }
+
+    async function castVote() {
+        var btn = document.getElementById('alloc-vote-btn');
+        var info = document.querySelector('.alloc-vote-info');
+        if (!connectedWallet) { var addr = await connectWallet(); if (!addr) return; }
+        var total = values.reduce(function(a, b) { return a + b; }, 0);
+        if (total !== 100) {
+            if (info) { info.textContent = 'Your sliders add up to ' + total + '%. Adjust them to total exactly 100% before voting.'; info.style.color = '#ef4444'; }
+            return;
+        }
+        if (info) info.style.color = '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Fetching balance...'; }
+        var clawsBalance;
+        try { clawsBalance = await fetchClawsBalance(connectedWallet); } catch (e) { clawsBalance = '0'; }
+        var weights = {};
+        buckets.forEach(function(b, i) { weights[b.id] = values[i]; });
+        var ts = Math.floor(Date.now() / 1000);
+        var message = 'Inclawbate Allocation Vote\n\nWeights: ' + JSON.stringify(weights) + '\nTimestamp: ' + ts;
+        if (btn) btn.textContent = 'Signing...';
+        try {
+            var signature;
+            try {
+                signature = await window.ethereum.request({ method: 'personal_sign', params: [message, connectedWallet] });
+            } catch (signErr) {
+                if (signErr.code === 4001 || signErr.message?.includes('reject') || signErr.message?.includes('denied') || signErr.message?.includes('cancel')) {
+                    if (info) info.textContent = 'Signing cancelled. Click the button to try again.';
+                    if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+                    return;
+                }
+                var hexMsg = '0x' + Array.from(new TextEncoder().encode(message)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+                signature = await window.ethereum.request({ method: 'personal_sign', params: [hexMsg, connectedWallet] });
+            }
+            if (btn) btn.textContent = 'Submitting...';
+            var resp = await fetch(VOTE_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: connectedWallet, signature: signature, message: message, weights: weights, claws_balance: clawsBalance })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                synthesis = data.synthesis;
+                totalVoters = data.totalVoters || 0;
+                renderSynthBar();
+                fetchSynthesis();
+                if (info) { info.textContent = 'Vote recorded! CLAWS balance: ' + formatBalance(data.claws_balance) + ' CLAWS'; info.style.color = '#4ade80'; }
+                if (btn) { btn.textContent = 'Update Vote'; btn.disabled = false; }
+            } else {
+                if (info) { info.textContent = 'Error: ' + (data.error || 'Unknown error'); info.style.color = '#ef4444'; }
+                if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+            }
+        } catch (err) {
+            var msg = err.code === 4001 ? 'Signing cancelled.' : 'Signing failed: ' + (err.message || 'Unknown error').slice(0, 100);
+            if (info) { info.textContent = msg + ' Try again.'; info.style.color = '#ef4444'; }
+            if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+        }
+    }
+
+    function formatBalance(raw) {
+        if (!raw || raw === '0' || raw === 0) return '0';
+        var n = typeof raw === 'number' ? raw : Number(raw);
+        var whole = Math.floor(n / 1e18);
+        if (whole >= 1e9) return (whole / 1e9).toFixed(1) + 'B';
+        if (whole >= 1e6) return (whole / 1e6).toFixed(1) + 'M';
+        if (whole >= 1e3) return (whole / 1e3).toFixed(1) + 'K';
+        if (whole > 0) return whole.toLocaleString();
+        return '0';
+    }
+
+    function renderVoters() {
+        var tbody = document.getElementById('voters-tbody');
+        var empty = document.getElementById('voters-empty');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (allVoters.length === 0) { if (empty) empty.style.display = ''; return; }
+        if (empty) empty.style.display = 'none';
+        allVoters.filter(function(v) { return v.claws_balance && v.claws_balance !== 0 && v.claws_balance !== '0'; }).forEach(function(v) {
+            var tr = document.createElement('tr');
+            var tdAddr = document.createElement('td');
+            tdAddr.className = 'voter-addr';
+            tdAddr.textContent = v.address.slice(0, 6) + '...' + v.address.slice(-4);
+            tdAddr.title = v.address;
+            var tdDist = document.createElement('td');
+            var bar = document.createElement('div');
+            bar.className = 'voter-bar';
+            var w = v.weights || {};
+            buckets.forEach(function(b) {
+                var pctVal = w[b.id] || 0;
+                if (pctVal === 0) return;
+                var seg = document.createElement('div');
+                seg.className = 'voter-bar-seg';
+                seg.style.background = b.color;
+                seg.style.flex = pctVal;
+                seg.setAttribute('data-tip', b.label + ' ' + pctVal + '%');
+                seg.title = b.label + ': ' + pctVal + '%';
+                bar.appendChild(seg);
+            });
+            tdDist.appendChild(bar);
+            var tdBal = document.createElement('td');
+            tdBal.className = 'voter-balance';
+            tdBal.textContent = formatBalance(v.claws_balance) + ' CLAWS';
+            var tdTime = document.createElement('td');
+            tdTime.className = 'voter-time';
+            tdTime.textContent = v.updated_at ? timeAgo(v.updated_at) : '';
+            tr.appendChild(tdAddr); tr.appendChild(tdDist); tr.appendChild(tdBal); tr.appendChild(tdTime);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function timeAgo(iso) {
+        var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'alloc-vote-btn') castVote();
+    });
+
+    function checkExistingWallet() {
+        try {
+            var profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+            if (profile && profile.wallet_address) {
+                connectedWallet = profile.wallet_address;
+                var btn = document.getElementById('alloc-vote-btn');
+                var info = document.querySelector('.alloc-vote-info');
+                if (btn) { btn.textContent = 'Sign & Cast Vote'; btn.disabled = false; }
+                if (info) info.textContent = 'Connected: ' + connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4) + ' — sign to cast your vote.';
+            }
+        } catch (e) {}
+    }
+
+    renderSynthBar();
+    renderSliders();
+    fetchSynthesis();
+    checkExistingWallet();
+})();
+</script>
+
+</body>
+</html>
