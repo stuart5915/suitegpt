@@ -991,20 +991,53 @@
         return '0';
     }
 
-    function renderVoters() {
+    var VOTER_RPC = ['https://base-rpc.publicnode.com', 'https://1rpc.io/base', 'https://mainnet.base.org'];
+    var VOTER_CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
+    var VOTER_STAKING = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
+
+    async function voterRpcCall(to, data) {
+        for (var i = 0; i < VOTER_RPC.length; i++) {
+            try {
+                var resp = await fetch(VOTER_RPC[i], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] }) });
+                var json = await resp.json();
+                if (json.result && json.result !== '0x') return json.result;
+            } catch (e) {}
+        }
+        return '0x0';
+    }
+
+    async function fetchLiveBalance(wallet) {
+        var padded = wallet.slice(2).toLowerCase().padStart(64, '0');
+        var calldata = '0x70a08231' + padded;
+        var total = BigInt(0);
+        var results = await Promise.all([
+            voterRpcCall(VOTER_CLAWS, calldata),
+            voterRpcCall(VOTER_STAKING, calldata)
+        ]);
+        results.forEach(function(r) { try { total += BigInt(r); } catch (e) {} });
+        return total.toString();
+    }
+
+    async function renderVoters() {
         var tbody = document.getElementById('voters-tbody');
         var empty = document.getElementById('voters-empty');
         if (!tbody) return;
         tbody.innerHTML = '';
         if (allVoters.length === 0) { if (empty) empty.style.display = ''; return; }
         if (empty) empty.style.display = 'none';
-        allVoters.filter(function(v) { return v.claws_balance && v.claws_balance !== 0 && v.claws_balance !== '0'; }).forEach(function(v) {
+
+        // Fetch live on-chain balances for all voters in parallel
+        var liveBals = await Promise.all(allVoters.map(function(v) { return fetchLiveBalance(v.address); }));
+
+        allVoters.forEach(function(v, vi) {
+            var liveBal = liveBals[vi] || '0';
+            if (liveBal === '0') return; // skip voters with 0 CLAWS
             var tr = document.createElement('tr');
             var tdAddr = document.createElement('td'); tdAddr.className = 'voter-addr'; tdAddr.textContent = v.address.slice(0, 6) + '...' + v.address.slice(-4); tdAddr.title = v.address;
             var tdDist = document.createElement('td'); var bar = document.createElement('div'); bar.className = 'voter-bar'; var w = v.weights || {};
             buckets.forEach(function(b) { var pctVal = w[b.id] || 0; if (pctVal === 0) return; var seg = document.createElement('div'); seg.className = 'voter-bar-seg'; seg.style.background = b.color; seg.style.flex = pctVal; seg.setAttribute('data-tip', b.label + ' ' + pctVal + '%'); seg.title = b.label + ': ' + pctVal + '%'; bar.appendChild(seg); });
             tdDist.appendChild(bar);
-            var tdBal = document.createElement('td'); tdBal.className = 'voter-balance'; tdBal.textContent = formatBalance(v.claws_balance) + ' CLAWS';
+            var tdBal = document.createElement('td'); tdBal.className = 'voter-balance'; tdBal.textContent = formatBalance(liveBal) + ' CLAWS';
             var tdTime = document.createElement('td'); tdTime.className = 'voter-time'; tdTime.textContent = v.updated_at ? timeAgo(v.updated_at) : '';
             tr.appendChild(tdAddr); tr.appendChild(tdDist); tr.appendChild(tdBal); tr.appendChild(tdTime); tbody.appendChild(tr);
         });
