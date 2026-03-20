@@ -351,6 +351,20 @@ function formatPrice(p) {
     return '$' + p.toFixed(6);
 }
 
+// Plain version for image (no Unicode subscripts — fonts can't render them)
+function formatPricePlain(p) {
+    if (p >= 1) return '$' + p.toFixed(2);
+    if (p >= 0.01) return '$' + p.toFixed(4);
+    const s = p.toFixed(18).replace(/0+$/, '');
+    const match = s.match(/^0\.(0+)/);
+    if (match) {
+        const zeros = match[1].length;
+        const sig = s.slice(2 + zeros, 2 + zeros + 3);
+        return '$0.0(' + zeros + ')' + sig;
+    }
+    return '$' + p.toFixed(6);
+}
+
 function formatDelta(change) {
     if (!change) return '';
     const arrow = change.diff >= 0 ? '↑' : '↓';
@@ -668,7 +682,7 @@ export default async function handler(req, res) {
         // Generate and send daily stats image
         const imageParams = new URLSearchParams({
             date,
-            price: claws ? formatPrice(claws.price) : '—',
+            price: claws ? formatPricePlain(claws.price) : '—',
             change: String(claws?.change24h || 0),
             treasury: treasuryData?.total ? formatUsd(treasuryData.total) : '—',
             incubations: String(tasks.incubations.length),
