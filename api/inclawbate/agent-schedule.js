@@ -85,7 +85,7 @@ export default async function handler(req, res) {
             .gte('scheduled_at', start)
             .lte('scheduled_at', end)
             .eq('account', account)
-            .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image', 'pending_review'])
+            .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image', 'pending_review', 'expired', 'failed'])
             .order('scheduled_at', { ascending: true });
 
         if (error) return res.status(500).json({ error: error.message });

@@ -379,9 +379,19 @@ export default async function handler(req, res) {
         for (const slot of (dueSlots || [])) {
             if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
 
+            // Skip slots that are more than 1 hour overdue — prevents dumping old backlog
+            const slotTime = new Date(slot.scheduled_at).getTime();
+            if (now - slotTime > 60 * 60 * 1000) {
+                await supabase.from('agent_schedule')
+                    .update({ status: 'expired' })
+                    .eq('id', slot.id);
+                errors.push({ slot: slot.id, warning: 'Slot expired — was scheduled for ' + slot.scheduled_at });
+                continue;
+            }
+
             const project = slot.projects;
 
-            // Auto-fill slots (no project) — already have tweet_text, just post it
+            // Slots with pre-written tweet_text (autofill or user-booked without project)
             const slotAccount = slot.account || 'inclawbator';
             // Slots with pre-written tweet_text (autofill or user-booked without project)
             if (!project && slot.tweet_text) {
@@ -395,6 +405,7 @@ export default async function handler(req, res) {
                             mediaIds = [mediaId];
                         } catch(imgErr) {
                             // Log but don't fail — post without image
+                            console.error('Image upload failed for slot', slot.id, ':', imgErr.message, 'image_url:', opts.image_url);
                             errors.push({ slot: slot.id, warning: 'Image upload failed: ' + imgErr.message });
                         }
                     }
