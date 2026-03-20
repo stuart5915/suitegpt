@@ -249,7 +249,7 @@ export default async function handler(req, res) {
             }
 
             if (search) {
-                query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+                query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,creator_x_handle.ilike.%${search}%`);
             }
 
             // Sort
