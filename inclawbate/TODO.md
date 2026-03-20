@@ -8,7 +8,7 @@
 - CLAWS rewards attached to new token launches (after ~$500 traded, CLAWS rewards start?)
 - When do rewards stop? — define reward lifecycle
 
-## Platform (inclawbate.com)
+## Platform (inclawbate.app)
 - **"Create Account" flow** — wallet created on signup, like a sign-in option
 - **Coinbase Commerce integration** — deadline: March 31
 - **Insights tab** in the app
@@ -43,8 +43,8 @@
 - **Products:** Clawgs, Physical Crustacean Bible, prayer candle, CLAWNCH + INCLAWNCH physical token, lobster ear muffs, custom Vans shoes (any size), chain/pendant
 
 ## Marketing
-- **Instagram daily** — use inclawbate.com/studio
-- **X search tool** — inclawbate.com/x-search
+- **Instagram daily** — use inclawbate.app/studio
+- **X search tool** — inclawbate.app/x-search
 - **Marketing arm** — spin up agent marketers for companies, costs CLAWS
 - **Content calendar** — pillars: UBI / Inclawbator / DeFi concept / certain platform apps (promote S4H)
 - **Cadence AI integration** — create marketing schema, attach hype agent

@@ -37,7 +37,7 @@ Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides
 1. Read `CEO.md` (vision, decision framework, current state)
 2. Read `CEO_TASKS.md` (full prioritized backlog)
 3. Read `COUNCIL.md` and `COUNCIL_MEMBERS.md` (council governance + member activity)
-4. Fetch live team state: `WebFetch GET https://www.inclawbate.com/api/inclawbate/team-state` — this returns the **actual** Past/Present/Future items from the daily post (managed via Telegram bot). Compare this with CEO_TASKS.md to find gaps.
+4. Fetch live team state: `WebFetch GET https://www.inclawbate.app/api/inclawbate/team-state` — this returns the **actual** Past/Present/Future items from the daily post (managed via Telegram bot). Compare this with CEO_TASKS.md to find gaps.
 5. Assess current state:
    - What's in Present (actively being worked on)?
    - What's in Future (queued up)?

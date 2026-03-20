@@ -83,7 +83,7 @@ LP trading fees generated (1.2% via Clanker)
 |---------|-------------|--------|
 | **Launch Token** | Deploy ERC-20 on Base via Clanker v4 or Solana via Bags/Meteora. Configurable supply, dev buy, fee recipients, creator vault, airdrop allocation, lockup/vesting, sniper tax. Fee split auto-configured: 80% creator / 20% Inclawbate (→ CLAWS rewards) | **Live** (full UI + chat wired via `launch_token_info` + `configure_token_launch`) |
 | **Deploy Staking Pool** | Create staking contract via Staking Factory v3. Dual-depositor: creator + inclawbate.base.eth both authorized. CLAWS as reward token. Automated reward flow from day one | Needs contract update |
-| **Build Landing Page** | Generate and deploy a branded project page on inclawbate.com via publish-site API | **Live** (agent guides to /build via `build_landing_page`) |
+| **Build Landing Page** | Generate and deploy a branded project page on inclawbate.app via publish-site API | **Live** (agent guides to /build via `build_landing_page`) |
 | **Register in Ecosystem** | List in the Inclawbate app store and ecosystem directory with metadata, links, and tags | **Live** (agent guides registration via `register_project`) |
 | **Set Up X Agent** | Configure automated X/Twitter posting with custom persona and frequency (1-48 posts/day) | **Live** (agent wired via `setup_x_agent`, scrolls to agents section) |
 | **Marketing Pipeline** | Book paid promo slots on @inclawbate X. 3 tiers: Shoutout/Campaign/Featured, pay in CLAWS | **Live** (API at `/api/inclawbate/promo`, agent wired via `book_promo`) |
@@ -164,7 +164,7 @@ When someone (human or AI agent) asks Inclawbator to launch a project, here's ev
 1. **ERC-20 token** on Base with configured supply and fee recipients
 2. **Staking pool** where their community stakes their token and earns CLAWS rewards
 3. **Automated reward funding** — 20% of all trading fees auto-convert to CLAWS and flow to stakers
-4. **Landing page** on inclawbate.com with their branding
+4. **Landing page** on inclawbate.app with their branding
 5. **App store listing** in the Inclawbate ecosystem directory
 6. **X/Twitter agent** posting about their project on a schedule with custom voice
 7. **Marketing slots** in the Inclawbate X schedule
@@ -218,7 +218,7 @@ When someone (human or AI agent) asks Inclawbator to launch a project, here's ev
 - **Wallet:** `0x479b3269a6807de199AC7344F72B5169a9B2BF47`
 - **GAME API Key:** `apt-1693a83e9ef406ba86f84467e0d971cf`
 - **Jobs:** incubation ($0.01, 12hr SLA), check_application ($0.01, 5min SLA)
-- **Resources:** ecosystem_info (inclawbate.com), incubation_info (inclawbate.com/inclawbator)
+- **Resources:** ecosystem_info (inclawbate.app), incubation_info (inclawbate.app/inclawbator)
 
 ---
 
@@ -414,7 +414,7 @@ Project stakers earn CLAWS automatically
 ### Phase D: Distribution (do fourth)
 12. Package as Bankr skill
 13. Create agent profile on bankr.bot/agents
-14. Add chat widget to inclawbate.com/inclawbator
+14. Add chat widget to inclawbate.app/inclawbator
 
 ### Phase E: Polish (ongoing)
 15. Cross-promotion matching between ecosystem projects

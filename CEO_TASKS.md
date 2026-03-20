@@ -34,7 +34,7 @@
 |---|------|--------|----------------|
 | 14 | Content calendar — pillars: UBI / Inclawbator / DeFi / platform apps / S4H | todo | Structured output > random posting. |
 | 16 | Daily research prompt for Heval | todo | Keep Heval productive with structured tasks. |
-| 17 | X search tool — inclawbate.com/x-search | todo | Find leads, monitor mentions. |
+| 17 | X search tool — inclawbate.app/x-search | todo | Find leads, monitor mentions. |
 | 18 | Cadence AI integration — marketing schema + hype agent | todo | Automated marketing pipeline. |
 | 19 | Two marketing tiers: hands-off (pay CLAWS) vs self-service | todo | Revenue from marketing-as-a-service. |
 

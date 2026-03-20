@@ -8,7 +8,7 @@ description: >
 metadata:
   openclaw:
     emoji: "🦞"
-    homepage: "https://inclawbate.com"
+    homepage: "https://inclawbate.app"
     requires:
       bins: ["curl"]
 ---
@@ -17,12 +17,12 @@ metadata:
 
 The Inclawbator is an AI agent that launches and manages Web3 projects. Launch tokens, deploy staking, create marketing agents, airdrop tokens, hire the council — all through one conversation.
 
-Live at [inclawbate.com](https://inclawbate.com). Powered by Groq. Free to use.
+Live at [inclawbate.app](https://inclawbate.app). Powered by Groq. Free to use.
 
 ## Talk to It
 
 ```bash
-curl -X POST "https://inclawbate.com/api/inclawbate/agent-chat" \
+curl -X POST "https://inclawbate.app/api/inclawbate/agent-chat" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "I want to launch a token called MoonCat on Base",
@@ -74,7 +74,7 @@ The agent handles tool selection automatically. Just describe what you need.
 ## API
 
 ```
-POST https://inclawbate.com/api/inclawbate/agent-chat
+POST https://inclawbate.app/api/inclawbate/agent-chat
 ```
 
 **Request:**
@@ -130,7 +130,7 @@ curl -X POST ".../agent-chat" -d '{"message": "promote my project on the Inclawb
 
 ## Links
 
-- **Talk to it:** https://inclawbate.com
-- **Agent page:** https://inclawbate.com/inclawbator
-- **Staking:** https://inclawbate.com/stake
-- **Skills Directory:** https://inclawbate.com/skills
+- **Talk to it:** https://inclawbate.app
+- **Agent page:** https://inclawbate.app/inclawbator
+- **Staking:** https://inclawbate.app/stake
+- **Skills Directory:** https://inclawbate.app/skills

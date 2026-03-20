@@ -3,7 +3,7 @@
 ## Chat Endpoint
 
 ```
-POST https://inclawbate.com/api/inclawbate/agent-chat
+POST https://inclawbate.app/api/inclawbate/agent-chat
 ```
 
 Conversational agent. Send a message, it picks the right tool and responds.
