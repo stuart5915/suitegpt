@@ -1173,6 +1173,9 @@
         return '0x0';
     }
 
+    var STAKING_CONTRACT = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
+    var TREASURY_ADDR    = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+
     async function loadDistribution() {
         var selector = '0x70a08231';
         var results = [];
@@ -1183,6 +1186,15 @@
             var bal = Number(BigInt(raw)) / DECIMALS;
             results[idx] = bal;
         }));
+
+        // Treasury wallet also has CLAWS staked — add staked balance
+        var treasuryIdx = buckets.findIndex(function(b) { return b.addr === TREASURY_ADDR; });
+        if (treasuryIdx !== -1) {
+            var padded = TREASURY_ADDR.slice(2).toLowerCase().padStart(64, '0');
+            var stakedRaw = await rpcCall(STAKING_CONTRACT, selector + padded);
+            var stakedBal = Number(BigInt(stakedRaw)) / DECIMALS;
+            results[treasuryIdx] += stakedBal;
+        }
 
         var knownTotal = results.reduce(function(a, b) { return a + b; }, 0);
         var communityBal = TOTAL_SUPPLY - knownTotal;
