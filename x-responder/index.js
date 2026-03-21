@@ -1,6 +1,6 @@
 // Inclawbator X Responder — Railway persistent service
-// Filtered Stream for @inclawbator mentions (instant) + DM polling (every 60s)
-// Uses OAuth 1.0a for posting, Bearer for stream
+// Polls @inclawbator mentions every 15s, replies via agent-chat
+// Uses OAuth 1.0a for X API
 
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -15,25 +15,19 @@ const supabase = createClient(
 
 const AGENT_CHAT_URL = 'https://www.inclawbate.app/api/inclawbate/agent-chat';
 const MENTION_STATE_KEY = 'inclawbator_mentions';
-const DM_STATE_KEY = 'inclawbator_dms';
 const MENTION_MAX_AGE_MS = 6 * 60 * 60 * 1000;
-const DM_POLL_INTERVAL = 60_000; // 60s (15 req/15min limit)
+const POLL_INTERVAL = 15_000; // 15s
 const MAX_PER_RUN = 5;
 
 const X_API_KEY = process.env.INCLAWBATOR_X_API_KEY || process.env.X_API_KEY;
 const X_API_SECRET = process.env.INCLAWBATOR_X_API_SECRET || process.env.X_API_SECRET;
 const X_ACCESS_TOKEN = process.env.INCLAWBATOR_X_ACCESS_TOKEN || process.env.X_ACCESS_TOKEN;
 const X_ACCESS_SECRET = process.env.INCLAWBATOR_X_ACCESS_SECRET || process.env.X_ACCESS_SECRET;
-const X_BEARER_TOKEN = process.env.INCLAWBATOR_X_BEARER_TOKEN || process.env.X_BEARER_TOKEN;
 
 let ownUserId = null;
-let streamRetryDelay = 1000;
 let mentionsProcessed = 0;
-let dmsProcessed = 0;
-let streamConnected = false;
 let lastError = null;
-const processedDmIds = new Set(); // prevent double-replies within session
-const processedMentionIds = new Set(); // prevent double-replies from stream + polling overlap
+const processedMentionIds = new Set();
 
 // ── OAuth 1.0a ──
 
@@ -124,23 +118,6 @@ async function postReply(text, mentionTweetId) {
   return data.data?.id || null;
 }
 
-// ── Send DM ──
-
-async function sendDM(conversationId, text) {
-  const url = `https://api.twitter.com/2/dm_conversations/${conversationId}/messages`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': oauthHeader('POST', url), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
-  });
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.detail || err.title || `Send DM ${resp.status}`);
-  }
-  return resp.json();
-}
-
 // ── Log reply ──
 
 async function logMentionReply(mentionId, mentionText, author, replyText, status, replyTweetId, errorMessage) {
@@ -156,125 +133,22 @@ async function logMentionReply(mentionId, mentionText, author, replyText, status
   });
 }
 
-// ══════════════════════════════════════════════
-//  FILTERED STREAM — Mentions (instant)
-// ══════════════════════════════════════════════
+// ── Process a mention ──
 
-async function setupStreamRules() {
-  const rulesUrl = 'https://api.twitter.com/2/tweets/search/stream/rules';
-  const headers = { 'Authorization': `Bearer ${X_BEARER_TOKEN}`, 'Content-Type': 'application/json' };
-
-  // Get existing rules
-  const existing = await fetch(rulesUrl, { headers });
-  const existingData = await existing.json();
-
-  // Delete existing rules if any
-  if (existingData.data?.length) {
-    await fetch(rulesUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ delete: { ids: existingData.data.map(r => r.id) } })
-    });
-  }
-
-  // Add rule for @inclawbator mentions
-  const resp = await fetch(rulesUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ add: [{ value: '@inclawbator', tag: 'mentions' }] })
-  });
-
-  const result = await resp.json();
-  if (result.errors?.length) {
-    console.error('Stream rule errors:', result.errors);
-  }
-  console.log('Stream rules set:', result.data?.length || 0, 'rules active');
-}
-
-async function connectStream() {
-  const url = 'https://api.twitter.com/2/tweets/search/stream?tweet.fields=created_at,author_id,conversation_id,in_reply_to_user_id&expansions=author_id&user.fields=username';
-
-  console.log('Connecting to filtered stream...');
-
-  try {
-    const resp = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${X_BEARER_TOKEN}` }
-    });
-
-    if (!resp.ok) {
-      const err = await resp.text();
-      throw new Error(`Stream connect failed ${resp.status}: ${err}`);
-    }
-
-    streamConnected = true;
-    streamRetryDelay = 1000;
-    console.log('Stream connected — listening for @inclawbator mentions');
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        console.log('Stream ended');
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete line in buffer
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue; // heartbeat
-        try {
-          const tweet = JSON.parse(trimmed);
-          if (tweet.data) {
-            handleStreamTweet(tweet);
-          }
-        } catch (e) {
-          // not valid JSON, skip
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Stream error:', e.message);
-    lastError = e.message;
-  }
-
-  // Reconnect with backoff
-  streamConnected = false;
-  console.log(`Stream disconnected. Reconnecting in ${streamRetryDelay / 1000}s...`);
-  setTimeout(connectStream, streamRetryDelay);
-  streamRetryDelay = Math.min(streamRetryDelay * 2, 300_000); // max 5 min
-}
-
-async function handleStreamTweet(payload) {
-  const tweet = payload.data;
-  const authors = {};
-  (payload.includes?.users || []).forEach(u => { authors[u.id] = u.username; });
-
+async function handleMention(tweet, authors) {
   const authorUsername = authors[tweet.author_id] || null;
 
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
-  // Skip if already processed or currently being processed
+  // Skip if already processed (in-memory dedup)
   if (processedMentionIds.has(tweet.id)) return;
   processedMentionIds.add(tweet.id);
 
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
-  // Skip replies to @inclawbator's own tweets (X auto-adds @mention, these are just comments)
-  // Only respond when someone deliberately @mentions us on a fresh tweet or someone else's thread
-  if (tweet.in_reply_to_user_id === ownUserId) {
-    console.log(`Skipping reply to our own tweet from @${authorUsername}`);
-    return;
-  }
-
-  // Skip if already replied (DB check)
+  // Skip if already replied (DB dedup)
   const { data: existing } = await supabase
     .from('agent_replies')
     .select('id')
@@ -293,17 +167,15 @@ async function handleStreamTweet(payload) {
 
     // Strip crypto addresses and blockchain URLs (X blocks them for 7 days after token regen)
     const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText) || /(?:basescan|clanker|etherscan)/i.test(replyText);
-    // 1. Strip all 0x addresses and blockchain explorer/clanker URLs
     replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '');
     replyText = replyText.replace(/(?:https?:\/\/)?(?:basescan\.org|clanker\.world|etherscan\.io)[^\s)"\n]*/g, '');
-    // 2. Remove any bullet/list line whose value is now empty after stripping
-    //    Matches lines like "• Contract: " or "- Token Address:" or "• Stake at:  " etc.
+    // Remove any bullet/list line whose value is now empty after stripping
     replyText = replyText.replace(/^[•\-\*]\s+[^:\n]*:\s*$/gm, '');
-    // 3. Remove any standalone label line with no value (e.g. "Contract:\n")
+    // Remove any standalone label line with no value
     replyText = replyText.replace(/^[A-Za-z ]+:\s*$/gm, '');
-    // 4. Collapse extra blank lines and trim
+    // Collapse extra blank lines and trim
     replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').trim();
-    // 5. Add ONE contextual link if we stripped addresses
+    // Add ONE contextual link if we stripped addresses
     if (hasAddresses) {
       const isStaking = /stak/i.test(replyText);
       const isToken = /token|deploy|launch|clanker/i.test(replyText);
@@ -313,9 +185,9 @@ async function handleStreamTweet(payload) {
       replyText += `\n\nDetails: ${contextUrl}`;
     }
 
+    // Truncate to 280 chars (minus @username prefix)
     if (replyText.length > maxLen) {
       const truncated = replyText.slice(0, maxLen);
-      // Try to cut at a paragraph break first, then sentence, then word
       const lastPara = truncated.lastIndexOf('\n\n');
       const lastSentence = truncated.lastIndexOf('. ');
       const lastSpace = truncated.lastIndexOf(' ');
@@ -350,187 +222,9 @@ async function handleStreamTweet(payload) {
   }
 }
 
-// ══════════════════════════════════════════════
-//  DM POLLING (every 60s)
-// ══════════════════════════════════════════════
+// ── Poll mentions ──
 
-async function getLastEventId() {
-  const { data } = await supabase
-    .from('x_relay_state')
-    .select('last_tweet_id')
-    .eq('x_handle', DM_STATE_KEY)
-    .single();
-  return data?.last_tweet_id || null;
-}
-
-async function saveLastEventId(eventId) {
-  await supabase.from('x_relay_state').upsert({
-    x_handle: DM_STATE_KEY,
-    last_tweet_id: eventId,
-    last_checked_at: new Date().toISOString()
-  }, { onConflict: 'x_handle' });
-}
-
-async function pollDMs() {
-  try {
-    const userId = await resolveOwnUserId();
-    if (!userId) { console.error('Could not resolve own user ID'); return; }
-
-    const url = 'https://api.twitter.com/2/dm_events';
-    const params = {
-      max_results: '20',
-      'dm_event.fields': 'created_at,dm_conversation_id,sender_id,text',
-      event_types: 'MessageCreate'
-    };
-
-    const fullUrl = url + '?' + new URLSearchParams(params).toString();
-    const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.detail || err.title || `DM API ${resp.status}`);
-    }
-
-    const dmData = await resp.json();
-    const events = dmData.data || [];
-    if (!events.length) return;
-
-    const lastEventId = await getLastEventId();
-
-    const newMessages = events.filter(e => {
-      if (e.sender_id === userId) return false;
-      if (processedDmIds.has(e.id)) return false;
-      if (lastEventId && BigInt(e.id) <= BigInt(lastEventId)) return false;
-      return true;
-    });
-
-    // Save newest event ID immediately to prevent re-processing on next poll
-    const newestId = events[0]?.id;
-    if (newestId) await saveLastEventId(newestId);
-
-    if (!newMessages.length) return;
-
-    const toProcess = newMessages.reverse().slice(0, MAX_PER_RUN);
-
-    for (const dm of toProcess) {
-      processedDmIds.add(dm.id);
-      try {
-        const replyText = await getAgentReply(dm.text || '', `X DM`, `x_dm_${dm.sender_id}`);
-        const truncated = replyText.length > 4000 ? replyText.slice(0, 4000) + '...' : replyText;
-        await sendDM(dm.dm_conversation_id, truncated);
-        dmsProcessed++;
-        console.log(`DM replied to ${dm.sender_id}`);
-      } catch (e) {
-        console.error(`DM reply failed for ${dm.sender_id}:`, e.message);
-        lastError = e.message;
-      }
-    }
-
-    // Keep processedDmIds from growing forever
-    if (processedDmIds.size > 500) {
-      const arr = [...processedDmIds];
-      arr.splice(0, arr.length - 200);
-      processedDmIds.clear();
-      arr.forEach(id => processedDmIds.add(id));
-    }
-  } catch (e) {
-    console.error('DM poll error:', e.message);
-    lastError = e.message;
-  }
-}
-
-// ══════════════════════════════════════════════
-//  HEALTH CHECK SERVER
-// ══════════════════════════════════════════════
-
-const PORT = process.env.PORT || 3000;
-
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      stream: streamConnected,
-      mentions_processed: mentionsProcessed,
-      dms_processed: dmsProcessed,
-      last_error: lastError,
-      uptime: Math.floor(process.uptime())
-    }));
-  } else {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ service: 'inclawbator-x-responder', live: true }));
-  }
-});
-
-// ══════════════════════════════════════════════
-//  STARTUP
-// ══════════════════════════════════════════════
-
-async function start() {
-  console.log('Inclawbator X Responder starting...');
-
-  if (!X_API_KEY || !X_ACCESS_TOKEN) {
-    console.error('Missing X API credentials — exiting');
-    process.exit(1);
-  }
-
-  if (!X_BEARER_TOKEN) {
-    console.error('Missing X_BEARER_TOKEN — stream will not work, falling back to polling mentions');
-  }
-
-  server.listen(PORT, () => console.log(`Health check on :${PORT}`));
-
-  // Resolve own user ID upfront (needed for comment filtering)
-  await resolveOwnUserId();
-  console.log(`Own user ID: ${ownUserId}`);
-
-  // Seed: fetch current mentions and mark them ALL as already processed
-  // so we only respond to mentions that arrive AFTER startup
-  try {
-    const url = 'https://api.twitter.com/2/users/' + ownUserId + '/mentions';
-    const params = {
-      max_results: '100',
-      'tweet.fields': 'created_at,author_id,conversation_id,in_reply_to_user_id',
-      expansions: 'author_id',
-      'user.fields': 'username'
-    };
-    const fullUrl = url + '?' + new URLSearchParams(params).toString();
-    const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
-    if (resp.ok) {
-      const data = await resp.json();
-      (data.data || []).forEach(t => processedMentionIds.add(t.id));
-      if (data.meta?.newest_id) {
-        await supabase.from('x_relay_state').upsert({
-          x_handle: MENTION_STATE_KEY,
-          last_tweet_id: data.meta.newest_id,
-          last_checked_at: new Date().toISOString()
-        }, { onConflict: 'x_handle' });
-      }
-      console.log(`Seeded ${(data.data || []).length} existing mentions as processed`);
-    }
-  } catch (e) {
-    console.error('Mention seed error:', e.message);
-  }
-
-  // Start stream for mentions + polling fallback
-  if (X_BEARER_TOKEN) {
-    await setupStreamRules();
-    connectStream(); // runs forever with auto-reconnect
-  }
-  // Always poll mentions as fallback (handles stream downtime + reconnects)
-  console.log('Polling mentions every 15s (fallback for stream gaps)');
-  pollMentionsFallback(); // initial run
-  setInterval(pollMentionsFallback, 15_000);
-
-  // DM polling disabled for now — enable once mention system is stable
-  // To re-enable: uncomment the lines below
-  // console.log('Polling DMs every 60s');
-  // setInterval(pollDMs, DM_POLL_INTERVAL);
-  console.log('DM polling disabled');
-}
-
-// Fallback mention polling (if stream unavailable)
-async function pollMentionsFallback() {
+async function pollMentions() {
   try {
     const userId = await resolveOwnUserId();
     if (!userId) return;
@@ -554,7 +248,11 @@ async function pollMentionsFallback() {
     const fullUrl = url + '?' + new URLSearchParams(params).toString();
     const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
 
-    if (!resp.ok) return;
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      console.error(`Mention poll failed ${resp.status}:`, err.detail || err.title || '');
+      return;
+    }
     const data = await resp.json();
 
     if (data.meta?.newest_id) {
@@ -569,13 +267,77 @@ async function pollMentionsFallback() {
     (data.includes?.users || []).forEach(u => { authors[u.id] = u.username; });
 
     for (const tweet of (data.data || []).slice(0, MAX_PER_RUN)) {
-      // reuse stream handler logic
-      await handleStreamTweet({ data: tweet, includes: { users: data.includes?.users || [] } });
+      await handleMention(tweet, authors);
     }
   } catch (e) {
     console.error('Mention poll error:', e.message);
     lastError = e.message;
   }
+}
+
+// ── Health check server ──
+
+const PORT = process.env.PORT || 3000;
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  if (req.url === '/health') {
+    res.end(JSON.stringify({
+      status: 'ok',
+      mentions_processed: mentionsProcessed,
+      last_error: lastError,
+      uptime: Math.floor(process.uptime())
+    }));
+  } else {
+    res.end(JSON.stringify({ service: 'inclawbator-x-responder', live: true }));
+  }
+});
+
+// ── Startup ──
+
+async function start() {
+  console.log('Inclawbator X Responder starting...');
+
+  if (!X_API_KEY || !X_ACCESS_TOKEN) {
+    console.error('Missing X API credentials — exiting');
+    process.exit(1);
+  }
+
+  server.listen(PORT, () => console.log(`Health check on :${PORT}`));
+
+  await resolveOwnUserId();
+  console.log(`Own user ID: ${ownUserId}`);
+
+  // Seed: mark all existing mentions as processed so we don't re-reply after deploys
+  try {
+    const url = 'https://api.twitter.com/2/users/' + ownUserId + '/mentions';
+    const params = {
+      max_results: '100',
+      'tweet.fields': 'created_at,author_id',
+      expansions: 'author_id',
+      'user.fields': 'username'
+    };
+    const fullUrl = url + '?' + new URLSearchParams(params).toString();
+    const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
+    if (resp.ok) {
+      const data = await resp.json();
+      (data.data || []).forEach(t => processedMentionIds.add(t.id));
+      if (data.meta?.newest_id) {
+        await supabase.from('x_relay_state').upsert({
+          x_handle: MENTION_STATE_KEY,
+          last_tweet_id: data.meta.newest_id,
+          last_checked_at: new Date().toISOString()
+        }, { onConflict: 'x_handle' });
+      }
+      console.log(`Seeded ${(data.data || []).length} existing mentions as processed`);
+    }
+  } catch (e) {
+    console.error('Mention seed error:', e.message);
+  }
+
+  // Poll mentions every 15s
+  console.log('Polling mentions every 15s');
+  setInterval(pollMentions, POLL_INTERVAL);
 }
 
 start();
