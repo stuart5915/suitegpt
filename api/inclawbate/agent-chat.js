@@ -676,9 +676,16 @@ const sessions = new Map();
 const CEREBRAS_API = 'https://api.cerebras.ai/v1/chat/completions';
 const CEREBRAS_KEY = process.env.CEREBRAS_API_KEY || '';
 
+const BANKR_API = 'https://llm.bankr.bot/v1/chat/completions';
+const BANKR_KEY = process.env.BANKR_API_KEY || '';
+
 const GROQ_MODELS = [
   'llama-3.1-8b-instant',
   'llama-3.3-70b-versatile'
+];
+const BANKR_MODELS = [
+  'deepseek-v3.2',
+  'qwen3.5-flash'
 ];
 const CEREBRAS_MODELS = [
   'llama-3.3-70b'
@@ -711,7 +718,25 @@ async function callLLM(messages) {
     }
   }
 
-  // 2. Fallback: Cerebras (free Llama)
+  // 2. Fallback: Bankr LLM Gateway (usage tracked on Bankr profile)
+  if (BANKR_KEY) {
+    for (const model of BANKR_MODELS) {
+      try {
+        const res = await fetch(BANKR_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + BANKR_KEY },
+          body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
+        });
+        const data = await res.json();
+        if (!data.error) return data;
+        console.error('Bankr error (' + model + '):', data.error?.message || data.error);
+      } catch (e) {
+        console.error('Bankr fetch error (' + model + '):', e.message);
+      }
+    }
+  }
+
+  // 3. Fallback: Cerebras (free Llama)
   if (CEREBRAS_KEY) {
     for (const model of CEREBRAS_MODELS) {
       try {

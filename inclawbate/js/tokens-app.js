@@ -74,6 +74,16 @@ var EXTRA_TOKENS = [
         status: 'active',
         tier: 'ecosystem',
         created_at: '2026-03-19T00:00:00Z'
+    },
+    {
+        id: 'inclaw',
+        token_name: 'Inclawbator',
+        token_symbol: 'INCLAW',
+        token_address: '0xf85B6Dd4F9F4413d103EB43c3e36905F779A1bA3',
+        logo_url: '/inclawbate/assets/inclawbator-logo.jpg',
+        status: 'active',
+        tier: 'ecosystem',
+        created_at: '2026-03-21T00:00:00Z'
     }
 ];
 
