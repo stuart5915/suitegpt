@@ -73,24 +73,17 @@ export default async function handler(req, res) {
     const pusher = payload.pusher?.name || 'unknown';
     const repoName = payload.repository?.name || 'repo';
 
-    // Build message
-    let msg = `🔨 <b>New Push</b> → ${branch}\n`;
-    msg += `by ${pusher}\n\n`;
-
+    // Build message — one line per commit, compact
+    let msg = '';
     for (const commit of commits.slice(0, 5)) {
         const short = commit.id.slice(0, 7);
         const clean = sanitizeMessage(commit.message);
-        const filesChanged = (commit.added?.length || 0) + (commit.modified?.length || 0) + (commit.removed?.length || 0);
-        msg += `<code>${short}</code> ${clean}`;
-        if (filesChanged > 0) msg += ` <i>(${filesChanged} files)</i>`;
-        msg += `\n`;
+        msg += `🔨 <code>${short}</code> ${clean}\n`;
     }
-
     if (commits.length > 5) {
-        msg += `<i>+${commits.length - 5} more commits</i>\n`;
+        msg += `<i>+${commits.length - 5} more</i>\n`;
     }
-
-    msg += `\n🔗 <a href="${payload.compare}">View changes</a>`;
+    msg += `🔗 <a href="${payload.compare}">View changes</a>`;
 
     try {
         await sendToTopic(msg);
