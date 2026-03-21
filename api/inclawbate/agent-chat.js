@@ -639,7 +639,7 @@ function generateDirectReply(tool, resultJson, args) {
 
       case 'deploy_staking':
         if (d.error) return "Staking pool deployment failed: " + d.error + (d.hint ? "\n\n" + d.hint : '');
-        return "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nGo to https://inclawbate.app/dashboard, connect your wallet, and deposit CLAWS rewards to start the reward drip for stakers.";
+        return "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nView your pool: https://inclawbate.app/stake\nDeposit rewards: https://inclawbate.app/dashboard (connect wallet → deposit CLAWS)";
 
       case 'hire_inclawbator':
         if (d.posted) {
