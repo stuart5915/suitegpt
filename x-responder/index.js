@@ -33,6 +33,7 @@ let dmsProcessed = 0;
 let streamConnected = false;
 let lastError = null;
 const processedDmIds = new Set(); // prevent double-replies within session
+const processedMentionIds = new Set(); // prevent double-replies from stream + polling overlap
 
 // ── OAuth 1.0a ──
 
@@ -259,10 +260,14 @@ async function handleStreamTweet(payload) {
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
+  // Skip if already processed in this session (prevents stream + polling double-reply)
+  if (processedMentionIds.has(tweet.id)) return;
+  processedMentionIds.add(tweet.id);
+
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
-  // Skip if already replied
+  // Skip if already replied (DB check)
   const { data: existing } = await supabase
     .from('agent_replies')
     .select('id')
@@ -295,6 +300,14 @@ async function handleStreamTweet(payload) {
     await logMentionReply(tweet.id, tweet.text, authorUsername, '', 'failed', null, e.message);
     console.error(`Failed to reply to @${authorUsername}:`, e.message);
     lastError = e.message;
+  }
+
+  // Keep Set from growing forever
+  if (processedMentionIds.size > 500) {
+    const arr = [...processedMentionIds];
+    arr.splice(0, arr.length - 200);
+    processedMentionIds.clear();
+    arr.forEach(id => processedMentionIds.add(id));
   }
 }
 
@@ -438,9 +451,29 @@ async function start() {
   pollMentionsFallback(); // initial run
   setInterval(pollMentionsFallback, 15_000);
 
+  // Seed DM state — fetch current DMs and mark them all as processed
+  // so we only respond to DMs that arrive AFTER startup
+  try {
+    const userId = await resolveOwnUserId();
+    if (userId) {
+      const url = 'https://api.twitter.com/2/dm_events';
+      const params = { max_results: '20', 'dm_event.fields': 'created_at,dm_conversation_id,sender_id,text', event_types: 'MessageCreate' };
+      const fullUrl = url + '?' + new URLSearchParams(params).toString();
+      const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
+      if (resp.ok) {
+        const dmData = await resp.json();
+        const events = dmData.data || [];
+        events.forEach(e => processedDmIds.add(e.id));
+        if (events[0]?.id) await saveLastEventId(events[0].id);
+        console.log(`Seeded ${events.length} existing DMs as processed`);
+      }
+    }
+  } catch (e) {
+    console.error('DM seed error:', e.message);
+  }
+
   // Start DM polling
   console.log('Polling DMs every 60s');
-  pollDMs(); // initial run
   setInterval(pollDMs, DM_POLL_INTERVAL);
 }
 
