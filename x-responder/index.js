@@ -1,5 +1,5 @@
-// Inclawbate X Responder — Railway persistent service
-// Filtered Stream for mentions (instant) + polling for DMs (every 60s)
+// Inclawbator X Responder — Railway persistent service
+// Filtered Stream for @inclawbator mentions (instant) + DM polling (every 60s)
 // Uses OAuth 1.0a for posting, Bearer for stream
 
 import { createClient } from '@supabase/supabase-js';
@@ -20,11 +20,11 @@ const MENTION_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const DM_POLL_INTERVAL = 60_000; // 60s (15 req/15min limit)
 const MAX_PER_RUN = 5;
 
-const X_API_KEY = process.env.INCLAWBATE_X_API_KEY || process.env.X_API_KEY;
-const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET || process.env.X_API_SECRET;
-const X_ACCESS_TOKEN = process.env.INCLAWBATE_X_ACCESS_TOKEN || process.env.X_ACCESS_TOKEN;
-const X_ACCESS_SECRET = process.env.INCLAWBATE_X_ACCESS_SECRET || process.env.X_ACCESS_SECRET;
-const X_BEARER_TOKEN = process.env.INCLAWBATE_X_BEARER_TOKEN || process.env.X_BEARER_TOKEN;
+const X_API_KEY = process.env.INCLAWBATOR_X_API_KEY || process.env.X_API_KEY;
+const X_API_SECRET = process.env.INCLAWBATOR_X_API_SECRET || process.env.X_API_SECRET;
+const X_ACCESS_TOKEN = process.env.INCLAWBATOR_X_ACCESS_TOKEN || process.env.X_ACCESS_TOKEN;
+const X_ACCESS_SECRET = process.env.INCLAWBATOR_X_ACCESS_SECRET || process.env.X_ACCESS_SECRET;
+const X_BEARER_TOKEN = process.env.INCLAWBATOR_X_BEARER_TOKEN || process.env.X_BEARER_TOKEN;
 
 let ownUserId = null;
 let streamRetryDelay = 1000;
@@ -59,7 +59,7 @@ function oauthHeader(method, url, queryParams = {}) {
     .join(', ');
 }
 
-// ── Resolve @inclawbate user ID ──
+// ── Resolve @inclawbator user ID ──
 
 async function resolveOwnUserId() {
   if (ownUserId) return ownUserId;
@@ -67,7 +67,7 @@ async function resolveOwnUserId() {
   const { data } = await supabase
     .from('x_relay_state')
     .select('x_user_id')
-    .eq('x_handle', 'inclawbate')
+    .eq('x_handle', 'inclawbator')
     .single();
   if (data?.x_user_id) { ownUserId = data.x_user_id; return ownUserId; }
 
@@ -81,7 +81,7 @@ async function resolveOwnUserId() {
 // ── Agent chat ──
 
 async function getAgentReply(text, context, sessionId) {
-  const cleaned = text.replace(/@inclawbate\b/gi, '').trim();
+  const cleaned = text.replace(/@inclawbator\b/gi, '').replace(/@inclawbate\b/gi, '').trim();
   const message = cleaned || 'What can you do?';
   const walletMatch = message.match(/0x[a-fA-F0-9]{40}/);
 
@@ -175,11 +175,11 @@ async function setupStreamRules() {
     });
   }
 
-  // Add rule for @inclawbate mentions
+  // Add rule for @inclawbator mentions
   const resp = await fetch(rulesUrl, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ add: [{ value: '@inclawbate', tag: 'mentions' }] })
+    body: JSON.stringify({ add: [{ value: '@inclawbator', tag: 'mentions' }] })
   });
 
   const result = await resp.json();
@@ -206,7 +206,7 @@ async function connectStream() {
 
     streamConnected = true;
     streamRetryDelay = 1000;
-    console.log('Stream connected — listening for @inclawbate mentions');
+    console.log('Stream connected — listening for @inclawbator mentions');
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
@@ -256,7 +256,7 @@ async function handleStreamTweet(payload) {
   const authorUsername = authors[tweet.author_id] || null;
 
   // Skip self-mentions
-  if (authorUsername?.toLowerCase() === 'inclawbate') return;
+  if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
@@ -395,7 +395,7 @@ const server = http.createServer((req, res) => {
     }));
   } else {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ service: 'inclawbate-x-responder', live: true }));
+    res.end(JSON.stringify({ service: 'inclawbator-x-responder', live: true }));
   }
 });
 
@@ -404,7 +404,7 @@ const server = http.createServer((req, res) => {
 // ══════════════════════════════════════════════
 
 async function start() {
-  console.log('Inclawbate X Responder starting...');
+  console.log('Inclawbator X Responder starting...');
 
   if (!X_API_KEY || !X_ACCESS_TOKEN) {
     console.error('Missing X API credentials — exiting');
