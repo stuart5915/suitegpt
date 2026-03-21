@@ -34,7 +34,6 @@ let streamConnected = false;
 let lastError = null;
 const processedDmIds = new Set(); // prevent double-replies within session
 const processedMentionIds = new Set(); // prevent double-replies from stream + polling overlap
-const activeConversationUsers = new Set(); // users who directly mentioned @inclawbator
 
 // ── OAuth 1.0a ──
 
@@ -268,18 +267,13 @@ async function handleStreamTweet(payload) {
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
-  // Filter out random commenters on @inclawbator's posts.
-  // conversation_id === tweet.id means it's a NEW conversation (direct mention).
-  // conversation_id !== tweet.id means it's a reply in an existing thread.
-  const isNewConversation = tweet.conversation_id === tweet.id;
-
-  if (isNewConversation) {
-    // Direct mention — mark user as having an active conversation
-    if (authorUsername) activeConversationUsers.add(authorUsername.toLowerCase());
-  } else {
-    // Reply in existing thread — only respond if this user started a conversation with us
-    if (!activeConversationUsers.has(authorUsername?.toLowerCase())) {
-      console.log(`Skipping thread comment from @${authorUsername} — not in active conversation`);
+  // Respond to ANYONE who @mentions inclawbator — fresh tweet or reply on any thread.
+  // Only skip if it's a reply directly to @inclawbator's own tweet with no real content
+  // (X auto-adds @mention when replying, so "nice post" replies on our tweets get caught)
+  if (tweet.in_reply_to_user_id === ownUserId) {
+    const cleaned = (tweet.text || '').replace(/@\w+/g, '').trim();
+    if (cleaned.length < 3) {
+      console.log(`Skipping empty reply to our tweet from @${authorUsername}`);
       return;
     }
   }
