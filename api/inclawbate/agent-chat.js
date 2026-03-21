@@ -504,19 +504,26 @@ async function executeTool(name, args) {
 // ── Session store ──
 const sessions = new Map();
 
-// Model priority: 8b-instant has 10x higher rate limits, use it first.
-// 70b-versatile is smarter but rate-limits fast on free tier.
-const MODELS = [
+// ── LLM Providers (all free) ──
+// Groq: primary (fast, free, rate-limited)
+// Cerebras: fallback (free, fast Llama inference)
+const CEREBRAS_API = 'https://api.cerebras.ai/v1/chat/completions';
+const CEREBRAS_KEY = process.env.CEREBRAS_API_KEY || '';
+
+const GROQ_MODELS = [
   'llama-3.1-8b-instant',
   'llama-3.3-70b-versatile'
 ];
+const CEREBRAS_MODELS = [
+  'llama-3.3-70b'
+];
 
-async function callGroq(messages) {
-  // Try each key × model combination until one works
-  const totalAttempts = GROQ_KEYS.length * MODELS.length;
-  for (let attempt = 0; attempt < totalAttempts; attempt++) {
+async function callLLM(messages) {
+  // 1. Try Groq first (all keys × models)
+  const groqAttempts = GROQ_KEYS.length * GROQ_MODELS.length;
+  for (let attempt = 0; attempt < groqAttempts; attempt++) {
     const key = nextGroqKey();
-    const model = MODELS[attempt % MODELS.length];
+    const model = GROQ_MODELS[attempt % GROQ_MODELS.length];
     try {
       const res = await fetch(GROQ_API, {
         method: 'POST',
@@ -528,16 +535,35 @@ async function callGroq(messages) {
         const errMsg = data.error.message || data.error.type || '';
         const isRateLimit = res.status === 429 || errMsg.includes('rate_limit') || errMsg.includes('limit') || errMsg.includes('capacity') || errMsg.includes('overloaded');
         console.error('Groq error (' + model + ', key ' + (groqKeyIndex % GROQ_KEYS.length) + '):', errMsg);
-        if (isRateLimit && attempt < totalAttempts - 1) continue;
+        if (isRateLimit) continue;
         return data;
       }
       return data;
     } catch (e) {
       console.error('Groq fetch error (' + model + '):', e.message);
-      if (attempt < totalAttempts - 1) continue;
-      return { error: { message: e.message } };
+      continue;
     }
   }
+
+  // 2. Fallback: Cerebras (free Llama)
+  if (CEREBRAS_KEY) {
+    for (const model of CEREBRAS_MODELS) {
+      try {
+        const res = await fetch(CEREBRAS_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CEREBRAS_KEY },
+          body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
+        });
+        const data = await res.json();
+        if (!data.error) return data;
+        console.error('Cerebras error (' + model + '):', data.error?.message || data.error);
+      } catch (e) {
+        console.error('Cerebras fetch error (' + model + '):', e.message);
+      }
+    }
+  }
+
+  return { error: { message: 'All LLM providers unavailable' } };
 }
 
 // Generate human-readable replies directly from tool data — skips the second LLM call
@@ -596,6 +622,34 @@ function generateDirectReply(tool, resultJson, args) {
   }
 }
 
+// Keyword-based intent matcher — fallback when Groq is unavailable
+function matchIntent(msg) {
+  const m = msg.toLowerCase();
+  if (/(launch|deploy|create)\s*(a\s*)?(new\s*)?token/i.test(m) || /token\s*launch/i.test(m))
+    return { tool: 'deploy_token', reply: "I'd love to help you launch a token! I need a few details:\n\n1. **Token name** (e.g. CrabCoin)\n2. **Ticker/symbol** (e.g. TCRAB)\n3. **Your wallet address** (receives 80% of LP fee rewards)\n\nOptional: description, image URL, website, X handle, Telegram link.\n\nWhat's the token name and symbol?" };
+  if (/(stake|staking)\s*pool|deploy\s*stak/i.test(m))
+    return { tool: 'deploy_staking', reply: "I can deploy a staking pool for your token! I need:\n\n1. **Token address** (the Base contract address)\n2. **Your wallet address** (becomes the pool admin)\n\nWhat's the token address?" };
+  if (/airdrop|disperse|distribute\s*token/i.test(m))
+    return { tool: 'disperse_tokens', reply: "I can help you airdrop tokens! I need:\n\n1. **Token address**\n2. **Recipient wallet addresses**\n3. **Amounts for each recipient**\n\nWhat token are you distributing?" };
+  if (/price|analytics|volume|market\s*cap|how.*doing/i.test(m) && /0x[a-fA-F0-9]{40}/.test(m)) {
+    const addr = m.match(/0x[a-fA-F0-9]{40}/)[0];
+    return { tool: 'get_token_analytics', execute: true, args: { token_address: addr } };
+  }
+  if (/price|analytics|volume|chart/i.test(m))
+    return { tool: 'get_token_analytics', reply: "I can look up token analytics! What's the token contract address?" };
+  if (/health\s*check|diagnos/i.test(m))
+    return { tool: 'health_check', reply: "I can run a health check on your project! What's your token address or wallet?" };
+  if (/hire|council|help.*build/i.test(m))
+    return { tool: 'hire_inclawbator', reply: "The Inclawbate Council is a team of real builders ready to help. What do you need built? I'll post your request to the Council." };
+  if (/staking\s*stats|apy|tvl|staker/i.test(m))
+    return { tool: 'get_staking_stats', reply: "I can check staking stats! What's the token you want stats for? (Or share your wallet to see your position.)" };
+  if (/market.*agent|promo|advertis/i.test(m))
+    return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to inclawbate.app/dashboard, connect your wallet, and enable the agent on your token's card." };
+  if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
+    return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n\nWhat would you like to do?" };
+  return null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -622,10 +676,25 @@ export default async function handler(req, res) {
   try {
     let functionCalled = null;
     let toolArgs = null;
-    let data = await callGroq(history);
+    let data = await callLLM(history);
 
     if (data.error) {
-      return res.status(200).json({ reply: 'AI is temporarily busy — try again in a moment!', session_id: sid });
+      // Groq unavailable — fall back to keyword intent matching
+      const fallback = matchIntent(message);
+      if (fallback) {
+        if (fallback.execute && fallback.args) {
+          const result = await executeTool(fallback.tool, fallback.args);
+          const directReply = generateDirectReply(fallback.tool, result, fallback.args);
+          const reply = directReply || 'Here are the results. Ask me anything else!';
+          history.push({ role: 'assistant', content: reply });
+          return res.status(200).json({ reply, function_called: fallback.tool, session_id: sid });
+        }
+        history.push({ role: 'assistant', content: fallback.reply });
+        return res.status(200).json({ reply: fallback.reply, session_id: sid });
+      }
+      const defaultReply = "I'm the Inclawbator! I can launch tokens, deploy staking pools, airdrop tokens, check analytics, and more. What would you like to do?";
+      history.push({ role: 'assistant', content: defaultReply });
+      return res.status(200).json({ reply: defaultReply, session_id: sid });
     }
 
     let choice = data.choices?.[0];
@@ -659,7 +728,7 @@ export default async function handler(req, res) {
       }
 
       // Complex tools (health_check) — use LLM to interpret
-      data = await callGroq(history);
+      data = await callLLM(history);
       if (data.error) {
         const fallback = 'I ran the check but had trouble summarizing. Try again in a moment!';
         history.push({ role: 'assistant', content: fallback });
