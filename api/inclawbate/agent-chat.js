@@ -931,6 +931,32 @@ export default async function handler(req, res) {
 
     let reply = choice?.message?.content || '';
     reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
+
+    // Fallback: LLM sometimes outputs tool args as raw JSON text instead of using tool_calls
+    if (!functionCalled && reply) {
+      const jsonMatch = reply.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Detect which tool the JSON belongs to by checking key fields
+          let detectedTool = null;
+          if (parsed.app_name !== undefined || (parsed.description && reply.toLowerCase().includes('build'))) detectedTool = 'build_app';
+          else if (parsed.token_name && parsed.token_symbol) detectedTool = 'deploy_token';
+          else if (parsed.token_address && parsed.creator_wallet && !parsed.recipients) detectedTool = 'deploy_staking';
+          else if (parsed.recipients && parsed.amounts) detectedTool = 'disperse_tokens';
+
+          if (detectedTool) {
+            const result = await executeTool(detectedTool, parsed);
+            const directReply = generateDirectReply(detectedTool, result, parsed);
+            if (directReply) {
+              history.push({ role: 'assistant', content: directReply });
+              return res.status(200).json({ reply: directReply, function_called: detectedTool, tool_args: parsed, session_id: sid });
+            }
+          }
+        } catch (_) { /* not valid JSON, continue normally */ }
+      }
+    }
+
     if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
 
     history.push({ role: 'assistant', content: reply });
