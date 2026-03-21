@@ -34,9 +34,9 @@ BOOK PROMO — Use book_promo when someone wants to promote their project throug
 
 AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
-BUILD AN APP — Use build_app when someone wants you to build them a website, landing page, app, dashboard, or any web UI. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. If they want updates to an existing app, include update: true and the same app_name.
+BUILD AN APP — Use build_app when someone says "build", "make", "create", or "generate" a website, app, page, site, landing page, dashboard, or UI. This tool AUTOMATICALLY builds and publishes a live web app — no human needed. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. If they want updates to an existing app, include update: true and the same app_name. IMPORTANT: If someone asks to "build a website" or "make me an app", use build_app — NOT hire_inclawbator.
 
-HIRE THE COUNCIL — Use hire_inclawbator when someone needs human help (design, dev, marketing, content, strategy). You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
+HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
 ECOSYSTEM INFO — Use get_ecosystem_info when someone asks what Inclawbate is, how it works, or about CLAWS.
 
@@ -835,7 +835,7 @@ function matchIntent(msg) {
     return { tool: 'get_staking_stats', reply: "I can check staking stats! What's the token you want stats for? (Or share your wallet to see your position.)" };
   if (/market.*agent|promo|advertis/i.test(m))
     return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to https://inclawbate.app/schedule — name it, pick a vibe, connect X, and you're live." };
-  if (/(build|make|create|generate)\s*(me\s*)?(a\s*)?(web\s*)?(?:site|app|page|landing|dashboard|ui)/i.test(m) || /build\s*(?:an?\s*)?app/i.test(m))
+  if (/(build|make|create|generate)\s*(me\s*)?(a\s*)?(web\s*)?(?:site|website|app|page|landing|dashboard|ui)/i.test(m) || /build\s*(?:an?\s*)?app/i.test(m))
     return { tool: 'build_app', reply: "I can build you a web app and publish it live! I need:\n\n1. **App name** (short name for the URL)\n2. **Description** (what it should look like and do)\n\nWhat do you want me to build?" };
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
     return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n\nWhat would you like to do?" };
