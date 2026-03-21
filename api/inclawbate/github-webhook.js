@@ -13,10 +13,29 @@ const SKIP_PATTERNS = [
     /^typo/i,
     /^fix whitespace/i,
     /^fix spacing/i,
+    /^test:/i,
 ];
+
+// Redact commits that might contain sensitive info
+const SENSITIVE_WORDS = /secret|api.key|private.key|password|token|credential|\.env|wallet.key|mnemonic|seed.phrase/i;
 
 function shouldSkip(message) {
     return SKIP_PATTERNS.some(p => p.test(message));
+}
+
+// Clean up commit messages for public display
+function sanitizeMessage(msg) {
+    // Strip Co-Authored-By
+    let clean = msg.split('\n')[0].replace(/Co-Authored-By:.*/i, '').trim();
+    // If message contains sensitive words, redact it
+    if (SENSITIVE_WORDS.test(clean)) {
+        return 'Internal update';
+    }
+    // Soften scary-sounding messages
+    clean = clean.replace(/critical\s+(security\s+)?vulnerability/i, 'security improvement');
+    clean = clean.replace(/delete\s+database/i, 'database maintenance');
+    clean = clean.replace(/remove\s+user\s+data/i, 'data cleanup');
+    return clean;
 }
 
 async function sendToTopic(text) {
@@ -43,7 +62,10 @@ export default async function handler(req, res) {
     const payload = req.body;
     if (!payload || !payload.commits) return res.status(200).json({ ok: true, skipped: 'no commits' });
 
-    // Filter out trivial commits
+    // Filter out trivial commits and only show master branch
+    if (branch !== 'master' && branch !== 'main') {
+        return res.status(200).json({ ok: true, skipped: 'non-default branch' });
+    }
     const commits = payload.commits.filter(c => !shouldSkip(c.message.split('\n')[0]));
     if (commits.length === 0) return res.status(200).json({ ok: true, skipped: 'all trivial' });
 
@@ -57,9 +79,7 @@ export default async function handler(req, res) {
 
     for (const commit of commits.slice(0, 5)) {
         const short = commit.id.slice(0, 7);
-        const firstLine = commit.message.split('\n')[0];
-        // Strip Co-Authored-By lines
-        const clean = firstLine.replace(/Co-Authored-By:.*/i, '').trim();
+        const clean = sanitizeMessage(commit.message);
         const filesChanged = (commit.added?.length || 0) + (commit.modified?.length || 0) + (commit.removed?.length || 0);
         msg += `<code>${short}</code> ${clean}`;
         if (filesChanged > 0) msg += ` <i>(${filesChanged} files)</i>`;
