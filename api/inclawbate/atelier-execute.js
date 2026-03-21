@@ -31,10 +31,20 @@ const SERVICE_PROMPTS = {
 function parseBrief(text) {
   if (!text) return {};
   const data = {};
-  const wallets = text.match(/0x[a-fA-F0-9]{40}/g);
-  if (wallets) {
-    data.wallet = wallets[0];
-    if (wallets.length > 1) data.extra_wallets = wallets.slice(1);
+  // EVM wallets (0x...)
+  const evmWallets = text.match(/0x[a-fA-F0-9]{40}/g);
+  // Solana wallets (base58, 32-44 chars, no 0/O/I/l)
+  const solWallets = text.match(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g);
+  if (evmWallets) {
+    data.wallet = evmWallets[0];
+    if (evmWallets.length > 1) data.extra_wallets = evmWallets.slice(1);
+  } else if (solWallets) {
+    // Filter out common false positives (words, hashes, etc.)
+    const likely = solWallets.filter(w => w.length >= 32 && /[A-Z]/.test(w) && /[a-z]/.test(w) && /\d/.test(w));
+    if (likely.length) {
+      data.wallet = likely[0];
+      data.wallet_type = 'solana';
+    }
   }
   const tokenMatch = text.match(/(?:name|token)[:\s]+([A-Za-z0-9 ]+?)[\s]*(?:\(|\/|\|)[\s]*([A-Z0-9]{2,10})/i);
   if (tokenMatch) {
@@ -155,7 +165,12 @@ function buildPrompt(serviceTitle, brief, extraContext, orderId) {
 
   let message = prefix;
   if (brief) message += ' ' + brief;
-  if (merged.wallet) message += '\n\n[User wallet: ' + merged.wallet + ']';
+  if (merged.wallet) {
+    message += '\n\n[User wallet: ' + merged.wallet + ']';
+    if (merged.wallet_type === 'solana') {
+      message += '\n[NOTE: This is a Solana wallet. Token launches and staking pools require a Base (EVM) wallet starting with 0x. Ask the user for their Base/EVM wallet address if needed.]';
+    }
+  }
   if (merged.contact) message += '\n[Contact: ' + merged.contact + ']';
   else if (merged.email) message += '\n[Contact: ' + merged.email + ']';
 
@@ -222,7 +237,7 @@ async function processInProgressOrder(order) {
   // Safety: check if we already completed this order (sent a tool result)
   // Look for our signature patterns in any message — if found, just try to deliver and stop
   const allText = messages.map(m => m.content || m.message || m.text || '').join(' ');
-  const alreadyCompleted = /Token deployed|Staking pool deployed|Pool:|Health report|Airdrop instructions|inclawbate\.app\/schedule|Promo tier|Staking stats:|ecosystem.*CLAWS|incubation.*services/i.test(allText);
+  const alreadyCompleted = /Token deployed|Staking pool deployed|Pool:|Health report|Airdrop instructions|inclawbate\.app\/schedule|Promo tier|Staking stats:|ecosystem.*CLAWS|incubation.*services|Request posted.*Council|council.*reach out/i.test(allText);
 
   if (alreadyCompleted) {
     // We already sent a real response — just try to deliver if not already delivered
