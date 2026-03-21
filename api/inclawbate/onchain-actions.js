@@ -16,6 +16,10 @@ const CLANKER_SNIPER_AUCTION = '0xebB25BB797D82CB78E1bc70406b13233c0854413';
 // ── Disperse Contract ──
 const DISPERSE_CONTRACT = '0xD152f549545093347A162Dce210e7293f1452150';
 
+// ── Staking Factory ──
+const STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
+const CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
+
 const DEPLOY_TOKEN_ABI = [{
   name: 'deployToken', type: 'function', stateMutability: 'payable',
   inputs: [{
@@ -227,6 +231,82 @@ const ERC20_ABI = [
   'function allowance(address owner, address spender) view returns (uint256)',
   'function decimals() view returns (uint8)'
 ];
+
+// ══════════════════════════════════════
+// DEPLOY STAKING POOL via Factory
+// ══════════════════════════════════════
+const STAKING_FACTORY_ABI = [
+  'function deployPaid(address stakingToken, address rewardToken) payable returns (address pool)',
+  'event PoolDeployed(address indexed pool, address indexed stakingToken, address indexed admin, uint256 paid)'
+];
+
+const STAKING_POOL_ABI = [
+  'function transferAdmin(address newAdmin)'
+];
+
+const POOL_DEPLOYED_TOPIC = ethers.id('PoolDeployed(address,address,address,uint256)');
+
+export async function deployStakingPool({ token_address, creator_wallet }) {
+  if (!token_address) throw new Error('token_address is required');
+  if (!creator_wallet) throw new Error('creator_wallet is required');
+
+  const wallet = getOperatorWallet();
+  const factory = new ethers.Contract(STAKING_FACTORY, STAKING_FACTORY_ABI, wallet);
+
+  // Deploy: stake token_address, earn CLAWS
+  const tx = await factory.deployPaid(token_address, CLAWS_TOKEN, { value: 0, gasLimit: 1000000 });
+  const receipt = await tx.wait();
+
+  // Parse pool address from PoolDeployed event
+  let poolAddress = null;
+  for (const log of receipt.logs) {
+    if (log.topics && log.topics[0] === POOL_DEPLOYED_TOPIC && log.topics.length >= 2) {
+      poolAddress = '0x' + log.topics[1].slice(26);
+      break;
+    }
+  }
+
+  if (!poolAddress) throw new Error('Failed to parse pool address from deploy tx');
+
+  // Transfer admin to creator so they can deposit rewards
+  const pool = new ethers.Contract(poolAddress, STAKING_POOL_ABI, wallet);
+  const transferTx = await pool.transferAdmin(creator_wallet);
+  await transferTx.wait();
+
+  // Auto-update staking address on inclawbate.app
+  try {
+    // Find the project by token address first
+    const lookupRes = await fetch(`https://www.inclawbate.app/api/inclawbate/inclawbator?token_address=${token_address}`);
+    const lookupData = await lookupRes.json();
+    const projectId = lookupData?.project?.id || lookupData?.id;
+
+    if (projectId) {
+      await fetch('https://www.inclawbate.app/api/inclawbate/inclawbator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-wallet': '0x91b5c0d07859cfeafeb67d9694121cd741f049bd' },
+        body: JSON.stringify({
+          action: 'update-staking',
+          project_id: projectId,
+          staking_address: poolAddress,
+          staking_deploy_tx: receipt.hash
+        })
+      });
+    }
+  } catch (regErr) {
+    console.error('Staking registration failed (non-fatal):', regErr.message);
+  }
+
+  return {
+    success: true,
+    pool_address: poolAddress,
+    staking_token: token_address,
+    reward_token: CLAWS_TOKEN,
+    admin: creator_wallet,
+    deploy_tx: receipt.hash,
+    basescan_url: `https://basescan.org/tx/${receipt.hash}`,
+    stake_url: `/dashboard`
+  };
+}
 
 export async function disperseTokens({ token_address, recipients, amounts }) {
   if (!token_address || !recipients || !amounts) throw new Error('token_address, recipients[], and amounts[] are required');

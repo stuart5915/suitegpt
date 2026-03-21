@@ -1,7 +1,7 @@
 // Inclawbate Homepage Chat — Groq-powered (free, fast)
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
-import { launchToken, disperseTokens } from './onchain-actions.js';
+import { launchToken, disperseTokens, deployStakingPool } from './onchain-actions.js';
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
@@ -18,7 +18,7 @@ You have 11 tools. Match the user's intent to the right one:
 
 LAUNCH A TOKEN — Use deploy_token when you have name, symbol, AND the user's wallet address. Gather details conversationally (name, symbol, wallet required; description, image, website, X handle, telegram optional). The user's wallet receives 80% of LP fee rewards, Inclawbate receives 20%. If the user hasn't provided their wallet address, ASK for it before deploying — they need it to receive their fee rewards. The token launches on Base via Clanker automatically.
 
-DEPLOY STAKING — Use deploy_staking when someone wants a staking pool for their token. Deployed via the Staking Factory on Base.
+DEPLOY STAKING — Use deploy_staking when someone wants a staking pool for their token. Requires: token_address and creator_wallet. The pool lets holders stake the token and earn CLAWS rewards. The creator's wallet becomes the pool admin so they can deposit rewards. After deployment, tell them to go to inclawbate.app/dashboard to connect their wallet and deposit CLAWS rewards.
 
 TOKEN ANALYTICS — Use get_token_analytics when someone asks about a token's price, volume, or liquidity. Requires a token address.
 
@@ -156,9 +156,10 @@ const TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          token_address: { type: 'string', description: 'Token contract address' },
-          project_name: { type: 'string', description: 'Project name' }
-        }
+          token_address: { type: 'string', description: 'Token contract address to create staking pool for' },
+          creator_wallet: { type: 'string', description: 'Creator wallet address — becomes pool admin' }
+        },
+        required: ['token_address', 'creator_wallet']
       }
     }
   },
@@ -345,21 +346,16 @@ async function disperseTokensAction(args) {
   }
 }
 
-function deployStakingInfo(args) {
-  return JSON.stringify({
-    how: 'Deploy a staking pool where holders stake your token and earn CLAWS rewards.',
-    process: [
-      'Your token must be deployed on Base',
-      'The Staking Factory deploys a pool linked to your token',
-      'inclawbate.base.eth is auto-registered as a reward depositor',
-      '20% of your token\'s LP fees auto-convert to CLAWS and fund staker rewards',
-      'Your staking page goes live at inclawbate.app/stake'
-    ],
-    whats_included: ['Staking contract (Synthetix-style)', 'Dual depositor authorization', 'Auto CLAWS reward pipeline', 'Staking UI', 'Analytics dashboard'],
-    cost: 'Free — included with incubation. 20% LP fee split funds the rewards.',
-    contact: { telegram: 'https://t.me/StuartDeFi', x: 'https://x.com/inclawbate' },
-    token: args.token_address || null, project: args.project_name || null
-  });
+async function deployStakingAction(args) {
+  try {
+    const result = await deployStakingPool({
+      token_address: args.token_address,
+      creator_wallet: args.creator_wallet
+    });
+    return JSON.stringify(result);
+  } catch (err) {
+    return JSON.stringify({ error: err.message, hint: 'Staking pool deployment failed. Make sure the token address is a valid Base token.' });
+  }
 }
 
 async function healthCheck(args) {
@@ -498,7 +494,7 @@ async function executeTool(name, args) {
     case 'get_staking_stats': return await getStakingStats(args);
     case 'book_promo': return bookPromoInfo(args);
     case 'disperse_tokens': return await disperseTokensAction(args);
-    case 'deploy_staking': return deployStakingInfo(args);
+    case 'deploy_staking': return await deployStakingAction(args);
     case 'health_check': return await healthCheck(args);
     case 'hire_inclawbator': return await hireInclawbatorInfo(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
@@ -581,7 +577,8 @@ function generateDirectReply(tool, resultJson, args) {
         return d.error || 'Airdrop failed. Try again.';
 
       case 'deploy_staking':
-        return "Here's how staking deployment works:\n" + (d.process || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nCost: " + (d.cost || 'Free') + "\n\nContact: " + (d.contact?.telegram || 't.me/StuartDeFi');
+        if (d.error) return "Staking pool deployment failed: " + d.error + (d.hint ? "\n\n" + d.hint : '');
+        return "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nGo to https://inclawbate.app/dashboard, connect your wallet, and deposit CLAWS rewards to start the reward drip for stakers.";
 
       case 'hire_inclawbator':
         if (d.posted) return d.message + "\n\n" + d.what_happens_next;
