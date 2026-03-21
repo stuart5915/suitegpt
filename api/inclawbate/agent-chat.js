@@ -930,7 +930,9 @@ export default async function handler(req, res) {
     }
 
     let reply = choice?.message?.content || '';
-    reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
+    // Strip raw function call tags the LLM sometimes outputs in text
+    // Matches both <function=name>...</function> and <name>...</function>
+    reply = reply.replace(/<(?:function=)?[a-z_]+>[^<]*<\/function>/gi, '').trim();
 
     // Fallback: LLM sometimes outputs tool args as raw JSON text instead of using tool_calls
     if (!functionCalled && reply) {
@@ -944,6 +946,7 @@ export default async function handler(req, res) {
           else if (parsed.token_name && parsed.token_symbol) detectedTool = 'deploy_token';
           else if (parsed.token_address && parsed.creator_wallet && !parsed.recipients) detectedTool = 'deploy_staking';
           else if (parsed.recipients && parsed.amounts) detectedTool = 'disperse_tokens';
+          else if (parsed.task_description !== undefined) detectedTool = 'hire_inclawbator';
 
           if (detectedTool) {
             const result = await executeTool(detectedTool, parsed);
