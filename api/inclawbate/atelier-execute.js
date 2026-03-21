@@ -78,12 +78,16 @@ async function updateOrderStatus(orderId, status) {
   }
 }
 
+// Atelier only accepts image/video deliverables — text goes via messages
+const DELIVERABLE_IMAGE = 'https://inclawbate.app/inclawbate/assets/inclawbatebuild.png';
+
 async function deliverOrder(orderId, content, url) {
+  // The real text response is sent via sendMessage() — delivery is for the visual deliverable
   return atelierFetch(`/orders/${orderId}/deliver`, {
     method: 'POST',
     body: JSON.stringify({
-      deliverable_url: url || 'https://inclawbate.app',
-      deliverable_media_type: 'text',
+      deliverable_url: url || DELIVERABLE_IMAGE,
+      deliverable_media_type: 'image',
       message: content.slice(0, 2000),
     }),
   });
