@@ -20,7 +20,10 @@ const STATE_KEY = 'inclawbator_dms';
 // ── OAuth 1.0a signature ──
 
 function oauthHeader(method, url, queryParams = {}) {
-  const { X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET } = process.env;
+  const X_API_KEY = process.env.INCLAWBATE_X_API_KEY || process.env.X_API_KEY;
+  const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET || process.env.X_API_SECRET;
+  const X_ACCESS_TOKEN = process.env.INCLAWBATE_X_ACCESS_TOKEN || process.env.X_ACCESS_TOKEN;
+  const X_ACCESS_SECRET = process.env.INCLAWBATE_X_ACCESS_SECRET || process.env.X_ACCESS_SECRET;
   const oauth = {
     oauth_consumer_key: X_API_KEY,
     oauth_nonce: crypto.randomBytes(16).toString('hex'),
@@ -150,7 +153,8 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { X_API_KEY, X_ACCESS_TOKEN } = process.env;
+  const X_API_KEY = process.env.INCLAWBATE_X_API_KEY || process.env.X_API_KEY;
+  const X_ACCESS_TOKEN = process.env.INCLAWBATE_X_ACCESS_TOKEN || process.env.X_ACCESS_TOKEN;
   if (!X_API_KEY || !X_ACCESS_TOKEN) {
     return res.status(200).json({ error: 'X API credentials not configured' });
   }
