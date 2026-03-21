@@ -192,7 +192,7 @@ async function setupStreamRules() {
 }
 
 async function connectStream() {
-  const url = 'https://api.twitter.com/2/tweets/search/stream?tweet.fields=created_at,author_id,conversation_id&expansions=author_id&user.fields=username';
+  const url = 'https://api.twitter.com/2/tweets/search/stream?tweet.fields=created_at,author_id,conversation_id,in_reply_to_user_id&expansions=author_id&user.fields=username';
 
   console.log('Connecting to filtered stream...');
 
@@ -260,6 +260,19 @@ async function handleStreamTweet(payload) {
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
+  // Skip replies to @inclawbator's own tweets from users who didn't start the conversation
+  // (prevents replying to random commenters on our posts)
+  const tweetText = tweet.text || '';
+  const cleanedText = tweetText.replace(/@\w+/g, '').trim();
+  if (tweet.in_reply_to_user_id && tweet.in_reply_to_user_id === ownUserId) {
+    // This is a reply to @inclawbator's tweet — only respond if it looks like
+    // an actual request (has substance), not just a casual comment
+    if (cleanedText.length < 15 && !/\?|launch|build|deploy|stake|token|help|hire|price|analytic/i.test(cleanedText)) {
+      console.log(`Skipping casual comment from @${authorUsername}: ${cleanedText.slice(0, 50)}`);
+      return;
+    }
+  }
+
   // Skip if already processed in this session (prevents stream + polling double-reply)
   if (processedMentionIds.has(tweet.id)) return;
   processedMentionIds.add(tweet.id);
@@ -285,16 +298,24 @@ async function handleStreamTweet(payload) {
     let replyText = reply;
 
     // Strip crypto addresses (X blocks them for 7 days after token regen)
-    // Replace with contextual URLs based on reply content
-    const isStaking = /stak/i.test(replyText);
-    const isToken = /token|deploy|launch|contract/i.test(replyText);
-    const isDashboard = /dashboard|admin|reward|deposit/i.test(replyText);
-    const contextUrl = isStaking ? 'inclawbate.app/stake'
-      : isDashboard ? 'inclawbate.app/dashboard'
-      : isToken ? 'inclawbate.app/tokens'
-      : 'inclawbate.app';
-    replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, contextUrl);
-    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, contextUrl);
+    // Remove addresses and basescan/clanker URLs, then add one contextual link at the end
+    const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText);
+    replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '');
+    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, '');
+    // Clean up leftover artifacts: empty labels, double spaces, orphaned punctuation
+    replyText = replyText.replace(/(?:Contract|Pool|Admin|Tx|Stake|Earn|Token):\s*\n/gi, '');
+    replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').trim();
+    // Add contextual link at the end if we stripped addresses
+    if (hasAddresses) {
+      const isStaking = /stak/i.test(replyText);
+      const isDashboard = /dashboard|admin|reward|deposit/i.test(replyText);
+      const isToken = /token|deploy|launch/i.test(replyText);
+      const contextUrl = isStaking ? 'https://inclawbate.app/stake'
+        : isDashboard ? 'https://inclawbate.app/dashboard'
+        : isToken ? 'https://inclawbate.app/tokens'
+        : 'https://inclawbate.app';
+      replyText += `\n\nView details: ${contextUrl}`;
+    }
 
     if (replyText.length > maxLen) {
       const truncated = replyText.slice(0, maxLen - 3);
@@ -454,6 +475,10 @@ async function start() {
 
   server.listen(PORT, () => console.log(`Health check on :${PORT}`));
 
+  // Resolve own user ID upfront (needed for comment filtering)
+  await resolveOwnUserId();
+  console.log(`Own user ID: ${ownUserId}`);
+
   // Start stream for mentions + polling fallback
   if (X_BEARER_TOKEN) {
     await setupStreamRules();
@@ -487,7 +512,7 @@ async function pollMentionsFallback() {
     const url = 'https://api.twitter.com/2/users/' + userId + '/mentions';
     const params = {
       max_results: '10',
-      'tweet.fields': 'created_at,author_id,conversation_id',
+      'tweet.fields': 'created_at,author_id,conversation_id,in_reply_to_user_id',
       expansions: 'author_id',
       'user.fields': 'username'
     };
