@@ -484,6 +484,34 @@ async function start() {
   await resolveOwnUserId();
   console.log(`Own user ID: ${ownUserId}`);
 
+  // Seed: fetch current mentions and mark them ALL as already processed
+  // so we only respond to mentions that arrive AFTER startup
+  try {
+    const url = 'https://api.twitter.com/2/users/' + ownUserId + '/mentions';
+    const params = {
+      max_results: '100',
+      'tweet.fields': 'created_at,author_id,conversation_id,in_reply_to_user_id',
+      expansions: 'author_id',
+      'user.fields': 'username'
+    };
+    const fullUrl = url + '?' + new URLSearchParams(params).toString();
+    const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
+    if (resp.ok) {
+      const data = await resp.json();
+      (data.data || []).forEach(t => processedMentionIds.add(t.id));
+      if (data.meta?.newest_id) {
+        await supabase.from('x_relay_state').upsert({
+          x_handle: MENTION_STATE_KEY,
+          last_tweet_id: data.meta.newest_id,
+          last_checked_at: new Date().toISOString()
+        }, { onConflict: 'x_handle' });
+      }
+      console.log(`Seeded ${(data.data || []).length} existing mentions as processed`);
+    }
+  } catch (e) {
+    console.error('Mention seed error:', e.message);
+  }
+
   // Start stream for mentions + polling fallback
   if (X_BEARER_TOKEN) {
     await setupStreamRules();
