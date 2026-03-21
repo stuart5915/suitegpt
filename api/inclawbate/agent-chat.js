@@ -665,8 +665,20 @@ function generateDirectReply(tool, resultJson, args) {
 // Keyword-based intent matcher — fallback when Groq is unavailable
 function matchIntent(msg) {
   const m = msg.toLowerCase();
-  if (/(launch|deploy|create)\s*(a\s*)?(new\s*)?token/i.test(m) || /token\s*launch/i.test(m))
-    return { tool: 'deploy_token', reply: "I'd love to help you launch a token! I need a few details:\n\n1. **Token name** (e.g. CrabCoin)\n2. **Ticker/symbol** (e.g. TCRAB)\n3. **Your wallet address** (receives 80% of LP fee rewards)\n\nOptional: description, image URL, website, X handle, Telegram link.\n\nWhat's the token name and symbol?" };
+  if (/(launch|deploy|create|make)\s*(me\s*)?(a\s*)?(new\s*)?token/i.test(m) || /token\s*(launch|called|named)/i.test(m) || /make\s*me\s*a\s*(coin|token)/i.test(m)) {
+    // Try to extract name/symbol from the message
+    const calledMatch = m.match(/(?:called|named)\s+(.+?)(?:\s+(?:and|with)\s+(?:ticker|symbol)\s+(\w+)|$)/i);
+    const tickerMatch = m.match(/(?:ticker|symbol)\s+(\w+)/i);
+    const hasName = calledMatch ? calledMatch[1].trim() : null;
+    const hasSymbol = tickerMatch ? tickerMatch[1] : (calledMatch && calledMatch[2]) || null;
+    const hasWallet = m.match(/0x[a-fA-F0-9]{40}/);
+    const missing = [];
+    if (!hasName) missing.push('**Token name**');
+    if (!hasSymbol) missing.push('**Ticker/symbol**');
+    if (!hasWallet) missing.push('**Your wallet address** (receives 80% of LP fee rewards)');
+    const ack = hasName ? `Got it — "${hasName}"${hasSymbol ? ` ($${hasSymbol.toUpperCase()})` : ''}! ` : '';
+    return { tool: 'deploy_token', reply: ack + (missing.length ? "I still need: " + missing.join(', ') + "." : "Ready to deploy! Confirm and I'll launch it.") };
+  }
   if (/(stake|staking)\s*pool|deploy\s*stak/i.test(m))
     return { tool: 'deploy_staking', reply: "I can deploy a staking pool for your token! I need:\n\n1. **Token address** (the Base contract address)\n2. **Your wallet address** (becomes the pool admin)\n\nWhat's the token address?" };
   if (/airdrop|disperse|distribute\s*token/i.test(m))
