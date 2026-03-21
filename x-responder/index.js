@@ -301,14 +301,15 @@ async function handleStreamTweet(payload) {
 
     let replyText = reply;
 
-    // Strip crypto addresses (X blocks them for 7 days after token regen)
-    // Remove addresses and basescan/clanker URLs, then add one contextual link at the end
-    const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText);
+    // Strip crypto addresses and blockchain URLs (X blocks them for 7 days after token regen)
+    const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText) || /(?:basescan|clanker|etherscan)/i.test(replyText);
     replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '');
-    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, '');
-    // Clean up leftover artifacts: empty labels, double spaces, orphaned punctuation
-    replyText = replyText.replace(/(?:Contract|Pool|Admin|Tx|Stake|Earn|Token):\s*\n/gi, '');
-    replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').trim();
+    replyText = replyText.replace(/(?:https?:\/\/)?(?:basescan\.org|clanker\.world|etherscan\.io)[^\s)"\n]*/g, '');
+    // Clean up leftover artifacts
+    replyText = replyText.replace(/•\s*\*?\*?(?:Contract|Pool|Admin|Tx|Stake|Token|Clanker|Basescan)\*?\*?:?\s*\n?/gi, '');
+    replyText = replyText.replace(/(?:Contract|Pool|Admin|Tx|Stake|Token|Clanker):\s*\n/gi, '');
+    replyText = replyText.replace(/• •/g, '•');
+    replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').replace(/\n\s*\n\s*\n/g, '\n\n').trim();
     // Add contextual link at the end if we stripped addresses
     if (hasAddresses) {
       const isStaking = /stak/i.test(replyText);
