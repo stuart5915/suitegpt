@@ -261,6 +261,13 @@ async function handleStreamTweet(payload) {
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
+  // Skip if already processed in this session (MUST be first to prevent log spam)
+  if (processedMentionIds.has(tweet.id)) return;
+  processedMentionIds.add(tweet.id);
+
+  // Skip old mentions
+  if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
+
   // Only reply to people who started a conversation with @inclawbator.
   // If someone is replying to @inclawbator's own tweet, only respond if
   // they previously mentioned @inclawbator directly (active conversation).
@@ -274,13 +281,6 @@ async function handleStreamTweet(payload) {
     // Direct mention (not a reply to our tweet) — mark user as having an active conversation
     if (authorUsername) activeConversationUsers.add(authorUsername.toLowerCase());
   }
-
-  // Skip if already processed in this session (prevents stream + polling double-reply)
-  if (processedMentionIds.has(tweet.id)) return;
-  processedMentionIds.add(tweet.id);
-
-  // Skip old mentions
-  if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
   // Skip if already replied (DB check)
   const { data: existing } = await supabase
