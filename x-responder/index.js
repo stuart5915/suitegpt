@@ -268,18 +268,20 @@ async function handleStreamTweet(payload) {
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
-  // Only reply to people who started a conversation with @inclawbator.
-  // If someone is replying to @inclawbator's own tweet, only respond if
-  // they previously mentioned @inclawbator directly (active conversation).
-  // This prevents replying to random commenters on @inclawbator's posts.
-  if (tweet.in_reply_to_user_id && tweet.in_reply_to_user_id === ownUserId) {
+  // Filter out random commenters on @inclawbator's posts.
+  // conversation_id === tweet.id means it's a NEW conversation (direct mention).
+  // conversation_id !== tweet.id means it's a reply in an existing thread.
+  const isNewConversation = tweet.conversation_id === tweet.id;
+
+  if (isNewConversation) {
+    // Direct mention — mark user as having an active conversation
+    if (authorUsername) activeConversationUsers.add(authorUsername.toLowerCase());
+  } else {
+    // Reply in existing thread — only respond if this user started a conversation with us
     if (!activeConversationUsers.has(authorUsername?.toLowerCase())) {
-      console.log(`Skipping comment from @${authorUsername} — not in active conversation`);
+      console.log(`Skipping thread comment from @${authorUsername} — not in active conversation`);
       return;
     }
-  } else {
-    // Direct mention (not a reply to our tweet) — mark user as having an active conversation
-    if (authorUsername) activeConversationUsers.add(authorUsername.toLowerCase());
   }
 
   // Skip if already replied (DB check)
