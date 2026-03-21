@@ -179,7 +179,7 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
     try {
       await fetch('https://inclawbate.app/api/inclawbate/inclawbator', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-wallet': '0x91b5c0d07859cfeafeb67d9694121cd741f049bd' },
         body: JSON.stringify({
           action: 'register',
           token_name: name,
