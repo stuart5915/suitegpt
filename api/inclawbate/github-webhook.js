@@ -62,14 +62,14 @@ export default async function handler(req, res) {
     const payload = req.body;
     if (!payload || !payload.commits) return res.status(200).json({ ok: true, skipped: 'no commits' });
 
+    const branch = (payload.ref || '').replace('refs/heads/', '');
+
     // Filter out trivial commits and only show master branch
     if (branch !== 'master' && branch !== 'main') {
         return res.status(200).json({ ok: true, skipped: 'non-default branch' });
     }
     const commits = payload.commits.filter(c => !shouldSkip(c.message.split('\n')[0]));
     if (commits.length === 0) return res.status(200).json({ ok: true, skipped: 'all trivial' });
-
-    const branch = (payload.ref || '').replace('refs/heads/', '');
     const pusher = payload.pusher?.name || 'unknown';
     const repoName = payload.repository?.name || 'repo';
 
