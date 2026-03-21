@@ -614,7 +614,7 @@ function generateDirectReply(tool, resultJson, args) {
         return `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`;
 
       case 'deploy_token':
-        if (d.success) return `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• DEX: ${d.dex_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic Uniswap liquidity. Anyone can trade it now.`;
+        if (d.success) return `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic Uniswap liquidity. Anyone can trade it now.`;
         return d.error || 'Token deployment failed. Try again.';
 
       case 'create_agent_info':

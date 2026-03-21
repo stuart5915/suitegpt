@@ -212,7 +212,7 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
     token_address: tokenAddress,
     tx_hash: receipt.hash,
     chain: 'base',
-    dex_url: tokenAddress ? `https://dexscreener.com/base/${tokenAddress}` : null,
+    clanker_url: tokenAddress ? `https://www.clanker.world/clanker/${tokenAddress}` : null,
     basescan_url: `https://basescan.org/tx/${receipt.hash}`,
     registered: true
   };
