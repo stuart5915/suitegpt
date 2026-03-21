@@ -283,6 +283,12 @@ async function handleStreamTweet(payload) {
     const maxLen = 280 - prefix.length;
 
     let replyText = reply;
+
+    // Strip crypto addresses (X blocks them for 7 days after token regen)
+    // Replace 0x... addresses with "see inclawbate.app" and clean up basescan/clanker URLs
+    replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '[see inclawbate.app]');
+    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, 'inclawbate.app');
+
     if (replyText.length > maxLen) {
       const truncated = replyText.slice(0, maxLen - 3);
       const lastSentence = truncated.lastIndexOf('. ');
