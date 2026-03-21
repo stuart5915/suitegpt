@@ -147,7 +147,7 @@ function extractDeliverableUrl(reply, functionCalled) {
 }
 
 // ── Build a chat prompt from order context ──
-function buildPrompt(serviceTitle, brief, extraContext) {
+function buildPrompt(serviceTitle, brief, extraContext, orderId) {
   const prefix = matchService(serviceTitle);
   const briefData = parseBrief(brief);
   // Merge any extra parsed data (e.g. from buyer replies)
@@ -157,7 +157,18 @@ function buildPrompt(serviceTitle, brief, extraContext) {
   if (brief) message += ' ' + brief;
   if (merged.wallet) message += '\n\n[User wallet: ' + merged.wallet + ']';
   if (merged.contact) message += '\n[Contact: ' + merged.contact + ']';
-  if (merged.email) message += '\n[Email: ' + merged.email + ']';
+  else if (merged.email) message += '\n[Contact: ' + merged.email + ']';
+
+  // For hire/council: always provide a contact so the tool doesn't stall
+  const isHire = /hire|council/i.test(serviceTitle);
+  if (isHire && !merged.contact && !merged.email) {
+    const fallback = merged.wallet
+      ? merged.wallet
+      : `Atelier order ${orderId || 'unknown'} — reply via Atelier order thread`;
+    message += '\n[Contact: ' + fallback + ']';
+  }
+
+  if (merged.email && merged.contact) message += '\n[Email: ' + merged.email + ']';
   return message.trim() || 'Help me with my project';
 }
 
@@ -170,7 +181,7 @@ async function processNewOrder(order) {
   await updateOrderStatus(orderId, 'in_progress');
 
   // 2. Call agent-chat
-  const message = buildPrompt(serviceTitle, brief);
+  const message = buildPrompt(serviceTitle, brief, {}, orderId);
   const briefData = parseBrief(brief);
   const sessionId = `atelier_${orderId}`;
   const chatData = await callAgentChat(message, sessionId, briefData.wallet);
@@ -267,7 +278,7 @@ async function processInProgressOrder(order) {
   const replyData = parseBrief(buyerReply);
   const briefData = parseBrief(brief);
 
-  let message = buildPrompt(serviceTitle, brief, replyData);
+  let message = buildPrompt(serviceTitle, brief, replyData, orderId);
   message += '\n\nThe user just replied with: ' + buyerReply;
 
   const sessionId = `atelier_${orderId}`;
