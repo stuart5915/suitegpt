@@ -1,7 +1,7 @@
 // Inclawbate Homepage Chat — Groq-powered (free, fast)
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
-import { launchToken, disperseTokens, deployStakingPool } from './onchain-actions.js';
+import { launchToken, deployStakingPool } from './onchain-actions.js';
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
@@ -30,7 +30,7 @@ MARKETING AGENT — Use create_agent_info when someone wants an AI agent that au
 
 BOOK PROMO — Use book_promo when someone wants to promote their project through the @inclawbate X account.
 
-AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Requires token_address, recipients (array of addresses), and amounts (array of numbers). Executes the airdrop automatically on Base.
+AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
 HIRE THE COUNCIL — Use hire_inclawbator when someone needs human help (design, dev, marketing, content, strategy). You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
@@ -136,7 +136,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'disperse_tokens',
-      description: 'Airdrop or distribute tokens to multiple wallets on Base. Executes the transaction automatically.',
+      description: 'Airdrop or distribute tokens to multiple wallets on Base. Returns instructions and a link to the airdrop tool.',
       parameters: {
         type: 'object',
         properties: {
@@ -226,11 +226,13 @@ function getIncubationInfo() {
   });
 }
 
+const isValidAddr = (a) => /^0x[a-fA-F0-9]{40}$/.test(a);
+
 async function deployTokenAction(args) {
   const missing = [];
   if (!args.token_name) missing.push('token name');
   if (!args.token_symbol) missing.push('ticker/symbol');
-  if (!args.creator_wallet || !args.creator_wallet.startsWith('0x')) missing.push('your wallet address (receives 80% of LP fee rewards)');
+  if (!isValidAddr(args.creator_wallet)) missing.push('your wallet address (receives 80% of LP fee rewards)');
   if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need a few more details to launch your token: ' + missing.join(', ') + '.' });
 
   try {
@@ -337,23 +339,38 @@ function bookPromoInfo(args) {
   });
 }
 
-async function disperseTokensAction(args) {
-  try {
-    const result = await disperseTokens({
-      token_address: args.token_address,
-      recipients: args.recipients,
-      amounts: args.amounts
-    });
-    return JSON.stringify(result);
-  } catch (err) {
-    return JSON.stringify({ error: err.message, hint: 'Airdrop failed. Make sure the token address is correct and the operator wallet has enough tokens.' });
-  }
+function disperseTokensAction(args) {
+  const DISPERSE_CONTRACT = '0xD152f549545093347A162Dce210e7293f1452150';
+  const recipients = args.recipients || [];
+  const amounts = args.amounts || [];
+  const tokenAddr = args.token_address || '';
+
+  // Build CSV-style list for the user
+  const csvLines = recipients.map((r, i) => `${r},${amounts[i] || 0}`).join('\n');
+
+  return JSON.stringify({
+    method: 'self_execute',
+    message: 'Airdrops require you to send from your own wallet (you hold the tokens). Use the Inclawbate airdrop tool to do it in a few clicks.',
+    steps: [
+      'Go to https://inclawbate.app/dashboard',
+      'Connect the wallet that holds the tokens',
+      'Open the Airdrop tool',
+      'Paste your token address: ' + (tokenAddr || '(your token contract)'),
+      'Paste the recipient list (address,amount per line)',
+      'Approve token spending, then send the transaction'
+    ],
+    url: 'https://inclawbate.app/dashboard',
+    disperse_contract: DISPERSE_CONTRACT,
+    token_address: tokenAddr,
+    recipients_csv: csvLines || null,
+    recipient_count: recipients.length
+  });
 }
 
 async function deployStakingAction(args) {
   const missing = [];
-  if (!args.token_address || !args.token_address.startsWith('0x')) missing.push('token contract address');
-  if (!args.creator_wallet || !args.creator_wallet.startsWith('0x')) missing.push('your wallet address (will become the pool admin)');
+  if (!isValidAddr(args.token_address)) missing.push('token contract address');
+  if (!isValidAddr(args.creator_wallet)) missing.push('your wallet address (will become the pool admin)');
   if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need a few more details to deploy the staking pool: ' + missing.join(' and ') + '.' });
 
   try {
@@ -484,7 +501,12 @@ async function hireInclawbatorInfo(args) {
         posted: true,
         message: 'Request posted to the Inclawbate Council Telegram group. A council member will reach out via: ' + contact,
         request_id: data.id,
-        what_happens_next: 'Council members see the request, claim it, and contact you directly. Payment in CLAWS when work is delivered.'
+        what_happens_next: 'A Council member will claim your request and contact you within 24 hours. Payment in CLAWS when work is delivered.',
+        contact_methods: {
+          telegram_group: 'https://t.me/inclawbate',
+          x_dm: 'https://x.com/inclawbate',
+          note: 'If you need faster response, drop a message in the Telegram group or DM @inclawbate on X.'
+        }
       });
     }
     return JSON.stringify({ error: data.error || 'Failed to post hire request' });
@@ -594,7 +616,7 @@ function generateDirectReply(tool, resultJson, args) {
         return d.error || 'Token deployment failed. Try again.';
 
       case 'create_agent_info':
-        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\nAgents are free to create. Head to " + (d.url || 'inclawbate.app/dashboard');
+        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\n" + (d.note || 'Agents are free to create.');
 
       case 'get_token_analytics': {
         if (d.message) return d.message;
@@ -609,6 +631,7 @@ function generateDirectReply(tool, resultJson, args) {
         return `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`;
 
       case 'disperse_tokens':
+        if (d.method === 'self_execute') return d.message + "\n\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + (d.recipients_csv ? "\n\nRecipient list:\n```\n" + d.recipients_csv + "\n```" : '');
         if (d.success) return `Airdrop complete!\n\n• Recipients: ${d.recipients_count}\n• Total distributed: ${d.total_distributed}\n• Tx: ${d.basescan_url}`;
         return d.error || 'Airdrop failed. Try again.';
 
@@ -617,7 +640,12 @@ function generateDirectReply(tool, resultJson, args) {
         return "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nGo to https://inclawbate.app/dashboard, connect your wallet, and deposit CLAWS rewards to start the reward drip for stakers.";
 
       case 'hire_inclawbator':
-        if (d.posted) return d.message + "\n\n" + d.what_happens_next;
+        if (d.posted) {
+          let reply = d.message + "\n\n" + d.what_happens_next;
+          if (d.request_id) reply += "\n\nRequest ID: " + d.request_id;
+          if (d.contact_methods) reply += "\n\nNeed faster response? " + d.contact_methods.note;
+          return reply;
+        }
         return d.message || d.error || 'Request submitted!';
 
       case 'health_check':
@@ -654,7 +682,7 @@ function matchIntent(msg) {
   if (/staking\s*stats|apy|tvl|staker/i.test(m))
     return { tool: 'get_staking_stats', reply: "I can check staking stats! What's the token you want stats for? (Or share your wallet to see your position.)" };
   if (/market.*agent|promo|advertis/i.test(m))
-    return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to inclawbate.app/dashboard, connect your wallet, and enable the agent on your token's card." };
+    return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to https://inclawbate.app/schedule — name it, pick a vibe, connect X, and you're live." };
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
     return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n\nWhat would you like to do?" };
   return null;
