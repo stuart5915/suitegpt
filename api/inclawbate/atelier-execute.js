@@ -79,7 +79,7 @@ async function updateOrderStatus(orderId, status) {
 }
 
 // Atelier only accepts image/video deliverables — text goes via messages
-const DELIVERABLE_IMAGE = 'https://inclawbate.app/inclawbate/assets/inclawbatebuild.png';
+const DELIVERABLE_IMAGE = 'https://inclawbate.app/inclawbate/assets/inclawbatordone.jpg';
 
 async function deliverOrder(orderId, content, url) {
   // The real text response is sent via sendMessage() — delivery is for the visual deliverable
