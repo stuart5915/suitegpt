@@ -261,7 +261,7 @@ async function handleStreamTweet(payload) {
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
-  // Skip if already processed in this session (MUST be first to prevent log spam)
+  // Skip if already processed or currently being processed
   if (processedMentionIds.has(tweet.id)) return;
   processedMentionIds.add(tweet.id);
 
