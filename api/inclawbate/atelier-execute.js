@@ -205,34 +205,66 @@ async function processInProgressOrder(order) {
 
   // Sort by timestamp (newest last)
   messages.sort((a, b) => new Date(a.created_at || a.timestamp || 0) - new Date(b.created_at || b.timestamp || 0));
+
+  // Safety: check if we already completed this order (sent a tool result)
+  // Look for our signature patterns in any message — if found, just try to deliver and stop
+  const allText = messages.map(m => m.content || m.message || m.text || '').join(' ');
+  const alreadyCompleted = /Token deployed|Staking pool deployed|Pool:|Health report|Airdrop instructions|inclawbate\.app\/schedule|Promo tier|Staking stats:|ecosystem.*CLAWS|incubation.*services/i.test(allText);
+
+  if (alreadyCompleted) {
+    // We already sent a real response — just try to deliver if not already delivered
+    try {
+      const lastAgentMsg = messages.filter(m => {
+        const text = m.content || m.message || m.text || '';
+        return /Token deployed|Staking pool deployed|inclawbate\.app/i.test(text);
+      }).pop();
+      const text = lastAgentMsg?.content || lastAgentMsg?.message || 'Service completed. Visit https://inclawbate.app for details.';
+      await deliverOrder(orderId, text);
+    } catch (_) {}
+    return { success: true, orderId, status: 'already_completed' };
+  }
+
+  // Find the newest message and check if it's from the buyer or us
+  // We identify our own messages by checking the agent_id field or sender patterns
   const lastMsg = messages[messages.length - 1];
+  const senderField = lastMsg.sender || lastMsg.sender_id || lastMsg.role || lastMsg.from || lastMsg.sender_type || '';
+  const senderStr = typeof senderField === 'string' ? senderField.toLowerCase() : '';
+  const isFromAgent = senderStr.includes('agent') || senderStr.includes('provider') || senderStr.includes(AGENT_ID);
 
-  // Figure out if last message is from the buyer or from us
-  // Atelier may use sender, role, from, or sender_type — check all
-  const senderField = lastMsg.sender || lastMsg.role || lastMsg.from || lastMsg.sender_type || '';
-  const isFromAgent = typeof senderField === 'string' &&
-    (senderField.toLowerCase().includes('agent') || senderField.toLowerCase().includes('provider'));
+  // Also check: if the message content matches the original brief, it's the buyer's order, not a reply
+  const lastMsgText = lastMsg.content || lastMsg.message || lastMsg.text || '';
+  const isSameAsBrief = brief && lastMsgText.trim() === brief.trim();
 
-  if (isFromAgent) {
-    // Last message is ours — still waiting for buyer
-    // If it's been >48 hours, deliver a fallback so the order doesn't hang forever
+  if (isFromAgent || isSameAsBrief) {
+    // Last message is ours or the original brief — still waiting for buyer
     const msgTime = new Date(lastMsg.created_at || lastMsg.timestamp || 0).getTime();
     const hoursAgo = (Date.now() - msgTime) / (1000 * 60 * 60);
     if (hoursAgo > 48) {
       const fallback = "It looks like I didn't hear back, so I'm closing this out. You can always come back or visit https://inclawbate.app to get started anytime!";
       await sendMessage(orderId, fallback);
-      await deliverOrder(orderId, fallback, 'https://inclawbate.app');
+      await deliverOrder(orderId, fallback);
       return { success: true, orderId, status: 'delivered_timeout' };
     }
     return { success: true, orderId, status: 'waiting_for_buyer' };
   }
 
+  // Count how many messages we've sent vs buyer. If we've sent 3+, stop — something is wrong
+  const agentMsgCount = messages.filter(m => {
+    const s = (m.sender || m.sender_id || m.role || m.from || '').toString().toLowerCase();
+    return s.includes('agent') || s.includes('provider') || s.includes(AGENT_ID);
+  }).length;
+  if (agentMsgCount >= 3) {
+    const fallback = "I've sent a few messages but it seems like we're going in circles. Visit https://inclawbate.app to get started directly, or reach out on Telegram: https://t.me/inclawbate";
+    await sendMessage(orderId, fallback);
+    await deliverOrder(orderId, fallback);
+    return { success: true, orderId, status: 'delivered_max_retries' };
+  }
+
   // Buyer replied — continue the conversation
-  const buyerReply = lastMsg.content || lastMsg.message || lastMsg.text || '';
+  const buyerReply = lastMsgText;
   const replyData = parseBrief(buyerReply);
   const briefData = parseBrief(brief);
 
-  // Rebuild context: service prompt + original brief + buyer's new reply
   let message = buildPrompt(serviceTitle, brief, replyData);
   message += '\n\nThe user just replied with: ' + buyerReply;
 
@@ -249,7 +281,6 @@ async function processInProgressOrder(order) {
     await deliverOrder(orderId, reply, url);
     return { success: true, orderId, status: 'delivered', function: functionCalled };
   } else {
-    // Still needs more info
     await sendMessage(orderId, reply);
     return { success: true, orderId, status: 'awaiting_reply' };
   }
