@@ -382,7 +382,7 @@ async function deployStakingAction(args) {
     });
     return JSON.stringify(result);
   } catch (err) {
-    return JSON.stringify({ error: err.message, hint: 'Staking pool deployment failed. Make sure the token address is a valid Base token.' });
+    return JSON.stringify({ error: err.message, hint: 'Staking pool deployment failed: ' + err.message });
   }
 }
 
