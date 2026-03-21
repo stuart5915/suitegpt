@@ -428,15 +428,15 @@ async function start() {
 
   server.listen(PORT, () => console.log(`Health check on :${PORT}`));
 
-  // Start stream for mentions
+  // Start stream for mentions + polling fallback
   if (X_BEARER_TOKEN) {
     await setupStreamRules();
     connectStream(); // runs forever with auto-reconnect
-  } else {
-    // Fallback: poll mentions every 15s if no bearer token
-    console.log('Polling mentions every 15s (no bearer token for stream)');
-    setInterval(pollMentionsFallback, 15_000);
   }
+  // Always poll mentions as fallback (handles stream downtime + reconnects)
+  console.log('Polling mentions every 15s (fallback for stream gaps)');
+  pollMentionsFallback(); // initial run
+  setInterval(pollMentionsFallback, 15_000);
 
   // Start DM polling
   console.log('Polling DMs every 60s');
