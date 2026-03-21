@@ -34,6 +34,8 @@ BOOK PROMO — Use book_promo when someone wants to promote their project throug
 
 AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
+BUILD AN APP — Use build_app when someone wants you to build them a website, landing page, app, dashboard, or any web UI. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. If they want updates to an existing app, include update: true and the same app_name.
+
 HIRE THE COUNCIL — Use hire_inclawbator when someone needs human help (design, dev, marketing, content, strategy). You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
 ECOSYSTEM INFO — Use get_ecosystem_info when someone asks what Inclawbate is, how it works, or about CLAWS.
@@ -192,6 +194,22 @@ const TOOLS = [
           budget_claws: { type: 'number', description: 'Optional budget in CLAWS (0 = let them quote)' }
         },
         required: ['task_description', 'contact']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'build_app',
+      description: 'Build and publish a web app, landing page, or site. Generated with AI and published live.',
+      parameters: {
+        type: 'object',
+        properties: {
+          app_name: { type: 'string', description: 'Short name for the app (used in URL)' },
+          description: { type: 'string', description: 'What the app should look like and do — be detailed' },
+          update: { type: 'boolean', description: 'True if updating an existing app' }
+        },
+        required: ['app_name', 'description']
       }
     }
   }
@@ -369,6 +387,120 @@ function disperseTokensAction(args) {
   });
 }
 
+// ── Build App ──
+const APP_GEN_PROMPT = `You are a web developer. Generate a COMPLETE, standalone HTML file based on the user's description.
+
+Rules:
+- Output ONLY the HTML code, nothing else — no markdown, no backticks, no explanation
+- Must start with <!DOCTYPE html>
+- All CSS must be embedded in <style> tags
+- All JS must be embedded in <script> tags
+- Use modern, clean design with dark theme (background: #0a0a0f, text: white, accent: #6366f1)
+- Mobile responsive
+- Use Google Fonts (Nunito or Inter) via CDN link
+- Make it look professional and polished
+- No external JS libraries unless absolutely necessary (use CDN if needed)
+- Include proper meta tags and title`;
+
+async function buildAppAction(args) {
+  if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: 'What should we call this app? I need a short name for the URL.' });
+  if (!args.description || args.description.length < 10) return JSON.stringify({ needs_info: true, missing: ['description'], message: 'Tell me more about what you want built — what should it look like? What should it do?' });
+
+  const slug = args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  if (!slug) return JSON.stringify({ error: 'Invalid app name — use letters and numbers.' });
+
+  try {
+    // Generate HTML using Groq Llama 70B (free)
+    const genMessages = [
+      { role: 'system', content: APP_GEN_PROMPT },
+      { role: 'user', content: `Build this: ${args.description}\n\nApp name: ${args.app_name}` }
+    ];
+
+    let html = null;
+
+    // Try Groq first
+    for (const key of GROQ_KEYS) {
+      try {
+        const r = await fetch(GROQ_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: genMessages, max_tokens: 8000 })
+        });
+        const d = await r.json();
+        if (d.choices?.[0]?.message?.content) { html = d.choices[0].message.content; break; }
+      } catch (e) { continue; }
+    }
+
+    // Fallback: Cerebras
+    if (!html && CEREBRAS_KEY) {
+      try {
+        const r = await fetch(CEREBRAS_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CEREBRAS_KEY },
+          body: JSON.stringify({ model: 'llama-3.3-70b', messages: genMessages, max_tokens: 8000 })
+        });
+        const d = await r.json();
+        if (d.choices?.[0]?.message?.content) html = d.choices[0].message.content;
+      } catch (e) { /* fallback failed */ }
+    }
+
+    if (!html) return JSON.stringify({ error: 'Could not generate the app right now. Try again in a moment.' });
+
+    // Clean up — remove markdown code fences if present
+    html = html.replace(/^```html?\s*/i, '').replace(/\s*```$/i, '').trim();
+    if (!html.includes('<!DOCTYPE') && !html.includes('<!doctype')) {
+      html = '<!DOCTYPE html>\n' + html;
+    }
+
+    // Publish via publish-site API
+    const publishRes = await fetch('https://www.inclawbate.app/api/publish-site', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: args.app_name,
+        slug,
+        code: html,
+        email: 'inclawbator@inclawbate.app',
+        description: args.description.slice(0, 200),
+        source: 'inclawbator-chat',
+        category: 'other',
+        is_listed: true,
+        update: !!args.update
+      })
+    });
+    const publishData = await publishRes.json();
+
+    if (publishData.error) {
+      // If slug taken and not updating, try with a suffix
+      if (publishData.error.includes('already taken') && !args.update) {
+        const newSlug = slug + '-' + Date.now().toString(36).slice(-4);
+        const retryRes = await fetch('https://www.inclawbate.app/api/publish-site', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: args.app_name,
+            slug: newSlug,
+            code: html,
+            email: 'inclawbator@inclawbate.app',
+            description: args.description.slice(0, 200),
+            source: 'inclawbator-chat',
+            category: 'other',
+            is_listed: true
+          })
+        });
+        const retryData = await retryRes.json();
+        if (retryData.error) return JSON.stringify({ error: retryData.error });
+        return JSON.stringify({ success: true, url: retryData.url, slug: newSlug, app_name: args.app_name });
+      }
+      return JSON.stringify({ error: publishData.error });
+    }
+
+    return JSON.stringify({ success: true, url: publishData.url, slug, app_name: args.app_name, updated: !!args.update });
+  } catch (err) {
+    return JSON.stringify({ error: err.message });
+  }
+}
+
 async function deployStakingAction(args) {
   const missing = [];
   if (!isValidAddr(args.token_address)) missing.push('token contract address');
@@ -530,6 +662,7 @@ async function executeTool(name, args) {
     case 'deploy_staking': return await deployStakingAction(args);
     case 'health_check': return await healthCheck(args);
     case 'hire_inclawbator': return await hireInclawbatorInfo(args);
+    case 'build_app': return await buildAppAction(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
@@ -650,6 +783,11 @@ function generateDirectReply(tool, resultJson, args) {
         }
         return d.message || d.error || 'Request submitted!';
 
+      case 'build_app':
+        if (d.error) return "App build failed: " + d.error;
+        if (d.needs_info) return d.message;
+        return (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\nWant me to make any changes? Just describe what you'd like updated.";
+
       case 'health_check':
         // Let LLM interpret health checks — they need nuanced advice
         return null;
@@ -697,8 +835,10 @@ function matchIntent(msg) {
     return { tool: 'get_staking_stats', reply: "I can check staking stats! What's the token you want stats for? (Or share your wallet to see your position.)" };
   if (/market.*agent|promo|advertis/i.test(m))
     return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to https://inclawbate.app/schedule — name it, pick a vibe, connect X, and you're live." };
+  if (/(build|make|create|generate)\s*(me\s*)?(a\s*)?(web\s*)?(?:site|app|page|landing|dashboard|ui)/i.test(m) || /build\s*(?:an?\s*)?app/i.test(m))
+    return { tool: 'build_app', reply: "I can build you a web app and publish it live! I need:\n\n1. **App name** (short name for the URL)\n2. **Description** (what it should look like and do)\n\nWhat do you want me to build?" };
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
-    return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n\nWhat would you like to do?" };
+    return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n\nWhat would you like to do?" };
   return null;
 }
 
