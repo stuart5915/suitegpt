@@ -791,6 +791,9 @@ export default async function handler(req, res) {
                     else await sendMsg(chatId, '❌ Failed: ' + (await r.text()).slice(0, 200));
                 } catch (e) { await sendMsg(chatId, '❌ ' + esc(e.message)); }
             }
+        } else if (cmd === 'chatinfo') {
+            const threadId = message.message_thread_id || 'none';
+            await sendMsg(chatId, '🆔 Chat ID: <code>' + chatId + '</code>\nThread ID: <code>' + threadId + '</code>');
         } else if (cmd === 'myid') {
             await sendMsg(chatId, '🆔 Your chat ID: <code>' + chatId + '</code>');
         } else if (cmd === 'help') {
