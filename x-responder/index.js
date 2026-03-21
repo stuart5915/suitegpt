@@ -451,30 +451,11 @@ async function start() {
   pollMentionsFallback(); // initial run
   setInterval(pollMentionsFallback, 15_000);
 
-  // Seed DM state — fetch current DMs and mark them all as processed
-  // so we only respond to DMs that arrive AFTER startup
-  try {
-    const userId = await resolveOwnUserId();
-    if (userId) {
-      const url = 'https://api.twitter.com/2/dm_events';
-      const params = { max_results: '20', 'dm_event.fields': 'created_at,dm_conversation_id,sender_id,text', event_types: 'MessageCreate' };
-      const fullUrl = url + '?' + new URLSearchParams(params).toString();
-      const resp = await fetch(fullUrl, { headers: { 'Authorization': oauthHeader('GET', url, params) } });
-      if (resp.ok) {
-        const dmData = await resp.json();
-        const events = dmData.data || [];
-        events.forEach(e => processedDmIds.add(e.id));
-        if (events[0]?.id) await saveLastEventId(events[0].id);
-        console.log(`Seeded ${events.length} existing DMs as processed`);
-      }
-    }
-  } catch (e) {
-    console.error('DM seed error:', e.message);
-  }
-
-  // Start DM polling
-  console.log('Polling DMs every 60s');
-  setInterval(pollDMs, DM_POLL_INTERVAL);
+  // DM polling disabled for now — enable once mention system is stable
+  // To re-enable: uncomment the lines below
+  // console.log('Polling DMs every 60s');
+  // setInterval(pollDMs, DM_POLL_INTERVAL);
+  console.log('DM polling disabled');
 }
 
 // Fallback mention polling (if stream unavailable)
