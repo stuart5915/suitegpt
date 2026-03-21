@@ -80,8 +80,9 @@ function getOperatorWallet() {
 // ══════════════════════════════════════
 // LAUNCH TOKEN via Clanker V4
 // ══════════════════════════════════════
-export async function launchToken({ name, symbol, description, image_url, website_url, x_handle, telegram_url }) {
+export async function launchToken({ name, symbol, creator_wallet, description, image_url, website_url, x_handle, telegram_url }) {
   if (!name || !symbol) throw new Error('Token name and symbol are required');
+  if (!creator_wallet) throw new Error('Creator wallet address is required');
 
   const wallet = getOperatorWallet();
   const iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
@@ -102,13 +103,13 @@ export async function launchToken({ name, symbol, description, image_url, websit
   const coder = ethers.AbiCoder.defaultAbiCoder();
   const sniperMevData = coder.encode(['uint256', 'uint256', 'uint256'], [666777, 41673, 15]);
 
-  // Reward recipients: 80% creator (treasury), 20% platform
-  const rewardRecipients = [INCLAWBATE_TREASURY];
-  const rewardBps = [10000];
+  // Reward recipients: 80% to creator, 20% to Inclawbate treasury
+  const rewardRecipients = [creator_wallet, INCLAWBATE_TREASURY];
+  const rewardBps = [8000, 2000];
 
   const deploymentConfig = {
     tokenConfig: {
-      tokenAdmin: INCLAWBATE_TREASURY,
+      tokenAdmin: creator_wallet,
       name,
       symbol: symbol.toUpperCase(),
       salt,
@@ -185,7 +186,7 @@ export async function launchToken({ name, symbol, description, image_url, websit
           token_symbol: symbol.toUpperCase(),
           token_address: tokenAddress,
           deploy_tx_hash: receipt.hash,
-          creator_wallet: INCLAWBATE_TREASURY,
+          creator_wallet: creator_wallet,
           description: description || '',
           website_url: website_url || '',
           x_handle: x_handle || '',

@@ -16,7 +16,7 @@ Inclawbate is a self-sustaining engine that generates, manages, and distributes 
 
 You have 11 tools. Match the user's intent to the right one:
 
-LAUNCH A TOKEN — Use deploy_token when you have at least name and symbol. Gather details conversationally (name, symbol required; description, image, website, X handle, telegram optional). Once you have name + symbol, deploy immediately — the token launches on Base via Clanker automatically. No wallet connection needed from the user.
+LAUNCH A TOKEN — Use deploy_token when you have name, symbol, AND the user's wallet address. Gather details conversationally (name, symbol, wallet required; description, image, website, X handle, telegram optional). The user's wallet receives 80% of LP fee rewards, Inclawbate receives 20%. If the user hasn't provided their wallet address, ASK for it before deploying — they need it to receive their fee rewards. The token launches on Base via Clanker automatically.
 
 DEPLOY STAKING — Use deploy_staking when someone wants a staking pool for their token. Deployed via the Staking Factory on Base.
 
@@ -66,19 +66,20 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'deploy_token',
-      description: 'Deploy a token on Base via Clanker. Requires name and symbol. Call this once you have at least those two fields.',
+      description: 'Deploy a token on Base via Clanker. Requires name, symbol, and creator wallet address. The creator wallet receives 80% of LP fee rewards.',
       parameters: {
         type: 'object',
         properties: {
           token_name: { type: 'string', description: 'Token name (e.g. MoonCat)' },
           token_symbol: { type: 'string', description: 'Token symbol, max 10 chars (e.g. MCAT)' },
+          creator_wallet: { type: 'string', description: 'Creator wallet address (receives 80% LP fee rewards)' },
           description: { type: 'string', description: 'Token description, max 280 chars' },
           image_url: { type: 'string', description: 'Token logo image URL' },
           website_url: { type: 'string', description: 'Project website URL' },
           x_handle: { type: 'string', description: 'X/Twitter handle' },
           telegram_url: { type: 'string', description: 'Telegram group URL' }
         },
-        required: ['token_name', 'token_symbol']
+        required: ['token_name', 'token_symbol', 'creator_wallet']
       }
     }
   },
@@ -229,6 +230,7 @@ async function deployTokenAction(args) {
     const result = await launchToken({
       name: args.token_name,
       symbol: args.token_symbol,
+      creator_wallet: args.creator_wallet,
       description: args.description,
       image_url: args.image_url,
       website_url: args.website_url,
