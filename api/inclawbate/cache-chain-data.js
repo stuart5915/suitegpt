@@ -100,11 +100,27 @@ export default async function handler(req, res) {
         await delay(500);
         const arRemaining = await ethCall(ANGEL_REWARDS_CONTRACT, '0x7a5c08ae') / 1e18;
 
+        // If holders RPC failed (returned 0), keep previous cached value
+        let finalHolders = arHolders;
+        if (finalHolders === 0) {
+            try {
+                const { data: prev } = await supabase
+                    .from('platform_settings')
+                    .select('value')
+                    .eq('key', 'chain_data_cache')
+                    .single();
+                if (prev) {
+                    const prevCache = JSON.parse(prev.value);
+                    if (prevCache?.angel?.holders > 0) finalHolders = prevCache.angel.holders;
+                }
+            } catch (e) { /* use 0 */ }
+        }
+
         const angel = {
             dailyRewards: arRate * 86400,
             totalDeposited: arDeposited,
             totalClaimed: arClaimed,
-            holders: arHolders,
+            holders: finalHolders,
             rewardsRemaining: arRemaining
         };
 
