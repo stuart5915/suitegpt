@@ -244,8 +244,6 @@ const STAKING_POOL_ABI = [
   'function transferAdmin(address newAdmin)'
 ];
 
-const POOL_DEPLOYED_TOPIC = ethers.id('PoolDeployed(address,address,address,uint256)');
-
 export async function deployStakingPool({ token_address, creator_wallet }) {
   if (!token_address) throw new Error('token_address is required');
   if (!creator_wallet) throw new Error('creator_wallet is required');
@@ -257,16 +255,41 @@ export async function deployStakingPool({ token_address, creator_wallet }) {
   const tx = await factory.deployPaid(token_address, CLAWS_TOKEN, { value: 0, gasLimit: 1000000 });
   const receipt = await tx.wait();
 
-  // Parse pool address from PoolDeployed event
+  // Parse pool address from PoolDeployed event using ethers interface
   let poolAddress = null;
+  const factoryIface = new ethers.Interface(STAKING_FACTORY_ABI);
   for (const log of receipt.logs) {
-    if (log.topics && log.topics[0] === POOL_DEPLOYED_TOPIC && log.topics.length >= 2) {
-      poolAddress = '0x' + log.topics[1].slice(26);
-      break;
+    try {
+      const parsed = factoryIface.parseLog({ topics: log.topics, data: log.data });
+      if (parsed && parsed.name === 'PoolDeployed') {
+        poolAddress = parsed.args[0]; // first indexed arg = pool address
+        break;
+      }
+    } catch (e) { /* not our event */ }
+  }
+
+  // Fallback: look for any contract creation in the tx
+  if (!poolAddress) {
+    for (const log of receipt.logs) {
+      if (log.topics && log.topics.length >= 2 && log.address && log.address.toLowerCase() === STAKING_FACTORY.toLowerCase()) {
+        poolAddress = '0x' + log.topics[1].slice(26);
+        break;
+      }
     }
   }
 
-  if (!poolAddress) throw new Error('Failed to parse pool address from deploy tx');
+  if (!poolAddress) {
+    // Last resort: check all log addresses for a new contract
+    const knownAddresses = new Set([STAKING_FACTORY.toLowerCase(), token_address.toLowerCase(), CLAWS_TOKEN.toLowerCase()]);
+    for (const log of receipt.logs) {
+      if (log.address && !knownAddresses.has(log.address.toLowerCase())) {
+        poolAddress = log.address;
+        break;
+      }
+    }
+  }
+
+  if (!poolAddress) throw new Error('Failed to parse pool address from deploy tx. Tx: ' + receipt.hash);
 
   // Transfer admin to creator so they can deposit rewards
   const pool = new ethers.Contract(poolAddress, STAKING_POOL_ABI, wallet);
