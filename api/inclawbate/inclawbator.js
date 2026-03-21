@@ -290,7 +290,7 @@ export default async function handler(req, res) {
 
             // Agent config
             const wantsAgent = agent_enabled === true;
-            const postsPerDay = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
+            const postsPerDay = Math.min(3, Math.max(1, parseInt(agent_posts_per_day) || 2));
 
             const { data, error } = await supabase
                 .from('inclawbator_projects')
@@ -314,7 +314,7 @@ export default async function handler(req, res) {
                     glow: glow || undefined,
                     agent_enabled: wantsAgent,
                     agent_persona: wantsAgent ? (agent_persona || null) : null,
-                    agent_posts_per_day: wantsAgent ? postsPerDay : 4,
+                    agent_posts_per_day: wantsAgent ? postsPerDay : 2,
                     agent_status: wantsAgent ? 'active' : 'dormant',
                     burn_tx_hash: burn_tx_hash || null,
                     allocation_pct: allocPct,
@@ -787,7 +787,7 @@ export default async function handler(req, res) {
 
             if (appErr || !app) return res.status(404).json({ error: 'App not found' });
 
-            const postsPerDay = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
+            const postsPerDay = Math.min(3, Math.max(1, parseInt(agent_posts_per_day) || 2));
 
             const { data, error } = await supabase
                 .from('inclawbator_projects')
