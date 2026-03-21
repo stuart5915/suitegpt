@@ -237,6 +237,8 @@ const ERC20_ABI = [
 // ══════════════════════════════════════
 const STAKING_FACTORY_ABI = [
   'function deployPaid(address stakingToken, address rewardToken) payable returns (address pool)',
+  'function poolCount() view returns (uint256)',
+  'function allPools(uint256 index) view returns (address)',
   'event PoolDeployed(address indexed pool, address indexed stakingToken, address indexed admin, uint256 paid)'
 ];
 
@@ -251,45 +253,17 @@ export async function deployStakingPool({ token_address, creator_wallet }) {
   const wallet = getOperatorWallet();
   const factory = new ethers.Contract(STAKING_FACTORY, STAKING_FACTORY_ABI, wallet);
 
+  // Get pool count before deploy so we can find the new pool after
+  const countBefore = await factory.poolCount();
+
   // Deploy: stake token_address, earn CLAWS
   const tx = await factory.deployPaid(token_address, CLAWS_TOKEN, { value: 0, gasLimit: 1000000 });
   const receipt = await tx.wait();
 
-  // Parse pool address from PoolDeployed event using ethers interface
-  let poolAddress = null;
-  const factoryIface = new ethers.Interface(STAKING_FACTORY_ABI);
-  for (const log of receipt.logs) {
-    try {
-      const parsed = factoryIface.parseLog({ topics: log.topics, data: log.data });
-      if (parsed && parsed.name === 'PoolDeployed') {
-        poolAddress = parsed.args[0]; // first indexed arg = pool address
-        break;
-      }
-    } catch (e) { /* not our event */ }
-  }
-
-  // Fallback: look for any contract creation in the tx
-  if (!poolAddress) {
-    for (const log of receipt.logs) {
-      if (log.topics && log.topics.length >= 2 && log.address && log.address.toLowerCase() === STAKING_FACTORY.toLowerCase()) {
-        poolAddress = '0x' + log.topics[1].slice(26);
-        break;
-      }
-    }
-  }
-
-  if (!poolAddress) {
-    // Last resort: check all log addresses for a new contract
-    const knownAddresses = new Set([STAKING_FACTORY.toLowerCase(), token_address.toLowerCase(), CLAWS_TOKEN.toLowerCase()]);
-    for (const log of receipt.logs) {
-      if (log.address && !knownAddresses.has(log.address.toLowerCase())) {
-        poolAddress = log.address;
-        break;
-      }
-    }
-  }
-
-  if (!poolAddress) throw new Error('Failed to parse pool address from deploy tx. Tx: ' + receipt.hash);
+  // Get the new pool address: it's the last pool in the factory
+  const countAfter = await factory.poolCount();
+  if (countAfter <= countBefore) throw new Error('Factory pool count did not increase. Tx: ' + receipt.hash);
+  const poolAddress = await factory.allPools(countAfter - 1n);
 
   // Transfer admin to creator so they can deposit rewards
   const pool = new ethers.Contract(poolAddress, STAKING_POOL_ABI, wallet);
