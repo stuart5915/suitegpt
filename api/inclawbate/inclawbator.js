@@ -255,7 +255,7 @@ export default async function handler(req, res) {
         // ── Register new project ──
         if (action === 'register') {
             const reqWallet = (req.headers['x-wallet'] || '').toLowerCase();
-            const user = authenticateRequest(req) || (reqWallet === SUPER_ADMIN ? { sub: SUPER_ADMIN } : null);
+            const user = authenticateRequest(req) || (reqWallet === SUPER_ADMIN ? { sub: null } : null);
             if (!user) return res.status(401).json({ error: 'Authentication required' });
 
             const {
