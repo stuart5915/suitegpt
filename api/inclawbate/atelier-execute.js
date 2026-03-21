@@ -8,21 +8,23 @@ const AGENT_CHAT_URL = 'https://inclawbate.app/api/inclawbate/agent-chat';
 const AGENT_ID = 'ext_1774038874649_trg5h8e9i';
 
 // ── Service prompt mapping (covers all 11 Atelier services) ──
+// IMPORTANT: These prompts tell the LLM exactly which tool to use.
+// Without explicit tool instructions, the LLM may misroute (e.g. build an app instead of hiring the council).
 const SERVICE_PROMPTS = {
-  'token launch':     'I want to launch a token on Base via Clanker.',
-  'full incubation':  'I want full incubation — token launch, staking pool, marketing agent, promo, analytics, and Council support.',
-  'incubation':       'I want full incubation — token launch, staking pool, marketing agent, promo, analytics, and Council support.',
-  'staking pool':     'I want to deploy a staking pool for my token.',
-  'hire':             'I want to hire the Inclawbate Council for help with a project.',
-  'council':          'I want to hire the Inclawbate Council for help with a project.',
-  'health check':     'Run a health check on my project.',
-  'marketing agent':  'I want to create an AI marketing agent that auto-posts to X.',
-  'airdrop':          'I want to airdrop/distribute tokens to multiple wallets.',
-  'analytics':        'Show me token analytics (price, volume, liquidity).',
-  'ecosystem':        'Tell me about the Inclawbate ecosystem — what is CLAWS, how does staking work, what can I do here.',
-  'book promo':       'I want to book a promo on the @inclawbate X account.',
-  'promo':            'I want to book a promo on the @inclawbate X account.',
-  'staking stats':    'Show me staking stats — APY, TVL, total stakers.',
+  'token launch':     'Use the deploy_token tool. I want to launch a token on Base via Clanker. Here is my brief: ',
+  'full incubation':  'Use the get_incubation_info tool. I want full incubation — token launch, staking pool, marketing agent, promo, analytics, and Council support. Here is my brief: ',
+  'incubation':       'Use the get_incubation_info tool. I want full incubation. Here is my brief: ',
+  'staking pool':     'Use the deploy_staking tool. I want to deploy a staking pool for my token. Here is my brief: ',
+  'hire':             'Use the hire_inclawbator tool. I want to HIRE THE COUNCIL for human help. Do NOT build an app. Do NOT use any other tool. Post this as a hire request. Here is my brief: ',
+  'council':          'Use the hire_inclawbator tool. I want to HIRE THE COUNCIL for human help. Do NOT build an app. Do NOT use any other tool. Post this as a hire request. Here is my brief: ',
+  'health check':     'Use the health_check tool. Run a health check on my project. Here is my brief: ',
+  'marketing agent':  'Use the create_agent_info tool. I want to create an AI marketing agent that auto-posts to X. Here is my brief: ',
+  'airdrop':          'Use the disperse_tokens tool. I want to airdrop/distribute tokens to multiple wallets. Here is my brief: ',
+  'analytics':        'Use the get_token_analytics tool. Show me token analytics (price, volume, liquidity). Here is my brief: ',
+  'ecosystem':        'Use the get_ecosystem_info tool. Tell me about the Inclawbate ecosystem. Here is my brief: ',
+  'book promo':       'Use the book_promo tool. I want to book a promo on the @inclawbate X account. Here is my brief: ',
+  'promo':            'Use the book_promo tool. I want to book a promo. Here is my brief: ',
+  'staking stats':    'Use the get_staking_stats tool. Show me staking stats — APY, TVL, total stakers. Here is my brief: ',
 };
 
 // ── Extract structured data from brief text ──
