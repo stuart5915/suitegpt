@@ -173,13 +173,42 @@ export async function launchToken({ name, symbol, description, image_url, websit
     }
   }
 
+  // Auto-register on inclawbate.app tokens page
+  if (tokenAddress) {
+    try {
+      await fetch('https://inclawbate.app/api/inclawbate/inclawbator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          token_name: name,
+          token_symbol: symbol.toUpperCase(),
+          token_address: tokenAddress,
+          deploy_tx_hash: receipt.hash,
+          creator_wallet: INCLAWBATE_TREASURY,
+          description: description || '',
+          website_url: website_url || '',
+          x_handle: x_handle || '',
+          telegram_url: telegram_url || '',
+          logo_url: image_url || '',
+          chain: 'base',
+          tier: 'permissionless',
+          fee_split_bps: 10000
+        })
+      });
+    } catch (regErr) {
+      console.error('Token registration failed (non-fatal):', regErr.message);
+    }
+  }
+
   return {
     success: true,
     token_address: tokenAddress,
     tx_hash: receipt.hash,
     chain: 'base',
     dex_url: tokenAddress ? `https://dexscreener.com/base/${tokenAddress}` : null,
-    basescan_url: `https://basescan.org/tx/${receipt.hash}`
+    basescan_url: `https://basescan.org/tx/${receipt.hash}`,
+    registered: true
   };
 }
 
