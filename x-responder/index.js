@@ -34,6 +34,7 @@ let streamConnected = false;
 let lastError = null;
 const processedDmIds = new Set(); // prevent double-replies within session
 const processedMentionIds = new Set(); // prevent double-replies from stream + polling overlap
+const activeConversationUsers = new Set(); // users who directly mentioned @inclawbator
 
 // ── OAuth 1.0a ──
 
@@ -260,17 +261,18 @@ async function handleStreamTweet(payload) {
   // Skip self-mentions
   if (authorUsername?.toLowerCase() === 'inclawbator') return;
 
-  // Skip replies to @inclawbator's own tweets from users who didn't start the conversation
-  // (prevents replying to random commenters on our posts)
-  const tweetText = tweet.text || '';
-  const cleanedText = tweetText.replace(/@\w+/g, '').trim();
+  // Only reply to people who started a conversation with @inclawbator.
+  // If someone is replying to @inclawbator's own tweet, only respond if
+  // they previously mentioned @inclawbator directly (active conversation).
+  // This prevents replying to random commenters on @inclawbator's posts.
   if (tweet.in_reply_to_user_id && tweet.in_reply_to_user_id === ownUserId) {
-    // This is a reply to @inclawbator's tweet — only respond if it looks like
-    // an actual request (has substance), not just a casual comment
-    if (cleanedText.length < 15 && !/\?|launch|build|deploy|stake|token|help|hire|price|analytic/i.test(cleanedText)) {
-      console.log(`Skipping casual comment from @${authorUsername}: ${cleanedText.slice(0, 50)}`);
+    if (!activeConversationUsers.has(authorUsername?.toLowerCase())) {
+      console.log(`Skipping comment from @${authorUsername} — not in active conversation`);
       return;
     }
+  } else {
+    // Direct mention (not a reply to our tweet) — mark user as having an active conversation
+    if (authorUsername) activeConversationUsers.add(authorUsername.toLowerCase());
   }
 
   // Skip if already processed in this session (prevents stream + polling double-reply)
