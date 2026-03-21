@@ -835,7 +835,7 @@ function matchIntent(msg) {
     return { tool: 'get_staking_stats', reply: "I can check staking stats! What's the token you want stats for? (Or share your wallet to see your position.)" };
   if (/market.*agent|promo|advertis/i.test(m))
     return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to https://inclawbate.app/schedule — name it, pick a vibe, connect X, and you're live." };
-  if (/(build|make|create|generate)\s*(me\s*)?(a\s*)?(web\s*)?(?:site|website|app|page|landing|dashboard|ui)/i.test(m) || /build\s*(?:an?\s*)?app/i.test(m))
+  if (/(build|make|create|generate)\s+\w*\s*(a\s+)?(web\s*)?(?:site|website|app|page|landing|dashboard|ui|game)/i.test(m) || /(build|make|create)\s+(?:an?\s+)?(?:app|site|website|page|game)/i.test(m) || /(?:want|need)\s+(?:a\s+)?(?:website|app|site|page|landing)/i.test(m))
     return { tool: 'build_app', reply: "I can build you a web app and publish it live! I need:\n\n1. **App name** (short name for the URL)\n2. **Description** (what it should look like and do)\n\nWhat do you want me to build?" };
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
     return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n\nWhat would you like to do?" };
