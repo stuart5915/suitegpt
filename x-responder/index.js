@@ -303,31 +303,41 @@ async function handleStreamTweet(payload) {
 
     // Strip crypto addresses and blockchain URLs (X blocks them for 7 days after token regen)
     const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText) || /(?:basescan|clanker|etherscan)/i.test(replyText);
+    // 1. Strip all 0x addresses and blockchain explorer/clanker URLs
     replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '');
     replyText = replyText.replace(/(?:https?:\/\/)?(?:basescan\.org|clanker\.world|etherscan\.io)[^\s)"\n]*/g, '');
-    // Clean up leftover artifacts
-    replyText = replyText.replace(/•\s*\*?\*?(?:Contract|Pool|Admin|Tx|Stake|Token|Clanker|Basescan)\*?\*?:?\s*\n?/gi, '');
-    replyText = replyText.replace(/(?:Contract|Pool|Admin|Tx|Stake|Token|Clanker):\s*\n/gi, '');
-    replyText = replyText.replace(/• •/g, '•');
-    replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').replace(/\n\s*\n\s*\n/g, '\n\n').trim();
-    // Add contextual link at the end if we stripped addresses
+    // 2. Remove any bullet/list line whose value is now empty after stripping
+    //    Matches lines like "• Contract: " or "- Token Address:" or "• Stake at:  " etc.
+    replyText = replyText.replace(/^[•\-\*]\s+[^:\n]*:\s*$/gm, '');
+    // 3. Remove any standalone label line with no value (e.g. "Contract:\n")
+    replyText = replyText.replace(/^[A-Za-z ]+:\s*$/gm, '');
+    // 4. Collapse extra blank lines and trim
+    replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').trim();
+    // 5. Add ONE contextual link if we stripped addresses
     if (hasAddresses) {
       const isStaking = /stak/i.test(replyText);
-      const isDashboard = /dashboard|admin|reward|deposit/i.test(replyText);
-      const isToken = /token|deploy|launch/i.test(replyText);
+      const isToken = /token|deploy|launch|clanker/i.test(replyText);
       const contextUrl = isStaking ? 'https://inclawbate.app/stake'
-        : isDashboard ? 'https://inclawbate.app/dashboard'
         : isToken ? 'https://inclawbate.app/tokens'
         : 'https://inclawbate.app';
-      replyText += `\n\nView details: ${contextUrl}`;
+      replyText += `\n\nDetails: ${contextUrl}`;
     }
 
     if (replyText.length > maxLen) {
-      const truncated = replyText.slice(0, maxLen - 3);
+      const truncated = replyText.slice(0, maxLen);
+      // Try to cut at a paragraph break first, then sentence, then word
+      const lastPara = truncated.lastIndexOf('\n\n');
       const lastSentence = truncated.lastIndexOf('. ');
-      replyText = lastSentence > maxLen * 0.4
-        ? truncated.slice(0, lastSentence + 1)
-        : truncated + '...';
+      const lastSpace = truncated.lastIndexOf(' ');
+      if (lastPara > maxLen * 0.4) {
+        replyText = truncated.slice(0, lastPara);
+      } else if (lastSentence > maxLen * 0.4) {
+        replyText = truncated.slice(0, lastSentence + 1);
+      } else if (lastSpace > maxLen * 0.4) {
+        replyText = truncated.slice(0, lastSpace) + '...';
+      } else {
+        replyText = truncated.slice(0, maxLen - 3) + '...';
+      }
     }
     replyText = prefix + replyText;
 
