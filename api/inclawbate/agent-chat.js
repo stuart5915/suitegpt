@@ -227,6 +227,12 @@ function getIncubationInfo() {
 }
 
 async function deployTokenAction(args) {
+  const missing = [];
+  if (!args.token_name) missing.push('token name');
+  if (!args.token_symbol) missing.push('ticker/symbol');
+  if (!args.creator_wallet || !args.creator_wallet.startsWith('0x')) missing.push('your wallet address (receives 80% of LP fee rewards)');
+  if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need a few more details to launch your token: ' + missing.join(', ') + '.' });
+
   try {
     const result = await launchToken({
       name: args.token_name,
@@ -248,15 +254,13 @@ function createAgentInfo() {
   return JSON.stringify({
     how: 'Create an AI marketing agent that auto-posts to X/Twitter about your project.',
     steps: [
-      'Go to inclawbate.app/dashboard → "My Agents" tab',
-      'Click "Create New Agent"',
-      'Choose a vibe (degen, builder, scholar, academic, or custom)',
-      'Set name, posts per day (1-8), optional profile pic',
-      'Connect an X/Twitter account to the agent',
-      'Agent starts auto-posting based on its persona and schedule'
+      'Go to https://inclawbate.app/schedule',
+      'Name your agent and pick a vibe (degen, builder, scholar, or custom)',
+      'Connect your X/Twitter account',
+      'Set your posting schedule — and you\'re live!'
     ],
-    url: 'https://inclawbate.app/dashboard',
-    note: 'Agents are free to create. They need credits to run — buy from dashboard.'
+    url: 'https://inclawbate.app/schedule',
+    note: 'Agents are free to create. Head to the link above to get started in under 2 minutes.'
   });
 }
 
@@ -347,6 +351,11 @@ async function disperseTokensAction(args) {
 }
 
 async function deployStakingAction(args) {
+  const missing = [];
+  if (!args.token_address || !args.token_address.startsWith('0x')) missing.push('token contract address');
+  if (!args.creator_wallet || !args.creator_wallet.startsWith('0x')) missing.push('your wallet address (will become the pool admin)');
+  if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need a few more details to deploy the staking pool: ' + missing.join(' and ') + '.' });
+
   try {
     const result = await deployStakingPool({
       token_address: args.token_address,
@@ -570,6 +579,7 @@ async function callLLM(messages) {
 function generateDirectReply(tool, resultJson, args) {
   try {
     const d = JSON.parse(resultJson || '{}');
+    if (d.needs_info) return d.message;
     if (d.error) return d.hint || d.error;
 
     switch (tool) {
