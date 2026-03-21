@@ -355,12 +355,13 @@ export default async function handler(req, res) {
             if (!isAdminStaking) {
                 const { data: project } = await supabase
                     .from('inclawbator_projects')
-                    .select('creator_profile_id')
+                    .select('creator_profile_id, creator_wallet')
                     .eq('id', project_id)
                     .single();
 
                 if (!project) return res.status(404).json({ error: 'Project not found' });
-                if (project.creator_profile_id !== user.sub) {
+                const userWallet = (user.wallet_address || '').toLowerCase();
+                if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                     return res.status(403).json({ error: 'Not the project owner' });
                 }
             }
@@ -493,12 +494,13 @@ export default async function handler(req, res) {
             // Verify ownership
             const { data: project } = await supabase
                 .from('inclawbator_projects')
-                .select('creator_profile_id')
+                .select('creator_profile_id, creator_wallet')
                 .eq('id', project_id)
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
 
@@ -655,12 +657,13 @@ export default async function handler(req, res) {
 
             const { data: project } = await supabase
                 .from('inclawbator_projects')
-                .select('creator_profile_id')
+                .select('creator_profile_id, creator_wallet')
                 .eq('id', project_id)
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
 
@@ -701,12 +704,13 @@ export default async function handler(req, res) {
 
             const { data: project } = await supabase
                 .from('inclawbator_projects')
-                .select('creator_profile_id')
+                .select('creator_profile_id, creator_wallet')
                 .eq('id', project_id)
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
 
@@ -746,12 +750,13 @@ export default async function handler(req, res) {
 
             const { data: project } = await supabase
                 .from('inclawbator_projects')
-                .select('creator_profile_id')
+                .select('creator_profile_id, creator_wallet')
                 .eq('id', project_id)
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
 
@@ -828,7 +833,8 @@ export default async function handler(req, res) {
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
             if (!['pending', 'rejected'].includes(project.status)) {
@@ -859,7 +865,8 @@ export default async function handler(req, res) {
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
             if (project.token_address) {
@@ -900,7 +907,8 @@ export default async function handler(req, res) {
                 .single();
 
             if (!project) return res.status(404).json({ error: 'Project not found' });
-            if (project.creator_profile_id !== user.sub) {
+            const userWallet = (user.wallet_address || '').toLowerCase();
+            if (project.creator_profile_id !== user.sub && (!userWallet || project.creator_wallet !== userWallet)) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
             if (project.allocation_claimed_at) {
