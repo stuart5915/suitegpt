@@ -786,7 +786,7 @@ function generateDirectReply(tool, resultJson, args) {
       case 'build_app':
         if (d.error) return "App build failed: " + d.error;
         if (d.needs_info) return d.message;
-        return (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\n(May take a moment to appear — hard refresh if needed.)\n\nWant me to make any changes? Just describe what you'd like updated.";
+        return (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\n(May take a moment to appear — hard refresh if needed.)\n\nWant me to make any changes? Just describe what you'd like updated.\n\nNeed higher quality or a custom build? DM @inclawbate on X or visit inclawbate.app/build for premium builds.";
 
       case 'health_check':
         // Let LLM interpret health checks — they need nuanced advice
