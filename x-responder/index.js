@@ -285,9 +285,16 @@ async function handleStreamTweet(payload) {
     let replyText = reply;
 
     // Strip crypto addresses (X blocks them for 7 days after token regen)
-    // Replace 0x... addresses with "see inclawbate.app" and clean up basescan/clanker URLs
-    replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '[see inclawbate.app]');
-    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, 'inclawbate.app');
+    // Replace with contextual URLs based on reply content
+    const isStaking = /stak/i.test(replyText);
+    const isToken = /token|deploy|launch|contract/i.test(replyText);
+    const isDashboard = /dashboard|admin|reward|deposit/i.test(replyText);
+    const contextUrl = isStaking ? 'inclawbate.app/stake'
+      : isDashboard ? 'inclawbate.app/dashboard'
+      : isToken ? 'inclawbate.app/tokens'
+      : 'inclawbate.app';
+    replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, contextUrl);
+    replyText = replyText.replace(/https?:\/\/(basescan\.org|clanker\.world)[^\s)"]*/g, contextUrl);
 
     if (replyText.length > maxLen) {
       const truncated = replyText.slice(0, maxLen - 3);
