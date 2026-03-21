@@ -267,15 +267,11 @@ async function handleStreamTweet(payload) {
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
-  // Respond to ANYONE who @mentions inclawbator — fresh tweet or reply on any thread.
-  // Only skip if it's a reply directly to @inclawbator's own tweet with no real content
-  // (X auto-adds @mention when replying, so "nice post" replies on our tweets get caught)
+  // Skip replies to @inclawbator's own tweets (X auto-adds @mention, these are just comments)
+  // Only respond when someone deliberately @mentions us on a fresh tweet or someone else's thread
   if (tweet.in_reply_to_user_id === ownUserId) {
-    const cleaned = (tweet.text || '').replace(/@\w+/g, '').trim();
-    if (cleaned.length < 3) {
-      console.log(`Skipping empty reply to our tweet from @${authorUsername}`);
-      return;
-    }
+    console.log(`Skipping reply to our own tweet from @${authorUsername}`);
+    return;
   }
 
   // Skip if already replied (DB check)
