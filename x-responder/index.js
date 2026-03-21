@@ -32,6 +32,7 @@ let mentionsProcessed = 0;
 let dmsProcessed = 0;
 let streamConnected = false;
 let lastError = null;
+const processedDmIds = new Set(); // prevent double-replies within session
 
 // ── OAuth 1.0a ──
 
@@ -346,11 +347,12 @@ async function pollDMs() {
 
     const newMessages = events.filter(e => {
       if (e.sender_id === userId) return false;
-      if (lastEventId && e.id <= lastEventId) return false;
+      if (processedDmIds.has(e.id)) return false;
+      if (lastEventId && BigInt(e.id) <= BigInt(lastEventId)) return false;
       return true;
     });
 
-    // Save newest event ID
+    // Save newest event ID immediately to prevent re-processing on next poll
     const newestId = events[0]?.id;
     if (newestId) await saveLastEventId(newestId);
 
@@ -359,6 +361,7 @@ async function pollDMs() {
     const toProcess = newMessages.reverse().slice(0, MAX_PER_RUN);
 
     for (const dm of toProcess) {
+      processedDmIds.add(dm.id);
       try {
         const replyText = await getAgentReply(dm.text || '', `X DM`, `x_dm_${dm.sender_id}`);
         const truncated = replyText.length > 4000 ? replyText.slice(0, 4000) + '...' : replyText;
@@ -369,6 +372,14 @@ async function pollDMs() {
         console.error(`DM reply failed for ${dm.sender_id}:`, e.message);
         lastError = e.message;
       }
+    }
+
+    // Keep processedDmIds from growing forever
+    if (processedDmIds.size > 500) {
+      const arr = [...processedDmIds];
+      arr.splice(0, arr.length - 200);
+      processedDmIds.clear();
+      arr.forEach(id => processedDmIds.add(id));
     }
   } catch (e) {
     console.error('DM poll error:', e.message);
