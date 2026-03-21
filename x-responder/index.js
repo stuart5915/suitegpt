@@ -168,40 +168,46 @@ async function handleMention(tweet, authors) {
     // Strip crypto addresses and blockchain URLs (X blocks them for 7 days after token regen)
     const hasAddresses = /0x[a-fA-F0-9]{8,}/.test(replyText) || /(?:basescan|clanker|etherscan)/i.test(replyText);
     replyText = replyText.replace(/`?0x[a-fA-F0-9]{8,}`?/g, '');
-    replyText = replyText.replace(/(?:https?:\/\/)?(?:basescan\.org|clanker\.world|etherscan\.io)[^\s)"\n]*/g, '');
-    // Remove any bullet/list line whose value is now empty after stripping
-    replyText = replyText.replace(/^[•\-\*]\s+[^:\n]*:\s*$/gm, '');
+    replyText = replyText.replace(/(?:https?:\/\/)?(?:www\.)?(?:basescan\.org|clanker\.world|etherscan\.io)[^\s)"\n]*/g, '');
+    // Clean up orphaned URL fragments (e.g. "https://www." left after domain stripped)
+    replyText = replyText.replace(/https?:\/\/(?:www\.)?\s/g, ' ');
+    replyText = replyText.replace(/https?:\/\/(?:www\.)?$/gm, '');
+    // Remove any bullet/list line whose value is now empty or near-empty after stripping
+    replyText = replyText.replace(/^[•\-\*]\s+[^:\n]*:\s*\S{0,5}\s*$/gm, '');
     // Remove any standalone label line with no value
     replyText = replyText.replace(/^[A-Za-z ]+:\s*$/gm, '');
     // Collapse extra blank lines and trim
     replyText = replyText.replace(/\n{3,}/g, '\n\n').replace(/  +/g, ' ').trim();
-    // Add ONE contextual link if we stripped addresses
+
+    // Build contextual link suffix (added AFTER truncation so it doesn't get cut)
+    let detailsSuffix = '';
     if (hasAddresses) {
       const isStaking = /stak/i.test(replyText);
       const isToken = /token|deploy|launch|clanker/i.test(replyText);
       const contextUrl = isStaking ? 'https://inclawbate.app/stake'
         : isToken ? 'https://inclawbate.app/tokens'
         : 'https://inclawbate.app';
-      replyText += `\n\nDetails: ${contextUrl}`;
+      detailsSuffix = `\n\n${contextUrl}`;
     }
 
-    // Truncate to 280 chars (minus @username prefix)
-    if (replyText.length > maxLen) {
-      const truncated = replyText.slice(0, maxLen);
+    // Truncate to 280 chars (minus @username prefix and details suffix)
+    const truncMaxLen = maxLen - detailsSuffix.length;
+    if (replyText.length > truncMaxLen) {
+      const truncated = replyText.slice(0, truncMaxLen);
       const lastPara = truncated.lastIndexOf('\n\n');
       const lastSentence = truncated.lastIndexOf('. ');
       const lastSpace = truncated.lastIndexOf(' ');
-      if (lastPara > maxLen * 0.4) {
+      if (lastPara > truncMaxLen * 0.4) {
         replyText = truncated.slice(0, lastPara);
-      } else if (lastSentence > maxLen * 0.4) {
+      } else if (lastSentence > truncMaxLen * 0.4) {
         replyText = truncated.slice(0, lastSentence + 1);
-      } else if (lastSpace > maxLen * 0.4) {
+      } else if (lastSpace > truncMaxLen * 0.4) {
         replyText = truncated.slice(0, lastSpace) + '...';
       } else {
-        replyText = truncated.slice(0, maxLen - 3) + '...';
+        replyText = truncated.slice(0, truncMaxLen - 3) + '...';
       }
     }
-    replyText = prefix + replyText;
+    replyText = prefix + replyText + detailsSuffix;
 
     const tweetId = await postReply(replyText, tweet.id);
     await logMentionReply(tweet.id, tweet.text, authorUsername, replyText, 'posted', tweetId);
