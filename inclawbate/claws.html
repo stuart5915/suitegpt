@@ -328,6 +328,134 @@
         .d-cta-btn--primary { background: var(--accent-gradient); color: #fff; }
         .d-cta-btn--secondary { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
 
+        /* ── Systems Map ── */
+        .sysmap-container {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl) var(--space-lg);
+            overflow: hidden;
+        }
+        .sysmap-lines {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+        .sysmap-lines path {
+            fill: none; stroke-width: 1.5; opacity: 0.25; transition: opacity 0.3s;
+        }
+        .sysmap-lines .sysmap-arrowhead { stroke: none; opacity: 0.35; }
+        .sysmap-container:hover .sysmap-lines path { opacity: 0.1; }
+        .sysmap-container:hover .sysmap-lines .sysmap-arrowhead { opacity: 0.12; }
+        .sysmap-container:hover .sysmap-lines path.sysmap-line-active { opacity: 0.6; }
+        .sysmap-container:hover .sysmap-lines .sysmap-arrowhead.sysmap-line-active { opacity: 0.7; }
+        .sysmap-grid {
+            position: relative; z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-areas:
+                ". inclawbate ."
+                "inclawbator council claws"
+                "skills embods treasury"
+                ". incubations ."
+                ". users .";
+            gap: 16px;
+        }
+        .sysmap-node {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+        .sysmap-node:hover { box-shadow: 0 0 20px rgba(99,102,241,0.1); }
+        .sysmap-node-icon { font-size: 1.6rem; margin-bottom: 6px; }
+        .sysmap-node-label {
+            font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;
+        }
+        .sysmap-node-desc { font-size: 0.68rem; color: var(--text-dim); line-height: 1.4; }
+
+        /* Node colors */
+        .sysmap-node--inclawbate { grid-area: inclawbate; border-color: #e8795544; }
+        .sysmap-node--inclawbate:hover { border-color: #e87955; }
+        .sysmap-node--inclawbate .sysmap-node-label { color: #e87955; }
+
+        .sysmap-node--inclawbator { grid-area: inclawbator; border-color: #6366f144; }
+        .sysmap-node--inclawbator:hover { border-color: #6366f1; }
+        .sysmap-node--inclawbator .sysmap-node-label { color: #6366f1; }
+
+        .sysmap-node--council { grid-area: council; border-color: #fbbf2444; }
+        .sysmap-node--council:hover { border-color: #fbbf24; }
+        .sysmap-node--council .sysmap-node-label { color: #fbbf24; }
+
+        .sysmap-node--claws { grid-area: claws; border-color: #4ade8044; }
+        .sysmap-node--claws:hover { border-color: #4ade80; }
+        .sysmap-node--claws .sysmap-node-label { color: #4ade80; }
+
+        .sysmap-node--skills { grid-area: skills; border-color: #60a5fa44; }
+        .sysmap-node--skills:hover { border-color: #60a5fa; }
+        .sysmap-node--skills .sysmap-node-label { color: #60a5fa; }
+
+        .sysmap-node--embods { grid-area: embods; border-color: #2dd4bf44; }
+        .sysmap-node--embods:hover { border-color: #2dd4bf; }
+        .sysmap-node--embods .sysmap-node-label { color: #2dd4bf; }
+
+        .sysmap-node--treasury { grid-area: treasury; border-color: #fbbf2444; }
+        .sysmap-node--treasury:hover { border-color: #fbbf24; }
+        .sysmap-node--treasury .sysmap-node-label { color: #fbbf24; }
+
+        .sysmap-node--incubations { grid-area: incubations; border-color: #a78bfa44; }
+        .sysmap-node--incubations:hover { border-color: #a78bfa; }
+        .sysmap-node--incubations .sysmap-node-label { color: #a78bfa; }
+
+        .sysmap-node--users { grid-area: users; border-color: #f472b644; }
+        .sysmap-node--users:hover { border-color: #f472b6; }
+        .sysmap-node--users .sysmap-node-label { color: #f472b6; }
+
+        .sysmap-treasury-items {
+            display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px;
+        }
+        .sysmap-treasury-items span {
+            font-family: var(--font-mono); font-size: 0.52rem; font-weight: 600;
+            padding: 2px 8px; border-radius: var(--radius-full);
+            background: rgba(251,191,36,0.08); color: #fbbf24; white-space: nowrap;
+        }
+
+        .sysmap-node-highlight { border-color: rgba(255,255,255,0.3) !important; box-shadow: 0 0 16px rgba(255,255,255,0.06); }
+
+        .sysmap-conn-label {
+            font-family: var(--font-mono); font-size: 9px; fill: var(--text-dim);
+            text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .sysmap-container:hover .sysmap-conn-label.sysmap-label-active { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .sysmap-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "inclawbate inclawbate"
+                    "inclawbator council"
+                    "claws treasury"
+                    "skills embods"
+                    "incubations incubations"
+                    "users users";
+            }
+            .sysmap-lines { display: none; }
+            .sysmap-node { padding: 12px; }
+            .sysmap-node-icon { font-size: 1.3rem; }
+        }
+        @media (max-width: 480px) {
+            .sysmap-grid {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "inclawbate" "inclawbator" "council" "claws"
+                    "skills" "embods" "treasury" "incubations" "users";
+            }
+        }
+
         /* ── Sections spacing ── */
         .claws-section { margin-bottom: var(--space-2xl); }
 
@@ -387,6 +515,7 @@
             <a href="#staking" class="claws-quick-link">Stake</a>
             <a href="#vote" class="claws-quick-link">Vote</a>
             <a href="#revenue" class="claws-quick-link">Revenue</a>
+            <a href="#systems-map" class="claws-quick-link">Systems Map</a>
             <a href="#ecosystem" class="claws-quick-link">Ecosystem</a>
             <a href="/blog/claws-tokenomics" class="claws-quick-link">Tokenomics</a>
         </div>
@@ -583,6 +712,80 @@
                     <li>Liquidity provisioning</li>
                     <li>New product funding</li>
                 </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ SYSTEMS MAP ═══ -->
+    <section class="claws-section" id="systems-map">
+        <div class="sec-label">Business Architecture</div>
+        <div class="sec-title">How Everything Connects</div>
+        <div class="sec-sub">Every entity in the Inclawbate ecosystem and how they relate. Hover a box to see its connections.</div>
+
+        <div class="sysmap-container">
+            <svg class="sysmap-lines" id="sysmapSvg"></svg>
+
+            <div class="sysmap-grid" id="sysmapGrid">
+                <div class="sysmap-node sysmap-node--inclawbate" id="sn-inclawbate">
+                    <div class="sysmap-node-icon">&#129438;</div>
+                    <div class="sysmap-node-label">Inclawbate</div>
+                    <div class="sysmap-node-desc">Parent entity &mdash; owns and operates everything below</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--inclawbator" id="sn-inclawbator">
+                    <div class="sysmap-node-icon">&#129302;</div>
+                    <div class="sysmap-node-label">Inclawbator</div>
+                    <div class="sysmap-node-desc">AI agent &mdash; executes 11 skills, runs incubation lifecycle</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--council" id="sn-council">
+                    <div class="sysmap-node-icon">&#128101;</div>
+                    <div class="sysmap-node-label">Council</div>
+                    <div class="sysmap-node-desc">Governance body &mdash; votes on allocation, makes decisions</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--claws" id="sn-claws">
+                    <div class="sysmap-node-icon">&#129689;</div>
+                    <div class="sysmap-node-label">$CLAWS Token</div>
+                    <div class="sysmap-node-desc">Utility token &mdash; governance, staking, LP depth</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--skills" id="sn-skills">
+                    <div class="sysmap-node-icon">&#9889;</div>
+                    <div class="sysmap-node-label">Skill Endpoints</div>
+                    <div class="sysmap-node-desc">11 capabilities &mdash; launch tokens, deploy staking, build apps, schedule X, audit code</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--embods" id="sn-embods">
+                    <div class="sysmap-node-icon">&#127760;</div>
+                    <div class="sysmap-node-label">Embodiments</div>
+                    <div class="sysmap-node-desc">Where the Inclawbator lives &mdash; Virtuals, Bankr, Atelier, ClawHub, Telegram</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--treasury" id="sn-treasury">
+                    <div class="sysmap-node-icon">&#127974;</div>
+                    <div class="sysmap-node-label">Treasury</div>
+                    <div class="sysmap-node-desc">On-chain positions powering the ecosystem</div>
+                    <div class="sysmap-treasury-items">
+                        <span>ETH Lending</span>
+                        <span>ETH/USDC LP</span>
+                        <span>ETH/CLAWS LP</span>
+                        <span>Staked CLAWS</span>
+                        <span>CLAWS Wallet</span>
+                    </div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--incubations" id="sn-incubations">
+                    <div class="sysmap-node-icon">&#128640;</div>
+                    <div class="sysmap-node-label">Incubations</div>
+                    <div class="sysmap-node-desc">Products launched &mdash; PokerAI, Crash, AgentScape, S4H, OddsClaw &mdash; each generates revenue</div>
+                </div>
+
+                <div class="sysmap-node sysmap-node--users" id="sn-users">
+                    <div class="sysmap-node-icon">&#128100;</div>
+                    <div class="sysmap-node-label">Users</div>
+                    <div class="sysmap-node-desc">Hold CLAWS, use products, request incubations, drive demand</div>
+                </div>
             </div>
         </div>
     </section>
@@ -1310,6 +1513,135 @@
     }
 
     loadDistribution();
+})();
+</script>
+
+<!-- Systems Map connections -->
+<script>
+(function() {
+    var connections = [
+        { from: 'sn-inclawbate', to: 'sn-inclawbator', label: 'product', color: '#e87955' },
+        { from: 'sn-inclawbate', to: 'sn-council',     label: 'governed by', color: '#fbbf24' },
+        { from: 'sn-inclawbate', to: 'sn-claws',       label: 'powered by', color: '#4ade80' },
+        { from: 'sn-inclawbator', to: 'sn-skills',     label: 'has 11', color: '#6366f1' },
+        { from: 'sn-inclawbator', to: 'sn-embods',     label: 'deployed on', color: '#2dd4bf' },
+        { from: 'sn-inclawbator', to: 'sn-incubations', label: 'creates', color: '#a78bfa' },
+        { from: 'sn-incubations', to: 'sn-treasury',   label: 'revenue', color: '#4ade80' },
+        { from: 'sn-treasury', to: 'sn-inclawbator',   label: 'funds', color: '#fbbf24' },
+        { from: 'sn-council', to: 'sn-treasury',       label: 'allocates', color: '#fbbf24' },
+        { from: 'sn-claws', to: 'sn-treasury',         label: 'held in', color: '#4ade80' },
+        { from: 'sn-users', to: 'sn-incubations',      label: 'use', color: '#f472b6' },
+        { from: 'sn-users', to: 'sn-claws',            label: 'hold / stake', color: '#f472b6' },
+    ];
+
+    function drawConnections() {
+        var svg = document.getElementById('sysmapSvg');
+        var container = document.querySelector('.sysmap-container');
+        if (!svg || !container) return;
+
+        var cRect = container.getBoundingClientRect();
+        svg.innerHTML = '';
+        svg.setAttribute('viewBox', '0 0 ' + cRect.width + ' ' + cRect.height);
+
+        connections.forEach(function(conn, i) {
+            var fromEl = document.getElementById(conn.from);
+            var toEl = document.getElementById(conn.to);
+            if (!fromEl || !toEl) return;
+
+            var fRect = fromEl.getBoundingClientRect();
+            var tRect = toEl.getBoundingClientRect();
+
+            var fx = fRect.left - cRect.left + fRect.width / 2;
+            var fy = fRect.top - cRect.top + fRect.height / 2;
+            var tx = tRect.left - cRect.left + tRect.width / 2;
+            var ty = tRect.top - cRect.top + tRect.height / 2;
+
+            // Clamp to box edges
+            var angle = Math.atan2(ty - fy, tx - fx);
+            var fxe = fx + Math.cos(angle) * (fRect.width / 2);
+            var fye = fy + Math.sin(angle) * (fRect.height / 2);
+            var txe = tx - Math.cos(angle) * (tRect.width / 2);
+            var tye = ty - Math.sin(angle) * (tRect.height / 2);
+
+            // Curved path
+            var mx = (fxe + txe) / 2;
+            var my = (fye + tye) / 2;
+            var dx = txe - fxe;
+            var dy = tye - fye;
+            var cx = mx + dy * 0.15;
+            var cy = my - dx * 0.15;
+
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M' + fxe + ',' + fye + ' Q' + cx + ',' + cy + ' ' + txe + ',' + tye);
+            path.setAttribute('stroke', conn.color);
+            path.setAttribute('data-from', conn.from);
+            path.setAttribute('data-to', conn.to);
+            svg.appendChild(path);
+
+            // Arrowhead
+            var aAngle = Math.atan2(tye - cy, txe - cx);
+            var aSize = 6;
+            var ax1 = txe - aSize * Math.cos(aAngle - 0.4);
+            var ay1 = tye - aSize * Math.sin(aAngle - 0.4);
+            var ax2 = txe - aSize * Math.cos(aAngle + 0.4);
+            var ay2 = tye - aSize * Math.sin(aAngle + 0.4);
+            var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            arrow.setAttribute('points', txe + ',' + tye + ' ' + ax1 + ',' + ay1 + ' ' + ax2 + ',' + ay2);
+            arrow.setAttribute('fill', conn.color);
+            arrow.setAttribute('class', 'sysmap-arrowhead');
+            arrow.setAttribute('data-from', conn.from);
+            arrow.setAttribute('data-to', conn.to);
+            svg.appendChild(arrow);
+
+            // Label
+            var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', cx);
+            label.setAttribute('y', cy - 4);
+            label.setAttribute('class', 'sysmap-conn-label');
+            label.setAttribute('data-from', conn.from);
+            label.setAttribute('data-to', conn.to);
+            label.textContent = conn.label;
+            svg.appendChild(label);
+        });
+    }
+
+    // Hover interactivity
+    function setupHover() {
+        var nodes = document.querySelectorAll('.sysmap-node');
+        nodes.forEach(function(node) {
+            node.addEventListener('mouseenter', function() {
+                var id = node.id;
+                var svg = document.getElementById('sysmapSvg');
+                if (!svg) return;
+                var elems = svg.querySelectorAll('path, polygon, text');
+                elems.forEach(function(el) {
+                    if (el.getAttribute('data-from') === id || el.getAttribute('data-to') === id) {
+                        el.classList.add('sysmap-line-active');
+                        // Also highlight connected node
+                        var otherId = el.getAttribute('data-from') === id ? el.getAttribute('data-to') : el.getAttribute('data-from');
+                        var otherNode = document.getElementById(otherId);
+                        if (otherNode) otherNode.classList.add('sysmap-node-highlight');
+                    }
+                });
+                // Show label for active connections
+                svg.querySelectorAll('.sysmap-conn-label').forEach(function(lbl) {
+                    if (lbl.getAttribute('data-from') === id || lbl.getAttribute('data-to') === id) {
+                        lbl.classList.add('sysmap-label-active');
+                    }
+                });
+            });
+            node.addEventListener('mouseleave', function() {
+                var svg = document.getElementById('sysmapSvg');
+                if (!svg) return;
+                svg.querySelectorAll('.sysmap-line-active').forEach(function(el) { el.classList.remove('sysmap-line-active'); });
+                svg.querySelectorAll('.sysmap-label-active').forEach(function(el) { el.classList.remove('sysmap-label-active'); });
+                document.querySelectorAll('.sysmap-node-highlight').forEach(function(el) { el.classList.remove('sysmap-node-highlight'); });
+            });
+        });
+    }
+
+    window.addEventListener('load', function() { drawConnections(); setupHover(); });
+    window.addEventListener('resize', drawConnections);
 })();
 </script>
 
