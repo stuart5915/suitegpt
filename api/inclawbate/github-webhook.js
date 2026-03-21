@@ -1,4 +1,4 @@
-// Inclawbate — GitHub Push → Telegram Dev Updates Topic
+// Inclawbate — GitHub Push → Telegram Dev Updates Topic (community)
 // POST /api/inclawbate/github-webhook
 // Receives GitHub webhook push events, posts to TG community topic
 
