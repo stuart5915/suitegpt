@@ -335,9 +335,9 @@ ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' +
 
 ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
 
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show a REAL PERSON using or building that app. If it mentions a builder, show a real person at a desk creating. If it mentions staking/yield, show a real person checking rewards on their phone in a peaceful setting. The Inclawbate lobster logo can appear as a subtle accent (sticker, screen icon) but HUMANS are always the focal point.
+IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. Follow the style guide above precisely.
 
-Write ONE image prompt (2-3 sentences). Include: a real human subject in a real-world setting, what they're doing that relates to the tweet, warm natural lighting. Output ONLY the prompt.`;
+Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY the prompt.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -565,7 +565,7 @@ ${cfg.imageContext}
 
 Output format:
 TWEET: [the tweet]
-IMAGE: [2-3 sentences. What is this tweet about? Show a REAL HUMAN experiencing/doing that thing in a real-world setting. Be specific and visual. Natural light, warm tones, editorial photography, 1:1]`;
+IMAGE: [2-3 sentences following the style guide above. Be specific and visual. 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -639,10 +639,10 @@ ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements):\n' + narrativeScene
 
 STEP BY STEP:
 1. Read the tweet above. What is the KEY SUBJECT? (staking? building? a specific app? community? treasury? philanthropy?)
-2. What REAL PERSON should be in the scene and what should they be DOING? (building an app = person at a desk with a live app on screen, staking = person checking phone at a park with green numbers, community = a group gathered at a table, philanthropy = a mission team coordinating resources)
-3. What SPECIFIC VISUAL DETAILS from the tweet should appear? (if "APY increased" → phone showing green numbers, if "100+ apps" → person at a workspace with many screens, if "poker" → friends at a table playing)
+2. What visual scene matches the style guide AND illustrates this subject?
+3. What SPECIFIC VISUAL DETAILS from the tweet should appear in the scene?
 
-Write ONE image prompt (2-3 sentences). A REAL HUMAN must be the focal point, doing something that SPECIFICALLY relates to what the tweet says. Include: who the person is, what they're doing, their emotional state, the real-world setting, warm natural lighting, 1:1. The Inclawbate lobster can appear as a subtle accent only.
+Write ONE image prompt (2-3 sentences) that follows the style guide above precisely. The prompt must SPECIFICALLY relate to what the tweet says.
 
 Output ONLY the prompt, nothing else.`;
 
@@ -1098,18 +1098,23 @@ Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching 
 IMAGE PROMPTS — THIS IS THE MOST IMPORTANT PART:
 ${cfg.imageContext}
 
-EXAMPLES of tweet → image connection:
-- Tweet "108 apps and counting" → "A person at a bright co-working space, leaning back from their laptop to take in a large monitor wall showing dozens of different app interfaces — each one built by a different person. Their expression: amazement at what this community has created. Warm afternoon light, clean modern space, editorial photography, 1:1"
-- Tweet "staking rewards are real" → "Close-up of a person's hands holding a phone at a park on a sunny day, screen showing green staking numbers trending up. Background soft-focused: trees, sunshine, peaceful. They're about to put the phone away and enjoy the day. Their value works while they rest. Warm tones, shallow depth of field, 1:1"
-- Tweet "which app would you build first" → "Two friends at a coffee shop, one showing the other ideas on a napkin sketch. Both are smiling, brainstorming. Natural light through the cafe window, coffee between them. The moment before creating something. Warm, candid, editorial photography, 1:1"
+${account === 'inclawbate' ? `EXAMPLES of tweet → image connection:
+- Tweet "108 apps and counting" → "Aerial photograph of a vast coral reef teeming with colorful life — hundreds of unique formations, each one different. Warm turquoise water with golden sunlight filtering down from above. Abundance, interconnection, ecosystem health. Fine art photography, 1:1"
+- Tweet "staking rewards are real" → "Golden wheat field stretching to the horizon at golden hour, heavy with grain. Warm amber light, gentle breeze visible in the stalks. The harvest is real, the yield is tangible. Cinematic landscape, 1:1"
+- Tweet "which app would you build first" → "Two diverging paths in a sunlit forest, each dappled with different colored light — one golden, one teal. Wildflowers along both. Choice, possibility, both paths beautiful. Nature photography, warm tones, 1:1"
 
-Each image MUST look different — vary people, settings, camera angles, and lighting. Always show REAL HUMANS in real-world settings. The Inclawbate lobster logo should only appear as a subtle accent (sticker, screen icon).
+Each image MUST look different — vary subjects, compositions, and metaphors. NO humans, NO mascot. Abstract, warm, conceptual.` : `EXAMPLES of tweet → image connection:
+- Tweet "108 apps and counting" → "The 3D coral-red lobster floating in a vast dark space, surrounded by over a hundred tiny glowing app interface screens arranged in a spiral galaxy pattern. The lobster spreads its claws wide in amazement. Bird's eye camera angle, teal and coral neon reflections, cinematic 3D render, 1:1"
+- Tweet "staking rewards are real" → "Close-up of the coral-red 3D lobster sitting cross-legged on a floating crystal platform, eyes closed peacefully. Dozens of gold coins orbit around it in slow rings. Soft green upward arrows in background. Warm golden lighting, dark void, 3D render, 1:1"
+- Tweet "which app would you build first" → "The coral-red 3D lobster at a crossroads in a dark neon environment, each path lit by a different color. One claw points left, the other right. Floating app icons hover above each path. Dramatic teal and coral split lighting, cinematic 3D render, 1:1"
+
+Each image MUST look different — vary pose, environment, camera angle, and lighting. The 3D lobster mascot is ALWAYS the focal point.`}
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — Posts at ${getTimeOfDay(h)}. ${getGreetingRule(h)}`).join('\n')}
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentences. What is this tweet about? Show a REAL HUMAN experiencing/doing that thing in a real-world setting. Be concrete and visual. Warm natural light, editorial photography, 1:1]
+IMAGE: [2-3 sentences following the style guide above. Be specific and visual. 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 
