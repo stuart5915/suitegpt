@@ -14,51 +14,58 @@ Inclawbate exists to **Love God and Love Others** — manifested through technol
 
 ---
 
-## Visual Identity — Human-Centered
+## Dual Brand System
 
-The visuals center **real humans** benefiting from what Inclawbate builds. The lobster remains as a brand mark/logo (favicon, icon, corner badge) but is NOT the protagonist of images. Humans are.
+Inclawbate has TWO visual identities — one for the company, one for the AI agent.
 
-### Who We Show
+### @inclawbate (Company) — Abstract & Conceptual
+The company account uses **abstract, warm, conceptual imagery**. No humans, no mascot. Beautiful visual metaphors that evoke the FEELING of the tweet. The **overlay system** (logo, pillar badge, key phrase) provides brand identity on top.
 
-- **Builders** — people creating apps, launching projects, learning new skills
-- **Families** — using tools like FoodVitals, managing household value, hedging against inflation
-- **Mission teams** — coordinating energy and resources for philanthropy through Inclawbate tools
-- **Communities** — gathering, deciding together, stewarding shared resources
-- **Individuals** — checking their staking rewards, watching their value grow, feeling empowered
+**What we show:** Nature metaphors, light, growth, textures, aerial landscapes, macro photography. Golden shapes, flowing patterns, coral reefs, sprouting seeds, stained glass, wheat fields, river stones.
 
-### What We Show Them Doing
+**Why:** AI-generated humans look uncanny. Abstract imagery is more distinctive, more beautiful, and more shareable. The tweet text carries the human message; the image catches the eye; the overlay brands it.
 
-- Using a real app on a phone or laptop (FoodVitals, staking dashboard, app builder)
-- Receiving value — a notification, a reward, a transfer that changes their day
-- Coordinating — a small team planning a mission trip using Inclawbate tools
-- Building — typing an idea and watching it become real
-- Resting — knowing their treasury is self-sustaining, their stake is growing, their savings are protected
+### @inclawbator (AI Agent) — 3D Lobster Mascot
+The agent account keeps the **lobster mascot** front and center. Meme energy, 3D renders, personality-driven. Dark backgrounds, neon lighting, crypto aesthetic.
+
+**What we show:** The 3D coral-red lobster in dynamic poses — building, launching, meditating, celebrating. Holographic screens, glowing coins, neon-lit environments.
+
+**Why:** The Inclawbator IS an AI agent. It's not a human. The lobster personality drives engagement on crypto Twitter. It differentiates the two accounts instantly.
 
 ---
 
 ## Photography & Illustration Style
 
-### ALWAYS
-- **PHOTOREALISTIC** — must look like a real photograph of real people. Shot on Canon EOS R5, 35mm lens energy. Not illustration, not digital art, not anime.
-- **Warm, natural lighting** — golden hour, soft sunlight through windows, morning light
-- **Bright, clean compositions** — airy, hopeful, abundant
-- **Real-world settings** — kitchens, offices, churches, parks, community centers, developing-world villages
-- **Diverse humans** — different ages, ethnicities, contexts. The mission is for everyone
-- **Grounded and tangible** — show real screens, real tools, real impact
-- **Emotional truth** — a mother's relief, a builder's pride, a family's security
-- **The lobster as a subtle accent** — a small logo on a screen, a sticker on a laptop, an icon in a notification. Present but not dominant
-- **Include in every prompt**: "photorealistic, editorial photography, shot on Canon EOS R5, 35mm lens, natural light"
+### @inclawbate — ALWAYS
+- **Abstract, conceptual, warm** — visual metaphors, not literal scenes
+- **Warm color palette** — coral, golden amber, soft teal, cream whites, deep purples
+- **Nature and light** — growth metaphors, textures, flowing patterns, golden hour
+- **Fine art / conceptual photography** — beautiful, distinctive, eye-catching
+- **Overlay provides branding** — logo, pillar badge, key phrase text added on top
+- **No humans, no mascot** in the generated image itself
 
-### NEVER
-- **Anime, illustration, cartoon, or digital art styles** — this is the #1 rule
-- Dark/neon/cyberpunk backgrounds
-- 3D cartoon renders of any kind
-- The lobster as the main character in scenes
-- Stock photography that feels generic or posed
-- Dystopian, cold, or clinical vibes
-- Text burned into images
-- Overly technical/chart-heavy compositions
-- Stylized or exaggerated human features
+### @inclawbate — NEVER
+- Human faces or bodies in the image
+- The lobster mascot as subject
+- Anime, cartoon, or 3D character renders
+- Dark/neon/cyberpunk aesthetics
+- Cluttered or busy compositions
+- Text burned into the image (overlay handles that)
+- Stock photography vibes
+
+### @inclawbator — ALWAYS
+- **3D rendered lobster mascot** as focal point (Octane/Blender quality)
+- **Dark backgrounds** (#0a0a0f to #0d0d1a)
+- **Coral (#e87955) and teal (#2dd4bf) neon accents**
+- **Cinematic composition** with depth, rim lighting, volumetric effects
+- **Personality and energy** — the lobster is always doing something
+
+### @inclawbator — NEVER
+- White or bright backgrounds
+- Flat 2D illustration
+- Realistic humans as main subject
+- Text in the image
+- Cute/baby/chibi style
 
 ---
 
