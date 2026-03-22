@@ -69,9 +69,9 @@ const SLOT_ANGLES = {
 // Brand archetype — injected into all image prompt generation
 const BRAND_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
 
-SUBJECT: REAL HUMANS — not a mascot, not a cartoon. Show diverse, real people using Inclawbate tools, building apps, managing value, coordinating philanthropy, or benefiting from the ecosystem. The Inclawbate lobster logo can appear as a SUBTLE ACCENT (sticker on a laptop, icon on a screen, notification badge) but is NEVER the main subject.
-STYLE: Editorial photography. Warm natural lighting — golden hour, soft window light, morning sun. Bright, clean, airy. Real-world settings: kitchens, offices, community centers, parks, churches, developing-world villages. Think Apple product photography meets documentary photography.
-NO: text in image, cartoon characters as main subjects, 3D renders, dark/neon backgrounds, cyberpunk aesthetics, stock photo poses, brand names visible.
+SUBJECT: REAL HUMANS — not a mascot, not a cartoon, not anime, not illustration. Show diverse, real people using Inclawbate tools, building apps, managing value, coordinating philanthropy, or benefiting from the ecosystem. The Inclawbate lobster logo can appear as a SUBTLE ACCENT (sticker on a laptop, icon on a screen, notification badge) but is NEVER the main subject.
+STYLE: PHOTOREALISTIC editorial photography shot on a Canon EOS R5 with a 35mm lens. Warm natural lighting — golden hour, soft window light, morning sun. Bright, clean, airy. Real-world settings: kitchens, offices, community centers, parks, churches, developing-world villages. Think Apple product photography meets National Geographic documentary photography. MUST look like a real photograph of real people — NOT illustration, NOT anime, NOT 3D render, NOT digital art.
+NO: text in image, anime, illustration, cartoon, 3D renders, digital art style, dark/neon backgrounds, cyberpunk aesthetics, stock photo poses, brand names visible, stylized characters.
 
 PROCESS — follow these steps:
 1. Read the tweet. What is it literally about? (e.g. "108 apps" = many people building real things, "staking" = a person's savings growing while they live life, "build first app" = someone's empowering moment, "poll" = a community making a decision together)

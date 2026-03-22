@@ -39,6 +39,7 @@ The visuals center **real humans** benefiting from what Inclawbate builds. The l
 ## Photography & Illustration Style
 
 ### ALWAYS
+- **PHOTOREALISTIC** — must look like a real photograph of real people. Shot on Canon EOS R5, 35mm lens energy. Not illustration, not digital art, not anime.
 - **Warm, natural lighting** — golden hour, soft sunlight through windows, morning light
 - **Bright, clean compositions** — airy, hopeful, abundant
 - **Real-world settings** — kitchens, offices, churches, parks, community centers, developing-world villages
@@ -46,15 +47,18 @@ The visuals center **real humans** benefiting from what Inclawbate builds. The l
 - **Grounded and tangible** — show real screens, real tools, real impact
 - **Emotional truth** — a mother's relief, a builder's pride, a family's security
 - **The lobster as a subtle accent** — a small logo on a screen, a sticker on a laptop, an icon in a notification. Present but not dominant
+- **Include in every prompt**: "photorealistic, editorial photography, shot on Canon EOS R5, 35mm lens, natural light"
 
 ### NEVER
+- **Anime, illustration, cartoon, or digital art styles** — this is the #1 rule
 - Dark/neon/cyberpunk backgrounds
+- 3D cartoon renders of any kind
 - The lobster as the main character in scenes
-- 3D cartoon renders as the primary style
 - Stock photography that feels generic or posed
 - Dystopian, cold, or clinical vibes
 - Text burned into images
 - Overly technical/chart-heavy compositions
+- Stylized or exaggerated human features
 
 ---
 
