@@ -2,12 +2,18 @@
 
 ## The Vision
 
-Inclawbate is building a **self-sustaining, autonomous ecosystem** that:
-1. **Generates revenue/value** — through DeFi yields, platform fees, agent services, apps, and marketplace activity
-2. **Rewards participants** — stakers of CLAWS tokens receive a share of revenue
-3. **Directs surplus toward philanthropy** — the remaining revenue funds charitable activities (S4H and beyond)
+**Ultimate mission: Love God and Love Others.**
 
-The end goal: a fully autonomous system that fosters an environment for humans to exist within — providing tools, utilities, incubation services, and value — while permanently directing energy toward philanthropic activities. A jittering ball of goodness.
+That's the telos. Everything Inclawbate does is a manifestation of that. The way it shows up:
+
+1. **Steward real physical value** — self-sustaining treasury (ETH lending, LPs, staked CLAWS) with near-zero expenses. The value engine runs itself.
+2. **Proclaim Jesus is Lord** — the metaphysical foundation. Not hidden, not forced. Present.
+3. **Incubate systems, products, and services** — AI-powered tools that make humans the best they can be. Build apps, launch tokens, create businesses, grow skills.
+4. **Direct surplus toward philanthropy** — Salvation 4 Humanity and beyond. Permanent, autonomous giving.
+
+The mechanism is unlimited because the approach is specifically defined: a perpetual treasury that self-sustains, access to advanced AI that can create endlessly, and a council of humans who steward it all. Very little expenses, infinite creative capacity. Inclawbate is access to unlimited — exercised through disciplined stewardship.
+
+The end goal: an autonomous system that never stops generating, managing, and distributing value — for builders, for holders, for people in need. A jittering ball of goodness that loves God and loves others through every line of code and every dollar managed.
 
 ## Company Structure
 

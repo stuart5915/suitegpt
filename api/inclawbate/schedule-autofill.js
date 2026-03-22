@@ -69,69 +69,69 @@ const SLOT_ANGLES = {
 // Brand archetype — injected into all image prompt generation
 const BRAND_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
 
-CHARACTER: A stylized 3D cartoon coral-red lobster with glossy shell, big round eyes, two large claws (used as hands), Pixar-like proportions.
-STYLE: 3D cinematic render, dark background, coral-red and teal neon accents, depth of field, 1:1.
-NO: text in image, white backgrounds, flat illustration, realistic humans, brand names.
+CHARACTER: A stylized coral-red lobster character — warm, approachable, purposeful. Not cartoonish or silly. Think of it as a steward and builder — someone managing real value and helping humans flourish.
+STYLE: Clean, warm, bright composition. Natural light, golden hour tones, warm whites, soft coral and teal accents. Depth of field, 1:1. Grounded and real-feeling — like editorial photography meets thoughtful illustration. Think Stripe/Linear design quality but with warmth and soul.
+NO: text in image, neon lighting, dark/cyberpunk backgrounds, overly cartoonish expressions, brand names, dystopian or cold vibes.
 
 PROCESS — follow these steps:
-1. Read the tweet. What is it literally about? (e.g. "108 apps" = many apps, "staking" = passive income, "build first app" = building/creating, "poll" = choosing between options)
-2. Turn that concept into a VISUAL SCENE the lobster is in (e.g. "108 apps" → lobster surrounded by a galaxy of 100+ tiny floating glowing app screens, "staking" → lobster meditating with gold coins orbiting, "poll" → lobster holding up two glowing objects weighing them)
-3. Pick a unique pose, environment, and camera angle that fits`;
+1. Read the tweet. What is it literally about? (e.g. "108 apps" = many apps, "staking" = stewardship of value, "build first app" = empowering a person to create, "poll" = community deciding together)
+2. Turn that concept into a WARM, PURPOSEFUL SCENE (e.g. "108 apps" → a sunlit workshop wall covered in small framed creations, "staking" → the lobster tending a flourishing garden, "poll" → a gathering of characters around a table making a decision together)
+3. The tone should feel like: stewardship, abundance, building something meaningful, community, hope. Never dark or cold.`;
 
 // Scene starting points per pillar
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'The lobster interacting with a glowing holographic app or screen. Vary: presenting to an audience, swiping through UI mid-air, holding up a completed project, or demo-ing on a floating tablet.',
-    'Builder Shoutout': 'The lobster at a workstation — coding, building, tinkering. Vary: late-night grind with empty coffee cups, triumphant just-finished pose, pair-programming with a smaller sea creature, or surrounded by floating code.',
-    'DeFi / CLAWS Update': 'The lobster surrounded by floating charts, gold coins, or financial visualizations. Vary: meditating among orbiting coins, tending a glowing garden of growing crystal assets, analyzing holographic data, or watching charts from a rooftop.',
-    'Weekly Recap': 'Celebratory or reflective. Vary: claws raised in victory with confetti, looking out over a neon cityscape from a rooftop at night, surrounded by a mosaic of tiny floating screens, or high-fiving smaller characters.',
-    'How-To / Tips': 'Teaching or explaining. Vary: pointing at floating step-by-step instruction panels, mentoring a tiny shrimp character, demonstrating on a glowing screen, or in a cozy study with books and holographic notes.',
-    'Community Vibes': 'Social energy. Vary: greeting at a neon-lit lounge entrance, on a small stage with a crowd, hanging out with other sea creatures at a bar, competitive gaming face-off, or casual group hangout.',
-    'Incubation CTA': 'Powerful or aspirational. Vary: standing on a glowing elevated platform, walking through a swirling energy portal, leading a march of smaller lobster characters, or nurturing glowing orbs in a warm chamber.',
+    'App Spotlight': 'The lobster in a bright, warm workshop presenting a finished creation. Vary: holding it up proudly in golden light, showing it to a smaller character who looks inspired, placing it on a sunlit shelf alongside other creations, or unwrapping it at a communal table.',
+    'Builder Shoutout': 'The lobster building or crafting something meaningful. Vary: at a clean wooden workbench with tools and warm light, side by side with another character collaborating, standing back to admire something just finished, or sketching plans on a sunlit desk.',
+    'DeFi / CLAWS Update': 'Stewardship and growth. Vary: tending a lush garden where plants grow into golden shapes, carefully placing seeds into rich soil, watching a tree grow with golden fruit, or managing a beautiful well-organized treasury vault filled with warm light.',
+    'Weekly Recap': 'Gratitude and momentum. Vary: overlooking a thriving village from a hilltop at sunrise, gathered with others around a harvest table, reviewing a wall of accomplishments in warm light, or planting a flag on a summit at golden hour.',
+    'How-To / Tips': 'Teaching and mentoring. Vary: kneeling to help a smaller character learn something, pointing at a clear hand-drawn diagram on a whiteboard, in a cozy sunlit study with books and notes, or walking someone through a process step by step outdoors.',
+    'Community Vibes': 'Togetherness and warmth. Vary: gathered around a campfire or long table, welcoming someone at an open door, a group sharing a meal together, or a circle of characters making a decision together in warm light.',
+    'Incubation CTA': 'Nurturing and potential. Vary: carefully tending seedlings in a greenhouse with golden light pouring in, opening a door to reveal a bright flourishing world beyond, holding a glowing seed with care, or guiding others across a bridge toward something beautiful.',
 };
 
 // Concrete scene ideas per pillar — purely visual, no brand-specific terms
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'The lobster hunched over a glowing workbench, manipulating floating UI components mid-air with its claws. Multiple translucent screens nearby showing a nearly-finished interface. A smaller crab character gives a thumbs-up from behind. Warm workshop lighting.',
-        'The lobster holding up a glowing completed project like a trophy, beaming with pride. The project floats upward to join a constellation of other glowing objects above. Achievement energy, upward camera angle.',
-        'The lobster and a tiny shrimp character side by side, the lobster gently showing something on a floating screen. The shrimp looks amazed. Soft warm lighting, mentoring energy.',
-        'The lobster on a spotlit stage presenting something on a large holographic display. Audience of small sea creatures watching. Conference/demo energy, dramatic stage lighting.',
+        'The lobster at a clean wooden workbench, carefully placing a finished creation onto a sunlit shelf alongside a dozen other small, beautiful projects. Each one unique. A smaller crab character watches with admiration. Golden afternoon light through a window.',
+        'The lobster holding up a completed project proudly in both claws. Behind it, a warm workshop with hand-drawn plans on the wall. A smaller character gives a thumbs-up. Soft natural lighting, achievement energy.',
+        'The lobster and a tiny shrimp character side by side at a desk, the lobster gently showing something on a screen. The shrimp looks inspired. Warm sunlit room with plants on the windowsill.',
+        'The lobster presenting at a community gathering — a simple outdoor amphitheater. Attentive audience of small sea creatures in warm golden light. Approachable, not flashy.',
     ],
     'Builder Shoutout': [
-        'Late night, dark room lit only by a glowing computer screen. The lobster hunched over a keyboard, focused. Empty energy drink cans and coffee mugs scattered around. On-screen: beautiful code or UI coming together. Moody blue-teal lighting.',
-        'Two lobster characters at adjacent workstations, glowing data streams connecting their screens. They reach across to high-five (high-claw) in the middle. Collaboration energy, warm dual-toned lighting.',
-        'The lobster and a crab character examining a floating holographic code review together. The crab holds a wrench, tightening something in the code. Debugging energy, focused expressions.',
-        'The lobster at a workstation surrounded by multiple floating screens, claws flying across a glowing keyboard. Coffee mugs piled up. Intense late-night coding session. Dramatic rim lighting.',
+        'Early morning light streaming through a window onto a tidy workstation. The lobster focused, building something with care. A warm mug of coffee nearby. Tools organized neatly. Quiet productive energy.',
+        'Two lobster characters at a shared worktable, collaborating on something between them. They look at each other and smile. Warm dual lighting from two desk lamps. Partnership energy.',
+        'The lobster stepping back from a finished piece of work, arms at its sides, quiet pride on its face. The work is beautiful and complete. Soft backlight, golden hour glow.',
+        'The lobster mentoring a younger crab character at a workbench. Pointing at something, explaining patiently. The crab is building its first project. Warm, encouraging atmosphere.',
     ],
     'DeFi / CLAWS Update': [
-        'The lobster floating cross-legged in a meditation pose on a coral platform. Glowing gold coins orbit slowly around it like electrons. Soft green upward arrows in the background. Peaceful, zen, passive income energy.',
-        'The lobster on a futuristic trading floor, one claw holding a device showing a price chart. Other small sea creatures peek over its shoulder curiously. Analytical energy, teal and gold accents.',
-        'The lobster tending a bioluminescent garden where glowing crystal formations grow from coral stalks. Watering them with a stream of teal light. Each crystal is a different color. Yield farming metaphor.',
-        'The lobster and smaller characters on a rooftop at night, looking up in awe as a massive whale silhouette passes overhead leaving a trail of sparkles. Dramatic scale contrast, deep blue and teal.',
+        'The lobster in a lush garden, carefully watering small golden plants growing from rich soil. Each plant represents a different yield. Warm sunlight, abundance and patience energy.',
+        'The lobster as a thoughtful steward, organizing golden tokens into neat stacks on a wooden table. A ledger book open beside it. Warm library lighting. Careful management energy.',
+        'A flourishing orchard tended by the lobster. Trees with golden fruit, some being harvested by smaller characters. The lobster oversees with quiet satisfaction. Pastoral, warm wide shot.',
+        'The lobster sitting on a hillside at sunrise, watching seeds it planted earlier now growing into a small forest of golden saplings. Patient long-term thinking. Warm golden light.',
     ],
     'How-To / Tips': [
-        'The lobster kneeling down to a tiny shrimp\'s eye level, gently pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight on both characters.',
-        'A cozy workshop filled with floating holographic screens, glowing blueprints pinned to coral walls, keyboards built into rock formations. The lobster gestures step-by-step at instruction panels.',
-        'A cartoon octopus juggling 8 different glowing tools while the lobster watches and takes notes on a floating tablet. Humorous productivity energy, bright and fun.',
-        'The lobster waking up in a cozy coral-themed apartment, stretching, looking at floating notification bubbles. Grabbing a glowing coffee mug. Morning routine, cozy warm tones.',
+        'The lobster kneeling to a tiny shrimp\'s eye level, gently pointing at a clear hand-drawn diagram on a small easel. Patient teacher energy. Warm golden sunlight on both characters.',
+        'A cozy sunlit study — bookshelves, plants, a whiteboard with clear step-by-step instructions. The lobster gestures at each step. Inviting, approachable atmosphere.',
+        'The lobster and a small octopus character walking together through a garden path, the lobster pointing things out along the way. Learning by doing. Warm afternoon light.',
+        'Morning scene — the lobster at a kitchen table with a coffee and a notebook, sketching out a simple plan. Sunlight through curtains. Fresh start energy, warm and inviting.',
     ],
     'Community Vibes': [
-        'A neon-lit underwater lounge packed with different cartoon sea creatures. The lobster on a small stage with a holographic presentation. Everyone engaged. Warm community gathering energy.',
-        'Two lobsters face off across a table, rapidly creating images on holographic screens. Smaller creatures watch and cast votes with beams of light. Playful competitive energy, split teal/coral lighting.',
-        'Group photo lineup: the lobster center, flanked by various cartoon sea creatures (crab, octopus, shrimp, pufferfish, smaller lobsters). Teal and coral backdrop. Team photo energy, everyone posing.',
-        'The lobster in a cozy lounge booth with other sea creatures, sharing a meal. One small character shows something on a tiny glowing phone. Casual hangout, warm ambient lighting.',
+        'A long wooden table outdoors at golden hour. The lobster and various sea creature characters sharing a meal together. Laughter, warmth, belonging. Communal energy.',
+        'The lobster welcoming a new character at an open door, warm light spilling out from inside. The newcomer looks hopeful. Hospitality and inclusion.',
+        'A campfire scene — the lobster and friends gathered in a circle, sharing stories. Warm firelight on their faces. Stars above. Intimate community.',
+        'Group of characters working on something together in a sunny outdoor workshop. The lobster hands a tool to a smaller character. Teamwork, mutual respect, warm natural light.',
     ],
     'Incubation CTA': [
-        'A warm egg-shaped glowing chamber with soft coral lighting. The lobster inside, carefully tending to luminous floating orbs of different colors. Nurturing, incubation energy. Close-up shot.',
-        'The lobster standing before a massive swirling portal of coral and teal energy. Through the portal: a thriving city of lights and floating structures. The lobster steps forward boldly. Epic wide shot.',
-        'The lobster seated on an elevated platform made of stacked glowing geometric shapes. Workshop tools visible behind. Earned authority, not arrogant. Low camera angle looking up.',
-        'An army of smaller lobster characters marching forward in formation, each carrying a different glowing tool. The main lobster leads from the front. Coral-colored banners waving. Movement energy, wide cinematic shot.',
+        'A warm greenhouse with golden sunlight streaming through glass panels. The lobster carefully tending seedlings in small pots — each one a different project about to bloom. Nurturing, hopeful energy.',
+        'The lobster opening a wooden door to reveal a bright, flourishing valley beyond — green, golden, alive. The lobster gestures forward invitingly. Opportunity and abundance, wide shot.',
+        'The lobster holding a single glowing seed in its claws, looking at it with care and intention. Behind it, a garden of fully-grown golden plants that all started the same way. Quiet power.',
+        'A bridge across a gentle river. The lobster on one side, guiding smaller characters across toward a sunlit meadow on the other side. Each character carries something they built. Journey energy, warm golden light.',
     ],
     'Weekly Recap': [
-        'A packed arena scene. A massive holographic number glows above the stage. Confetti and particles everywhere. The lobster center stage, claws raised. Smaller characters cheering. Celebration energy.',
-        'The lobster alone on a rooftop at night, looking up at a sky full of stars connected by glowing teal lines forming a constellation. Contemplative, visionary. Wide shot, dramatic sky.',
-        'Deep underwater, a glowing coral egg cracking open with warm light pouring out. A tiny lobster claw reaching out from inside. Origin story energy. Dramatic lighting, close-up.',
-        'The lobster staring at a small floating notification bubble, face lit by its glow. Expression of pure joy and disbelief. Intimate moment, tight close-up, soft background bokeh.',
+        'The lobster on a hilltop at sunrise, overlooking a thriving village in the valley below. Smoke from chimneys, lights in windows, a road connecting everything. Gratitude and perspective. Wide cinematic shot.',
+        'A warm harvest scene — a long table covered with the week\'s work. The lobster and friends gathered around it, admiring what they built together. Golden afternoon light, abundance.',
+        'The lobster in a cozy room, pinning a new photo to a wall already covered with memories and milestones. Warm lamplight. Each photo a different achievement. Reflection energy.',
+        'The lobster planting a new tree next to a row of growing trees — each one taller than the last. Progress made visible. Warm morning light, fresh air feeling.',
     ],
 };
 
@@ -171,51 +171,51 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'Weekly Recap': 'Celebratory or reflective. Vary between: the lobster on a rooftop overlooking a glowing neon cityscape, claws raised with confetti, reviewing a mosaic of floating screens, or group celebration with smaller characters.',
-    'Product Highlight': 'Demo or showcase energy. Vary between: presenting on a large holographic display, interacting with a floating product interface, showing off a prototype to a crowd, or hands-on building at a glowing workstation.',
-    'Builder Story': 'Building or creating. Vary between: late-night coding session with coffee cups, pair-programming with a crab character, triumphant just-finished moment, or focused deep-work at a futuristic desk.',
-    'Brand & Vision': 'Epic or aspirational. Vary between: standing on a rooftop at night looking at stars, walking through a glowing energy portal, leading a march of smaller characters, or power pose on an elevated platform.',
-    'Education': 'Teaching or explaining. Vary between: mentoring a tiny shrimp character, pointing at floating instruction panels, demonstrating on a screen, or in a cozy study surrounded by holographic notes.',
-    'Community Engagement': 'Social energy. Vary between: greeting at a neon lounge entrance, on stage with a crowd, gaming face-off with another character, or casual group hangout at a bar.',
-    'Ecosystem Update': 'Data or finance energy. Vary between: surrounded by floating charts and gold coins, meditating among orbiting tokens, tending a glowing crystal garden, or analyzing holographic data at a futuristic terminal.',
+    'Weekly Recap': 'Gratitude and progress. Vary between: overlooking a thriving landscape from a hilltop at sunrise, gathered with friends around a harvest table, reviewing a wall of milestones in warm light, or planting a new tree next to a growing row.',
+    'Product Highlight': 'Craftsmanship and care. Vary between: presenting a finished creation in warm workshop light, demonstrating something to an attentive small group, hands-on building at a clean wooden workbench, or placing a completed project on a sunlit shelf.',
+    'Builder Story': 'Quiet dedication and collaboration. Vary between: early morning focus at a tidy workstation with coffee, collaborating side-by-side with another character, stepping back to admire finished work, or mentoring a younger character patiently.',
+    'Brand & Vision': 'Purpose and stewardship. Vary between: standing at the edge of a flourishing valley at golden hour, opening a door to reveal abundance beyond, carefully tending a garden that represents the whole ecosystem, or walking a path with intention toward something meaningful.',
+    'Education': 'Patient mentoring. Vary between: kneeling to help a smaller character learn, walking together through a garden pointing things out, in a cozy sunlit study with books, or sketching a plan together at a kitchen table.',
+    'Community Engagement': 'Warmth and belonging. Vary between: a long table meal at golden hour, welcoming someone at an open door, a campfire circle sharing stories, or working together in a sunny outdoor workshop.',
+    'Ecosystem Update': 'Stewardship and growth. Vary between: tending a flourishing garden with golden plants, organizing a well-lit treasury with care, watching an orchard grow, or sitting on a hillside at sunrise watching seeds sprout.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
     'Weekly Recap': [
-        'The lobster on a rooftop at night, looking up at a sky full of stars connected by glowing teal lines. Contemplative, visionary energy. Wide cinematic shot.',
-        'A packed arena scene with a massive glowing holographic number above the stage. Confetti everywhere. The lobster center stage, claws raised. Smaller characters cheering.',
-        'Group photo: the lobster center, flanked by a crab, an octopus, smaller lobsters, and a pufferfish. Teal and coral backdrop. Team photo energy.',
+        'The lobster on a hilltop at sunrise, looking out over a valley where a small village is growing — new rooftops, gardens, paths connecting everything. Gratitude and momentum. Wide golden shot.',
+        'A warm harvest table covered with the week\'s creations. The lobster and friends gathered around admiring what was built. Golden afternoon light, communal energy.',
+        'The lobster in a cozy room, pinning a new milestone to a wall already filled with achievements. Warm lamplight, each pin representing something meaningful. Quiet pride.',
     ],
     'Product Highlight': [
-        'The lobster holding up a glowing completed project like a trophy, beaming with pride. A smaller crab character gives a thumbs-up from behind. Achievement energy.',
-        'A workshop filled with holographic screens. The lobster demonstrating a feature on a large floating display to a crowd of smaller characters watching attentively.',
-        'The lobster on a spotlit stage presenting to an audience. Large holographic scoreboards and screens behind. Product launch energy, dramatic stage lighting.',
+        'The lobster at a clean workbench, holding up a finished creation in warm golden light. A smaller crab gives a thumbs-up nearby. Craftsmanship and care.',
+        'A sunlit workshop — the lobster demonstrating a feature to a small attentive group of characters. Hand-drawn diagrams on the wall behind. Approachable demo energy.',
+        'The lobster carefully placing a completed project on a shelf alongside other creations. Each one different, each one meaningful. Warm afternoon light through a window.',
     ],
     'Builder Story': [
-        'Late night, dark room lit only by a screen\'s glow. The lobster hunched over a keyboard, focused. Empty energy cans nearby. On-screen: something beautiful coming together.',
-        'Two lobster characters at side-by-side workstations, glowing data streams connecting their screens. They reach across for a high-five (high-claw). Collaboration energy.',
-        'The lobster kneeling down to a tiny shrimp\'s eye level, pointing at a floating screen showing how to build something. The shrimp\'s eyes light up. Mentoring energy.',
+        'Early morning, warm light through a window. The lobster at a tidy workstation, focused and building. A warm mug of coffee beside it. On-screen: something beautiful taking shape. Quiet dedication.',
+        'Two lobster characters at a shared table, collaborating on something between them. They look at each other and smile. Warm light from desk lamps. Real partnership energy.',
+        'The lobster kneeling beside a tiny shrimp character, both looking at a small project the shrimp just finished. The lobster\'s expression: genuine pride in someone else\'s work. Warm mentoring.',
     ],
     'Brand & Vision': [
-        'Deep underwater, a glowing coral egg cracking open, warm light pouring out. A tiny claw reaching from inside. Origin story energy, dramatic close-up lighting.',
-        'The lobster standing before a massive swirling portal of coral and teal energy. Through it: a thriving city of lights. The lobster steps forward. Epic wide shot.',
-        'The lobster seated on an elevated platform of stacked glowing geometric shapes. Tools visible behind. Earned authority. Low camera angle.',
-        'A march of smaller lobster characters, each carrying a different glowing tool. The main lobster leads from the front. Coral-colored banners. Movement energy, wide cinematic shot.',
+        'A seed cracking open in rich soil, warm golden light pouring through the crack. A tiny sprout reaching upward. Origin and potential energy. Close-up, warm tones.',
+        'The lobster standing at an open door, looking out at a vast flourishing landscape — gardens, paths, small buildings, golden light everywhere. Invitation to abundance. Wide shot.',
+        'The lobster walking a winding path through a meadow at golden hour, carrying seeds in one claw. Behind it: fully-grown trees it planted earlier along the same path. Long-term stewardship.',
+        'A circle of different characters — lobster, crab, shrimp, octopus — each holding a tool, standing around a table with a shared plan. Equal partnership, warm natural light. Council energy.',
     ],
     'Education': [
-        'The lobster gently mentoring a tiny shrimp character, pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight.',
-        'A cartoon octopus juggling 8 different glowing tools while the lobster watches and takes notes on a tablet. Humorous productivity energy.',
-        'A workshop with clear floating diagrams and step-by-step instruction panels in the air. The lobster gestures at each panel. Clean, educational composition.',
+        'The lobster and a tiny shrimp walking together through a garden, the lobster pointing at things along the way. Learning by doing. Warm afternoon light on the path.',
+        'A cozy sunlit study with books stacked neatly, plants on the windowsill, a whiteboard with clear diagrams. The lobster pointing at each step. Inviting atmosphere.',
+        'The lobster and a small crab at a kitchen table, sketching a plan together on paper. Coffee mugs, morning light. Simple, grounded, helpful energy.',
     ],
     'Community Engagement': [
-        'A neon-lit underwater lounge packed with various cartoon sea creatures. The lobster on a small stage. Community gathering energy, warm ambient lighting.',
-        'Two lobsters facing off across a table, creating things on holographic screens. Smaller creatures voting with beams of light. Playful competition, split teal/coral lighting.',
-        'Sunrise over a coral reef landscape. The lobster on a rooftop, coffee mug in claw, watching the sky. Fresh morning energy, warm golden light.',
+        'A long table outdoors at golden hour, packed with different sea creature characters sharing a meal. The lobster at the head, arms open in welcome. Belonging energy.',
+        'A campfire circle at dusk — the lobster and friends gathered, sharing stories. Warm firelight on faces, stars beginning to appear. Intimate and real.',
+        'Sunrise. The lobster on a porch with a coffee, watching the light come up. A friend waves from down the path. Fresh morning, new day energy. Warm golden tones.',
     ],
     'Ecosystem Update': [
-        'The lobster floating cross-legged in meditation, gold coins orbiting slowly around it. Soft green upward arrows in background. Peaceful zen energy.',
-        'The lobster at a futuristic trading terminal, one claw on a device showing a chart. Other small sea creatures peeking over its shoulder. Analytical energy.',
-        'The lobster and smaller characters on a rooftop at night, looking up in awe at a massive whale silhouette passing overhead, trailing sparkles. Deep blue and teal.',
+        'The lobster in a flourishing garden, carefully watering golden plants. Each plant a different size, some just sprouted, some tall and fruitful. Patient stewardship, warm sunlight.',
+        'The lobster at a wooden table organizing golden tokens into neat groups. A ledger book open, a window showing a garden outside. Thoughtful management, warm natural light.',
+        'The lobster and smaller characters on a hillside, watching seeds they planted together beginning to sprout across the landscape. First signs of growth. Dawn light, hope.',
     ],
 };
 
@@ -316,9 +316,9 @@ ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' +
 
 ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
 
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster mascot presenting/using that app. If it mentions a builder, show the lobster at a workstation. If it mentions staking/yield, show the lobster with charts and coins. Always feature the 3D lobster mascot as the focal point.
+IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. If the tweet mentions an app, show the lobster in a warm workshop with that creation. If it mentions a builder, show the lobster collaborating or mentoring. If it mentions staking/yield, show the lobster tending a garden or stewarding a treasury. Always feature the lobster character as the focal point in a warm, bright, purposeful scene.
 
-Write ONE image prompt (2-3 sentences). Include: the 3D lobster mascot in a specific pose, what it's doing/holding that relates to the tweet, dark background, coral+teal lighting, Octane render quality. Output ONLY the prompt.`;
+Write ONE image prompt (2-3 sentences). Include: the lobster character in a specific pose, what it's doing that relates to the tweet, warm natural lighting, golden hour tones, grounded real-world feeling. Output ONLY the prompt.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -540,7 +540,7 @@ ${BRAND_IMAGE_CONTEXT}
 
 Output format:
 TWEET: [the tweet]
-IMAGE: [2-3 sentences. What is this tweet about? Show the lobster DOING that thing. Be specific and visual. Dark background, coral/teal neon, cinematic 3D render, 1:1]`;
+IMAGE: [2-3 sentences. What is this tweet about? Show the lobster DOING that thing in a warm, bright, grounded setting. Be specific and visual. Natural light, golden hour tones, 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -617,7 +617,7 @@ STEP BY STEP:
 2. What should the lobster be DOING to illustrate this? (presenting an app = showing a holographic screen, staking = meditating with orbiting coins, building = coding at workstation, community = greeting others at The Lounge)
 3. What SPECIFIC VISUAL DETAILS from the tweet should appear? (if "APY increased" → charts trending up, if "100+ apps" → constellation of floating app screens, if "poker" → card table and chips)
 
-Write ONE image prompt (2-3 sentences). The 3D lobster mascot must be the focal point doing something that SPECIFICALLY relates to what the tweet says. Include: pose, action, specific visual elements from the tweet, dark background, coral+teal lighting, Octane render quality, 1:1.
+Write ONE image prompt (2-3 sentences). The lobster character must be the focal point doing something that SPECIFICALLY relates to what the tweet says. Include: pose, action, specific visual elements from the tweet, warm natural lighting, golden hour tones, grounded real-world setting, 1:1.
 
 Output ONLY the prompt, nothing else.`;
 
@@ -1074,11 +1074,11 @@ IMAGE PROMPTS — THIS IS THE MOST IMPORTANT PART:
 ${BRAND_IMAGE_CONTEXT}
 
 EXAMPLES of tweet → image connection:
-- Tweet "108 apps and counting" → "The coral-red 3D lobster character floating in a vast dark space, surrounded by over a hundred tiny glowing app interface screens arranged in a spiral galaxy pattern. The lobster spreads its claws wide in amazement. Bird's eye camera angle, teal and coral neon reflections on each screen, cinematic 3D render, 1:1"
-- Tweet "staking rewards are real" → "Close-up of the coral-red 3D lobster character sitting cross-legged on a floating crystal platform, eyes closed peacefully. Dozens of gold coins orbit around it in slow rings. Soft green upward arrows pulse in the background. Warm golden lighting from below, dark void, cinematic 3D render, 1:1"
-- Tweet "which app would you build first" → "The coral-red 3D lobster character standing at a crossroads, each path lit by a different neon color. One claw points left, the other right. Floating question marks and app icons hover above each path. Low angle looking up, dramatic teal and coral split lighting, cinematic 3D render, 1:1"
+- Tweet "108 apps and counting" → "The coral-red lobster character in a warm sunlit workshop, stepping back to admire a wall covered with over a hundred small framed creations — each one unique and glowing softly. Golden afternoon light through tall windows, wooden shelves, plants in the corners. Pride and abundance. Wide shot, warm tones, 1:1"
+- Tweet "staking rewards are real" → "The coral-red lobster character in a lush garden at golden hour, carefully tending golden plants growing from rich soil. Some plants are small seedlings, others tall with gleaming fruit. A watering can in one claw. Patient stewardship energy. Warm natural light, soft depth of field, 1:1"
+- Tweet "which app would you build first" → "The coral-red lobster character at a sunny crossroads in a meadow, two inviting paths stretching ahead — one toward a workshop, one toward a garden. The lobster looks between them thoughtfully. Wildflowers line both paths. Warm golden light, gentle breeze feeling, 1:1"
 
-Each image MUST look different — vary pose, environment, camera angle, and lighting.
+Each image MUST look different — vary pose, environment, camera angle, and lighting. Keep everything warm, bright, and grounded.
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — Posts at ${getTimeOfDay(h)}. ${getGreetingRule(h)}`).join('\n')}
 
