@@ -118,6 +118,34 @@ async function postReply(text, mentionTweetId) {
   return data.data?.id || null;
 }
 
+// ── Log to @inclawbator feed channel ──
+
+const FEED_BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
+const FEED_CHANNEL = '@inclawbator';
+
+function escFeed(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+async function logToFeed(authorUsername, mentionText, replyText, replyTweetId) {
+  if (!FEED_BOT_TOKEN) return;
+
+  let text = `🐦 <b>X REPLY</b> · <b>@${escFeed(authorUsername)}</b>\n\n`;
+  text += `<b>Mention:</b> ${escFeed((mentionText || '').slice(0, 300))}\n\n`;
+  text += `<b>Reply:</b> ${escFeed((replyText || '').slice(0, 500))}`;
+  if (replyTweetId) text += `\n\n🔗 https://x.com/inclawbator/status/${replyTweetId}`;
+
+  if (text.length > 4000) text = text.slice(0, 3997) + '...';
+
+  try {
+    await fetch(`https://api.telegram.org/bot${FEED_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: FEED_CHANNEL, text, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+  } catch (e) {
+    console.error('Feed log error:', e.message);
+  }
+}
+
 // ── Log reply ──
 
 async function logMentionReply(mentionId, mentionText, author, replyText, status, replyTweetId, errorMessage) {
@@ -212,6 +240,7 @@ async function handleMention(tweet, authors) {
 
     const tweetId = await postReply(replyText, tweet.id);
     await logMentionReply(tweet.id, tweet.text, authorUsername, replyText, 'posted', tweetId);
+    logToFeed(authorUsername, tweet.text, replyText, tweetId).catch(() => {});
     mentionsProcessed++;
     console.log(`Replied to @${authorUsername} (tweet ${tweetId})`);
   } catch (e) {
