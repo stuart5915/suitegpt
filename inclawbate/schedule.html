@@ -779,6 +779,62 @@
         .sched-draft-btn--postnow { border-color:rgba(56,189,248,0.4);color:#38bdf8;width:auto;padding:0 8px;font-size:0.65rem;font-weight:700; }
         .sched-draft-btn--postnow:hover { background:rgba(56,189,248,0.1); }
 
+        /* ── Image Overlay System ── */
+        .sched-overlay-btn {
+            font-size:0.55rem;font-weight:700;font-family:var(--font-mono);
+            padding:2px 6px;border-radius:var(--radius-sm);cursor:pointer;
+            border:1px solid rgba(232,121,85,0.3);color:#e87955;background:none;
+            transition:all 0.15s;white-space:nowrap;
+        }
+        .sched-overlay-btn:hover { background:rgba(232,121,85,0.1);border-color:#e87955; }
+        .overlay-modal-bg {
+            position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);
+            z-index:9999;display:flex;align-items:center;justify-content:center;
+            animation:fadeIn 0.15s ease;
+        }
+        .overlay-modal {
+            background:var(--bg-card);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-xl);padding:24px;max-width:560px;width:95%;
+            max-height:90vh;overflow-y:auto;
+        }
+        .overlay-modal h3 {
+            font-family:var(--font-display);font-size:0.95rem;font-weight:800;
+            color:var(--text-primary);margin-bottom:16px;
+        }
+        .overlay-preview-wrap {
+            position:relative;width:100%;aspect-ratio:1;background:#111;
+            border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;
+        }
+        .overlay-preview-wrap canvas {
+            width:100%;height:100%;display:block;
+        }
+        .overlay-options {
+            display:flex;flex-direction:column;gap:10px;margin-bottom:16px;
+        }
+        .overlay-opt {
+            display:flex;align-items:center;gap:10px;font-size:0.78rem;color:var(--text-secondary);
+        }
+        .overlay-opt input[type="checkbox"] { accent-color:#e87955;width:16px;height:16px;cursor:pointer; }
+        .overlay-opt label { cursor:pointer;flex:1; }
+        .overlay-opt input[type="text"] {
+            flex:1;background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-sm);padding:6px 10px;color:var(--text-primary);
+            font-size:0.75rem;font-family:var(--font-display);
+        }
+        .overlay-actions {
+            display:flex;gap:8px;justify-content:flex-end;
+        }
+        .overlay-actions button {
+            padding:8px 18px;border-radius:var(--radius-full);font-size:0.78rem;
+            font-weight:700;cursor:pointer;transition:all 0.15s;border:none;
+        }
+        .overlay-btn-apply { background:var(--accent-gradient);color:#fff; }
+        .overlay-btn-apply:hover { opacity:0.85; }
+        .overlay-btn-download { background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border-subtle) !important; }
+        .overlay-btn-download:hover { border-color:var(--text-dim) !important; }
+        .overlay-btn-cancel { background:none;color:var(--text-dim); }
+        .overlay-btn-cancel:hover { color:var(--text-secondary); }
+
         /* ── Weekly Overview Bar ── */
         .sched-week-overview {
             display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
@@ -1580,6 +1636,9 @@
                 // Image area — show thumbnail or upload button on all non-posted slots
                 if (hasImage) {
                     html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
+                    if (_hasEditAccess() && !isPosted) {
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                    }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
@@ -1655,6 +1714,9 @@
                 // Image area for user-booked slots
                 if (slotOpts2.image_url) {
                     html += '<img src="' + slotOpts2.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
+                    if (_hasEditAccess() && !isPosted) {
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                    }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
@@ -2342,6 +2404,200 @@
         };
         inp.click();
     };
+
+    // ── Image Overlay System ──
+    window._openOverlay = function(slotId) {
+        var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+        if (!slot) return;
+        var opts = slot.tweet_options || {};
+        var imageUrl = opts.image_url;
+        if (!imageUrl) { alert('No image to overlay'); return; }
+
+        var tweetText = slot.tweet_text || '';
+        var pillar = opts.pillar || '';
+
+        // Extract key phrase — first sentence or strongest line
+        var keyPhrase = '';
+        var lines = tweetText.split('\n').filter(function(l) { return l.trim().length > 10; });
+        if (lines.length > 0) {
+            keyPhrase = lines[0].replace(/https?:\/\/\S+/g, '').trim();
+            if (keyPhrase.length > 60) keyPhrase = keyPhrase.substring(0, 57) + '...';
+        }
+
+        var modal = document.createElement('div');
+        modal.className = 'overlay-modal-bg';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        modal.innerHTML = '<div class="overlay-modal">' +
+            '<h3>Image Overlay</h3>' +
+            '<div class="overlay-preview-wrap"><canvas id="overlayCanvas"></canvas></div>' +
+            '<div class="overlay-options">' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovLogo" checked><label for="ovLogo">Logo mark (bottom-left)</label></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovPillar" checked><label for="ovPillar">Pillar badge (top-left)</label></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovText" checked><label for="ovText">Key phrase (bottom)</label></div>' +
+                '<div class="overlay-opt"><input type="text" id="ovTextEdit" value="' + escHtml(keyPhrase) + '" placeholder="Custom text..."></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovGradient" checked><label for="ovGradient">Bottom gradient</label></div>' +
+            '</div>' +
+            '<div class="overlay-actions">' +
+                '<button class="overlay-btn-cancel" onclick="this.closest(\'.overlay-modal-bg\').remove()">Cancel</button>' +
+                '<button class="overlay-btn-download" id="ovDownload">Download</button>' +
+                '<button class="overlay-btn-apply" id="ovApply">Apply &amp; Upload</button>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(modal);
+
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+            window._overlayImg = img;
+            window._overlaySlotId = slotId;
+            window._overlayPillar = pillar;
+            _renderOverlay();
+
+            // Live update on checkbox/text change
+            ['ovLogo','ovPillar','ovText','ovGradient'].forEach(function(id) {
+                document.getElementById(id).addEventListener('change', _renderOverlay);
+            });
+            document.getElementById('ovTextEdit').addEventListener('input', _renderOverlay);
+
+            document.getElementById('ovDownload').onclick = function() {
+                var canvas = document.getElementById('overlayCanvas');
+                var link = document.createElement('a');
+                link.download = 'inclawbate-' + slotId.substring(0, 8) + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+
+            document.getElementById('ovApply').onclick = async function() {
+                var canvas = document.getElementById('overlayCanvas');
+                var dataUrl = canvas.toDataURL('image/png');
+                var auth = getAuth();
+                if (!auth || !auth.token) { alert('Sign in first'); return; }
+
+                this.textContent = 'Uploading...';
+                this.disabled = true;
+                try {
+                    var uploadResp = await fetch('/api/inclawbate/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                        body: JSON.stringify({ file_data: dataUrl, file_name: 'overlay-' + slotId.substring(0, 8) + '.png', file_type: 'image/png' })
+                    });
+                    var uploadData = await uploadResp.json();
+                    if (uploadData.error) { alert(uploadData.error); return; }
+
+                    var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                        body: JSON.stringify({ action: 'set_image', slot_id: slotId, image_url: uploadData.url })
+                    });
+                    var data = await resp.json();
+                    if (data.error) { alert(data.error); return; }
+
+                    var s = _schedSlots.find(function(s) { return s.id === slotId; });
+                    if (s) {
+                        if (!s.tweet_options) s.tweet_options = {};
+                        s.tweet_options.image_url = uploadData.url;
+                    }
+                    modal.remove();
+                    renderSlots(_selectedDay);
+                } catch(e) {
+                    alert('Upload failed: ' + e.message);
+                    this.textContent = 'Apply & Upload';
+                    this.disabled = false;
+                }
+            };
+        };
+        img.onerror = function() { alert('Could not load image for overlay'); modal.remove(); };
+        img.src = imageUrl;
+    };
+
+    function _renderOverlay() {
+        var canvas = document.getElementById('overlayCanvas');
+        if (!canvas || !window._overlayImg) return;
+        var img = window._overlayImg;
+        var size = Math.max(img.width, img.height, 1080);
+        canvas.width = size;
+        canvas.height = size;
+        var ctx = canvas.getContext('2d');
+
+        // Draw image centered/covered
+        var scale = Math.max(size / img.width, size / img.height);
+        var w = img.width * scale;
+        var h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+
+        var showLogo = document.getElementById('ovLogo').checked;
+        var showPillar = document.getElementById('ovPillar').checked;
+        var showText = document.getElementById('ovText').checked;
+        var showGradient = document.getElementById('ovGradient').checked;
+        var customText = document.getElementById('ovTextEdit').value.trim();
+
+        var pad = size * 0.04;
+        var pillar = window._overlayPillar || '';
+
+        // Bottom gradient
+        if (showGradient) {
+            var grad = ctx.createLinearGradient(0, size * 0.65, 0, size);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, size * 0.65, size, size * 0.35);
+        }
+
+        // Logo mark (bottom-left) — draw the sprout/leaf shape
+        if (showLogo) {
+            var logoSize = size * 0.06;
+            var lx = pad;
+            var ly = size - pad - logoSize;
+            // Coral circle
+            ctx.beginPath();
+            ctx.arc(lx + logoSize / 2, ly + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#e87955';
+            ctx.fill();
+            // White sprout icon (simplified)
+            ctx.beginPath();
+            ctx.moveTo(lx + logoSize * 0.5, ly + logoSize * 0.78);
+            ctx.quadraticCurveTo(lx + logoSize * 0.5, ly + logoSize * 0.45, lx + logoSize * 0.35, ly + logoSize * 0.28);
+            ctx.moveTo(lx + logoSize * 0.5, ly + logoSize * 0.5);
+            ctx.quadraticCurveTo(lx + logoSize * 0.55, ly + logoSize * 0.35, lx + logoSize * 0.7, ly + logoSize * 0.22);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = logoSize * 0.08;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+
+        // Pillar badge (top-left)
+        if (showPillar && pillar) {
+            ctx.font = '600 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+            var pillarW = ctx.measureText(pillar).width + size * 0.03;
+            var pillarH = size * 0.04;
+            var px = pad;
+            var py = pad;
+            // Badge background
+            ctx.fillStyle = 'rgba(232,121,85,0.85)';
+            ctx.beginPath();
+            ctx.roundRect(px, py, pillarW, pillarH, pillarH / 2);
+            ctx.fill();
+            // Badge text
+            ctx.fillStyle = '#ffffff';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pillar, px + size * 0.015, py + pillarH / 2);
+        }
+
+        // Key phrase text (bottom-right)
+        if (showText && customText) {
+            var fontSize = size * 0.032;
+            ctx.font = '700 ' + fontSize + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 8;
+            ctx.fillText(customText, size - pad, size - pad);
+            ctx.shadowBlur = 0;
+            ctx.textAlign = 'left';
+        }
+    }
 
     var _editingSlotId = null;
     var _incubationProjects = [];
