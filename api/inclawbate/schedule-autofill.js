@@ -449,16 +449,22 @@ Write ONE image prompt (2-3 sentences). Include: a real human subject in a real-
 
         if (action === 'set_image') {
             const { slot_id, image_url } = req.body;
-            if (!slot_id || !image_url) return res.status(400).json({ error: 'slot_id and image_url required' });
-            // Store image URL in tweet_options and flip status from needs_image → needs_review
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+            // Store or remove image URL in tweet_options
             const { data: slot } = await supabase
                 .from('agent_schedule')
                 .select('tweet_options, status')
                 .eq('id', slot_id)
                 .single();
             const opts = slot?.tweet_options || {};
-            opts.image_url = image_url;
-            const newStatus = slot?.status === 'needs_image' ? 'needs_review' : slot?.status;
+            if (image_url) {
+                opts.image_url = image_url;
+            } else {
+                delete opts.image_url;
+            }
+            const newStatus = image_url
+                ? (slot?.status === 'needs_image' ? 'needs_review' : slot?.status)
+                : 'needs_image';
             const { error } = await supabase
                 .from('agent_schedule')
                 .update({ tweet_options: opts, status: newStatus })
