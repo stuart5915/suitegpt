@@ -1,12 +1,19 @@
 """
-Inclawbator Compute Node
-========================
-One Docker image. Two income streams.
+Inclawbator DePIN Node
+======================
+One install. Every way your PC can earn, in one dashboard.
 
-1. Inclawbate jobs → earn CLAWS (priority)
-2. External compute markets → earn USD (when idle)
+EARNINGS SOURCES:
+  GPU Compute:  Salad             → USD (PayPal)
+  Bandwidth:    Grass             → GRASS tokens
+  Bandwidth:    Honeygain         → USD (PayPal/crypto)
+  Bandwidth:    PacketStream      → USD
+  Bandwidth:    Pawns.app         → USD
+  Bandwidth:    EarnApp           → USD
+  Storage:      Filecoin/Sia      → FIL/SC tokens
+  Inclawbate:   Studio API jobs   → CLAWS
 
-Non-custodial: USD goes to your own accounts, CLAWS claimed via smart contract.
+All earnings can auto-buy CLAWS. Non-custodial.
 """
 
 import os
@@ -28,10 +35,19 @@ INCLAWBATE_API = os.environ.get('INCLAWBATE_API', 'https://www.inclawbate.app')
 HEARTBEAT_INTERVAL = int(os.environ.get('HEARTBEAT_INTERVAL', '30'))  # seconds
 NODE_VERSION = '0.1.0'
 
-# External market credentials (optional — node earns CLAWS-only if not set)
+# GPU compute credentials
 SALAD_TOKEN = os.environ.get('SALAD_TOKEN', '')        # salad.com API token
 VASTAI_KEY = os.environ.get('VASTAI_API_KEY', '')       # vast.ai API key
 IONET_KEY = os.environ.get('IONET_DEVICE_ID', '')       # io.net device ID
+
+# Bandwidth sharing credentials (no GPU needed)
+GRASS_USER = os.environ.get('GRASS_USER', '')            # grass.io email
+HONEYGAIN_EMAIL = os.environ.get('HONEYGAIN_EMAIL', '')  # honeygain email
+HONEYGAIN_PASS = os.environ.get('HONEYGAIN_PASS', '')    # honeygain password
+PACKETSTREAM_CID = os.environ.get('PACKETSTREAM_CID', '') # packetstream CID
+EARNAPP_UUID = os.environ.get('EARNAPP_UUID', '')         # earnapp device UUID
+PAWNS_EMAIL = os.environ.get('PAWNS_EMAIL', '')           # pawns.app email
+PAWNS_PASS = os.environ.get('PAWNS_PASS', '')             # pawns.app password
 
 # ═══════════════════════════════════════
 # GPU DETECTION
@@ -252,13 +268,144 @@ class ExternalWorkerManager:
         self.start_vastai()
         self.start_ionet()
         active = sum([self.salad_running, self.vastai_running, self.ionet_running])
-        print(f'[EXTERNAL] {active} market worker(s) running')
+        print(f'[GPU] {active} compute worker(s) running')
+
+
+class BandwidthWorkerManager:
+    """Manages bandwidth sharing services. These run alongside GPU workers — no conflict."""
+
+    def __init__(self):
+        self.grass_running = False
+        self.honeygain_running = False
+        self.packetstream_running = False
+        self.earnapp_running = False
+        self.pawns_running = False
+        self.processes = []
+
+    def start_grass(self):
+        """Start Grass bandwidth sharing."""
+        if not GRASS_USER:
+            return
+        print(f'[GRASS] Starting Grass node...')
+        try:
+            # Grass runs as a Docker container
+            proc = subprocess.Popen(
+                ['docker', 'run', '-d', '--name', 'grass-node',
+                 '-e', f'GRASS_USER={GRASS_USER}',
+                 'grassfoundation/grass-node:latest'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            self.processes.append(proc)
+            self.grass_running = True
+            print('[GRASS] Node started — earning GRASS tokens')
+        except Exception as e:
+            print(f'[GRASS] Start failed: {e}')
+            print('[GRASS] Install: https://app.getgrass.io/')
+
+    def start_honeygain(self):
+        """Start Honeygain bandwidth sharing."""
+        if not HONEYGAIN_EMAIL or not HONEYGAIN_PASS:
+            return
+        print('[HONEYGAIN] Starting Honeygain...')
+        try:
+            proc = subprocess.Popen(
+                ['docker', 'run', '-d', '--name', 'honeygain',
+                 'honeygain/honeygain',
+                 '-tou-accept',
+                 '-email', HONEYGAIN_EMAIL,
+                 '-pass', HONEYGAIN_PASS,
+                 '-device', 'inclawbator-node'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            self.processes.append(proc)
+            self.honeygain_running = True
+            print('[HONEYGAIN] Started — earning USD from bandwidth')
+        except Exception as e:
+            print(f'[HONEYGAIN] Start failed: {e}')
+            print('[HONEYGAIN] Install: https://www.honeygain.com/')
+
+    def start_packetstream(self):
+        """Start PacketStream bandwidth sharing."""
+        if not PACKETSTREAM_CID:
+            return
+        print('[PACKETSTREAM] Starting PacketStream...')
+        try:
+            proc = subprocess.Popen(
+                ['docker', 'run', '-d', '--name', 'packetstream',
+                 '-e', f'CID={PACKETSTREAM_CID}',
+                 'packetstream/psclient:latest'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            self.processes.append(proc)
+            self.packetstream_running = True
+            print('[PACKETSTREAM] Started — earning USD from bandwidth')
+        except Exception as e:
+            print(f'[PACKETSTREAM] Start failed: {e}')
+
+    def start_earnapp(self):
+        """Start EarnApp bandwidth sharing."""
+        if not EARNAPP_UUID:
+            return
+        print('[EARNAPP] Starting EarnApp...')
+        try:
+            proc = subprocess.Popen(
+                ['docker', 'run', '-d', '--name', 'earnapp',
+                 '-e', f'EARNAPP_UUID={EARNAPP_UUID}',
+                 'fazalfarhan01/earnapp:lite'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            self.processes.append(proc)
+            self.earnapp_running = True
+            print('[EARNAPP] Started — earning USD from bandwidth')
+        except Exception as e:
+            print(f'[EARNAPP] Start failed: {e}')
+
+    def start_pawns(self):
+        """Start Pawns.app bandwidth sharing."""
+        if not PAWNS_EMAIL or not PAWNS_PASS:
+            return
+        print('[PAWNS] Starting Pawns.app...')
+        try:
+            proc = subprocess.Popen(
+                ['docker', 'run', '-d', '--name', 'pawns',
+                 'iproyal/pawns-cli:latest',
+                 '-email=' + PAWNS_EMAIL,
+                 '-password=' + PAWNS_PASS,
+                 '-device-name=inclawbator-node',
+                 '-accept-tos'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            self.processes.append(proc)
+            self.pawns_running = True
+            print('[PAWNS] Started — earning USD from bandwidth')
+        except Exception as e:
+            print(f'[PAWNS] Start failed: {e}')
+
+    def start_all(self):
+        """Start all configured bandwidth workers. These all run simultaneously — no conflict."""
+        self.start_grass()
+        self.start_honeygain()
+        self.start_packetstream()
+        self.start_earnapp()
+        self.start_pawns()
+        active = sum([self.grass_running, self.honeygain_running,
+                      self.packetstream_running, self.earnapp_running, self.pawns_running])
+        print(f'[BANDWIDTH] {active} bandwidth worker(s) running')
+
+    def stop_all(self):
+        """Stop all bandwidth workers."""
+        for name in ['grass-node', 'honeygain', 'packetstream', 'earnapp', 'pawns']:
+            try:
+                subprocess.run(['docker', 'stop', name], capture_output=True, timeout=10)
+                subprocess.run(['docker', 'rm', name], capture_output=True, timeout=5)
+            except:
+                pass
 
 # ═══════════════════════════════════════
 # LOCAL DASHBOARD (localhost:3000)
 # ═══════════════════════════════════════
 
-def start_dashboard(client, external, gpu_info):
+def start_dashboard(client, external, bandwidth, gpu_info):
     """Simple local web dashboard showing node status."""
     from flask import Flask, jsonify, render_template_string
 
@@ -300,9 +447,18 @@ def start_dashboard(client, external, gpu_info):
         <div class="stat"><span class="stat-label">Current Task</span><span class="stat-value">{{ current_task }}</span></div>
     </div>
     <div class="card">
+        <div class="stat" style="margin-bottom:8px;"><span class="stat-label" style="font-weight:700;color:#f0f0f5;">GPU Compute</span><span class="stat-value"></span></div>
         <div class="stat"><span class="stat-label">Salad</span><span class="stat-value"><span class="badge {{ 'badge-on' if salad else 'badge-off' }}">{{ 'Running' if salad else 'Not configured' }}</span></span></div>
         <div class="stat"><span class="stat-label">Vast.ai</span><span class="stat-value"><span class="badge {{ 'badge-on' if vastai else 'badge-off' }}">{{ 'Running' if vastai else 'Not configured' }}</span></span></div>
         <div class="stat"><span class="stat-label">io.net</span><span class="stat-value"><span class="badge {{ 'badge-on' if ionet else 'badge-off' }}">{{ 'Running' if ionet else 'Not configured' }}</span></span></div>
+    </div>
+    <div class="card">
+        <div class="stat" style="margin-bottom:8px;"><span class="stat-label" style="font-weight:700;color:#f0f0f5;">Bandwidth Sharing</span><span class="stat-value"></span></div>
+        <div class="stat"><span class="stat-label">Grass</span><span class="stat-value"><span class="badge {{ 'badge-on' if grass else 'badge-off' }}">{{ 'Running' if grass else 'Not configured' }}</span></span></div>
+        <div class="stat"><span class="stat-label">Honeygain</span><span class="stat-value"><span class="badge {{ 'badge-on' if honeygain else 'badge-off' }}">{{ 'Running' if honeygain else 'Not configured' }}</span></span></div>
+        <div class="stat"><span class="stat-label">PacketStream</span><span class="stat-value"><span class="badge {{ 'badge-on' if packetstream else 'badge-off' }}">{{ 'Running' if packetstream else 'Not configured' }}</span></span></div>
+        <div class="stat"><span class="stat-label">EarnApp</span><span class="stat-value"><span class="badge {{ 'badge-on' if earnapp else 'badge-off' }}">{{ 'Running' if earnapp else 'Not configured' }}</span></span></div>
+        <div class="stat"><span class="stat-label">Pawns</span><span class="stat-value"><span class="badge {{ 'badge-on' if pawns else 'badge-off' }}">{{ 'Running' if pawns else 'Not configured' }}</span></span></div>
     </div>
     </body></html>
     """
@@ -320,7 +476,12 @@ def start_dashboard(client, external, gpu_info):
             current_task=client.current_task or 'Idle',
             salad=external.salad_running,
             vastai=external.vastai_running,
-            ionet=external.ionet_running
+            ionet=external.ionet_running,
+            grass=bandwidth.grass_running,
+            honeygain=bandwidth.honeygain_running,
+            packetstream=bandwidth.packetstream_running,
+            earnapp=bandwidth.earnapp_running,
+            pawns=bandwidth.pawns_running
         )
 
     @app.route('/api/status')
@@ -364,6 +525,7 @@ def main():
     # Initialize clients
     client = InclawbateClient(INCLAWBATE_API, WALLET, gpu)
     external = ExternalWorkerManager()
+    bandwidth = BandwidthWorkerManager()
 
     # Register with Inclawbate
     print()
@@ -371,15 +533,20 @@ def main():
     if not client.register():
         print('[INCLAWBATE] Registration failed — will retry on heartbeat')
 
-    # Start external market workers
+    # Start GPU compute workers
     print()
-    print('[EXTERNAL] Starting external market workers...')
+    print('[GPU] Starting GPU compute workers...')
     external.start_all()
+
+    # Start bandwidth sharing workers (run alongside GPU — no conflict)
+    print()
+    print('[BANDWIDTH] Starting bandwidth sharing workers...')
+    bandwidth.start_all()
 
     # Start local dashboard in background thread
     print()
     print('[DASHBOARD] Starting at http://localhost:3000')
-    dash_thread = threading.Thread(target=start_dashboard, args=(client, external, gpu), daemon=True)
+    dash_thread = threading.Thread(target=start_dashboard, args=(client, external, bandwidth, gpu), daemon=True)
     dash_thread.start()
 
     # Graceful shutdown
@@ -389,6 +556,7 @@ def main():
         print('\n[SHUTDOWN] Stopping node...')
         running = False
         external.stop_all()
+        bandwidth.stop_all()
         sys.exit(0)
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
