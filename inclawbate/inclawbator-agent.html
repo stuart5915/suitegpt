@@ -29,6 +29,8 @@
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-xl: 20px;
+            --radius-full: 999px;
+            --bg-elevated: rgba(255,255,255,0.04);
             --space-xs: 6px;
             --space-sm: 12px;
             --space-md: 20px;
@@ -111,10 +113,110 @@
         .skill-cap-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .skill-cap-tag { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: rgba(192,83,77,0.1); color: var(--lobster-300); border: 1px solid rgba(192,83,77,0.15); }
 
+        /* ── Chat Widget ── */
+        .chat-section { max-width: 640px; margin: 0 auto; padding: 0 var(--space-lg) var(--space-2xl); }
+        .chat-container {
+            background: hsla(240, 10%, 6%, 0.75);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            border: 1px solid hsla(9, 52%, 54%, 0.2);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: 0 8px 40px hsla(0,0%,0%,0.5), 0 0 60px hsla(9,60%,54%,0.06), inset 0 1px 0 hsla(0,0%,100%,0.04);
+        }
+        .chat-messages {
+            max-height: 300px; min-height: 60px;
+            overflow-y: auto;
+            padding: var(--space-lg) var(--space-lg) var(--space-sm);
+            display: flex; flex-direction: column; gap: var(--space-md);
+            scroll-behavior: smooth;
+        }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+        .chat-msg { display: flex; gap: var(--space-sm); align-items: flex-start; animation: msg-in 0.35s ease; }
+        @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-msg-user { flex-direction: row-reverse; }
+        .chat-avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; flex-shrink: 0;
+        }
+        .chat-msg-user .chat-avatar {
+            background: hsla(9,52%,54%,0.15); border-color: hsla(9,52%,54%,0.25);
+            font-size: 0.7rem; color: var(--lobster-300);
+        }
+        .chat-bubble {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: var(--space-sm) var(--space-md);
+            font-size: 0.86rem; line-height: 1.6; color: var(--text-primary);
+            max-width: 85%; word-wrap: break-word;
+        }
+        .chat-msg-user .chat-bubble {
+            background: hsla(9,52%,54%,0.12); border-color: hsla(9,52%,54%,0.2); color: var(--lobster-300);
+        }
+        .chat-bubble a { color: var(--lobster-300); text-decoration: underline; text-underline-offset: 2px; }
+        .chat-typing { display: flex; gap: 4px; padding: var(--space-sm) var(--space-md); align-items: center; }
+        .chat-typing-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--text-dim); animation: typing-bounce 1.4s ease-in-out infinite;
+        }
+        .chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-bounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+        .chat-input-row {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-lg);
+            border-top: 1px solid var(--border-subtle); background: hsla(240,10%,5%,0.5);
+        }
+        .chat-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: var(--text-primary); font-family: var(--font-sans);
+            font-size: 0.9rem; padding: var(--space-sm) 0; line-height: 1.4;
+        }
+        .chat-input::placeholder { color: var(--text-dim); }
+        .chat-send {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--accent-gradient); border: none; color: #fff;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s ease;
+            box-shadow: 0 2px 8px hsla(9,60%,54%,0.25);
+        }
+        .chat-send:hover { transform: scale(1.08); }
+        .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .chat-prompts { margin-bottom: var(--space-md); }
+        .chat-prompts-scroll { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+        .chat-prompt-chip {
+            background: hsla(240,10%,8%,0.85); backdrop-filter: blur(12px);
+            border: 1px solid hsla(9,52%,54%,0.12); border-radius: var(--radius-full);
+            padding: 5px 14px; font-family: var(--font-sans);
+            font-size: 0.72rem; font-weight: 600; color: var(--text-secondary);
+            white-space: nowrap; cursor: pointer; transition: all 0.2s ease; opacity: 0.8;
+        }
+        .chat-prompt-chip:hover {
+            border-color: var(--lobster-400); color: var(--text-primary);
+            background: hsla(9,52%,54%,0.12); transform: scale(1.04); opacity: 1;
+        }
+        .chip-icon { margin-right: 3px; font-size: 0.78rem; }
+        .chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
+        .chat-action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: hsla(9,52%,54%,0.1); border: 1px solid hsla(9,52%,54%,0.25);
+            border-radius: var(--radius-full); padding: 5px 14px;
+            font-family: var(--font-sans); font-size: 0.74rem; font-weight: 700;
+            color: var(--lobster-300); text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease; white-space: nowrap;
+        }
+        .chat-action-btn:hover {
+            background: hsla(9,52%,54%,0.18); border-color: var(--lobster-400);
+            transform: translateY(-1px);
+        }
+
         @media (max-width: 600px) {
             .hero h1 { font-size: 1.8rem; }
             .hero { padding: var(--space-xl) var(--space-md) var(--space-lg); }
-            .section, .try-section { padding: 0 var(--space-md) var(--space-xl); }
+            .section, .chat-section { padding: 0 var(--space-md) var(--space-xl); }
             .nav { padding: 12px 16px; }
             .nav-links { gap: 14px; }
             .cap-grid { grid-template-columns: 1fr; }
@@ -338,11 +440,36 @@
     </div>
 </section>
 
-<!-- ═══ TRY IT ═══ -->
-<section class="try-section">
-    <h2 class="section-title">Try It Now</h2>
-    <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:var(--space-lg);line-height:1.6;">The fastest way to experience the Inclawbator is right on the homepage. Ask it anything — launch a token, check your fees, or just say hi.</p>
-    <a href="/" class="try-cta">Talk to the Inclawbator &#8594;</a>
+<!-- ═══ TALK TO IT ═══ -->
+<section class="chat-section">
+    <h2 class="section-title">Talk to the Inclawbator</h2>
+    <div class="chat-prompts">
+        <div class="chat-prompts-scroll">
+            <button class="chat-prompt-chip" data-prompt="I want to launch a token"><span class="chip-icon">&#128640;</span> Launch a token</button>
+            <button class="chat-prompt-chip" data-prompt="Check my pending fees"><span class="chip-icon">&#128176;</span> Check my fees</button>
+            <button class="chat-prompt-chip" data-prompt="Run a health check on my project"><span class="chip-icon">&#128202;</span> Health check</button>
+            <button class="chat-prompt-chip" data-prompt="I want to hire an Inclawbator"><span class="chip-icon">&#129438;</span> Hire someone</button>
+            <button class="chat-prompt-chip" data-prompt="Create an AI marketing agent for X"><span class="chip-icon">&#128227;</span> Marketing agent</button>
+            <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to multiple wallets"><span class="chip-icon">&#127919;</span> Airdrop tokens</button>
+            <button class="chat-prompt-chip" data-prompt="Show me apps on Inclawbate"><span class="chip-icon">&#128218;</span> Browse apps</button>
+            <button class="chat-prompt-chip" data-prompt="Show me CLAWS staking stats"><span class="chip-icon">&#128200;</span> Staking stats</button>
+            <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Incubation</button>
+            <button class="chat-prompt-chip" data-prompt="How do I deploy a staking pool?"><span class="chip-icon">&#128171;</span> Deploy staking</button>
+            <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
+        </div>
+    </div>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg chat-msg-bot">
+                <div class="chat-avatar">&#129438;</div>
+                <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; I can launch tokens, deploy staking, check fees, hire humans, run marketing agents, and more. What do you need?</div>
+            </div>
+        </div>
+        <form class="chat-input-row" id="chatForm" autocomplete="off">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything..." maxlength="500" autocomplete="off">
+            <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
+        </form>
+    </div>
 </section>
 
 <!-- ═══ FOOTER ═══ -->
@@ -357,5 +484,113 @@
     </div>
 </footer>
 
+<script>
+(function() {
+    var AGENT_URL = '/api/inclawbate/agent-chat';
+    var form = document.getElementById('chatForm');
+    var input = document.getElementById('chatInput');
+    var messages = document.getElementById('chatMessages');
+    var sendBtn = document.getElementById('chatSend');
+    var sessionId = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    var sending = false;
+
+    function scrollBottom() { messages.scrollTop = messages.scrollHeight; }
+
+    function linkify(text) {
+        return text.replace(/(https?:\/\/[^\s,)]+)/g, function(url) {
+            var label = url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+            if (label.length > 40) label = label.slice(0, 37) + '...';
+            return '<a href="' + url + '" target="_blank" rel="noopener">' + label + '</a>';
+        });
+    }
+
+    var ACTION_MAP = {
+        browse_apps: [{ label: 'Browse All Apps', icon: '&#128270;', href: '/apps' }],
+        suggest_app_ideas: [{ label: 'Start Building', icon: '&#128296;', href: '/build' }],
+        get_ecosystem_info: [{ label: 'Explore Apps', icon: '&#128270;', href: '/apps' }, { label: 'View Tools', icon: '&#128640;', href: '/tools' }],
+        get_incubation_info: [{ label: 'Apply for Incubation', icon: '&#129438;', href: '/inclawbator#incubate' }, { label: 'DM on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
+        request_incubation: [{ label: 'DM @StuartDeFi on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
+    };
+
+    function addMessage(text, isUser, functionCalled) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
+        var avatar = document.createElement('div');
+        avatar.className = 'chat-avatar';
+        avatar.innerHTML = isUser ? '&#128100;' : '&#129438;';
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+        if (isUser) { bubble.textContent = text; } else { bubble.innerHTML = linkify(text); }
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(bubble);
+        if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
+            var actions = document.createElement('div');
+            actions.className = 'chat-actions';
+            ACTION_MAP[functionCalled].forEach(function(a) {
+                var btn = document.createElement('a');
+                btn.className = 'chat-action-btn';
+                btn.href = a.href;
+                btn.target = a.href.startsWith('http') ? '_blank' : '_self';
+                btn.rel = 'noopener';
+                btn.innerHTML = a.icon + ' ' + a.label;
+                actions.appendChild(btn);
+            });
+            bubble.appendChild(actions);
+        }
+        messages.appendChild(wrapper);
+        scrollBottom();
+    }
+
+    function showTyping() {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'chat-msg chat-msg-bot';
+        wrapper.id = 'chatTyping';
+        var avatar = document.createElement('div');
+        avatar.className = 'chat-avatar';
+        avatar.innerHTML = '&#129438;';
+        var dots = document.createElement('div');
+        dots.className = 'chat-typing';
+        dots.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(dots);
+        messages.appendChild(wrapper);
+        scrollBottom();
+    }
+
+    function hideTyping() { var el = document.getElementById('chatTyping'); if (el) el.remove(); }
+
+    async function sendMessage(text) {
+        if (!text.trim() || sending) return;
+        sending = true;
+        sendBtn.disabled = true;
+        input.value = '';
+        addMessage(text, true);
+        showTyping();
+        try {
+            var res = await fetch(AGENT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text.trim(), session_id: sessionId })
+            });
+            var data = await res.json();
+            hideTyping();
+            if (data.reply) { addMessage(data.reply, false, data.function_called); }
+            else if (data.error) { addMessage('Sorry, something went wrong. Try again!', false); }
+            if (data.session_id) sessionId = data.session_id;
+        } catch (e) {
+            hideTyping();
+            addMessage('Connection error — please try again in a moment.', false);
+        }
+        sending = false;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+
+    form.addEventListener('submit', function(e) { e.preventDefault(); sendMessage(input.value); });
+    document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() { var p = chip.getAttribute('data-prompt'); if (p) sendMessage(p); });
+    });
+})();
+</script>
 </body>
 </html>
