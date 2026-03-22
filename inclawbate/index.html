@@ -3020,6 +3020,7 @@ function addClawsToWallet() {
     var messages = document.getElementById('chatMessages');
     var sendBtn = document.getElementById('chatSend');
     var sessionId = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    var chatHistory = [];
     var sending = false;
 
     function scrollBottom() {
@@ -3106,18 +3107,20 @@ function addClawsToWallet() {
         sendBtn.disabled = true;
         input.value = '';
         addMessage(text, true);
+        chatHistory.push({ role: 'user', content: text.trim() });
         showTyping();
 
         try {
             var res = await fetch(AGENT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text.trim(), session_id: sessionId })
+                body: JSON.stringify({ message: text.trim(), session_id: sessionId, client_history: chatHistory })
             });
             var data = await res.json();
             hideTyping();
             if (data.reply) {
                 addMessage(data.reply, false, data.function_called);
+                chatHistory.push({ role: 'assistant', content: data.reply });
             } else if (data.error) {
                 addMessage('Sorry, something went wrong. Try again!', false);
             }

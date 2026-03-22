@@ -2,6 +2,7 @@
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
 import { launchToken, deployStakingPool } from './onchain-actions.js';
+import { logToFeed } from './notify.js';
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
@@ -874,12 +875,39 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { message, session_id, wallet } = req.body || {};
+  const { message, session_id, wallet, client_history } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message is required' });
 
   const sid = session_id || 'anon_' + Date.now();
+
+  // Prefer client-side history (Vercel serverless functions are stateless across cold starts)
+  if (Array.isArray(client_history) && client_history.length > 0) {
+    // Rebuild history from client — only allow user/assistant roles, sanitize
+    const rebuilt = [{ role: 'system', content: SYSTEM_PROMPT }];
+    for (const msg of client_history.slice(-20)) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        rebuilt.push({ role: msg.role, content: String(msg.content || '').slice(0, 2000) });
+      }
+    }
+    sessions.set(sid, rebuilt);
+  }
+
   if (!sessions.has(sid)) sessions.set(sid, [{ role: 'system', content: SYSTEM_PROMPT }]);
   const history = sessions.get(sid);
+
+  // Detect source for feed logging (X replies are logged from x-responder with tweet URL)
+  const xMentionMatch = message.match(/^\[X mention from @(\w+)\]/);
+  const feedSource = xMentionMatch ? 'x' : 'website';
+  const feedUser = xMentionMatch ? `@${xMentionMatch[1]}` : (wallet ? wallet.slice(0, 10) + '...' : null);
+  const rawMessage = xMentionMatch ? message.replace(/^\[X mention from @\w+\]:\s*/, '') : message;
+
+  // Helper: log to @inclawbator feed then return response (skip X — logged from x-responder with tweet link)
+  const sendReply = (body) => {
+    if (feedSource !== 'x') {
+      logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: body.function_called }).catch(() => {});
+    }
+    return res.status(200).json(body);
+  };
 
   // Inject wallet context if provided
   const userMsg = wallet ? message + '\n\n[User wallet: ' + wallet + ']' : message;
@@ -904,14 +932,14 @@ export default async function handler(req, res) {
           const directReply = generateDirectReply(fallback.tool, result, fallback.args);
           const reply = directReply || 'Here are the results. Ask me anything else!';
           history.push({ role: 'assistant', content: reply });
-          return res.status(200).json({ reply, function_called: fallback.tool, session_id: sid });
+          return sendReply({ reply, function_called: fallback.tool, session_id: sid });
         }
         history.push({ role: 'assistant', content: fallback.reply });
-        return res.status(200).json({ reply: fallback.reply, session_id: sid });
+        return sendReply({ reply: fallback.reply, session_id: sid });
       }
       const defaultReply = "I'm the Inclawbator! I can launch tokens, deploy staking pools, airdrop tokens, check analytics, and more. What would you like to do?";
       history.push({ role: 'assistant', content: defaultReply });
-      return res.status(200).json({ reply: defaultReply, session_id: sid });
+      return sendReply({ reply: defaultReply, session_id: sid });
     }
 
     let choice = data.choices?.[0];
@@ -941,7 +969,7 @@ export default async function handler(req, res) {
       if (directReply) {
         // Direct response — no second LLM call needed
         history.push({ role: 'assistant', content: directReply });
-        return res.status(200).json({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
       }
 
       // Complex tools (health_check) — use LLM to interpret
@@ -949,7 +977,7 @@ export default async function handler(req, res) {
       if (data.error) {
         const fallback = 'I ran the check but had trouble summarizing. Try again in a moment!';
         history.push({ role: 'assistant', content: fallback });
-        return res.status(200).json({ reply: fallback, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+        return sendReply({ reply: fallback, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
       }
       choice = data.choices?.[0];
     }
@@ -978,7 +1006,7 @@ export default async function handler(req, res) {
             const directReply = generateDirectReply(detectedTool, result, parsed);
             if (directReply) {
               history.push({ role: 'assistant', content: directReply });
-              return res.status(200).json({ reply: directReply, function_called: detectedTool, tool_args: parsed, session_id: sid });
+              return sendReply({ reply: directReply, function_called: detectedTool, tool_args: parsed, session_id: sid });
             }
           }
         } catch (_) { /* not valid JSON, continue normally */ }
@@ -988,7 +1016,7 @@ export default async function handler(req, res) {
     if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
 
     history.push({ role: 'assistant', content: reply });
-    return res.status(200).json({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+    return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
   } catch (e) {
     console.error('Agent chat error:', e);
     return res.status(500).json({ error: 'Agent error: ' + e.message });
