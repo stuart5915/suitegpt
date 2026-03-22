@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up Your Node — Inclawbator DePIN</title>
+    <meta name="description" content="Set up an Inclawbator DePIN node in 2 minutes. GPU compute, bandwidth sharing, auto-buy CLAWS. One command.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: rgba(255,255,255,0.03);
+            --card-hover: rgba(255,255,255,0.05);
+            --border: rgba(255,255,255,0.06);
+            --border-active: rgba(192,83,77,0.4);
+            --text: #f0f0f5;
+            --text2: #a0a0b0;
+            --dim: #606070;
+            --lobster: #c0534d;
+            --lobster-light: #d4716b;
+            --green: #4ade80;
+            --green-dim: rgba(74,222,128,0.1);
+            --yellow: #facc15;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Nunito', sans-serif;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* Nav */
+        .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; position: sticky; top: 0; z-index: 100; background: rgba(10,10,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+        .nav-brand { font-weight: 900; font-size: 1.1rem; color: var(--lobster); }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-link { font-size: 0.78rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none; }
+        .nav-link:hover { color: var(--text); }
+
+        /* Page */
+        .page { max-width: 680px; margin: 0 auto; padding: 48px 24px 96px; }
+        .page-title { font-size: 1.8rem; font-weight: 900; text-align: center; margin-bottom: 6px; }
+        .page-title span { color: var(--lobster); }
+        .page-sub { text-align: center; color: var(--text2); font-size: 0.92rem; margin-bottom: 40px; line-height: 1.6; }
+
+        /* Steps */
+        .step { margin-bottom: 36px; }
+        .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--lobster); color: #fff; font-weight: 900; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .step-num.done { background: var(--green); }
+        .step-title { font-weight: 800; font-size: 1.1rem; }
+        .step-desc { color: var(--text2); font-size: 0.82rem; margin-bottom: 12px; line-height: 1.5; margin-left: 44px; }
+
+        /* Wallet connect */
+        .wallet-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 20px; background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 0.9rem; font-weight: 700; transition: all 0.15s; margin-left: 44px; max-width: calc(100% - 44px); }
+        .wallet-btn:hover { border-color: var(--border-active); background: var(--card-hover); }
+        .wallet-btn.connected { border-color: rgba(74,222,128,0.3); }
+        .wallet-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); flex-shrink: 0; }
+        .wallet-dot.on { background: var(--green); }
+        .wallet-addr { font-family: var(--mono); font-size: 0.78rem; color: var(--text2); }
+        .wallet-input { flex: 1; background: transparent; border: none; color: var(--text); font-family: var(--mono); font-size: 0.82rem; outline: none; }
+        .wallet-input::placeholder { color: var(--dim); }
+
+        /* Service grid */
+        .service-section { margin-left: 44px; margin-bottom: 16px; }
+        .service-section-title { font-family: var(--mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+        .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .service-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
+        .service-card:hover { border-color: rgba(255,255,255,0.12); background: var(--card-hover); }
+        .service-card.active { border-color: var(--border-active); background: rgba(192,83,77,0.05); }
+        .service-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .service-card-name { font-weight: 800; font-size: 0.88rem; }
+        .service-card-toggle { width: 36px; height: 20px; border-radius: 10px; background: rgba(255,255,255,0.08); position: relative; transition: background 0.2s; flex-shrink: 0; }
+        .service-card.active .service-card-toggle { background: var(--lobster); }
+        .service-card-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 2px; left: 2px; transition: transform 0.2s; }
+        .service-card.active .service-card-toggle::after { transform: translateX(16px); }
+        .service-card-desc { font-size: 0.72rem; color: var(--dim); line-height: 1.4; }
+        .service-card-earn { font-family: var(--mono); font-size: 0.65rem; color: var(--green); margin-top: 4px; }
+        .service-card-noGpu { font-family: var(--mono); font-size: 0.6rem; color: var(--yellow); margin-top: 2px; }
+
+        /* Credential fields */
+        .cred-fields { margin-top: 10px; display: none; }
+        .service-card.active .cred-fields { display: block; }
+        .cred-field { margin-bottom: 6px; }
+        .cred-label { font-size: 0.65rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .cred-input { width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 0.75rem; outline: none; }
+        .cred-input:focus { border-color: var(--border-active); }
+        .cred-input::placeholder { color: var(--dim); }
+        .cred-link { font-size: 0.65rem; color: var(--lobster-light); text-decoration: underline; text-underline-offset: 2px; }
+
+        /* Auto-buy slider */
+        .autobuy-section { margin-left: 44px; }
+        .autobuy-row { display: flex; align-items: center; gap: 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+        .autobuy-label { font-weight: 700; font-size: 0.88rem; flex-shrink: 0; }
+        .autobuy-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); outline: none; }
+        .autobuy-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--lobster); cursor: pointer; }
+        .autobuy-value { font-family: var(--mono); font-weight: 700; font-size: 0.92rem; color: var(--lobster-light); min-width: 40px; text-align: right; }
+
+        /* Command output */
+        .command-section { margin-left: 44px; }
+        .command-box { position: relative; background: rgba(0,0,0,0.5); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; font-family: var(--mono); font-size: 0.75rem; color: var(--lobster-light); line-height: 1.8; white-space: pre-wrap; word-break: break-all; overflow-x: auto; }
+        .command-copy { position: absolute; top: 10px; right: 10px; padding: 6px 14px; background: var(--lobster); color: #fff; border: none; border-radius: 999px; font-family: var(--sans); font-weight: 800; font-size: 0.72rem; cursor: pointer; transition: opacity 0.15s; }
+        .command-copy:hover { opacity: 0.85; }
+        .command-copy.copied { background: var(--green); }
+        .command-empty { color: var(--dim); font-style: italic; font-family: var(--sans); }
+
+        /* Earnings estimate */
+        .estimate { margin-left: 44px; margin-top: 12px; padding: 14px 20px; background: var(--green-dim); border: 1px solid rgba(74,222,128,0.15); border-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; }
+        .estimate-label { font-size: 0.82rem; color: var(--text2); }
+        .estimate-value { font-family: var(--mono); font-weight: 900; font-size: 1.1rem; color: var(--green); }
+
+        /* Help link */
+        .help-row { margin-left: 44px; margin-top: 12px; font-size: 0.78rem; color: var(--dim); }
+        .help-row a { color: var(--lobster-light); text-decoration: underline; text-underline-offset: 2px; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 48px 24px 32px; border-top: 1px solid var(--border); color: var(--dim); font-size: 0.75rem; }
+        .footer-links { display: flex; justify-content: center; gap: 20px; margin-top: 8px; }
+        .footer-links a { color: var(--dim); text-decoration: none; }
+        .footer-links a:hover { color: var(--text); }
+
+        @media (max-width: 600px) {
+            .page { padding: 32px 16px 72px; }
+            .service-grid { grid-template-columns: 1fr; }
+            .page-title { font-size: 1.4rem; }
+            .wallet-btn { margin-left: 0; max-width: 100%; }
+            .service-section, .autobuy-section, .command-section, .estimate, .help-row, .step-desc { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">inclawbate</a>
+    <div class="nav-links">
+        <a href="/compute" class="nav-link">Docs</a>
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="nav-link">Telegram</a>
+    </div>
+</nav>
+
+<div class="page">
+
+    <h1 class="page-title">Set Up Your <span>Node</span></h1>
+    <p class="page-sub">Pick your earning sources, enter your accounts, copy one command. Your PC starts earning in 2 minutes.</p>
+
+    <!-- ═══ STEP 1: WALLET ═══ -->
+    <div class="step">
+        <div class="step-header">
+            <div class="step-num" id="step1num">1</div>
+            <div class="step-title">Connect Your Wallet</div>
+        </div>
+        <p class="step-desc">Your wallet address for receiving CLAWS rewards. This is where auto-bought CLAWS goes.</p>
+        <div class="wallet-btn" id="walletBtn">
+            <div class="wallet-dot" id="walletDot"></div>
+            <input type="text" class="wallet-input" id="walletInput" placeholder="Paste your wallet address (0x...)" spellcheck="false">
+        </div>
+    </div>
+
+    <!-- ═══ STEP 2: SERVICES ═══ -->
+    <div class="step">
+        <div class="step-header">
+            <div class="step-num">2</div>
+            <div class="step-title">Pick Your Earning Sources</div>
+        </div>
+        <p class="step-desc">Toggle on the services you want. Each one earns independently. Bandwidth services run alongside GPU &mdash; no conflict.</p>
+
+        <!-- GPU Compute -->
+        <div class="service-section">
+            <div class="service-section-title">GPU Compute (needs NVIDIA GPU)</div>
+            <div class="service-grid">
+                <div class="service-card" data-service="salad" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">Salad</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">AI compute jobs from paying customers. Install their app, it runs automatically.</div>
+                    <div class="service-card-earn">$30-80/mo</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">Salad not installed yet?</div>
+                            <a href="https://salad.com/download" target="_blank" rel="noopener" class="cred-link">Download Salad &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bandwidth -->
+        <div class="service-section">
+            <div class="service-section-title">Bandwidth Sharing (any PC, no GPU needed)</div>
+            <div class="service-grid">
+                <div class="service-card" data-service="grass" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">Grass</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">Share unused bandwidth, earn GRASS tokens.</div>
+                    <div class="service-card-earn">$5-15/mo</div>
+                    <div class="service-card-noGpu">No GPU needed</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">Grass Email</div>
+                            <input type="email" class="cred-input" data-env="GRASS_USER" placeholder="your@email.com">
+                        </div>
+                        <a href="https://app.getgrass.io/" target="_blank" rel="noopener" class="cred-link">Create Grass account &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="service-card" data-service="honeygain" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">Honeygain</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">Share bandwidth, earn USD via PayPal.</div>
+                    <div class="service-card-earn">$3-10/mo</div>
+                    <div class="service-card-noGpu">No GPU needed</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">Email</div>
+                            <input type="email" class="cred-input" data-env="HONEYGAIN_EMAIL" placeholder="your@email.com">
+                        </div>
+                        <div class="cred-field">
+                            <div class="cred-label">Password</div>
+                            <input type="password" class="cred-input" data-env="HONEYGAIN_PASS" placeholder="password">
+                        </div>
+                        <a href="https://www.honeygain.com/" target="_blank" rel="noopener" class="cred-link">Create Honeygain account &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="service-card" data-service="packetstream" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">PacketStream</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">Residential proxy bandwidth. Earn per GB shared.</div>
+                    <div class="service-card-earn">$2-8/mo</div>
+                    <div class="service-card-noGpu">No GPU needed</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">CID (from dashboard)</div>
+                            <input type="text" class="cred-input" data-env="PACKETSTREAM_CID" placeholder="your-cid-here">
+                        </div>
+                        <a href="https://packetstream.io/" target="_blank" rel="noopener" class="cred-link">Create PacketStream account &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="service-card" data-service="earnapp" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">EarnApp</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">By BrightData. Earn for sharing idle bandwidth.</div>
+                    <div class="service-card-earn">$2-8/mo</div>
+                    <div class="service-card-noGpu">No GPU needed</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">Device UUID</div>
+                            <input type="text" class="cred-input" data-env="EARNAPP_UUID" placeholder="sdk-xxxxx">
+                        </div>
+                        <a href="https://earnapp.com/" target="_blank" rel="noopener" class="cred-link">Create EarnApp account &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="service-card" data-service="pawns" onclick="toggleService(this)">
+                    <div class="service-card-top">
+                        <div class="service-card-name">Pawns.app</div>
+                        <div class="service-card-toggle"></div>
+                    </div>
+                    <div class="service-card-desc">By IPRoyal. Share bandwidth, earn USD.</div>
+                    <div class="service-card-earn">$2-5/mo</div>
+                    <div class="service-card-noGpu">No GPU needed</div>
+                    <div class="cred-fields">
+                        <div class="cred-field">
+                            <div class="cred-label">Email</div>
+                            <input type="email" class="cred-input" data-env="PAWNS_EMAIL" placeholder="your@email.com">
+                        </div>
+                        <div class="cred-field">
+                            <div class="cred-label">Password</div>
+                            <input type="password" class="cred-input" data-env="PAWNS_PASS" placeholder="password">
+                        </div>
+                        <a href="https://pawns.app/" target="_blank" rel="noopener" class="cred-link">Create Pawns account &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ STEP 3: AUTO-BUY ═══ -->
+    <div class="step">
+        <div class="step-header">
+            <div class="step-num">3</div>
+            <div class="step-title">Auto-Buy CLAWS</div>
+        </div>
+        <p class="step-desc">What percentage of your USD earnings should auto-buy CLAWS on Uniswap?</p>
+        <div class="autobuy-section">
+            <div class="autobuy-row">
+                <div class="autobuy-label">USD &rarr; CLAWS</div>
+                <input type="range" class="autobuy-slider" id="autobuySlider" min="0" max="100" value="50" oninput="updateAutobuy()">
+                <div class="autobuy-value" id="autobuyValue">50%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ STEP 4: INSTALL ═══ -->
+    <div class="step">
+        <div class="step-header">
+            <div class="step-num">4</div>
+            <div class="step-title">Copy &amp; Run</div>
+        </div>
+        <p class="step-desc">Copy this command and paste it into your terminal. Everything starts automatically.</p>
+        <div class="command-section">
+            <div class="command-box" id="commandBox">
+                <button class="command-copy" id="copyBtn" onclick="copyCommand()">Copy</button>
+                <span class="command-empty">Enter your wallet address and toggle at least one service above.</span>
+            </div>
+        </div>
+
+        <!-- Estimated earnings -->
+        <div class="estimate" id="estimate" style="display:none;">
+            <div class="estimate-label">Estimated monthly earnings</div>
+            <div class="estimate-value" id="estimateValue">$0/mo</div>
+        </div>
+
+        <div class="help-row">
+            Need Docker? <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener">Download Docker Desktop</a> &mdash;
+            Need help? <a href="https://t.me/inclawbate" target="_blank" rel="noopener">Ask in Telegram</a>
+        </div>
+    </div>
+
+</div>
+
+<footer class="footer">
+    <div>inclawbate &mdash; The Agent-Human Economy</div>
+    <div class="footer-links">
+        <a href="/compute">Docs</a>
+        <a href="/inclawbator">Inclawbator</a>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://x.com/inclawbate" target="_blank" rel="noopener">X</a>
+    </div>
+</footer>
+
+<script>
+var activeServices = {};
+
+var SERVICE_EARNINGS = {
+    salad: [30, 80],
+    grass: [5, 15],
+    honeygain: [3, 10],
+    packetstream: [2, 8],
+    earnapp: [2, 8],
+    pawns: [2, 5]
+};
+
+function toggleService(card) {
+    // Don't toggle if clicking on an input or link
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'A') return;
+    card.classList.toggle('active');
+    var svc = card.getAttribute('data-service');
+    activeServices[svc] = card.classList.contains('active');
+    updateCommand();
+}
+
+function updateAutobuy() {
+    var val = document.getElementById('autobuySlider').value;
+    document.getElementById('autobuyValue').textContent = val + '%';
+    updateCommand();
+}
+
+function updateCommand() {
+    var wallet = document.getElementById('walletInput').value.trim();
+    var walletDot = document.getElementById('walletDot');
+    var step1 = document.getElementById('step1num');
+
+    if (wallet && wallet.startsWith('0x') && wallet.length >= 40) {
+        walletDot.classList.add('on');
+        step1.classList.add('done');
+    } else {
+        walletDot.classList.remove('on');
+        step1.classList.remove('done');
+    }
+
+    var anyActive = Object.values(activeServices).some(function(v) { return v; });
+
+    if (!wallet || !anyActive) {
+        document.getElementById('commandBox').innerHTML =
+            '<button class="command-copy" id="copyBtn" onclick="copyCommand()">Copy</button>' +
+            '<span class="command-empty">Enter your wallet address and toggle at least one service above.</span>';
+        document.getElementById('estimate').style.display = 'none';
+        return;
+    }
+
+    // Build Docker command
+    var lines = ['docker run -d --gpus all \\'];
+    lines.push('  --name inclawbator-node \\');
+    lines.push('  -e WALLET=' + wallet + ' \\');
+
+    var autobuy = document.getElementById('autobuySlider').value;
+    lines.push('  -e AUTOBUY_CLAWS_PCT=' + autobuy + ' \\');
+
+    // Collect env vars from active services
+    var earningsLow = 0;
+    var earningsHigh = 0;
+
+    Object.keys(activeServices).forEach(function(svc) {
+        if (!activeServices[svc]) return;
+
+        if (SERVICE_EARNINGS[svc]) {
+            earningsLow += SERVICE_EARNINGS[svc][0];
+            earningsHigh += SERVICE_EARNINGS[svc][1];
+        }
+
+        // Get credential inputs for this service
+        var card = document.querySelector('[data-service="' + svc + '"]');
+        var inputs = card.querySelectorAll('.cred-input');
+        inputs.forEach(function(input) {
+            var envName = input.getAttribute('data-env');
+            var val = input.value.trim();
+            if (envName && val) {
+                lines.push('  -e ' + envName + '=' + val + ' \\');
+            } else if (envName) {
+                lines.push('  -e ' + envName + '=YOUR_' + envName + ' \\');
+            }
+        });
+    });
+
+    lines.push('  -p 3000:3000 \\');
+    lines.push('  inclawbate/depin-node:latest');
+
+    document.getElementById('commandBox').innerHTML =
+        '<button class="command-copy" id="copyBtn" onclick="copyCommand()">Copy</button>' +
+        lines.join('\n');
+
+    // Update estimate
+    if (earningsLow > 0) {
+        document.getElementById('estimate').style.display = 'flex';
+        document.getElementById('estimateValue').textContent = '$' + earningsLow + '-' + earningsHigh + '/mo + CLAWS';
+    } else {
+        document.getElementById('estimate').style.display = 'none';
+    }
+}
+
+function copyCommand() {
+    var box = document.getElementById('commandBox');
+    var text = box.textContent.replace('Copy', '').trim();
+    if (text.startsWith('Enter your')) return;
+
+    navigator.clipboard.writeText(text).then(function() {
+        var btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+
+// Update command when wallet changes
+document.getElementById('walletInput').addEventListener('input', updateCommand);
+
+// Update command when credential inputs change
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('cred-input')) updateCommand();
+});
+</script>
+
+</body>
+</html>
