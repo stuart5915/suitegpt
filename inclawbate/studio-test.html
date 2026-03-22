@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclawbate Studio — API Test</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.06);
+            --text: #f0f0f5;
+            --dim: #606070;
+            --lobster: #c0534d;
+            --green: #4ade80;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Nunito', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px; }
+        h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+        h1 span { color: var(--lobster); }
+        .subtitle { color: var(--dim); font-size: 0.85rem; margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+        .card-title { font-weight: 800; font-size: 1rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .card-endpoint { font-family: var(--mono); font-size: 0.68rem; color: var(--dim); margin-bottom: 16px; }
+        label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+        input, textarea, select { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 0.85rem; margin-bottom: 12px; outline: none; }
+        textarea { min-height: 60px; resize: vertical; }
+        input:focus, textarea:focus { border-color: rgba(192,83,77,0.4); }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 999px; font-weight: 800; font-size: 0.85rem; border: none; cursor: pointer; transition: all 0.15s; }
+        .btn-primary { background: linear-gradient(135deg, #c0534d, #d4716b); color: #fff; }
+        .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .result { margin-top: 16px; }
+        .result img { max-width: 100%; border-radius: 12px; border: 1px solid var(--border); }
+        .result-text { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; font-size: 0.82rem; color: var(--text); line-height: 1.6; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+        .status { font-family: var(--mono); font-size: 0.72rem; margin-top: 8px; }
+        .status.ok { color: var(--green); }
+        .status.err { color: #ef4444; }
+        .status.loading { color: #facc15; }
+        .file-input-wrap { position: relative; }
+        .file-input-wrap input[type="file"] { opacity: 0; position: absolute; inset: 0; cursor: pointer; }
+        .file-input-label { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px dashed var(--border); border-radius: 8px; font-size: 0.82rem; color: var(--dim); margin-bottom: 12px; cursor: pointer; }
+        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } body { padding: 16px; } }
+    </style>
+</head>
+<body>
+
+<h1><span>Studio</span> API Test</h1>
+<p class="subtitle">Test the Inclawbate Studio endpoints. These power all AI creative tools in the ecosystem.</p>
+
+<div class="grid">
+
+    <!-- Image Generation -->
+    <div class="card">
+        <div class="card-title">&#127912; Image Generation</div>
+        <div class="card-endpoint">POST /api/inclawbate/ai/image</div>
+
+        <label>Prompt</label>
+        <textarea id="imgPrompt" placeholder="A lobster astronaut floating in space with Earth in the background, digital art">a friendly lobster building a sandcastle on a sunny beach, digital art</textarea>
+
+        <label>Aspect Ratio</label>
+        <select id="imgRatio">
+            <option value="1:1">1:1 (Square)</option>
+            <option value="16:9">16:9 (Landscape)</option>
+            <option value="9:16">9:16 (Portrait)</option>
+        </select>
+
+        <button class="btn btn-primary" id="imgBtn" onclick="generateImage()">Generate Image</button>
+
+        <div class="result" id="imgResult"></div>
+    </div>
+
+    <!-- Background Removal -->
+    <div class="card">
+        <div class="card-title">&#9986; Background Removal</div>
+        <div class="card-endpoint">POST /api/inclawbate/ai/remove-bg</div>
+
+        <label>Upload Image</label>
+        <div class="file-input-wrap">
+            <div class="file-input-label" id="bgFileLabel">&#128206; Drop an image or click to upload</div>
+            <input type="file" accept="image/*" id="bgFile" onchange="handleBgFile(this)">
+        </div>
+
+        <label>Background</label>
+        <select id="bgColor">
+            <option value="transparent">Transparent</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+        </select>
+
+        <button class="btn btn-primary" id="bgBtn" onclick="removeBg()" disabled>Remove Background</button>
+
+        <div class="result" id="bgResult"></div>
+    </div>
+
+    <!-- Transcription -->
+    <div class="card">
+        <div class="card-title">&#127908; Audio Transcription</div>
+        <div class="card-endpoint">POST /api/inclawbate/ai/transcribe</div>
+
+        <label>Upload Audio</label>
+        <div class="file-input-wrap">
+            <div class="file-input-label" id="audioFileLabel">&#127925; Drop audio or click to upload (mp3, wav, m4a)</div>
+            <input type="file" accept="audio/*" id="audioFile" onchange="handleAudioFile(this)">
+        </div>
+
+        <button class="btn btn-primary" id="audioBtn" onclick="transcribe()" disabled>Transcribe</button>
+
+        <div class="result" id="audioResult"></div>
+    </div>
+
+    <!-- API Info -->
+    <div class="card">
+        <div class="card-title">&#128221; How apps use this</div>
+        <div class="card-endpoint">Any Inclawbate app can call these</div>
+
+        <div class="result-text" style="margin-top:0;font-family:var(--mono);font-size:0.72rem;color:var(--lobster);">// Generate an image in your app
+const res = await fetch('/api/inclawbate/ai/image', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: 'a friendly lobster',
+    aspectRatio: '1:1'
+  })
+});
+const { image } = await res.json();
+// image = "data:image/png;base64,..."
+
+// Remove background
+const res2 = await fetch('/api/inclawbate/ai/remove-bg', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    image: base64ImageData,
+    background: 'transparent'
+  })
+});
+
+// Transcribe audio
+const res3 = await fetch('/api/inclawbate/ai/transcribe', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    audio: base64AudioData
+  })
+});</div>
+    </div>
+
+</div>
+
+<script>
+var bgFileData = null;
+var audioFileData = null;
+
+async function generateImage() {
+    var btn = document.getElementById('imgBtn');
+    var result = document.getElementById('imgResult');
+    btn.disabled = true;
+    result.innerHTML = '<div class="status loading">Generating image...</div>';
+
+    try {
+        var res = await fetch('/api/inclawbate/ai/image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: document.getElementById('imgPrompt').value,
+                aspectRatio: document.getElementById('imgRatio').value
+            })
+        });
+        var data = await res.json();
+        if (data.image) {
+            result.innerHTML = '<img src="' + data.image + '" alt="Generated">' +
+                '<div class="status ok">Model: ' + data.model + ' | Source: ' + data.source + '</div>';
+        } else {
+            result.innerHTML = '<div class="status err">Error: ' + (data.error || 'Unknown') + '</div>';
+        }
+    } catch (e) {
+        result.innerHTML = '<div class="status err">Error: ' + e.message + '</div>';
+    }
+    btn.disabled = false;
+}
+
+function handleBgFile(input) {
+    var file = input.files[0];
+    if (!file) return;
+    document.getElementById('bgFileLabel').textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        bgFileData = e.target.result;
+        document.getElementById('bgBtn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function removeBg() {
+    if (!bgFileData) return;
+    var btn = document.getElementById('bgBtn');
+    var result = document.getElementById('bgResult');
+    btn.disabled = true;
+    result.innerHTML = '<div class="status loading">Removing background...</div>';
+
+    try {
+        var res = await fetch('/api/inclawbate/ai/remove-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image: bgFileData,
+                background: document.getElementById('bgColor').value
+            })
+        });
+        var data = await res.json();
+        if (data.image) {
+            result.innerHTML = '<img src="' + data.image + '" alt="Result">' +
+                '<div class="status ok">Model: ' + data.model + ' | Source: ' + data.source + '</div>';
+        } else {
+            result.innerHTML = '<div class="status err">Error: ' + (data.error || 'Unknown') + '</div>';
+        }
+    } catch (e) {
+        result.innerHTML = '<div class="status err">Error: ' + e.message + '</div>';
+    }
+    btn.disabled = false;
+}
+
+function handleAudioFile(input) {
+    var file = input.files[0];
+    if (!file) return;
+    document.getElementById('audioFileLabel').textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        audioFileData = e.target.result;
+        document.getElementById('audioBtn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function transcribe() {
+    if (!audioFileData) return;
+    var btn = document.getElementById('audioBtn');
+    var result = document.getElementById('audioResult');
+    btn.disabled = true;
+    result.innerHTML = '<div class="status loading">Transcribing audio...</div>';
+
+    try {
+        var res = await fetch('/api/inclawbate/ai/transcribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio: audioFileData })
+        });
+        var data = await res.json();
+        if (data.text) {
+            result.innerHTML = '<div class="result-text">' + data.text + '</div>' +
+                '<div class="status ok">Language: ' + (data.language || '?') + ' | Duration: ' + (data.duration ? Math.round(data.duration) + 's' : '?') + ' | Model: ' + data.model + '</div>';
+        } else {
+            result.innerHTML = '<div class="status err">Error: ' + (data.error || 'Unknown') + '</div>';
+        }
+    } catch (e) {
+        result.innerHTML = '<div class="status err">Error: ' + e.message + '</div>';
+    }
+    btn.disabled = false;
+}
+</script>
+
+</body>
+</html>
