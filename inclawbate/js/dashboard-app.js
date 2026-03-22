@@ -74,10 +74,14 @@ async function loadOverview() {
 
     renderProfileCard(profile);
 
-    // Update "View all" link to filter apps by this creator
+    // Update "View all" link to filter apps by this creator (use all identifiers)
     const viewAllLink = document.getElementById('myAppsViewAll');
-    if (viewAllLink && profile.wallet_address) {
-        viewAllLink.href = '/apps?creator_wallet=' + encodeURIComponent(profile.wallet_address);
+    if (viewAllLink) {
+        const vp = new URLSearchParams();
+        if (profile.wallet_address) vp.set('creator_wallet', profile.wallet_address);
+        if (profile.x_handle) vp.set('creator_x_handle', profile.x_handle);
+        if (profile.id) vp.set('creator_id', profile.id);
+        if (vp.toString()) viewAllLink.href = '/apps?' + vp.toString();
     }
 
     // Build apps query from all available identifiers
