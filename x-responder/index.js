@@ -138,8 +138,9 @@ async function logMentionReply(mentionId, mentionText, author, replyText, status
 async function handleMention(tweet, authors) {
   const authorUsername = authors[tweet.author_id] || null;
 
-  // Skip self-mentions
-  if (authorUsername?.toLowerCase() === 'inclawbator') return;
+  // Skip self-mentions and @inclawbate (parent account mentions @inclawbator in promo tweets)
+  const skipUsers = ['inclawbator', 'inclawbate'];
+  if (skipUsers.includes(authorUsername?.toLowerCase())) return;
 
   // Skip if already processed (in-memory dedup)
   if (processedMentionIds.has(tweet.id)) return;
