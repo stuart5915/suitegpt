@@ -2406,6 +2406,11 @@
     };
 
     // ── Image Overlay System ──
+    // Preload the actual logo
+    var _brandLogo = new Image();
+    _brandLogo.crossOrigin = 'anonymous';
+    _brandLogo.src = '/assets/inclawbate-logo.png';
+
     window._openOverlay = function(slotId) {
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
         if (!slot) return;
@@ -2431,11 +2436,12 @@
             '<h3>Image Overlay</h3>' +
             '<div class="overlay-preview-wrap"><canvas id="overlayCanvas"></canvas></div>' +
             '<div class="overlay-options">' +
-                '<div class="overlay-opt"><input type="checkbox" id="ovLogo" checked><label for="ovLogo">Logo mark (bottom-left)</label></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovLogo" checked><label for="ovLogo">Logo (bottom-left)</label></div>' +
                 '<div class="overlay-opt"><input type="checkbox" id="ovPillar" checked><label for="ovPillar">Pillar badge (top-left)</label></div>' +
-                '<div class="overlay-opt"><input type="checkbox" id="ovText" checked><label for="ovText">Key phrase (bottom)</label></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovText" checked><label for="ovText">Key phrase (bottom-right)</label></div>' +
                 '<div class="overlay-opt"><input type="text" id="ovTextEdit" value="' + escHtml(keyPhrase) + '" placeholder="Custom text..."></div>' +
                 '<div class="overlay-opt"><input type="checkbox" id="ovGradient" checked><label for="ovGradient">Bottom gradient</label></div>' +
+                '<div class="overlay-opt"><input type="checkbox" id="ovWordmark"><label for="ovWordmark">Wordmark "inclawbate" (next to logo)</label></div>' +
             '</div>' +
             '<div class="overlay-actions">' +
                 '<button class="overlay-btn-cancel" onclick="this.closest(\'.overlay-modal-bg\').remove()">Cancel</button>' +
@@ -2454,7 +2460,7 @@
             _renderOverlay();
 
             // Live update on checkbox/text change
-            ['ovLogo','ovPillar','ovText','ovGradient'].forEach(function(id) {
+            ['ovLogo','ovPillar','ovText','ovGradient','ovWordmark'].forEach(function(id) {
                 document.getElementById(id).addEventListener('change', _renderOverlay);
             });
             document.getElementById('ovTextEdit').addEventListener('input', _renderOverlay);
@@ -2529,57 +2535,60 @@
         var showPillar = document.getElementById('ovPillar').checked;
         var showText = document.getElementById('ovText').checked;
         var showGradient = document.getElementById('ovGradient').checked;
+        var showWordmark = document.getElementById('ovWordmark').checked;
         var customText = document.getElementById('ovTextEdit').value.trim();
 
         var pad = size * 0.04;
         var pillar = window._overlayPillar || '';
 
-        // Bottom gradient
+        // Bottom gradient — dark purple tinted
         if (showGradient) {
-            var grad = ctx.createLinearGradient(0, size * 0.65, 0, size);
-            grad.addColorStop(0, 'rgba(0,0,0,0)');
-            grad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            var grad = ctx.createLinearGradient(0, size * 0.6, 0, size);
+            grad.addColorStop(0, 'rgba(26,10,30,0)');
+            grad.addColorStop(0.4, 'rgba(26,10,30,0.25)');
+            grad.addColorStop(1, 'rgba(26,10,30,0.7)');
             ctx.fillStyle = grad;
-            ctx.fillRect(0, size * 0.65, size, size * 0.35);
+            ctx.fillRect(0, size * 0.6, size, size * 0.4);
         }
 
-        // Logo mark (bottom-left) — draw the sprout/leaf shape
-        if (showLogo) {
-            var logoSize = size * 0.06;
+        // Logo (bottom-left) — use actual logo PNG
+        if (showLogo && _brandLogo.complete && _brandLogo.naturalWidth > 0) {
+            var logoH = size * 0.07;
+            var logoW = logoH * (_brandLogo.naturalWidth / _brandLogo.naturalHeight);
             var lx = pad;
-            var ly = size - pad - logoSize;
-            // Coral circle
-            ctx.beginPath();
-            ctx.arc(lx + logoSize / 2, ly + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#e87955';
-            ctx.fill();
-            // White sprout icon (simplified)
-            ctx.beginPath();
-            ctx.moveTo(lx + logoSize * 0.5, ly + logoSize * 0.78);
-            ctx.quadraticCurveTo(lx + logoSize * 0.5, ly + logoSize * 0.45, lx + logoSize * 0.35, ly + logoSize * 0.28);
-            ctx.moveTo(lx + logoSize * 0.5, ly + logoSize * 0.5);
-            ctx.quadraticCurveTo(lx + logoSize * 0.55, ly + logoSize * 0.35, lx + logoSize * 0.7, ly + logoSize * 0.22);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = logoSize * 0.08;
-            ctx.lineCap = 'round';
-            ctx.stroke();
+            var ly = size - pad - logoH;
+            // Subtle shadow behind logo for visibility
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = logoH * 0.15;
+            ctx.drawImage(_brandLogo, lx, ly, logoW, logoH);
+            ctx.shadowBlur = 0;
+
+            // Wordmark next to logo
+            if (showWordmark) {
+                var wmSize = logoH * 0.45;
+                ctx.font = '800 ' + wmSize + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                ctx.shadowBlur = 4;
+                ctx.fillText('inclawbate', lx + logoW + pad * 0.4, ly + logoH / 2);
+                ctx.shadowBlur = 0;
+            }
         }
 
-        // Pillar badge (top-left)
+        // Pillar badge (top-left) — dark purple bg with coral text
         if (showPillar && pillar) {
-            ctx.font = '600 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+            ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
             var pillarW = ctx.measureText(pillar).width + size * 0.03;
-            var pillarH = size * 0.04;
+            var pillarH = size * 0.038;
             var px = pad;
             var py = pad;
-            // Badge background
-            ctx.fillStyle = 'rgba(232,121,85,0.85)';
+            ctx.fillStyle = 'rgba(26,10,30,0.75)';
             ctx.beginPath();
             ctx.roundRect(px, py, pillarW, pillarH, pillarH / 2);
             ctx.fill();
-            // Badge text
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#e87955';
             ctx.textBaseline = 'middle';
             ctx.fillText(pillar, px + size * 0.015, py + pillarH / 2);
         }
