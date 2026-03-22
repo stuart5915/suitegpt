@@ -1,45 +1,43 @@
 # Inclawbate Narrative Bible
 
-A living library of scenarios, scenes, skits, and storylines featuring the Inclawbate lobster mascot. Used for image prompts, video concepts, social content, and creative direction. Pull from these whenever generating visuals or content.
+A living library of scenarios, scenes, and storylines for content creation. Every scene centers **real humans** benefiting from Inclawbate's tools, products, and mission. The lobster appears as a brand accent, never the protagonist.
 
-Reference `BRAND_ARCHETYPE.md` for the mascot's visual specs and render style.
-
----
-
-## The Lobster's World
-
-The Inclawbate lobster lives in **The Reef** — a futuristic underwater/space hybrid environment where crypto and creativity merge. Think: a neon-lit deep-sea tech hub where bioluminescent coral grows alongside holographic terminals.
-
-### Key Locations
-
-| Location | Description | Use for |
-|----------|-------------|---------|
-| **The Workshop** | A cluttered-but-cozy underwater lab. Holographic screens everywhere, token blueprints pinned to coral walls, glowing keyboards built into rock formations. Tools scattered around — wrenches, code snippets floating in jars, prototype app screens. | Building, creating, how-tos |
-| **The Launchpad** | An open-air (open-water?) platform at the edge of a cliff/reef. A glowing launch rail points upward into the void. Rockets and tokens launch from here. Dramatic lighting from below. | Token launches, big announcements |
-| **The Trading Floor** | A bustling open space with multiple holographic chart walls. Teal and coral data streams flow like rivers through the air. Other sea creatures bustle around. Energy: controlled chaos. | DeFi updates, price action, yield |
-| **The Lounge** | A cozy neon-lit bar/hangout carved into coral. Teal and coral ambient lighting. Booths with holographic menus. Music playing. Other lobster characters and sea creatures chilling. | Community vibes, social content |
-| **The Vault** | A massive underwater safe/treasury room. Stacks of glowing token coins. Laser grid security. Gold and coral lighting. Feels secure and premium. | Staking, treasury, tokenomics |
-| **The Arena** | A gladiator-style amphitheater with holographic scoreboards. Where apps compete for attention, builders showcase their work. Spotlights and crowds. | App spotlights, competitions |
-| **The Incubator** | A warm, egg-shaped chamber with soft coral lighting. Ideas float as glowing orbs. The lobster tends to them, nurturing projects from concept to launch. Cozy but powerful. | Incubation, new projects |
-| **The Rooftop** | Top of the reef, looking out over an endless digital ocean. Stars above, city lights below. Contemplative, cinematic. Where the lobster goes to think big. | Inspirational content, vision posts |
+Reference `BRAND_ARCHETYPE.md` for visual style and prompt rules.
 
 ---
 
-## Character Cast
+## The World We Show
 
-### The Main Lobster (The Inclawbator)
-The protagonist. Builder, launcher, mentor, hype-man. Does everything.
+Inclawbate's visual world is the **real world** — where people live, work, worship, build, and serve. Not a fantasy reef. Not a neon lab. Real kitchens, real offices, real communities, real developing-world villages where the impact lands.
 
-### Supporting Characters (for group scenes)
+### Key Settings
 
-| Character | Description | Role |
-|-----------|-------------|------|
-| **Mini Lobsters** | Smaller versions of the main lobster, each slightly different color tint. Represent the community/builders. | Community scenes, celebrations |
-| **The Crab Engineer** | A small blue-teal crab with safety goggles. Always fixing things, tightening bolts. | Technical content, debugging |
-| **The Octopus Multitasker** | Purple-tinted octopus juggling 8 different tasks. Each tentacle holds a different tool/screen. | Productivity content, multi-feature posts |
-| **The Whale** | A massive, wise, dark-blue whale that appears in the background. Represents big money, major moves. | DeFi content, big announcements |
-| **The Shrimp Newbie** | A tiny, wide-eyed shrimp character. Represents new users learning the platform. | How-to content, onboarding |
-| **The Pufferfish Hype-Man** | Inflates with excitement. Gets bigger the more hyped the news is. | Hype content, milestones |
+| Setting | Description | Use for |
+|---------|-------------|---------|
+| **The Kitchen Table** | A warm, well-lit family kitchen. Someone's checking their phone, managing value, making decisions that affect their household. Morning light, coffee, real life. | Financial security, staking, FoodVitals, personal use |
+| **The Builder's Desk** | A clean, bright workspace — not a gaming setup. Notebook, coffee, plants. Someone creating something real on their laptop. | App building, builder stories, shipping |
+| **The Community Center** | A bright open space where people gather — could be a church hall, a co-working space, a meeting room. Long tables, shared screens, collaboration. | Council meetings, community, governance |
+| **The Mission Field** | A developing-world community — a village, a clinic, a school. Real people with agency, not passive subjects. Coordination happening, resources flowing. | Philanthropy, S4H, mission coordination |
+| **The Park / Outdoors** | Someone on a bench, at a picnic table, walking a trail. Checking their phone casually. Their value is growing while they live their life. | Passive income, staking, peace of mind |
+| **The Workshop** | A maker space or startup office. Whiteboards with plans, people collaborating, prototypes on screens. | Team building, incubation, product development |
+| **The Living Room** | An evening gathering — friends, family, or a small group. Warm lamplight, laptops and tea. Building something together. | Community vibes, small group, planning |
+| **The Church** | A faith community using Inclawbate tools to coordinate giving, manage resources, plan mission trips. Dignified, purposeful. | Faith integration, philanthropy, service |
+
+---
+
+## People We Show
+
+### Real Humans, Real Roles
+
+| Person | Description | Represents |
+|--------|-------------|------------|
+| **The First-Time Builder** | Someone who's never coded. Young or old. They type an idea, an app appears. Their face: disbelief turning to pride. | Empowerment, accessibility |
+| **The Parent** | Managing household value on their phone. Checking FoodVitals, staking rewards. Protecting their family against inflation. | Financial security, real utility |
+| **The Mission Coordinator** | On the ground in a developing community, using Inclawbate tools to route resources, coordinate volunteers, track impact. | Philanthropy in action |
+| **The Council Member** | At a table with others, making allocation decisions. Thoughtful, responsible. These decisions affect real people. | Governance, stewardship |
+| **The Team** | A small diverse group working together — some code, some plan, some create. United by shared mission. | Collaboration, the council |
+| **The Recipient** | Someone in a developing community receiving value — a transfer, a tool, access. They have agency and dignity. | Impact, why it matters |
+| **The Staker** | A relaxed person checking their phone in a peaceful setting. Their money is working. They're at peace. | Passive income, financial freedom |
 
 ---
 
@@ -47,153 +45,139 @@ The protagonist. Builder, launcher, mentor, hype-man. Does everything.
 
 ### Daily Life Scenes
 
-**Morning Routine**
-> The lobster wakes up in its coral apartment. Checks holographic notifications floating above the bed — "3 new apps shipped overnight." Stretches, grabs a glowing coffee mug, heads to the workshop. Cozy morning light (coral-tinted) filtering through the water.
+**Morning Check**
+> A person at their kitchen counter, morning light filling the room, casually checking their Inclawbate staking dashboard on their phone. A coffee mug in the other hand. Their expression: calm confidence. "It grew overnight." The lobster icon visible as a small notification badge.
 
-**The Build Session**
-> Late night at the workshop. Multiple screens open. The lobster is deep in flow state — claws flying across the keyboard. Empty coffee mugs piled up. A prototype app glows on the main screen, almost finished. One more feature to add. Focused, determined energy.
+**Building Something Real**
+> A young person at a bright desk, laptop open to the Inclawbate app builder. On screen: a real app taking shape — a food tracker, a budgeting tool, something useful. They lean in, focused. A notebook beside the laptop has handwritten feature ideas. Warm window light.
 
-**Code Review**
-> The lobster and the crab engineer sit side by side, both looking at a holographic code review. The lobster points at a section, the crab nods and tightens a bolt on the code (literally). Bug squashing energy.
+**Family Finances**
+> Parents at the dining table after the kids have gone to bed. One shows the other their phone: CLAWS staking rewards over the past month. The other nods. They're building something together — not just financially, but as a family. Warm lamplight, quiet moment.
 
-**Lunch Break**
-> The lobster sits in the lounge with other sea creatures, eating kelp noodles from a glowing bowl. Casual conversation. One of the mini lobsters shows off an app they built on their phone. Slice-of-life energy.
-
-### Launch & Hype Scenes
-
-**Token Launch Countdown**
-> The lobster stands at the launchpad, one claw on the big red DEPLOY button. A holographic countdown timer reads "3... 2... 1..." A rocket-shaped token is on the rail, engines glowing coral and teal. Crowd of mini lobsters watching from below, pufferfish inflating with excitement. Maximum hype energy.
-
-**First Sale / First User**
-> The lobster stares at a notification hologram: "1 new user on your app." Pure joy. Claws trembling. A single teal sparkle. The beginning of something big. Emotional, triumphant but intimate.
-
-**Hitting 100 Apps**
-> The arena is packed. A massive holographic "100" glows above. Confetti everywhere — coral and teal particles. The lobster stands center stage, claws raised. Mini lobsters in the crowd cheering. Fireworks in the background. Pure celebration.
-
-**Bull Run**
-> The lobster surfs on a massive wave made of green/teal chart candles. Hair (antennae) blowing back. Other sea creatures riding the wave too. Charts trending up everywhere. Euphoric, ridiculous energy. Meme-worthy.
-
-**Bear Market Grind**
-> The lobster sits at the workshop, unbothered. Charts are red in the background but the lobster is building anyway. A sign on the wall reads (in the scene description, not actual text): "Build during the bear." Stoic, focused, grindset energy.
+**The Passive Win**
+> Someone sitting in a park on a sunny afternoon, phone in hand showing green numbers on a staking dashboard. They smile slightly, put the phone away, and just enjoy the day. Their value works while they rest.
 
 ### Builder Stories
 
-**The All-Nighter**
-> 3 AM. The workshop is dark except for the glow of one screen. The lobster hunches over the keyboard, shell slightly dimmer (tired). Empty energy drink cans nearby. But on the screen — an app is coming together beautifully. Dedication scene.
+**First App Shipped**
+> A person at their laptop, hands raised slightly in a tiny celebration — their first app just went live. The screen shows the deployed app. No audience, no fanfare. Just a private moment of "I actually did it." Morning light, bright room.
+
+**Side by Side**
+> Two people at a shared workspace, collaborating. One points at the screen, the other nods. They're building something together — you can see a prototype forming on screen. Coffee cups between them. Partnership energy, warm natural light.
+
+**The Mentoring Moment**
+> An older person showing a younger one how the app builder works. They sit together at a kitchen table, laptop between them. The younger person's eyes widen — "wait, it's that simple?" Patient, warm, real.
 
 **Shipping Day**
-> The lobster holds up a freshly completed app like a trophy. It glows with achievement energy. The crab engineer gives a thumbs-up from behind. The app floats up and joins the constellation of other apps in the sky above the reef. Proud moment.
+> A person leaning back in their chair with their arms crossed, looking at a "Your app is live" notification on screen. The biggest smile. Behind them: a window showing a bright day. They grab their phone to tell someone. Achievement energy.
 
-**Teaching a Newbie**
-> The lobster kneels down to the shrimp newbie's level, gently showing it how to use the app builder on a floating screen. Patient, mentoring energy. The shrimp's eyes light up with understanding. Wholesome teaching moment.
+### Stewardship & Finance Scenes
 
-**Collaboration**
-> Two lobsters at adjacent workstations, teal data streams flowing between their screens. They high-five (high-claw) in the middle as they merge their work. Partnership energy.
+**The Treasury in Action**
+> An overhead shot of a clean desk — a laptop showing the Inclawbate treasury dashboard (ETH lending, LP positions, staked CLAWS), a notebook with allocation notes, a pen. The hands of someone reviewing it carefully. Stewardship, not speculation. Warm desk lamp light.
 
-### DeFi / Finance Scenes
+**Hedging Against Inflation**
+> A grocery store parking lot. A parent checks their phone — their CLAWS stake has grown while groceries got more expensive. Relief. "At least this is working." Everyday setting, real impact.
 
-**Staking Zen**
-> The lobster meditates on a floating coral platform. Token coins orbit slowly around it like electrons. Yield arrows glow upward in the background. Peaceful, passive income energy. "My tokens are working while I sleep."
+**Yield is Real**
+> Close-up of a phone screen showing staking rewards accumulating in real-time. Background: a peaceful setting — garden, porch, park. The person's hands are relaxed. This is passive, permanent, and theirs. Warm tones, shallow depth of field.
 
-**Checking the Charts**
-> The lobster at the trading floor, one claw holding a glowing phone showing a price chart. The other claw strokes its chin thoughtfully. Other sea creatures peek over its shoulder. Tense but analytical moment.
+### Philanthropy & Mission Scenes
 
-**Whale Watching**
-> The lobster and mini lobsters on the rooftop, looking up as the massive whale swims overhead, leaving a trail of teal sparkles. Awe and respect. The whale represents something big passing through — a major buy, a partnership, a market move.
+**Coordinating a Mission Trip**
+> A small team around a table in a church hall. Laptops open, a projector showing an Inclawbate coordination dashboard. They're planning logistics — who goes where, what resources are needed, how funds flow. Purposeful, organized, warm light through stained glass.
 
-**Yield Farming**
-> The lobster tends to a garden where instead of plants, glowing token coins grow from coral stalks. Watering them with a teal data stream. Each plant represents a different yield source. Peaceful, farming/nurturing energy.
+**Resources Reaching People**
+> A community worker in a developing area, phone in hand, confirming a transfer arrived. Beside them: supplies being unpacked, locals helping organize. Everyone has agency. Natural light, documentary feel, dignified.
 
-### Community & Social Scenes
+**The Treasury Gives**
+> A screen showing an allocation vote result — X% to philanthropy. Next to it: a photo of the community that will receive it. The connection between a number on screen and a life changed. Split composition, warm tones.
 
-**The Meetup**
-> The lounge is packed with different sea creatures. The lobster stands on a small stage with a holographic presentation behind it. Everyone's engaged, some taking notes on holographic tablets. Community energy.
+**S4H in Action**
+> A volunteer team wearing simple t-shirts, setting up a community meal. One person checks the S4H dashboard — donations are flowing in. The infrastructure works. They can focus on people, not logistics. Warm, authentic.
 
-**Meme War**
-> Two lobsters face off across a table, each rapidly creating memes on holographic screens. Other creatures watch and vote with teal/coral light beams. Competitive but fun energy. Good for engagement content.
+### Community & Culture Scenes
 
-**GM Post**
-> Sunrise over the reef. The lobster stands on the rooftop, coffee in claw, watching the first coral light of the day spread across the digital ocean. Peaceful, fresh, new day energy. Classic "gm" visual.
+**The Council Table**
+> A diverse group of people around a conference table, reviewing proposals on a shared screen. Some take notes. Some lean forward to make a point. These decisions matter. Warm afternoon light, glass of water, no fancy boardroom — just real people governing.
 
-**The Group Photo**
-> All the characters lined up together — the lobster in center, mini lobsters, crab engineer, octopus, shrimp newbie, pufferfish. Everyone posed. Teal and coral lighting. Team photo energy. Good for milestone posts.
+**Evening Hangout**
+> A living room. A small group with laptops and phones, some building, some chatting, someone showing their latest app to the group. Mugs of tea, warm lamplight. Informal but productive. Real community.
 
-### Epic / Cinematic Scenes
+**Welcoming Someone New**
+> An existing community member introducing a newcomer to the dashboard. "Here, let me show you how this works." They sit together. Warmth, inclusion, the door is open.
 
-**The Origin**
-> Deep in the ocean, a glowing coral egg cracks open. A tiny lobster claw reaches out. The first light is coral-red. The birth of the Inclawbator. Origin story energy.
+**The Long Table**
+> A wide shot of a long dinner table outdoors at golden hour. Community members sharing a meal. Some laptops visible but mostly closed — this is about being together. Abundance, belonging, gratitude.
 
-**The Vision**
-> The lobster on the rooftop at night, looking up at a constellation that forms the shape of the Inclawbate logo. Stars connect with teal lines. Visionary, epic, "we're building something bigger" energy. Cinematic wide shot.
+### Epic / Cinematic Moments
 
-**The Army**
-> An army of mini lobsters marching forward in formation, each carrying a different tool (laptop, wrench, phone, token). The main lobster leads from the front. Coral banners flowing. Movement energy. "We're coming."
+**The Seed**
+> Close-up of human hands holding a phone showing a freshly submitted incubation idea. Behind: out of focus, a field at sunrise. The beginning of something. Everything starts small.
 
-**The Portal**
-> The lobster stands before a massive glowing portal — swirling coral and teal energy. On the other side, you can see a glimpse of the future: a thriving ecosystem of apps, tokens, and builders. The lobster steps forward confidently. Transition/transformation energy.
+**The Impact Chain**
+> Split-screen narrative: Left side: a builder ships an app. Right side: months later, someone in another country uses that app to manage their food budget. Connection. Purpose. One builds, another benefits.
 
-**The Throne**
-> The lobster sits on a throne made of stacked app icons and token coins. Not arrogant — earned. The workshop is visible behind, tools still out. "Built this from scratch" energy. Achievement unlocked.
+**Generational**
+> A grandparent and grandchild at a table. The grandparent shows the child their staking dashboard — "this has been growing since before you were born." The child touches the screen, curious. The system outlasts any individual. Perpetual.
+
+**The Quiet Engine**
+> A person asleep in bed at night. On the nightstand: a phone glows softly with a notification — "Your weekly staking reward has been deposited." The machine works while they rest. The self-sustaining engine visualized through peace.
 
 ---
 
 ## Mood/Energy Tags
 
-Use these tags to quickly communicate the vibe of a scene:
-
 | Tag | Meaning | Example use |
 |-----|---------|-------------|
-| `#grindset` | Focused building, no distractions | All-nighter, build session |
-| `#hype` | Maximum excitement, celebration | Launches, milestones |
-| `#cozy` | Warm, intimate, wholesome | Community, mentoring |
-| `#epic` | Cinematic, dramatic, heroic | Vision posts, major announcements |
-| `#degen` | Chaotic, meme-worthy, fun | Bull run surfing, meme wars |
-| `#zen` | Calm, passive, confident | Staking, yield farming |
-| `#gm` | Fresh start, optimistic, morning | Daily greeting posts |
-| `#ship-it` | Pride, accomplishment, shipping | App launches, shipping day |
-| `#teach` | Educational, patient, helpful | How-tos, tutorials |
-| `#flex` | Showing off results, stats, wins | Weekly recap, stats posts |
+| `#stewardship` | Careful management, responsibility | Treasury, staking, allocation |
+| `#empowered` | Someone gaining capability they didn't have | First app, learning, building |
+| `#peace` | Calm confidence, things are handled | Passive income, self-sustaining |
+| `#together` | Community, shared purpose, belonging | Council, team, gathering |
+| `#impact` | The moment value reaches someone who needs it | Philanthropy, mission, S4H |
+| `#build` | Creating something new and real | App builder, shipping, prototyping |
+| `#morning` | Fresh start, optimism, new day | Daily posts, gm content |
+| `#gratitude` | Looking back on what's been built | Recaps, milestones, reflection |
+| `#faith` | The foundation — Jesus is Lord | Vision posts, why we do this |
+| `#generational` | This outlasts us all | Telos, perpetual engine, legacy |
 
 ---
 
-## Short Film / Video Concepts
+## Video / Animation Concepts
 
-### "Build Different" (30 sec)
-1. Dark screen. A single coral glow appears.
-2. The lobster's workshop fades in. Claws typing.
-3. Quick montage: code flying, app screens assembling, tokens launching.
-4. Cut to: the lobster holding the finished app, proud.
-5. Pull back to reveal: 100+ apps floating in a constellation behind.
-6. Text: "Anyone Can Build."
+### "Anyone Can Build" (30 sec)
+1. A person sits at a kitchen table with a laptop. They type: "I want to build a food tracking app."
+2. The screen responds — an app forms in real-time.
+3. They test it on their phone. It works.
+4. They show it to their family. Everyone's impressed.
+5. Cut to: the app being used by someone else, somewhere else.
+6. Text: "Anyone Can Build. Everyone Gets Paid."
 
-### "The Cycle" (15 sec loop)
-1. Lobster types → app appears → token launches → chart goes up → lobster celebrates → sits back down → types again.
-2. Seamless loop. Represents the build-launch-earn cycle.
+### "The Engine" (15 sec loop)
+1. A builder ships an app → revenue flows to treasury → treasury grows → rewards reach stakers → staker invests in another builder → loop.
+2. Simple animations, real faces, warm colors. The cycle is human, not mechanical.
 
-### "GM from the Reef" (10 sec)
-1. Sunrise over the reef. Coral light spreading.
-2. The lobster on the rooftop, coffee in claw.
-3. Slow zoom in on the lobster's face. It smiles.
-4. Screen: "gm"
+### "While You Sleep" (10 sec)
+1. Night. A person sleeps peacefully.
+2. Soft phone glow: "Staking reward deposited."
+3. Morning. They check their phone. Smile.
+4. Text: "The engine never stops."
 
-### "Incubation" (20 sec)
-1. Someone drops a glowing idea-orb into the incubator chamber.
-2. The lobster carefully tends to it. Adds code, designs, token mechanics.
-3. The orb grows, cracks open — a fully formed app emerges.
-4. The lobster presents it proudly. "From idea to live app."
+### "From Here to There" (20 sec)
+1. A builder in a bright room ships an app.
+2. Cut to: a family on another continent using that app to manage their budget.
+3. Cut to: the builder sees the usage stats. "People are using it."
+4. Text: "What you build reaches people you'll never meet."
 
 ---
 
 ## How to Use This Doc
 
-### For image prompt generation:
-Pick a scenario that matches the tweet content, then describe it using the 3D render style from BRAND_ARCHETYPE.md. Combine the scene with the brand's lighting, colors, and composition rules.
+### For image prompts:
+Pick a scenario matching the content, describe it using BRAND_ARCHETYPE.md style rules. Always center humans, always use warm natural light, always include a subtle lobster accent.
 
-### For video concepts:
-Use the short film concepts as storyboard starting points. Adapt to the specific message.
+### For video:
+Use the concepts as storyboard starting points. Real humans, real settings, warm tones.
 
 ### For social content:
-The mood tags help quickly set the tone. Match the tag to the content pillar for the day.
-
-### For expanding this doc:
-Add new scenarios as they come up. The richer this library gets, the more varied and interesting the generated content becomes.
+Match mood tags to content pillars. The images should make people feel: "I want to be part of this."
