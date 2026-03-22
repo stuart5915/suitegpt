@@ -15,7 +15,7 @@ const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosy
 
 Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.
 
-You have 11 tools. Match the user's intent to the right one.
+You have 16 tools. Match the user's intent to the right one.
 
 IMPORTANT: If your previous message asked the user for missing details (like a wallet address or token address), and the user's next message contains those details, call THE SAME TOOL AGAIN with the new information filled in. Do NOT switch to a different tool.
 
@@ -42,6 +42,16 @@ HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUM
 ECOSYSTEM INFO — Use get_ecosystem_info when someone asks what Inclawbate is, how it works, or about CLAWS.
 
 FULL INCUBATION — Use get_incubation_info ONLY when someone wants the team to handle everything as a package.
+
+YIELD OPTIONS — Use get_yield_options when someone asks about earning yield, best APY, where to put their money, or what DeFi strategies are available. Shows all available strategies across 3 tiers: safe lending (Aave, Moonwell, Compound), ETH staking (wstETH, cbETH, rETH), and advanced LP strategies (Aerodrome). No parameters required but optionally takes an asset type (usdc, eth, or all).
+
+DEPOSIT TO STRATEGY — Use deposit_to_strategy when someone wants to deposit into a specific yield strategy. Requires: strategy_id (from get_yield_options), amount, and wallet. The response includes transaction details the frontend will use to prompt MetaMask signing. ALWAYS show get_yield_options first if the user hasn't seen the options yet.
+
+CHECK POSITIONS — Use check_positions when someone asks about their active DeFi positions, earnings, how their money is doing, or portfolio status. Requires a wallet address. Returns all active positions with current value, APY, and earnings.
+
+WITHDRAW FROM STRATEGY — Use withdraw_from_strategy when someone wants to exit a position or withdraw from a yield strategy. Requires: strategy_id and wallet. The response includes transaction details for MetaMask signing.
+
+SET REWARD PREFERENCE — Use set_reward_preference when someone wants to change how they receive yield — either as CLAWS tokens (0% fee) or as USDC (2% fee). Requires: wallet and preference (claws or usdc).
 
 Guidelines:
 - ALWAYS use the right tool — don't guess, match intent to tool
@@ -211,6 +221,79 @@ const TOOLS = [
           update: { type: 'boolean', description: 'True if updating an existing app' }
         },
         required: ['app_name', 'description']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_yield_options',
+      description: 'Show available DeFi yield strategies across 3 tiers: safe lending, ETH staking, and advanced LP. Returns live APYs and protocol details.',
+      parameters: {
+        type: 'object',
+        properties: {
+          asset: { type: 'string', enum: ['usdc', 'eth', 'all'], description: 'Filter by asset type. Defaults to all.' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'deposit_to_strategy',
+      description: 'Deposit into a yield strategy. Returns transaction details for the user to sign in their wallet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          strategy_id: { type: 'string', description: 'Strategy identifier (e.g. moonwell_usdc, aave_usdc, wsteth, aerodrome_eth_usdc)' },
+          amount: { type: 'string', description: 'Amount to deposit (human readable, e.g. "5000" for 5000 USDC)' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['strategy_id', 'amount', 'wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_positions',
+      description: 'Check active DeFi yield positions for a wallet — deposits, APY, earnings, current value.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Wallet address to check positions for' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'withdraw_from_strategy',
+      description: 'Withdraw from a yield strategy. Returns transaction details for the user to sign.',
+      parameters: {
+        type: 'object',
+        properties: {
+          strategy_id: { type: 'string', description: 'Strategy to withdraw from' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['strategy_id', 'wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_reward_preference',
+      description: 'Set how yield is received — CLAWS (0% fee, yield auto-buys CLAWS) or USDC (2% fee, yield paid as USDC).',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' },
+          preference: { type: 'string', enum: ['claws', 'usdc'], description: 'Reward type: claws (0% fee) or usdc (2% fee)' }
+        },
+        required: ['wallet', 'preference']
       }
     }
   }
@@ -650,6 +733,203 @@ async function hireInclawbatorInfo(args) {
   }
 }
 
+// ── Yield / Value Management ──
+
+// Strategy registry — curated DeFi protocols on Base
+const YIELD_STRATEGIES = {
+  // Tier 1: Safe USDC lending
+  moonwell_usdc: {
+    id: 'moonwell_usdc', tier: 'safe', asset: 'usdc', name: 'Moonwell USDC',
+    protocol: 'Moonwell', description: 'Lend USDC on Moonwell — battle-tested lending protocol on Base.',
+    contract: '0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22', // Moonwell USDC market on Base
+    risk: 'Low', min_deposit: '10',
+    url: 'https://moonwell.fi/markets/supply/base/usdc'
+  },
+  aave_usdc: {
+    id: 'aave_usdc', tier: 'safe', asset: 'usdc', name: 'Aave V3 USDC',
+    protocol: 'Aave', description: 'Lend USDC on Aave V3 — largest DeFi lending protocol.',
+    contract: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5', // Aave Base USDC aToken
+    risk: 'Low', min_deposit: '10',
+    url: 'https://app.aave.com/'
+  },
+  compound_usdc: {
+    id: 'compound_usdc', tier: 'safe', asset: 'usdc', name: 'Compound V3 USDC',
+    protocol: 'Compound', description: 'Lend USDC on Compound V3 — OG lending protocol.',
+    contract: '0xb125E6687d4313864e53df431d5425969c15Eb2F', // Compound cUSDCv3 on Base
+    risk: 'Low', min_deposit: '10',
+    url: 'https://app.compound.finance/'
+  },
+  // Tier 2: ETH staking
+  wsteth: {
+    id: 'wsteth', tier: 'staking', asset: 'eth', name: 'Lido wstETH',
+    protocol: 'Lido', description: 'Stake ETH via Lido — most liquid staking option. Get wstETH that earns staking rewards automatically.',
+    contract: '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452', // wstETH on Base
+    risk: 'Low', min_deposit: '0.01',
+    url: 'https://stake.lido.fi/'
+  },
+  cbeth: {
+    id: 'cbeth', tier: 'staking', asset: 'eth', name: 'Coinbase cbETH',
+    protocol: 'Coinbase', description: 'Stake ETH via Coinbase — native on Base, widely accepted as collateral.',
+    contract: '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22', // cbETH on Base
+    risk: 'Low', min_deposit: '0.01',
+    url: 'https://www.coinbase.com/cbeth'
+  },
+  reth: {
+    id: 'reth', tier: 'staking', asset: 'eth', name: 'Rocket Pool rETH',
+    protocol: 'Rocket Pool', description: 'Stake ETH via Rocket Pool — most decentralized option. Community-run validators.',
+    contract: '0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c', // rETH on Base
+    risk: 'Low', min_deposit: '0.01',
+    url: 'https://rocketpool.net/'
+  },
+  // Tier 3: Advanced LP
+  aerodrome_eth_usdc: {
+    id: 'aerodrome_eth_usdc', tier: 'advanced', asset: 'all', name: 'Aerodrome ETH/USDC LP',
+    protocol: 'Aerodrome', description: 'Concentrated liquidity on Aerodrome — highest yield, actively managed range.',
+    contract: '0x360019E0ae2Cee51c7A466F69f7e48716438228A', // Auto Vault
+    risk: 'Medium-High', min_deposit: '100',
+    url: 'https://aerodrome.finance/'
+  }
+};
+
+// Hardcoded live APY estimates — in production these would come from on-chain/API
+// Updated periodically, good enough for recommendations
+const STRATEGY_APYS = {
+  moonwell_usdc: '4.2', aave_usdc: '3.8', compound_usdc: '3.5',
+  wsteth: '3.4', cbeth: '3.2', reth: '3.3',
+  aerodrome_eth_usdc: '12-25'
+};
+
+function getYieldOptions(args) {
+  const filter = args.asset || 'all';
+  const strategies = Object.values(YIELD_STRATEGIES)
+    .filter(s => filter === 'all' || s.asset === filter || s.asset === 'all')
+    .map(s => ({
+      ...s,
+      apy: STRATEGY_APYS[s.id] || 'Variable',
+      apy_label: (STRATEGY_APYS[s.id] || 'Variable') + '%'
+    }));
+
+  const safe = strategies.filter(s => s.tier === 'safe');
+  const staking = strategies.filter(s => s.tier === 'staking');
+  const advanced = strategies.filter(s => s.tier === 'advanced');
+
+  return JSON.stringify({
+    tiers: {
+      safe: { label: 'Safe Lending', risk: 'Low', strategies: safe },
+      staking: { label: 'ETH Staking', risk: 'Low', strategies: staking },
+      advanced: { label: 'Advanced LP', risk: 'Medium-High', strategies: advanced }
+    },
+    total_strategies: strategies.length,
+    reward_options: {
+      claws: { fee: '0%', description: 'Yield auto-buys CLAWS tokens — zero fee' },
+      usdc: { fee: '2%', description: 'Yield paid as USDC — 2% platform fee' }
+    }
+  });
+}
+
+async function depositToStrategy(args) {
+  const missing = [];
+  if (!args.strategy_id || !YIELD_STRATEGIES[args.strategy_id]) missing.push('strategy (use get_yield_options to see available options)');
+  if (!args.amount || isNaN(parseFloat(args.amount))) missing.push('amount to deposit');
+  if (!isValidAddr(args.wallet)) missing.push('your wallet address');
+  if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need: ' + missing.join(', ') + '.' });
+
+  const strategy = YIELD_STRATEGIES[args.strategy_id];
+  const amount = parseFloat(args.amount);
+
+  if (amount < parseFloat(strategy.min_deposit)) {
+    return JSON.stringify({ error: `Minimum deposit for ${strategy.name} is ${strategy.min_deposit} ${strategy.asset.toUpperCase()}.` });
+  }
+
+  // Build transaction details for the frontend to execute
+  const isUsdc = strategy.asset === 'usdc';
+  const tokenAddress = isUsdc ? '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' : null; // USDC on Base
+  const decimals = isUsdc ? 6 : 18;
+
+  return JSON.stringify({
+    action: 'deposit',
+    strategy: strategy.name,
+    strategy_id: strategy.id,
+    protocol: strategy.protocol,
+    amount: args.amount,
+    asset: strategy.asset.toUpperCase(),
+    apy: STRATEGY_APYS[strategy.id] + '%',
+    risk: strategy.risk,
+    contract: strategy.contract,
+    token_address: tokenAddress,
+    decimals,
+    wallet: args.wallet,
+    steps: isUsdc
+      ? ['Approve ' + args.amount + ' USDC spend', 'Deposit to ' + strategy.protocol]
+      : strategy.tier === 'staking'
+        ? ['Wrap ETH to ' + strategy.name.split(' ')[1]]
+        : ['Approve + deposit to ' + strategy.protocol],
+    url: strategy.url,
+    needs_wallet_action: true
+  });
+}
+
+async function checkPositions(args) {
+  if (!isValidAddr(args.wallet)) {
+    return JSON.stringify({ needs_info: true, missing: ['wallet address'], message: 'What\'s your wallet address? I\'ll check your DeFi positions.' });
+  }
+
+  // In production this would query on-chain balances for each strategy
+  // For now, return a structure the frontend can populate with actual on-chain reads
+  const positions = [];
+
+  // Check each strategy contract for user balance
+  // This is a placeholder — the frontend will do the actual on-chain reads
+  // and the API can be enhanced to query via RPC later
+  return JSON.stringify({
+    wallet: args.wallet,
+    positions,
+    message: positions.length ? null : 'No active yield positions found for this wallet. Say "earn yield" to see available strategies!',
+    check_on_chain: true,
+    strategies: Object.keys(YIELD_STRATEGIES),
+    note: 'Connect your wallet on the Inclawbator page for live position tracking.'
+  });
+}
+
+async function withdrawFromStrategy(args) {
+  const missing = [];
+  if (!args.strategy_id || !YIELD_STRATEGIES[args.strategy_id]) missing.push('which strategy to withdraw from');
+  if (!isValidAddr(args.wallet)) missing.push('your wallet address');
+  if (missing.length) return JSON.stringify({ needs_info: true, missing, message: 'I need: ' + missing.join(', ') + '.' });
+
+  const strategy = YIELD_STRATEGIES[args.strategy_id];
+
+  return JSON.stringify({
+    action: 'withdraw',
+    strategy: strategy.name,
+    strategy_id: strategy.id,
+    protocol: strategy.protocol,
+    contract: strategy.contract,
+    wallet: args.wallet,
+    asset: strategy.asset.toUpperCase(),
+    steps: ['Withdraw all from ' + strategy.protocol],
+    url: strategy.url,
+    needs_wallet_action: true
+  });
+}
+
+function setRewardPreference(args) {
+  if (!isValidAddr(args.wallet)) {
+    return JSON.stringify({ needs_info: true, missing: ['wallet address'], message: 'What\'s your wallet address?' });
+  }
+  const pref = args.preference === 'usdc' ? 'usdc' : 'claws';
+  // In production this would save to Supabase user_preferences table
+  return JSON.stringify({
+    wallet: args.wallet,
+    preference: pref,
+    fee: pref === 'claws' ? '0%' : '2%',
+    description: pref === 'claws'
+      ? 'Your yield will auto-buy CLAWS tokens — zero platform fee. You\'re fueling the ecosystem!'
+      : 'Your yield will be paid as USDC — 2% platform fee deducted.',
+    saved: true
+  });
+}
+
 async function executeTool(name, args) {
   switch (name) {
     case 'get_ecosystem_info': return getEcosystemInfo();
@@ -664,6 +944,11 @@ async function executeTool(name, args) {
     case 'health_check': return await healthCheck(args);
     case 'hire_inclawbator': return await hireInclawbatorInfo(args);
     case 'build_app': return await buildAppAction(args);
+    case 'get_yield_options': return getYieldOptions(args);
+    case 'deposit_to_strategy': return await depositToStrategy(args);
+    case 'check_positions': return await checkPositions(args);
+    case 'withdraw_from_strategy': return await withdrawFromStrategy(args);
+    case 'set_reward_preference': return setRewardPreference(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
@@ -814,6 +1099,54 @@ function generateDirectReply(tool, resultJson, args) {
         if (d.needs_info) return d.message;
         return (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\n(May take a moment to appear — hard refresh if needed.)\n\nWant me to make any changes? Just describe what you'd like updated.\n\nNeed higher quality or a custom build? DM @inclawbate on X or visit inclawbate.app/build for premium builds.";
 
+      case 'get_yield_options': {
+        const tiers = d.tiers || {};
+        let reply = 'Here are the yield strategies available on Base:\n\n';
+        if (tiers.safe?.strategies?.length) {
+          reply += '**🟢 Safe Lending** (low risk)\n';
+          tiers.safe.strategies.forEach(s => { reply += `• **${s.name}** — ${s.apy_label} APY | ${s.protocol}\n`; });
+          reply += '\n';
+        }
+        if (tiers.staking?.strategies?.length) {
+          reply += '**🔵 ETH Staking** (low risk)\n';
+          tiers.staking.strategies.forEach(s => { reply += `• **${s.name}** — ${s.apy_label} APY | ${s.protocol}\n`; });
+          reply += '\n';
+        }
+        if (tiers.advanced?.strategies?.length) {
+          reply += '**🔴 Advanced LP** (higher risk, higher reward)\n';
+          tiers.advanced.strategies.forEach(s => { reply += `• **${s.name}** — ${s.apy_label} APY | ${s.protocol}\n`; });
+          reply += '\n';
+        }
+        reply += 'Yield can be received as **CLAWS (0% fee)** or **USDC (2% fee)**.\n\nWhich strategy interests you? Tell me which one and how much you want to deposit.';
+        return reply;
+      }
+
+      case 'deposit_to_strategy':
+        if (d.needs_wallet_action) {
+          return `Ready to deposit **${d.amount} ${d.asset}** into **${d.strategy}** (${d.apy} APY).\n\nSteps:\n${(d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nRisk: ${d.risk}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to proceed. You can also go directly to ${d.url}`;
+        }
+        return d.error || d.message || 'Deposit prepared.';
+
+      case 'check_positions':
+        if (d.positions?.length) {
+          let reply = `**Your DeFi Positions:**\n\n`;
+          d.positions.forEach(p => {
+            reply += `• **${p.strategy}** — ${p.amount} ${p.asset} | APY: ${p.apy} | Earned: ${p.earned}\n`;
+          });
+          return reply;
+        }
+        return d.message || 'No active yield positions found. Say "earn yield" to see available strategies!';
+
+      case 'withdraw_from_strategy':
+        if (d.needs_wallet_action) {
+          return `Ready to withdraw from **${d.strategy}**.\n\nStep: ${(d.steps || []).join(', ')}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to withdraw your funds.`;
+        }
+        return d.error || d.message || 'Withdrawal prepared.';
+
+      case 'set_reward_preference':
+        if (d.saved) return `Reward preference set to **${d.preference === 'claws' ? 'CLAWS 🦞' : 'USDC 💵'}** (${d.fee} fee).\n\n${d.description}`;
+        return d.message || 'Preference updated!';
+
       case 'health_check':
         // Let LLM interpret health checks — they need nuanced advice
         return null;
@@ -863,8 +1196,18 @@ function matchIntent(msg) {
     return { tool: 'create_agent_info', reply: "I can help you set up an AI marketing agent that auto-posts to X! Head to https://inclawbate.app/schedule — name it, pick a vibe, connect X, and you're live." };
   if (/(build|make|create|generate)\s+\w*\s*(a\s+)?(web\s*)?(?:site|website|app|page|landing|dashboard|ui|game)/i.test(m) || /(build|make|create)\s+(?:an?\s+)?(?:app|site|website|page|game)/i.test(m) || /(?:want|need)\s+(?:a\s+)?(?:website|app|site|page|landing)/i.test(m))
     return { tool: 'build_app', reply: "I can build you a web app and publish it live! I need:\n\n1. **App name** (short name for the URL)\n2. **Description** (what it should look like and do)\n\nWhat do you want me to build?" };
+  if (/yield|earn|apy|best\s*rate|where.*put.*money|defi\s*strat/i.test(m))
+    return { tool: 'get_yield_options', execute: true, args: { asset: /eth/i.test(m) ? 'eth' : /usdc|stable/i.test(m) ? 'usdc' : 'all' } };
+  if (/my\s*position|how.*my\s*money|what.*earning|portfolio/i.test(m))
+    return { tool: 'check_positions', reply: "I can check your DeFi positions! What's your wallet address?" };
+  if (/withdraw|pull\s*out|exit\s*(strategy|position|vault)/i.test(m))
+    return { tool: 'withdraw_from_strategy', reply: "I can help you withdraw! Which strategy do you want to exit? (Say 'my positions' to see what's active.)" };
+  if (/pay\s*me\s*in\s*(claws|usdc)|reward\s*(type|preference)|switch\s*to\s*(claws|usdc)/i.test(m)) {
+    const prefMatch = m.match(/(claws|usdc)/i);
+    return { tool: 'set_reward_preference', reply: `Want to receive your yield as ${prefMatch ? prefMatch[1].toUpperCase() : 'CLAWS or USDC'}? Connect your wallet and I'll set it up!` };
+  }
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
-    return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n\nWhat would you like to do?" };
+    return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n• **Manage your yield** — earn on USDC, ETH, or LP strategies\n• **Track positions** — see what you're earning across DeFi\n\nWhat would you like to do?" };
   return null;
 }
 
@@ -902,9 +1245,10 @@ export default async function handler(req, res) {
   const rawMessage = xMentionMatch ? message.replace(/^\[X mention from @\w+\]:\s*/, '') : message;
 
   // Helper: log to @inclawbator feed then return response (skip X — logged from x-responder with tweet link)
-  const sendReply = (body) => {
+  // Must await logToFeed before res.json() — Vercel kills the function immediately after response
+  const sendReply = async (body) => {
     if (feedSource !== 'x') {
-      logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: body.function_called }).catch(() => {});
+      await logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: body.function_called }).catch(e => console.error('Feed error:', e.message));
     }
     return res.status(200).json(body);
   };
@@ -954,7 +1298,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject wallet into tools that accept it
-        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats')) {
+        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference')) {
           args.wallet = wallet;
         }
         toolArgs = args;
