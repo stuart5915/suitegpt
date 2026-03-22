@@ -1963,12 +1963,61 @@
         .iv-status.error { color: #ff6450; }
         .iv-status.success { color: var(--green); }
 
+        .iv-how-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 16px; }
+        .iv-how-arrow { font-size: 1rem; color: var(--text-dim); transition: transform 0.3s; }
+        .iv-how-arrow.open { transform: rotate(180deg); }
+
+        .iv-docs { display: none; margin-top: 28px; }
+        .iv-docs.show { display: block; }
+        .iv-docs-block { margin-bottom: 32px; }
+        .iv-docs-label {
+            font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+            color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+        }
+
+        /* Value flow */
+        .iv-flow { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .iv-flow-node {
+            width: 100%; max-width: 400px; text-align: center;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px;
+        }
+        .iv-flow-icon { font-size: 1.4rem; margin-bottom: 6px; }
+        .iv-flow-name { font-family: var(--font-display); font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+        .iv-flow-desc { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; }
+        .iv-flow-arrow { font-size: 1.2rem; color: var(--text-dim); padding: 2px 0; }
+        .iv-flow-split { display: flex; gap: 12px; align-items: center; max-width: 480px; }
+        .iv-flow-split .iv-flow-branch { flex: 1; }
+        .iv-flow-or { font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; }
+
+        /* Decisions */
+        .iv-decisions { display: flex; flex-direction: column; gap: 16px; }
+        .iv-decision { display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 14px; }
+        .iv-decision-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+        .iv-decision-name { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+        .iv-decision-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.6; }
+
+        /* Trust */
+        .iv-trust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .iv-trust-item { display: flex; gap: 10px; align-items: flex-start; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+        .iv-trust-check { color: var(--green); font-weight: 700; flex-shrink: 0; }
+
+        /* Contracts */
+        .iv-contracts { display: flex; flex-direction: column; gap: 8px; }
+        .iv-contract-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; }
+        .iv-contract-name { font-family: var(--mono); font-size: 0.72rem; color: var(--text-secondary); }
+        .iv-contract-addr { font-family: var(--mono); font-size: 0.72rem; color: var(--accent-bright); text-decoration: none; }
+        .iv-contract-addr:hover { text-decoration: underline; }
+
         @media (max-width: 640px) {
             .iv-card { padding: 36px 24px 32px; }
             .iv-title { font-size: 1.5rem; }
             .iv-stats { grid-template-columns: repeat(3, 1fr); gap: 10px; }
             .iv-how-steps { grid-template-columns: 1fr; gap: 8px; }
             .iv-deposit-row { flex-direction: column; }
+            .iv-flow-split { flex-direction: column; }
+            .iv-trust-grid { grid-template-columns: 1fr; }
         }
 
     </style>
@@ -2050,21 +2099,158 @@
                     <button class="iv-withdraw-btn" onclick="ivWithdraw()">Withdraw</button>
                 </div>
 
-                <!-- How it works -->
+                <!-- How it works — expandable -->
                 <div class="iv-how">
-                    <div class="iv-how-title">How it works</div>
+                    <div class="iv-how-header" onclick="ivToggleDocs()">
+                        <div class="iv-how-title">How it works</div>
+                        <div class="iv-how-arrow" id="iv-how-arrow">&#9662;</div>
+                    </div>
+
+                    <!-- Quick summary always visible -->
                     <div class="iv-how-steps">
                         <div class="iv-how-step">
                             <div class="iv-how-num">01</div>
-                            <div class="iv-how-text">Deposit USDC into the vault. It enters an automated Aerodrome concentrated LP position.</div>
+                            <div class="iv-how-text">Deposit USDC into the vault. It enters an automated Aerodrome concentrated LP.</div>
                         </div>
                         <div class="iv-how-step">
                             <div class="iv-how-num">02</div>
-                            <div class="iv-how-text">The vault auto-rebalances range, compounds fees, and harvests AERO rewards.</div>
+                            <div class="iv-how-text">The vault auto-rebalances, compounds fees, and harvests AERO rewards.</div>
                         </div>
                         <div class="iv-how-step">
                             <div class="iv-how-num">03</div>
-                            <div class="iv-how-text">Yield flows back as CLAWS (0% fee) or USDC (2% fee). Withdraw anytime.</div>
+                            <div class="iv-how-text">Yield flows as CLAWS (0% fee) or USDC (2% fee). Withdraw anytime.</div>
+                        </div>
+                    </div>
+
+                    <!-- Expanded docs -->
+                    <div class="iv-docs" id="iv-docs">
+
+                        <!-- Value Flow -->
+                        <div class="iv-docs-block">
+                            <div class="iv-docs-label">Value Flow</div>
+                            <div class="iv-flow">
+                                <div class="iv-flow-node">
+                                    <div class="iv-flow-icon">&#x1F4B5;</div>
+                                    <div class="iv-flow-name">You deposit USDC</div>
+                                </div>
+                                <div class="iv-flow-arrow">&darr;</div>
+                                <div class="iv-flow-node">
+                                    <div class="iv-flow-icon">&#x1F3E6;</div>
+                                    <div class="iv-flow-name">Vault Contract</div>
+                                    <div class="iv-flow-desc">ERC-4626 on Base. Your deposit = shares. Fully on-chain.</div>
+                                </div>
+                                <div class="iv-flow-arrow">&darr;</div>
+                                <div class="iv-flow-node">
+                                    <div class="iv-flow-icon">&#x1F300;</div>
+                                    <div class="iv-flow-name">Aerodrome Concentrated LP</div>
+                                    <div class="iv-flow-desc">ETH/USDC pool. Earns trading fees + AERO rewards from every swap.</div>
+                                </div>
+                                <div class="iv-flow-arrow">&darr;</div>
+                                <div class="iv-flow-node iv-flow-split">
+                                    <div class="iv-flow-branch">
+                                        <div class="iv-flow-icon">&#x1F95E;</div>
+                                        <div class="iv-flow-name">CLAWS path</div>
+                                        <div class="iv-flow-desc">0% fee. Yield auto-swaps to CLAWS via Aerodrome.</div>
+                                    </div>
+                                    <div class="iv-flow-or">or</div>
+                                    <div class="iv-flow-branch">
+                                        <div class="iv-flow-icon">&#x1F4B2;</div>
+                                        <div class="iv-flow-name">USDC path</div>
+                                        <div class="iv-flow-desc">2% fee. Yield stays as USDC. Fee buys CLAWS for ecosystem.</div>
+                                    </div>
+                                </div>
+                                <div class="iv-flow-arrow">&darr;</div>
+                                <div class="iv-flow-node">
+                                    <div class="iv-flow-icon">&#x1F4C8;</div>
+                                    <div class="iv-flow-name">Your position grows</div>
+                                    <div class="iv-flow-desc">Share price increases as fees compound. Withdraw anytime.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Automated Decisions -->
+                        <div class="iv-docs-block">
+                            <div class="iv-docs-label">Automated Decision Making</div>
+                            <div class="iv-decisions">
+                                <div class="iv-decision">
+                                    <div class="iv-decision-icon">&#x1F3AF;</div>
+                                    <div>
+                                        <div class="iv-decision-name">Range Management</div>
+                                        <div class="iv-decision-desc">Vault maintains a concentrated LP range around current ETH price. When price drifts near the edge, the keeper rebalances to a new optimal range. No human needed.</div>
+                                    </div>
+                                </div>
+                                <div class="iv-decision">
+                                    <div class="iv-decision-icon">&#x1F504;</div>
+                                    <div>
+                                        <div class="iv-decision-name">Auto-Compound</div>
+                                        <div class="iv-decision-desc">Trading fees and AERO rewards are collected and re-deployed into the LP position. Your share of the vault grows with every compound cycle.</div>
+                                    </div>
+                                </div>
+                                <div class="iv-decision">
+                                    <div class="iv-decision-icon">&#x23F0;</div>
+                                    <div>
+                                        <div class="iv-decision-name">Keeper (every 15 min)</div>
+                                        <div class="iv-decision-desc">A permissionless keeper checks: does the range need updating? Are there fees to compound? Anyone can call these functions &mdash; no single point of failure.</div>
+                                    </div>
+                                </div>
+                                <div class="iv-decision">
+                                    <div class="iv-decision-icon">&#x1F6E1;</div>
+                                    <div>
+                                        <div class="iv-decision-name">Slippage Protection</div>
+                                        <div class="iv-decision-desc">All swaps use configurable slippage tolerance. Emergency exit function converts everything to USDC if needed. Withdrawals always work, even when paused.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trust Model -->
+                        <div class="iv-docs-block">
+                            <div class="iv-docs-label">Trust &amp; Security</div>
+                            <div class="iv-trust-grid">
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>Vault is an immutable smart contract on Base</div>
+                                </div>
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>ERC-4626 standard &mdash; your shares are yours</div>
+                                </div>
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>No lock-up &mdash; withdraw anytime</div>
+                                </div>
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>Keeper functions are permissionless &mdash; anyone can call them</div>
+                                </div>
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>Performance fee capped at 2% max</div>
+                                </div>
+                                <div class="iv-trust-item">
+                                    <div class="iv-trust-check">&#x2713;</div>
+                                    <div>All contracts verified on BaseScan</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contracts -->
+                        <div class="iv-docs-block">
+                            <div class="iv-docs-label">Contracts</div>
+                            <div class="iv-contracts">
+                                <div class="iv-contract-row">
+                                    <span class="iv-contract-name">Vault</span>
+                                    <a href="https://basescan.org/address/0x360019E0ae2Cee51c7A466F69f7e48716438228A" target="_blank" rel="noopener" class="iv-contract-addr">0x3600...228A</a>
+                                </div>
+                                <div class="iv-contract-row">
+                                    <span class="iv-contract-name">Factory</span>
+                                    <a href="https://basescan.org/address/0x77D78854FaF659bf108CaEd4e40851F1a5FC7537" target="_blank" rel="noopener" class="iv-contract-addr">0x77D7...7537</a>
+                                </div>
+                                <div class="iv-contract-row">
+                                    <span class="iv-contract-name">Aerodrome Pool</span>
+                                    <a href="https://basescan.org/address/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59" target="_blank" rel="noopener" class="iv-contract-addr">ETH/USDC CL</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4807,6 +4993,12 @@
         })();
 
         // ═══ INCLAWBATOR VAULT ═══
+        window.ivToggleDocs = function() {
+            var docs = document.getElementById('iv-docs');
+            var arrow = document.getElementById('iv-how-arrow');
+            docs.classList.toggle('show');
+            arrow.classList.toggle('open');
+        };
         var IV_VAULT_ADDRESS = AUTO_VAULT_ADDRESS; // Same vault, different UI
         var IV_VAULT_ABI = AUTO_VAULT_ABI;
         var ivRewardMode = 'claws'; // 'claws' or 'usdc'
