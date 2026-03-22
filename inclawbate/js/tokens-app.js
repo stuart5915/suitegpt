@@ -87,51 +87,93 @@ var EXTRA_TOKENS = [
     }
 ];
 
+var CACHE_KEY = 'inclawbate_tokens_cache';
+var CACHE_TTL = 5 * 60 * 1000; // 5 min
+var MCAP_CACHE_KEY = 'inclawbate_mcaps_cache';
+
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
-async function fetchProjects(attempt) {
-    var res = await fetch(API_BASE);
-    if (!res.ok) throw new Error('API ' + res.status);
-    var data = await res.json();
-    return (data.projects || data || []).filter(function(p) {
-        return p.status === 'active' || p.status === 'launched';
-    });
+// ── localStorage cache ──
+
+function saveCache(projects) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), projects: projects }));
+    } catch (e) { /* storage full or unavailable */ }
+}
+
+function loadCache() {
+    try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        // Return cached data even if stale — better than empty page
+        return parsed.projects || null;
+    } catch (e) { return null; }
+}
+
+function saveMcapCache(mcaps) {
+    try {
+        localStorage.setItem(MCAP_CACHE_KEY, JSON.stringify({ ts: Date.now(), mcaps: mcaps }));
+    } catch (e) { /* storage full */ }
+}
+
+function loadMcapCache() {
+    try {
+        var raw = localStorage.getItem(MCAP_CACHE_KEY);
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        // Only use mcap cache if < 10 min old
+        if (Date.now() - parsed.ts > 10 * 60 * 1000) return null;
+        return parsed.mcaps || null;
+    } catch (e) { return null; }
 }
 
 function mergeExtras(apiProjects) {
+    var merged = apiProjects.slice();
     var existingAddrs = {};
-    apiProjects.forEach(function(p) {
+    merged.forEach(function(p) {
         if (p.token_address) existingAddrs[p.token_address.toLowerCase()] = true;
     });
     EXTRA_TOKENS.forEach(function(t) {
         if (!existingAddrs[t.token_address.toLowerCase()]) {
-            apiProjects.push(t);
+            merged.push(t);
         }
     });
-    return apiProjects;
+    return merged;
 }
 
 async function loadLiveProjects() {
-    // Show EXTRA_TOKENS immediately so page is never empty
-    lpState.projects = mergeExtras([]);
+    // 1) Immediately show cached data (or EXTRA_TOKENS if no cache)
+    var cached = loadCache();
+    var cachedMcaps = loadMcapCache();
+    lpState.projects = mergeExtras(cached || []);
+    if (cachedMcaps) lpState.mcaps = cachedMcaps;
     renderTable();
 
-    // Fetch API projects with one retry
+    // 2) Fetch fresh data from API with retry
     var apiProjects = null;
     for (var attempt = 0; attempt < 2; attempt++) {
         try {
-            apiProjects = await fetchProjects(attempt);
+            var res = await fetch(API_BASE);
+            if (!res.ok) throw new Error('API ' + res.status);
+            var data = await res.json();
+            apiProjects = (data.projects || data || []).filter(function(p) {
+                return p.status === 'active' || p.status === 'launched';
+            });
             break;
         } catch (e) {
-            if (attempt === 0) await new Promise(function(r) { setTimeout(r, 1500); });
+            if (attempt === 0) await new Promise(function(r) { setTimeout(r, 2000); });
         }
     }
 
+    // 3) Merge and render
     if (apiProjects) {
+        saveCache(apiProjects);
         lpState.projects = mergeExtras(apiProjects);
+        renderTable();
     }
-    // If API failed, lpState.projects still has EXTRA_TOKENS from above
-    renderTable();
+    // If API failed both times, we still have cached/EXTRA data showing
+
     fetchMarketCaps();
 }
 
@@ -141,7 +183,7 @@ async function fetchMarketCaps() {
         .map(function(p) { return p.token_address; });
     if (!addresses.length) return;
 
-    // DexScreener (primary)
+    // DexScreener (primary) — batch 25 at a time
     for (var i = 0; i < addresses.length; i += 25) {
         var batch = addresses.slice(i, i + 25).join(',');
         try {
@@ -160,42 +202,48 @@ async function fetchMarketCaps() {
         } catch (e) { /* DexScreener unavailable */ }
     }
     renderTable();
+    saveMcapCache(lpState.mcaps);
 
-    // GeckoTerminal fallback for tokens DexScreener missed
+    // GeckoTerminal fallback — batch 25 at a time (their limit)
     var missing = addresses.filter(function(a) { return !lpState.mcaps[a.toLowerCase()]; });
     if (!missing.length) return;
     var changed = false;
 
-    // Split by chain and batch via multi endpoint
     var baseMissing = missing.filter(function(a) { return a.startsWith('0x'); });
     var solMissing = missing.filter(function(a) { return !a.startsWith('0x'); });
 
     async function geckoMulti(network, addrs) {
         if (!addrs.length) return;
-        try {
-            var url = 'https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/multi/' + addrs.join(',');
-            var gRes = await fetch(url);
-            if (!gRes.ok) return;
-            var gData = await gRes.json();
-            var tokens = gData.data || [];
-            tokens.forEach(function(t) {
-                var attrs = t.attributes;
-                if (!attrs) return;
-                var addr = (attrs.address || '').toLowerCase();
-                var fdv = attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : 0;
-                var mc = attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : 0;
-                var val = mc || fdv;
-                if (addr && val > 0) {
-                    lpState.mcaps[addr] = val;
-                    changed = true;
-                }
-            });
-        } catch (e) { /* GeckoTerminal unavailable */ }
+        // Batch in groups of 25 to avoid 400 errors
+        for (var j = 0; j < addrs.length; j += 25) {
+            var chunk = addrs.slice(j, j + 25);
+            try {
+                var url = 'https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/multi/' + chunk.join(',');
+                var gRes = await fetch(url);
+                if (!gRes.ok) continue;
+                var gData = await gRes.json();
+                (gData.data || []).forEach(function(t) {
+                    var attrs = t.attributes;
+                    if (!attrs) return;
+                    var addr = (attrs.address || '').toLowerCase();
+                    var fdv = attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : 0;
+                    var mc = attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : 0;
+                    var val = mc || fdv;
+                    if (addr && val > 0) {
+                        lpState.mcaps[addr] = val;
+                        changed = true;
+                    }
+                });
+            } catch (e) { /* GeckoTerminal unavailable */ }
+        }
     }
 
     await geckoMulti('base', baseMissing);
     await geckoMulti('solana', solMissing);
-    if (changed) renderTable();
+    if (changed) {
+        saveMcapCache(lpState.mcaps);
+        renderTable();
+    }
 }
 
 function getFilteredProjects() {
