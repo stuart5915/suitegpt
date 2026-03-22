@@ -173,22 +173,41 @@ No API key required. Any Inclawbate app calls these for free. Community GPUs han
 
 ---
 
+## What already exists vs what compute adds
+
+### Already working (free, no GPUs needed)
+Text generation is already free via Groq / Cerebras / Bankr:
+- Agent chat (Llama 3.1 8B / Llama 3.3 70B / DeepSeek / Qwen)
+- App builder at `/build` (Llama 3.3 70B via Groq)
+- All Builder + Manager + Brain capabilities already work
+
+### What the compute network actually unlocks (NEW)
+Everything in the **Studio category** — these require real GPU power and can't be done with free text APIs:
+- Image generation, upscaling, editing, background removal, style transfer
+- Audio transcription, text-to-speech, music generation, voice cloning
+- Video generation, auto-subtitles, video upscaling
+- 3D model generation
+- Translation at scale (200+ languages)
+
+**The compute network is about the Studio.** Text/chat is already solved.
+
 ## Implementation Priority
 
-### Phase 1 — Now (proxy to paid APIs)
-Build the API endpoints, proxy to existing paid APIs (Groq, Together.ai, Replicate). Apps can start using them immediately.
+### Phase 1 — Studio endpoints via paid proxies
+Build the Studio API endpoints, proxy to Replicate / Together.ai for GPU tasks. Get the interface working.
 - `/ai/image` → proxy to Replicate (FLUX)
-- `/ai/chat` → proxy to Groq (Llama 3.3 70B) — already exists via build_app
-- `/ai/transcribe` → proxy to Groq (Whisper)
+- `/ai/transcribe` → proxy to Replicate (Whisper) or Groq
+- `/ai/tts` → proxy to Replicate (Bark)
+- `/ai/remove-bg` → proxy to Replicate (REMBG)
 
 ### Phase 2 — Compute network MVP
-Build Docker node image + job router. Switch API backends from paid proxies to community GPUs. Node operators earn CLAWS.
+Build Docker node image + job router. Switch Studio backends from paid proxies to community GPUs. Node operators earn CLAWS.
 - `/ai/image` → route to community GPU running FLUX
-- `/ai/chat` → route to community GPU running Llama
-- Add remaining endpoints as models are supported
+- `/ai/transcribe` → route to community GPU running Whisper
+- Add remaining Studio endpoints as models are supported
 
-### Phase 3 — Full studio
-All 14 compute endpoints live, all routed to community GPUs. Studio section in chat UI fully functional.
+### Phase 3 — Full Studio
+All 15 Studio endpoints live on community GPUs. Studio section in Inclawbator chat UI fully functional.
 
 ### Phase 4 — Custom models
 Fine-tune models on ecosystem data. Inclawbator runs on its own model. Full independence from paid APIs.
