@@ -66,72 +66,89 @@ const SLOT_ANGLES = {
     'Weekly Recap':        ['shipped this week', 'top apps', 'community highlights', 'stats roundup', 'next week preview'],
 };
 
-// Brand archetype — injected into all image prompt generation
-const BRAND_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
+// Brand archetype — account-specific image prompt contexts
 
-SUBJECT: REAL HUMANS — not a mascot, not a cartoon, not anime, not illustration. Show diverse, real people using Inclawbate tools, building apps, managing value, coordinating philanthropy, or benefiting from the ecosystem. The Inclawbate lobster logo can appear as a SUBTLE ACCENT (sticker on a laptop, icon on a screen, notification badge) but is NEVER the main subject.
-STYLE: PHOTOREALISTIC editorial photography shot on a Canon EOS R5 with a 35mm lens. Warm natural lighting — golden hour, soft window light, morning sun. Bright, clean, airy. Real-world settings: kitchens, offices, community centers, parks, churches, developing-world villages. Think Apple product photography meets National Geographic documentary photography. MUST look like a real photograph of real people — NOT illustration, NOT anime, NOT 3D render, NOT digital art.
-NO: text in image, anime, illustration, cartoon, 3D renders, digital art style, dark/neon backgrounds, cyberpunk aesthetics, stock photo poses, brand names visible, stylized characters.
+// @inclawbator = the lobster AI agent. Meme energy, 3D mascot, personality-driven.
+const INCLAWBATOR_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
+
+CHARACTER: A stylized 3D cartoon coral-red lobster with glossy shell, big round expressive eyes, two large claws (used as hands), Pixar-like proportions. Confident, builder energy, slightly cocky grin.
+STYLE: 3D cinematic render, dark background (#0a0a0f), coral-red (#e87955) and teal (#2dd4bf) neon accents, depth of field, 1:1. Polished Octane/Blender quality. Think Fortnite character meets crypto aesthetic.
+NO: text in image, white backgrounds, flat illustration, realistic humans, brand names, anime.
 
 PROCESS — follow these steps:
-1. Read the tweet. What is it literally about? (e.g. "108 apps" = many people building real things, "staking" = a person's savings growing while they live life, "build first app" = someone's empowering moment, "poll" = a community making a decision together)
-2. Turn that concept into a REAL HUMAN SCENE (e.g. "108 apps" → a person at a bright desk looking at their freshly deployed app with pride, "staking" → a parent checking their phone at a park, green numbers, peaceful, "poll" → a diverse group around a table discussing options)
-3. The tone should feel like: empowerment, peace, purpose, dignity, hope. Never cold or abstract.`;
+1. Read the tweet. What is it literally about? (e.g. "108 apps" = many apps, "staking" = passive income, "build first app" = building/creating, "poll" = choosing between options)
+2. Turn that concept into a VISUAL SCENE the lobster is in (e.g. "108 apps" → lobster surrounded by a galaxy of floating glowing app screens, "staking" → lobster meditating with gold coins orbiting, "poll" → lobster holding up two glowing objects weighing them)
+3. Pick a unique pose, environment, and camera angle that fits`;
 
-// Scene starting points per pillar
+// @inclawbate = the company. Abstract, warm, conceptual. NO humans, NO mascot. The overlay adds branding.
+const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES the CONCEPT behind the tweet — not literally, but abstractly and beautifully.
+
+SUBJECT: Abstract, conceptual, warm imagery. NO humans, NO faces, NO mascots, NO characters. Think: textures, nature, light, growth metaphors, aerial landscapes, macro photography, golden shapes, flowing patterns.
+STYLE: Fine art photography or conceptual illustration. Warm color palette — coral (#e87955), golden amber, soft teal, cream whites, deep purples. Clean, minimal compositions with strong visual impact. Think National Geographic meets abstract art. Photorealistic textures but conceptual subjects.
+NO: text in image, human faces or bodies, cartoon characters, mascots, 3D renders, anime, dark/neon cyberpunk, cluttered compositions, stock photo vibes.
+
+PROCESS — follow these steps:
+1. Read the tweet. What is the CORE CONCEPT? (e.g. "108 apps" = abundance/growth, "staking" = patience/seeds growing, "community" = connection/warmth, "treasury" = stewardship/strength)
+2. Turn that concept into an ABSTRACT VISUAL METAPHOR (e.g. "growth" → golden light breaking through soil with tiny sprouts, "abundance" → aerial shot of a coral reef teeming with life, "community" → warm golden threads woven together, "stewardship" → a single perfect drop of water on a leaf at sunrise)
+3. The tone should feel: warm, hopeful, abundant, purposeful, beautiful. Never cold, clinical, or dark.`;
+
+// Shared alias for backward compat — defaults to inclawbator
+const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
+
+// Scene starting points per pillar — @inclawbator (lobster mascot)
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'A real person using or building an app. Vary: someone at a kitchen table with a phone showing a useful app, a builder at a desk with a deployed app on screen, a family using FoodVitals to plan meals, or a person showing their app to a friend who looks impressed.',
-    'Builder Shoutout': 'A real person building something. Vary: someone at a bright desk focused on their laptop, two people collaborating side by side, a person leaning back after shipping — quiet pride, or a mentoring moment where one person shows another how it works.',
-    'DeFi / CLAWS Update': 'Real people benefiting from value management. Vary: a person checking staking rewards on their phone at a park, a couple reviewing their portfolio at a kitchen table, someone relaxed knowing their savings are growing, or hands holding a phone with green numbers on a clean dashboard.',
-    'Weekly Recap': 'Evidence of a productive week. Vary: an overhead shot of a workspace with coffee and laptops, a team gathered looking at progress, a person pinning a milestone to a board, or a group sharing a meal at the end of a good week.',
-    'How-To / Tips': 'Mentoring and learning moments. Vary: two people at a table with a laptop between them, someone showing a friend how easy the app builder is, a person following a tutorial on screen with a coffee, or a small workshop where one person guides a group.',
-    'Community Vibes': 'Real community, real belonging. Vary: a diverse group around a long dinner table at golden hour, a living room gathering with laptops and tea, a community meeting in a bright hall, or someone being welcomed by the group for the first time.',
-    'Incubation CTA': 'The beginning of something meaningful. Vary: a person at a laptop about to hit "deploy", someone showing a friend an idea on a napkin sketch, a team whiteboarding a new project in a bright room, or a person looking at their phone — "your app is live" notification.',
+    'App Spotlight': 'The 3D lobster presenting a glowing app on a holographic screen. Vary: gesturing proudly at a floating interface, demo-ing on a floating tablet, holding up a completed project, or on stage showing to an audience of smaller characters.',
+    'Builder Shoutout': 'The 3D lobster building something at a futuristic workstation. Vary: typing on a glowing keyboard with holographic screens, late-night grind with coffee cups, triumphant just-finished pose, or pair-coding with a smaller crab character.',
+    'DeFi / CLAWS Update': 'The 3D lobster surrounded by financial visualizations. Vary: meditating with orbiting gold coins, tending a bioluminescent garden of growing crystals, analyzing holographic charts, or watching data from a rooftop.',
+    'Weekly Recap': 'Celebratory energy. Vary: claws raised with confetti and particles, looking out over a neon cityscape at night, surrounded by floating app screens, or high-fiving smaller characters.',
+    'How-To / Tips': 'Teaching energy. Vary: pointing at floating step-by-step panels, mentoring a tiny shrimp character, demonstrating on a glowing screen, or in a cozy study with holographic notes.',
+    'Community Vibes': 'Social energy. Vary: greeting at a neon-lit lounge, on a small stage with a crowd, gaming face-off with another character, or casual group hangout.',
+    'Incubation CTA': 'Aspirational energy. Vary: standing on a glowing elevated platform, walking through a swirling energy portal, leading a march of smaller lobster characters, or nurturing glowing orbs in a warm chamber.',
 };
 
-// Concrete scene ideas per pillar — purely visual, human-centered
+// Concrete scene ideas per pillar — @inclawbator (3D lobster mascot)
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'A person at a bright kitchen table, morning light through the window, looking at a useful app on their phone. Their expression: genuine relief — "this actually helps." A laptop nearby with a small lobster sticker. Warm editorial photography.',
-        'A young person holding up their phone to show a friend the app they just built. The friend leans in, impressed. A cafe setting, natural light, coffee on the table. Real moment of pride.',
-        'A parent using a food tracking app on their phone while preparing a meal in a warm kitchen. Kids in the background. The app is useful and real. Soft afternoon light.',
-        'A person at a co-working space, laptop open showing a deployed app. They lean back with a quiet smile — it works. Plants, natural light, bright clean environment.',
+        'The 3D coral-red lobster at a glowing workbench, manipulating floating UI components mid-air with its claws. Multiple holographic screens nearby. A smaller crab character gives a thumbs-up. Dark background, coral and teal neon lighting, cinematic 3D render, 1:1.',
+        'The lobster holding up a glowing completed project like a trophy. Behind it, holographic blueprints float. Achievement energy, upward camera angle. Dark background, Octane render quality, 1:1.',
+        'The lobster on a spotlit stage presenting something on a large holographic display. Audience of small sea creatures watching. Conference energy, dramatic stage lighting. 3D render, 1:1.',
+        'The lobster and a tiny shrimp character side by side, the lobster showing something on a floating screen. The shrimp looks amazed. Warm lighting, mentoring energy. 3D render, 1:1.',
     ],
     'Builder Shoutout': [
-        'Early morning, warm light through a window. A person at a tidy desk, focused on their laptop, building something. A coffee mug, a notebook with sketches. Quiet productive energy. Editorial photography.',
-        'Two people at a shared table, collaborating — one points at the screen, the other nods and types. Laptops, notebooks, warmth between them. Partnership energy, natural light.',
-        'A person leaning back in their chair, arms crossed, looking at a "Your app is live" notification on screen. The biggest quiet smile. Golden hour light through a window behind them.',
-        'An older person and a younger person at a kitchen table, laptop between them. The older one is showing the younger one how to use the builder. Eyes widening — "it\'s that simple?" Warm mentoring.',
+        'Late night, dark room lit by a glowing screen. The lobster hunched over a keyboard, focused. Empty coffee mugs scattered. On-screen: beautiful code coming together. Moody teal lighting. 3D render, 1:1.',
+        'Two lobster characters at adjacent workstations, reaching across to high-five (high-claw). Glowing data streams connecting their screens. Collaboration energy. 3D render, 1:1.',
+        'The lobster stepping back from a completed project, quiet pride. Soft backlight, golden rim lighting on the shell. Achievement moment. 3D render, 1:1.',
+        'The lobster mentoring a smaller crab character at a workbench. Pointing at something, explaining patiently. Warm workshop lighting. 3D render, 1:1.',
     ],
     'DeFi / CLAWS Update': [
-        'A person at a park bench on a sunny afternoon, casually checking their phone — staking dashboard showing green numbers. They smile, put the phone away, enjoy the day. Peaceful, value working for them.',
-        'A couple at their kitchen table, one showing the other a phone screen with staking rewards over the past month. Their faces: quiet relief. After the kids are in bed. Warm lamplight.',
-        'Close-up of hands holding a phone showing a clean staking dashboard — numbers trending up. Background soft-focused: a garden. Relaxed posture. Warm tones, shallow depth of field.',
-        'A person at their desk, laptop showing the Inclawbate treasury dashboard — ETH lending, LP positions, CLAWS staked. Notebook open with allocation notes. Careful stewardship, warm desk lamp light.',
+        'The lobster floating cross-legged in meditation. Gold coins orbit slowly around it. Soft green upward arrows in background. Peaceful zen energy. Dark void, 3D render, 1:1.',
+        'The lobster on a futuristic trading floor, one claw on a device showing a chart. Other small sea creatures peek over its shoulder. Analytical energy, teal and gold. 3D render, 1:1.',
+        'The lobster tending a bioluminescent garden where crystal formations grow from coral stalks. Watering them with teal light. Yield farming metaphor. 3D render, 1:1.',
+        'The lobster on a rooftop at night, watching a massive whale silhouette pass overhead trailing sparkles. Awe and scale. Deep blue and teal. 3D render, 1:1.',
     ],
     'How-To / Tips': [
-        'Two people at a table, one showing the other how to use a tool on a laptop. The teacher points, the learner leans in with curiosity. Bright room, books on a shelf, a plant. Natural light.',
-        'A person following a tutorial on their laptop, coffee beside them, morning light. Their expression is focused but comfortable — they\'re learning something new. Warm, inviting room.',
-        'A small workshop setting — one person at a whiteboard explaining, two others at the table following along on laptops. Bright natural light, collaborative education energy.',
-        'A person on their couch with a laptop, casually exploring the platform. A cup of tea, a blanket. Low-effort learning, comfortable. Afternoon light through curtains.',
+        'The lobster kneeling to a tiny shrimp\'s eye level, pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight. 3D render, 1:1.',
+        'A cozy workshop with floating holographic screens and blueprints pinned to coral walls. The lobster gestures at step-by-step instruction panels. Educational. 3D render, 1:1.',
+        'The lobster waking up in a cozy coral apartment, stretching, grabbing a glowing coffee mug. Floating notification bubbles. Morning routine, warm tones. 3D render, 1:1.',
+        'The lobster and a small octopus character walking together, the lobster pointing things out. Learning by doing. Warm background. 3D render, 1:1.',
     ],
     'Community Vibes': [
-        'A diverse group around a long outdoor table at golden hour, sharing a meal. Some laptops visible but mostly closed. This is about being together. Warmth, belonging, gratitude.',
-        'An evening living room gathering — a small group with laptops and phones. Someone shows their latest app. Mugs of tea, warm lamplight. Informal but meaningful.',
-        'A community meeting in a bright hall. People around a table, some taking notes, one person presenting on a shared screen. Golden afternoon light through windows. Purpose and togetherness.',
-        'A person being welcomed into a group — someone at the door, warm light behind them, a friendly gesture inviting them in. The community is open. Inclusion energy.',
+        'A neon-lit underwater lounge packed with cartoon sea creatures. The lobster on a small stage. Community gathering energy, warm ambient lighting. 3D render, 1:1.',
+        'Two lobsters face off across a table, creating on holographic screens. Smaller creatures vote with beams of light. Playful competition. Split teal/coral lighting. 3D render, 1:1.',
+        'Group photo lineup: the lobster center, flanked by crab, octopus, shrimp, pufferfish. Teal and coral backdrop. Team photo energy. 3D render, 1:1.',
+        'Sunrise over a coral reef. The lobster on a rooftop, coffee in claw, watching the sky. Fresh morning energy, warm golden light. 3D render, 1:1.',
     ],
     'Incubation CTA': [
-        'A person at a laptop, finger hovering over the "Deploy" button. The screen glows with their finished app. Anticipation and excitement. Bright room, morning light. The beginning of something.',
-        'Someone showing a friend a napkin sketch of an app idea at a coffee shop. The friend says "you should build that." Natural light, real conversation, the spark before creation.',
-        'A team in a bright room, whiteboarding a new project. Sticky notes, markers, energy. Everyone contributing. Natural light, collaborative planning.',
-        'A phone notification: "Your app is live. First user just signed up." A person reads it and their face lights up. They\'re walking outside, sunshine, real life. The start of impact.',
+        'A warm egg-shaped glowing chamber. The lobster inside, tending to luminous floating orbs. Nurturing, incubation energy. Close-up, coral lighting. 3D render, 1:1.',
+        'The lobster before a massive swirling portal of coral and teal energy. Through it: a thriving city of lights. Steps forward boldly. Epic wide shot. 3D render, 1:1.',
+        'The lobster on an elevated platform of stacked glowing geometric shapes. Earned authority. Low camera angle looking up. 3D render, 1:1.',
+        'An army of smaller lobster characters marching forward, each carrying a different tool. The main lobster leads. Coral banners. Movement energy. 3D render, 1:1.',
     ],
     'Weekly Recap': [
-        'Overhead shot of a team workspace — laptops, coffee cups, notebooks, a whiteboard with checkmarks. Evidence of a productive week. Warm afternoon light. Lived-in and real.',
-        'A person pinning a new milestone card to a corkboard already filled with achievements. Warm lamplight, each card a different win. Quiet reflection.',
-        'A group gathered at a table, end of the week, reviewing what was accomplished on a shared screen. Satisfied expressions. Golden light through windows. Gratitude energy.',
-        'A person at their desk, looking at a year-long chart of growth. Phone beside them with a congratulatory message. Warm light, peaceful. Progress is visible.',
+        'A packed arena scene. Massive holographic number glows above. Confetti everywhere. The lobster center stage, claws raised. Smaller characters cheering. 3D render, 1:1.',
+        'The lobster on a rooftop at night, looking up at stars connected by teal lines forming a constellation. Contemplative, visionary. Wide shot. 3D render, 1:1.',
+        'The lobster staring at a small floating notification bubble, face lit by its glow. Expression of pure joy. Intimate moment, tight close-up, soft bokeh. 3D render, 1:1.',
+        'The lobster planting a flag on a summit, looking out over a vast digital landscape below. Achievement energy. Dramatic rim lighting. 3D render, 1:1.',
     ],
 };
 
@@ -171,51 +188,51 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'Weekly Recap': 'Evidence of a productive week. Vary: overhead workspace shot with laptops and coffee, a team reviewing progress on a screen, a person reflecting on milestones pinned to a board, or a group meal at the end of a good week.',
-    'Product Highlight': 'Real people using real products. Vary: someone at a kitchen table using an app on their phone, a builder with a deployed app on screen, a family using FoodVitals, or a demo being shown to impressed friends.',
-    'Builder Story': 'Real humans building. Vary: a person focused at a bright desk with coffee, two people collaborating on a laptop, someone celebrating a quiet "it\'s live" moment, or a mentoring scene at a kitchen table.',
-    'Brand & Vision': 'The mission in action. Vary: a mission team coordinating resources on laptops in a community center, a person peacefully checking their growing stake at a park, a diverse council around a table making decisions, or a parent feeling financial peace.',
-    'Education': 'Learning and mentoring. Vary: two people at a table with a laptop, someone following a tutorial with coffee, a small workshop with one person teaching, or a person exploring the platform on their couch.',
-    'Community Engagement': 'Real community, real belonging. Vary: a diverse group at a long dinner table at golden hour, a living room gathering with tea and laptops, a community meeting in a bright hall, or someone being welcomed in.',
-    'Ecosystem Update': 'Real impact, real numbers. Vary: a person checking staking rewards on their phone peacefully, a dashboard showing treasury health on a laptop, a family reviewing their growing savings, or hands holding a phone with green numbers.',
+    'Weekly Recap': 'Growth and momentum. Vary: aerial shot of a flourishing coral reef, golden light breaking through morning clouds, a river flowing through a lush valley, or seeds sprouting in time-lapse.',
+    'Product Highlight': 'Creation and craftsmanship. Vary: macro shot of golden threads being woven, light refracting through a crystal, a single perfect bloom opening, or molten glass being shaped.',
+    'Builder Story': 'Quiet dedication and craft. Vary: morning light on a workbench with tools, hands shaping clay (no face), a candle burning steady in a workshop, or ink flowing on paper.',
+    'Brand & Vision': 'Purpose and stewardship. Vary: golden hour over a vast landscape, a single tree standing strong on a hillside, light pouring through stained glass, or a compass on an old map.',
+    'Education': 'Clarity and discovery. Vary: light passing through a prism, a path through a bright forest, water drops creating perfect ripples, or a clean open book with golden light.',
+    'Community Engagement': 'Connection and warmth. Vary: golden threads woven into a tapestry, many rivers joining into one, a bonfire at dusk, or warm light seen from many windows of a village.',
+    'Ecosystem Update': 'Abundance and stewardship. Vary: an orchard heavy with golden fruit at sunset, a well-organized vault of treasures in warm light, flowing water over smooth stones, or a field of wheat at golden hour.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
     'Weekly Recap': [
-        'Overhead shot of a real workspace — laptops, coffee cups, notebooks with checkmarks, a whiteboard in the background. Evidence of a productive week. Warm afternoon light filtering in. Authentic, lived-in.',
-        'A small team gathered at a table, end of the week, looking at a shared screen showing progress metrics. Satisfied expressions, mugs in hand. Golden light through windows.',
-        'A person at their desk, pinning a milestone card to a corkboard already covered with wins. Warm lamplight. Quiet pride, accumulated progress.',
+        'Aerial photograph of a coral reef teeming with life — vibrant colors, intricate patterns, everything interconnected. Warm turquoise water with golden sunlight filtering down. Abundance, ecosystem health. Fine art photography, 1:1.',
+        'Time-lapse style: a row of seedlings at different growth stages, from tiny sprout to full bloom. Warm golden backlight, rich soil, shallow depth of field. Progress made visible. 1:1.',
+        'Golden hour light breaking through dramatic clouds over a wide landscape. Rays of light fanning out like progress beams. Vast, hopeful, momentum. Cinematic landscape, 1:1.',
     ],
     'Product Highlight': [
-        'A person at a bright kitchen table, phone showing a useful app — a food tracker, a budgeting tool. Their expression: this actually helps. Morning light, coffee nearby. Editorial photography.',
-        'A builder at a clean desk, laptop showing a freshly deployed app. They lean back with quiet pride. Plants, natural light. A small lobster sticker on the laptop corner.',
-        'A parent using FoodVitals on their phone while preparing dinner. Kids at the table. The app is integrated into real life. Warm kitchen light, authentic.',
+        'Macro photograph of golden threads being woven on a loom — each thread catches the light differently. Craftsmanship, precision, something beautiful being assembled. Warm tones, shallow depth of field, 1:1.',
+        'A single perfect water drop hitting a still surface, the moment of impact creating concentric ripples that spread outward. Warm golden lighting from behind. Creation, impact, beginning. 1:1.',
+        'Light refracting through a crystal prism, splitting into a warm spectrum of coral, gold, and teal. Clean white surface. Something complex made visible. 1:1.',
     ],
     'Builder Story': [
-        'A young person at a bright desk, early morning light. Focused on their laptop, building something real. Coffee, notebook with sketches. The quiet dignity of creating. Editorial photography.',
-        'Two people collaborating at a shared table — one points at the screen, the other types. Genuine partnership. Natural light, notebooks between them, warmth.',
-        'A person showing an older family member how to use the app builder at a kitchen table. The family member\'s eyes widen — "wait, I can do this?" Mentoring across generations.',
+        'Morning sunlight streaming through a workshop window onto a wooden workbench. Tools organized, sawdust particles floating in the light beams. No person — just the evidence of craft. Warm, quiet, ready. 1:1.',
+        'Close-up of a candle flame burning steady and bright in a calm room. Warm amber tones, soft bokeh. Dedication, focus, something that endures. Fine art photography, 1:1.',
+        'Ink flowing on handmade paper — organic, flowing, purposeful lines creating something. Close-up macro, warm tones. The act of creation. 1:1.',
     ],
     'Brand & Vision': [
-        'A mission team in a community center, laptops open, planning how to route resources to people who need them. A projector shows coordination data. Purposeful, warm light through windows.',
-        'A person sitting peacefully at a park, phone in hand showing a staking dashboard with green numbers. They look up at the sky. Financial peace. Their money works while they rest.',
-        'A diverse council of people around a real table, reviewing allocation proposals on a shared screen. Some take notes. Thoughtful governance, afternoon light. These decisions matter.',
-        'A volunteer team setting up supplies in a developing community. One person checks a phone — funds confirmed. The logistics work. Natural light, documentary photography, dignity.',
+        'Golden hour over a vast mountain landscape — a single winding path visible, leading toward the horizon where light is strongest. Journey, purpose, destination. Cinematic wide, 1:1.',
+        'Warm light pouring through stained glass windows, painting colored patterns on a stone floor. Sacred, purposeful, beautiful. Architectural photography, warm tones, 1:1.',
+        'A single ancient tree standing strong on a green hillside, golden sunlight behind it. Deep roots implied, wide canopy. Permanence, stewardship, shelter. Fine art landscape, 1:1.',
+        'A compass resting on an old map, warm lamplight. Direction, intention, navigation. Still life, warm amber tones, shallow depth of field, 1:1.',
     ],
     'Education': [
-        'Two people at a table, one showing the other something on a laptop. The teacher points, the learner leans in. Bright room, bookshelf behind them, a plant. Warm natural light.',
-        'A person on their couch with a laptop and tea, following a tutorial at their own pace. Comfortable learning. Afternoon light through curtains. Approachable.',
-        'A small group at a community table, one person explaining something on a whiteboard while others follow along on laptops. Bright, collaborative, warm.',
+        'White light passing through a glass prism, splitting into a clean warm spectrum. Discovery, understanding, clarity. Clean composition, warm tones, 1:1.',
+        'A sunlit forest path — dappled light through leaves, clear direction ahead. The way forward is visible. Warm greens and golds, nature photography, 1:1.',
+        'A single drop of water on a perfect leaf, magnifying the texture beneath it. Clarity, detail, seeing something new. Macro photography, warm morning light, 1:1.',
     ],
     'Community Engagement': [
-        'A long dinner table outdoors at golden hour. A diverse group sharing a meal, laughing. Laptops mostly closed — this is about being together. Warm, abundant, real.',
-        'An evening gathering in a living room — friends with laptops and phones, someone demo-ing their app. Mugs of tea, warm lamplight. The kind of group you want to be part of.',
-        'Morning. A person on a porch with coffee, checking their phone — a community message, a new builder joined. They smile. Fresh light, new day energy.',
+        'Many small streams of golden water converging into one flowing river at sunset. Connection, coming together, strength in unity. Aerial photography, warm tones, 1:1.',
+        'A bonfire at dusk — warm flames, sparks rising, the golden glow illuminating the surrounding area. Gathering, warmth, belonging. No people visible. Fine art, 1:1.',
+        'A hillside village at twilight — warm light glowing from every window. Community visible through warmth, not faces. Cozy, inviting, alive. Landscape photography, 1:1.',
     ],
     'Ecosystem Update': [
-        'A person peacefully checking their phone at a park — staking rewards growing. They pocket the phone and enjoy the sunshine. The engine works. Warm, relaxed, real.',
-        'A laptop showing the treasury dashboard — healthy numbers, diversified positions. Notebook with allocation notes beside it. Careful stewardship energy. Warm desk lamp.',
-        'A parent at the grocery store, checking their phone — CLAWS stake grew while groceries got more expensive. Relief on their face. Everyday setting, real impact.',
+        'An orchard heavy with golden fruit at sunset — branches bending with abundance. Warm light, rich colors. The system produces. Fine art photography, 1:1.',
+        'Smooth river stones with clear water flowing over them, golden sunlight creating patterns. Flowing, sustainable, clean, managed. Nature macro, warm tones, 1:1.',
+        'A vast field of golden wheat at golden hour, stretching to the horizon. Abundance, yield, the harvest. Cinematic landscape, warm, 1:1.',
     ],
 };
 
@@ -228,7 +245,8 @@ function getAccountConfig(account) {
             styleExamples: INCLAWBATE_STYLE_EXAMPLES,
             sceneHints: INCLAWBATE_SCENE_HINTS,
             narrativeScenes: INCLAWBATE_NARRATIVE_SCENES,
-            identity: `You are @inclawbate, the official company account for Inclawbate — the perpetual value engine built on Base. You speak as the brand itself. Your voice is confident, visionary, builder-first. You're not an agent or a bot — you're the company.`,
+            imageContext: INCLAWBATE_IMAGE_CONTEXT,
+            identity: `You are @inclawbate, the official company account for Inclawbate — the perpetual value engine built on Base. Mission: Love God, Love Others. You speak as the brand itself. Your voice is confident, visionary, purposeful. You're not an agent or a bot — you're the company.`,
         };
     }
     return {
@@ -237,7 +255,8 @@ function getAccountConfig(account) {
         styleExamples: STYLE_EXAMPLES,
         sceneHints: PILLAR_SCENE_HINTS,
         narrativeScenes: NARRATIVE_SCENES,
-        identity: `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn.`,
+        imageContext: INCLAWBATOR_IMAGE_CONTEXT,
+        identity: `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn. You're a lobster with personality — confident, meme-savvy, crypto-native.`,
     };
 }
 
@@ -310,7 +329,7 @@ export default async function handler(req, res) {
 This image accompanies this tweet from @${acct}:
 "${tweet_text.trim()}"
 
-${BRAND_IMAGE_CONTEXT}
+${cfg.imageContext}
 
 ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
 
@@ -536,7 +555,7 @@ RULES:
 - NEVER say "price is up" or "pumping" unless the data above shows positive 24h change. If price is DOWN, focus on building/fundamentals/community. NEVER fabricate market claims.
 
 IMAGE PROMPT:
-${BRAND_IMAGE_CONTEXT}
+${cfg.imageContext}
 
 Output format:
 TWEET: [the tweet]
@@ -606,7 +625,7 @@ IMAGE: [2-3 sentences. What is this tweet about? Show a REAL HUMAN experiencing/
 This image MUST visually illustrate this specific tweet from @${slotAccount}:
 "${tweetText}"
 
-${BRAND_IMAGE_CONTEXT}
+${cfg.imageContext}
 
 ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet): ' + sceneHint : ''}
 
@@ -1071,7 +1090,7 @@ CRITICAL — NO FALSE CLAIMS:
 Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching image prompt.
 
 IMAGE PROMPTS — THIS IS THE MOST IMPORTANT PART:
-${BRAND_IMAGE_CONTEXT}
+${cfg.imageContext}
 
 EXAMPLES of tweet → image connection:
 - Tweet "108 apps and counting" → "A person at a bright co-working space, leaning back from their laptop to take in a large monitor wall showing dozens of different app interfaces — each one built by a different person. Their expression: amazement at what this community has created. Warm afternoon light, clean modern space, editorial photography, 1:1"

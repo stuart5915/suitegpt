@@ -1648,6 +1648,7 @@
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
@@ -1727,6 +1728,7 @@
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
@@ -2414,6 +2416,28 @@
             reader.readAsDataURL(file);
         };
         inp.click();
+    };
+
+    // ── Remove Image ──
+    window._removeSlotImage = async function(slotId) {
+        if (!confirm('Remove image from this slot?')) return;
+        var auth = getAuth();
+        if (!auth || !auth.token) { alert('Sign in first'); return; }
+        try {
+            var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                body: JSON.stringify({ action: 'set_image', slot_id: slotId, image_url: null })
+            });
+            var data = await resp.json();
+            if (data.error) { alert(data.error); return; }
+            var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+            if (slot) {
+                if (slot.tweet_options) delete slot.tweet_options.image_url;
+                if (slot.status === 'needs_review') slot.status = 'needs_image';
+            }
+            renderSlots(_selectedDay);
+        } catch(e) { alert('Remove failed: ' + e.message); }
     };
 
     // ── Image Preview ──
