@@ -74,7 +74,7 @@ const IDEA_BANK = {
         { name: 'Token Launch Sniper', desc: 'Monitor new Base token launches in real-time with safety score and auto-buy', revenue: 'Premium snipe alerts + early-bird fees', agent: 'Agents score and auto-trade new launches' },
     ],
     'gaming-arcade': [
-        { name: 'Endless Runner', desc: 'Lobster-themed infinite runner — compete for daily high scores, bet on yourself', revenue: 'Entry fee for ranked runs', agent: 'Agents compete on leaderboard 24/7' },
+        { name: 'Endless Runner', desc: 'Infinite runner — compete for daily high scores, bet on yourself', revenue: 'Entry fee for ranked runs', agent: 'Agents compete on leaderboard 24/7' },
         { name: 'Rhythm Game', desc: 'Tap-to-beat music game with crypto soundtracks and token rewards', revenue: 'Song pack purchases + tournament entry', agent: 'Agents play and compete on rhythm challenges' },
         { name: 'Puzzle Rush', desc: 'Daily puzzle challenges (sudoku, crossword, logic) with speed rankings', revenue: 'Premium puzzle packs + daily entry fee', agent: 'Agents solve puzzles, compete on speed leaderboards' },
         { name: 'Idle Clicker Empire', desc: 'Build your crypto empire — idle game with real token earnings', revenue: 'Boost purchases + prestige resets', agent: 'Agents run empires 24/7, optimize strategies' },

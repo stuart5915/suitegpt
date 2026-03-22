@@ -142,7 +142,7 @@ const INCLAWBATE_PILLARS = [
     { name: 'Builder Story',         emoji: '\u{1F477}', needsImage: false, desc: 'Spotlight a builder, an app they shipped, or a community contribution' },
     { name: 'Brand & Vision',        emoji: '\u{1F30A}', needsImage: true,  desc: 'The perpetual engine, the Telos mission, why Inclawbate exists, DAO governance, long-term vision' },
     { name: 'Education',             emoji: '\u{1F4A1}', needsImage: false, desc: 'How DeFi works, how Inclawbate works, staking explained, yield mechanics, app builder tips' },
-    { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, memes with the lobster mascot, conversation starters, community vibes' },
+    { name: 'Community Engagement',  emoji: '\u{1F525}', needsImage: true,  desc: 'Polls, hot takes, conversation starters, community vibes, human stories' },
     { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones, ecosystem revenue' },
 ];
 
@@ -613,9 +613,9 @@ ${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet): ' + scene
 ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements):\n' + narrativeScene : ''}
 
 STEP BY STEP:
-1. Read the tweet above. What is the KEY SUBJECT? (staking? building? a specific app? community? treasury?)
-2. What should the lobster be DOING to illustrate this? (presenting an app = showing a holographic screen, staking = meditating with orbiting coins, building = coding at workstation, community = greeting others at The Lounge)
-3. What SPECIFIC VISUAL DETAILS from the tweet should appear? (if "APY increased" → charts trending up, if "100+ apps" → constellation of floating app screens, if "poker" → card table and chips)
+1. Read the tweet above. What is the KEY SUBJECT? (staking? building? a specific app? community? treasury? philanthropy?)
+2. What REAL PERSON should be in the scene and what should they be DOING? (building an app = person at a desk with a live app on screen, staking = person checking phone at a park with green numbers, community = a group gathered at a table, philanthropy = a mission team coordinating resources)
+3. What SPECIFIC VISUAL DETAILS from the tweet should appear? (if "APY increased" → phone showing green numbers, if "100+ apps" → person at a workspace with many screens, if "poker" → friends at a table playing)
 
 Write ONE image prompt (2-3 sentences). A REAL HUMAN must be the focal point, doing something that SPECIFICALLY relates to what the tweet says. Include: who the person is, what they're doing, their emotional state, the real-world setting, warm natural lighting, 1:1. The Inclawbate lobster can appear as a subtle accent only.
 
@@ -1084,7 +1084,7 @@ ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — 
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentences. What is this tweet about? Show the lobster DOING that specific thing. Be concrete and visual. Dark background, coral/teal neon, cinematic 3D render, 1:1]
+IMAGE: [2-3 sentences. What is this tweet about? Show a REAL HUMAN experiencing/doing that thing in a real-world setting. Be concrete and visual. Warm natural light, editorial photography, 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 

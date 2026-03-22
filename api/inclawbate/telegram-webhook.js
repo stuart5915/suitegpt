@@ -348,7 +348,7 @@ const MARKETING_POVS = [
     { num: 9, emoji: '✊', name: "THE PEOPLE'S PLATFORM", angle: 'No VC. No gatekeepers. Built by people, for people.', target: 'Anti-establishment, indie builders' },
     { num: 10, emoji: '🧰', name: 'THE TOOLKIT', angle: '50+ free tools for builders, devs, and creators.', target: 'Developers, SEO people, creators' },
     { num: 11, emoji: '🕊️', name: 'THE PHILANTHROPIST', angle: 'Crypto that gives back. Real impact. Real giving.', target: 'Faith communities, impact investors' },
-    { num: 12, emoji: '🦞', name: 'THE BRAND', angle: 'The lobster. Iconic. Memeable. Recognizable.', target: 'Meme culture, visual-first audiences' },
+    { num: 12, emoji: '🌱', name: 'THE MISSION', angle: 'Love God. Love Others. Build technology that helps humans flourish.', target: 'Faith communities, purpose-driven builders' },
     { num: 13, emoji: '🥚', name: 'THE INCUBATOR', angle: 'Submit your idea. We build everything. You just show up.', target: 'First-time founders, non-crypto people' },
     { num: 14, emoji: '🔄', name: 'THE SELF-FUNDING LOOP', angle: 'Revenue feeds growth feeds revenue. The loop runs itself.', target: 'Crypto analysts, business-minded' },
     { num: 15, emoji: '🌐', name: 'WEB3 SIMPLIFIED', angle: "Crypto is complicated. We made it simple.", target: 'Normies, web2 people, students' },
@@ -385,72 +385,64 @@ async function handleMarketingPovs(chatId, args) {
     await sendMsg(chatId, msg);
 }
 
-// ── /brand — visual identity + mascot reference ──
+// ── /brand — visual identity reference ──
 
 async function handleBrand(chatId) {
-    let msg = '🦞 <b>INCLAWBATE BRAND</b>\n\n';
+    let msg = '🌱 <b>INCLAWBATE BRAND</b>\n\n';
 
+    msg += '<b>Mission:</b> Love God and Love Others\n';
     msg += '<b>Tagline:</b> "Anyone Can Build. Everyone Gets Paid."\n\n';
 
-    msg += '<b>🎨 The Lobster Mascot</b>\n';
-    msg += '• 3D rendered (Octane/Blender quality), NOT flat/2D\n';
-    msg += '• Coral red (#e5533d) body, glossy shell, large expressive eyes\n';
-    msg += '• Personality: confident, builder energy, slightly cocky grin\n';
-    msg += '• Think: Pixar character meets crypto neon aesthetic\n';
-    msg += '• NOT cute/kawaii, NOT scary — adult professional with swagger\n\n';
+    msg += '<b>🧑 Visual Identity — Human-Centered</b>\n';
+    msg += '• REAL HUMANS are the focal point of ALL visuals\n';
+    msg += '• Style: editorial photography, warm natural light, golden hour\n';
+    msg += '• Settings: kitchens, offices, churches, parks, mission fields\n';
+    msg += '• Show people: building apps, checking rewards, coordinating missions, flourishing\n';
+    msg += '• The lobster is a BRAND MARK only — favicon, sticker, icon accent\n\n';
 
     msg += '<b>🎯 Color Palette</b>\n';
-    msg += '• Coral Red: #e5533d (mascot, primary)\n';
-    msg += '• Seafoam Teal: #4db6ac (growth, data, success)\n';
-    msg += '• Deep Void: #06060b (ALL backgrounds — always dark)\n';
-    msg += '• Warm Gold: #d4a574 (coins, premium, achievements)\n\n';
+    msg += '• Coral: #e87955 (primary accent, warmth)\n';
+    msg += '• Indigo: #6366f1 (links, UI, tech accent)\n';
+    msg += '• Warm Green: #4ade80 (growth, success)\n';
+    msg += '• Soft Teal: #2dd4bf (trust, stability)\n';
+    msg += '• Warm White: #faf8f5 (light backgrounds)\n\n';
 
-    msg += '<b>📐 Poses</b>\n';
-    msg += 'The Builder — at desk, typing on holograms\n';
-    msg += 'The Presenter — gesturing toward floating app\n';
-    msg += 'The Launcher — claw raised with glowing token\n';
-    msg += 'The Thinker — chin on claw, studying data\n';
-    msg += 'The Celebrator — both claws raised, confetti\n';
-    msg += 'The Boss — arms crossed, standing on stack of apps\n';
-    msg += 'The Chef — cooking up something in a glowing pot\n\n';
-
-    msg += '<b>✅ Always:</b> dark backgrounds, 3D render, lobster as focal point, coral+teal neon lighting, cinematic\n';
-    msg += '<b>❌ Never:</b> white/bright backgrounds, flat 2D, stock photos, text in images, cute/chibi style\n\n';
+    msg += '<b>✅ Always:</b> warm natural light, real humans, real-world settings, editorial feel, hope and dignity\n';
+    msg += '<b>❌ Never:</b> dark/neon backgrounds, 3D cartoon renders, lobster as main subject, stock poses, cold vibes\n\n';
 
     msg += '📖 Full spec: inclawbate/BRAND_ARCHETYPE.md';
 
     await sendMsg(chatId, msg);
 }
 
-// ── /narrative — story world, locations, characters ──
+// ── /narrative — story world, settings, people ──
 
 async function handleNarrative(chatId) {
-    let msg = '🦞 <b>INCLAWBATE NARRATIVE</b>\n\n';
+    let msg = '🌱 <b>INCLAWBATE NARRATIVE</b>\n\n';
 
-    msg += '<b>🌊 The World: "The Reef"</b>\n';
-    msg += 'A futuristic underwater/space hybrid tech hub. Bioluminescent coral meets holographic terminals.\n\n';
+    msg += '<b>🌍 The World: Real Life</b>\n';
+    msg += 'Real humans in real settings — where people live, work, worship, build, and serve.\n\n';
 
-    msg += '<b>📍 Locations</b>\n';
-    msg += '🔧 The Workshop — cluttered lab, building & how-tos\n';
-    msg += '🚀 The Launchpad — token launches, big announcements\n';
-    msg += '📊 The Trading Floor — DeFi updates, price action\n';
-    msg += '🍻 The Lounge — neon bar, community vibes\n';
-    msg += '🔐 The Vault — treasury, staking, tokenomics\n';
-    msg += '🏟️ The Arena — app spotlights, competitions\n';
-    msg += '🥚 The Incubator — nurturing new projects\n';
-    msg += '🌅 The Rooftop — vision posts, inspiration\n\n';
+    msg += '<b>📍 Settings</b>\n';
+    msg += '🏠 Kitchen Table — personal use, family finances, FoodVitals\n';
+    msg += '💻 Builder\'s Desk — creating apps, shipping, building\n';
+    msg += '🏛️ Community Center — council meetings, governance, collaboration\n';
+    msg += '🌍 Mission Field — philanthropy, S4H, resource coordination\n';
+    msg += '🌳 Park / Outdoors — passive income, peace of mind\n';
+    msg += '🔧 Workshop — team building, incubation, prototyping\n';
+    msg += '🏠 Living Room — evening gatherings, community vibes\n';
+    msg += '⛪ Church — faith integration, coordinating giving\n\n';
 
-    msg += '<b>🐚 Characters</b>\n';
-    msg += '🦞 The Inclawbator — main lobster, protagonist\n';
-    msg += '🦞 Mini Lobsters — community/builders (smaller, varied colors)\n';
-    msg += '🦀 Crab Engineer — blue-teal, safety goggles, fixes things\n';
-    msg += '🐙 Octopus Multitasker — purple, juggles 8 tasks\n';
-    msg += '🐋 The Whale — massive, wise, big moves\n';
-    msg += '🦐 Shrimp Newbie — tiny, wide-eyed, learning\n';
-    msg += '🐡 Pufferfish Hype-Man — inflates with excitement\n\n';
+    msg += '<b>🧑 People We Show</b>\n';
+    msg += '👩‍💻 First-Time Builder — empowerment moment\n';
+    msg += '👨‍👩‍👧 The Parent — financial security, real utility\n';
+    msg += '🌍 Mission Coordinator — philanthropy in action\n';
+    msg += '🤝 Council Member — thoughtful stewardship\n';
+    msg += '👥 The Team — collaboration, shared mission\n';
+    msg += '😌 The Staker — passive income, peace\n\n';
 
     msg += '<b>🎭 Mood Tags</b>\n';
-    msg += '#grindset #hype #cozy #epic #degen #zen #gm #ship-it #teach #flex\n\n';
+    msg += '#stewardship #empowered #peace #together #impact #build #morning #gratitude #faith #generational\n\n';
 
     msg += '📖 Full bible: inclawbate/NARRATIVE.md';
 
