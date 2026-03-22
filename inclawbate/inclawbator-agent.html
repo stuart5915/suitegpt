@@ -164,7 +164,7 @@
             box-shadow: 0 8px 40px hsla(0,0%,0%,0.5), 0 0 60px hsla(9,60%,54%,0.06), inset 0 1px 0 hsla(0,0%,100%,0.04);
         }
         .chat-messages {
-            max-height: 300px; min-height: 60px;
+            max-height: 600px; min-height: 60px;
             overflow-y: auto;
             padding: var(--space-lg) var(--space-lg) var(--space-sm);
             display: flex; flex-direction: column; gap: var(--space-md);
@@ -250,6 +250,38 @@
         .chat-action-btn:hover {
             background: hsla(9,52%,54%,0.18); border-color: var(--lobster-400);
             transform: translateY(-1px);
+        }
+
+        /* ── Inline App Preview ── */
+        .chat-app-preview {
+            margin-top: 10px; border-radius: 10px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08); background: #000;
+        }
+        .chat-app-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 10px; background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .chat-app-toolbar-label {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+            color: var(--lobster-300); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .chat-app-toolbar-btns { display: flex; gap: 4px; }
+        .chat-app-toolbar-btn {
+            background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+            color: var(--text-dim); font-size: 0.7rem; padding: 2px 6px; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center;
+            transition: all 0.15s;
+        }
+        .chat-app-toolbar-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.2); }
+        .chat-app-iframe {
+            width: 100%; height: 350px; border: none; display: block;
+            background: #0a0a0f;
+        }
+        .chat-app-expanded .chat-app-iframe { height: 600px; }
+        @media (max-width: 600px) {
+            .chat-app-iframe { height: 280px; }
+            .chat-app-expanded .chat-app-iframe { height: 450px; }
         }
 
         @media (max-width: 600px) {
@@ -649,7 +681,9 @@
         request_incubation: [{ label: 'DM @StuartDeFi on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
     };
 
-    function addMessage(text, isUser, functionCalled) {
+    var _lastAppPreview = null; // track the latest app iframe for live updates
+
+    function addMessage(text, isUser, functionCalled, appUrl) {
         var wrapper = document.createElement('div');
         wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
         var avatar = document.createElement('div');
@@ -660,6 +694,24 @@
         if (isUser) { bubble.textContent = text; } else { bubble.innerHTML = linkify(text); }
         wrapper.appendChild(avatar);
         wrapper.appendChild(bubble);
+
+        // Inline app preview for build_app
+        if (!isUser && appUrl) {
+            var preview = document.createElement('div');
+            preview.className = 'chat-app-preview';
+            preview.innerHTML =
+                '<div class="chat-app-toolbar">' +
+                    '<span class="chat-app-toolbar-label">Live Preview</span>' +
+                    '<div class="chat-app-toolbar-btns">' +
+                        '<button class="chat-app-toolbar-btn" onclick="var f=this.closest(\'.chat-app-preview\');f.classList.toggle(\'chat-app-expanded\')" title="Expand">&#x26F6;</button>' +
+                        '<a class="chat-app-toolbar-btn" href="' + appUrl + '" target="_blank" title="Open in new tab">&#x2197;</a>' +
+                    '</div>' +
+                '</div>' +
+                '<iframe src="' + appUrl + '" class="chat-app-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
+            bubble.appendChild(preview);
+            _lastAppPreview = preview.querySelector('iframe');
+        }
+
         if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
             var actions = document.createElement('div');
             actions.className = 'chat-actions';
@@ -713,8 +765,12 @@
             var data = await res.json();
             hideTyping();
             if (data.reply) {
-                addMessage(data.reply, false, data.function_called);
+                addMessage(data.reply, false, data.function_called, data.app_url);
                 chatHistory.push({ role: 'assistant', content: data.reply });
+                // If app was updated and we have a previous preview, refresh it
+                if (data.app_url && _lastAppPreview && _lastAppPreview.src) {
+                    _lastAppPreview.src = data.app_url + '?t=' + Date.now();
+                }
             }
             else if (data.error) { addMessage('Sorry, something went wrong. Try again!', false); }
             if (data.session_id) sessionId = data.session_id;

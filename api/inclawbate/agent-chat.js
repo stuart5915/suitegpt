@@ -969,7 +969,15 @@ export default async function handler(req, res) {
       if (directReply) {
         // Direct response — no second LLM call needed
         history.push({ role: 'assistant', content: directReply });
-        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+        // Extract app_url from build_app results for inline preview
+        let appUrl = null;
+        if (functionCalled === 'build_app' && lastToolResult?.content) {
+          try {
+            const tr = typeof lastToolResult.content === 'string' ? JSON.parse(lastToolResult.content) : lastToolResult.content;
+            if (tr.url) appUrl = tr.url;
+          } catch (_) {}
+        }
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }) });
       }
 
       // Complex tools (health_check) — use LLM to interpret
