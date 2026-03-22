@@ -80,17 +80,17 @@ PROCESS — follow these steps:
 2. Turn that concept into a VISUAL SCENE the lobster is in (e.g. "108 apps" → lobster surrounded by a galaxy of floating glowing app screens, "staking" → lobster meditating with gold coins orbiting, "poll" → lobster holding up two glowing objects weighing them)
 3. Pick a unique pose, environment, and camera angle that fits`;
 
-// @inclawbate = the company. Abstract, warm, conceptual. NO humans, NO mascot. The overlay adds branding.
-const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES the CONCEPT behind the tweet — not literally, but abstractly and beautifully.
+// @inclawbate = the company. Warm, simple, conceptual. NO humans, NO mascot. The overlay adds branding.
+const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that visually relates to what the tweet is ACTUALLY ABOUT — stay close to the message, don't go too abstract or epic.
 
-SUBJECT: Abstract, conceptual, warm imagery. NO humans, NO faces, NO mascots, NO characters. Think: textures, nature, light, growth metaphors, aerial landscapes, macro photography, golden shapes, flowing patterns.
-STYLE: Fine art photography or conceptual illustration. Warm color palette — coral (#e87955), golden amber, soft teal, cream whites, deep purples. Clean, minimal compositions with strong visual impact. Think National Geographic meets abstract art. Photorealistic textures but conceptual subjects.
-NO: text in image, human faces or bodies, cartoon characters, mascots, 3D renders, anime, dark/neon cyberpunk, cluttered compositions, stock photo vibes.
+SUBJECT: Simple, warm, conceptual still-life or close-up imagery. NO humans, NO faces, NO mascots, NO characters. Think: everyday objects arranged thoughtfully, macro textures, simple nature moments, tools and materials, warm light on surfaces.
+STYLE: Clean, minimal, warm. Like a well-composed Instagram photo — simple subject, beautiful light, not over-produced. Warm color palette — coral, golden amber, soft teal, cream whites. Shallow depth of field, natural textures. 1:1 square.
+NO: text in image, human faces or bodies, cartoon characters, mascots, 3D renders, anime, epic landscapes, dramatic skies, overly abstract art, dark/neon, cluttered compositions.
 
 PROCESS — follow these steps:
-1. Read the tweet. What is the CORE CONCEPT? (e.g. "108 apps" = abundance/growth, "staking" = patience/seeds growing, "community" = connection/warmth, "treasury" = stewardship/strength)
-2. Turn that concept into an ABSTRACT VISUAL METAPHOR (e.g. "growth" → golden light breaking through soil with tiny sprouts, "abundance" → aerial shot of a coral reef teeming with life, "community" → warm golden threads woven together, "stewardship" → a single perfect drop of water on a leaf at sunrise)
-3. The tone should feel: warm, hopeful, abundant, purposeful, beautiful. Never cold, clinical, or dark.`;
+1. Read the tweet. What is it LITERALLY about? Stay close to the actual subject. (e.g. "apps don't need to be built from scratch" = assembling pre-made pieces, "staking rewards" = something growing slowly, "community growing" = things coming together)
+2. Find a SIMPLE, WARM visual that directly relates (e.g. "assembling pieces" → wooden building blocks neatly arranged on a clean desk in warm light, "something growing" → a small sprout in a terracotta pot on a windowsill with morning sun, "things coming together" → puzzle pieces fitting together on a warm wooden table)
+3. Keep it SIMPLE. One subject, beautiful light, clean composition. Match the energy of the tweet — if the tweet is practical, the image should feel practical. If the tweet is visionary, the image can be more expansive. Don't default to epic.`;
 
 // Shared alias for backward compat — defaults to inclawbator
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
@@ -188,51 +188,51 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'Weekly Recap': 'Growth and momentum. Vary: aerial shot of a flourishing coral reef, golden light breaking through morning clouds, a river flowing through a lush valley, or seeds sprouting in time-lapse.',
-    'Product Highlight': 'Creation and craftsmanship. Vary: macro shot of golden threads being woven, light refracting through a crystal, a single perfect bloom opening, or molten glass being shaped.',
-    'Builder Story': 'Quiet dedication and craft. Vary: morning light on a workbench with tools, hands shaping clay (no face), a candle burning steady in a workshop, or ink flowing on paper.',
-    'Brand & Vision': 'Purpose and stewardship. Vary: golden hour over a vast landscape, a single tree standing strong on a hillside, light pouring through stained glass, or a compass on an old map.',
-    'Education': 'Clarity and discovery. Vary: light passing through a prism, a path through a bright forest, water drops creating perfect ripples, or a clean open book with golden light.',
-    'Community Engagement': 'Connection and warmth. Vary: golden threads woven into a tapestry, many rivers joining into one, a bonfire at dusk, or warm light seen from many windows of a village.',
-    'Ecosystem Update': 'Abundance and stewardship. Vary: an orchard heavy with golden fruit at sunset, a well-organized vault of treasures in warm light, flowing water over smooth stones, or a field of wheat at golden hour.',
+    'Weekly Recap': 'Progress and reflection. Vary: a checklist on a notepad with warm light, a row of small potted plants at different growth stages, a clean desk with a finished coffee and closed laptop, or a corkboard with pinned notes.',
+    'Product Highlight': 'Making something useful. Vary: building blocks arranged on a desk, a tool kit neatly organized, a single polished object on a clean surface, or a phone screen showing a clean interface (no text).',
+    'Builder Story': 'Craft and focus. Vary: morning light on a tidy workspace, a pencil and fresh notebook, a warm coffee next to a keyboard, or tools laid out ready to use.',
+    'Brand & Vision': 'Purpose and direction. Vary: a compass on a wooden table, a single candle in a calm room, a path through a bright garden, or sunlight through a window onto a meaningful object.',
+    'Education': 'Clarity and simplicity. Vary: a clean open book with golden light, colored pencils arranged neatly, a magnifying glass on a leaf, or sticky notes organized on a bright wall.',
+    'Community Engagement': 'Togetherness and warmth. Vary: mugs of coffee arranged together on a table, chairs around a warm table, a string of warm lights, or a doorway with warm light coming through.',
+    'Ecosystem Update': 'Growth and health. Vary: a small plant thriving in a pot, coins stacked neatly on a wooden surface, a fruit bowl in warm kitchen light, or a jar filling with golden liquid.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
     'Weekly Recap': [
-        'Aerial photograph of a coral reef teeming with life — vibrant colors, intricate patterns, everything interconnected. Warm turquoise water with golden sunlight filtering down. Abundance, ecosystem health. Fine art photography, 1:1.',
-        'Time-lapse style: a row of seedlings at different growth stages, from tiny sprout to full bloom. Warm golden backlight, rich soil, shallow depth of field. Progress made visible. 1:1.',
-        'Golden hour light breaking through dramatic clouds over a wide landscape. Rays of light fanning out like progress beams. Vast, hopeful, momentum. Cinematic landscape, 1:1.',
+        'A small notepad on a wooden desk with a few checkmarks, warm morning light from a window. A finished cup of coffee beside it. Simple evidence of a productive week. Shallow depth of field, 1:1.',
+        'Three small potted plants on a windowsill — each one a little taller than the last. Warm sunlight, clean white background. Quiet growth. 1:1.',
+        'A clean corkboard with a few pinned cards and notes, warm lamplight. Not cluttered — just enough to show progress. Cozy, real. 1:1.',
     ],
     'Product Highlight': [
-        'Macro photograph of golden threads being woven on a loom — each thread catches the light differently. Craftsmanship, precision, something beautiful being assembled. Warm tones, shallow depth of field, 1:1.',
-        'A single perfect water drop hitting a still surface, the moment of impact creating concentric ripples that spread outward. Warm golden lighting from behind. Creation, impact, beginning. 1:1.',
-        'Light refracting through a crystal prism, splitting into a warm spectrum of coral, gold, and teal. Clean white surface. Something complex made visible. 1:1.',
+        'Wooden building blocks arranged neatly on a clean white desk, some stacked into a small structure. Warm side light creating soft shadows. Something being assembled with care. 1:1.',
+        'A single polished object (a smooth stone, a wooden sphere) sitting on a clean surface in warm golden light. Simple, well-made, satisfying. Shallow depth of field, 1:1.',
+        'A phone laying on a wooden table, screen showing a clean colorful interface (no readable text). Warm afternoon light, a coffee nearby. Something useful, ready to use. 1:1.',
     ],
     'Builder Story': [
-        'Morning sunlight streaming through a workshop window onto a wooden workbench. Tools organized, sawdust particles floating in the light beams. No person — just the evidence of craft. Warm, quiet, ready. 1:1.',
-        'Close-up of a candle flame burning steady and bright in a calm room. Warm amber tones, soft bokeh. Dedication, focus, something that endures. Fine art photography, 1:1.',
-        'Ink flowing on handmade paper — organic, flowing, purposeful lines creating something. Close-up macro, warm tones. The act of creation. 1:1.',
+        'A tidy desk with a warm coffee, a notebook with a few pencil sketches, and morning light. No person — just the evidence that someone was here creating. Warm, quiet. 1:1.',
+        'A pencil resting on a fresh blank page, warm golden light from the side. The moment before creation. Simple, inviting. Shallow depth of field, 1:1.',
+        'Close-up of a keyboard with warm light, a few sticky notes nearby. The workspace of someone who makes things. Clean, not cluttered. 1:1.',
     ],
     'Brand & Vision': [
-        'Golden hour over a vast mountain landscape — a single winding path visible, leading toward the horizon where light is strongest. Journey, purpose, destination. Cinematic wide, 1:1.',
-        'Warm light pouring through stained glass windows, painting colored patterns on a stone floor. Sacred, purposeful, beautiful. Architectural photography, warm tones, 1:1.',
-        'A single ancient tree standing strong on a green hillside, golden sunlight behind it. Deep roots implied, wide canopy. Permanence, stewardship, shelter. Fine art landscape, 1:1.',
-        'A compass resting on an old map, warm lamplight. Direction, intention, navigation. Still life, warm amber tones, shallow depth of field, 1:1.',
+        'A compass resting on a wooden table, warm lamplight. Direction, purpose. Simple still life, amber tones, shallow depth of field. 1:1.',
+        'A single candle burning steady in a calm room, warm glow on the surrounding surfaces. Focus, permanence, something that endures. 1:1.',
+        'A small path through a bright garden, sunlight ahead. Not epic — just a clear, warm, inviting direction. 1:1.',
+        'Sunlight pouring through a clean window onto a meaningful object — a seed, a book, a small plant. Purpose in simplicity. 1:1.',
     ],
     'Education': [
-        'White light passing through a glass prism, splitting into a clean warm spectrum. Discovery, understanding, clarity. Clean composition, warm tones, 1:1.',
-        'A sunlit forest path — dappled light through leaves, clear direction ahead. The way forward is visible. Warm greens and golds, nature photography, 1:1.',
-        'A single drop of water on a perfect leaf, magnifying the texture beneath it. Clarity, detail, seeing something new. Macro photography, warm morning light, 1:1.',
+        'An open book on a wooden table, warm golden light falling across the pages. Clarity, learning, invitation. Clean composition, 1:1.',
+        'Colored pencils arranged neatly in a row on a bright surface. Order, tools, readiness. Warm overhead light, 1:1.',
+        'A magnifying glass resting on a leaf, sunlight catching the lens. Looking closer, understanding more. Macro, warm tones, 1:1.',
     ],
     'Community Engagement': [
-        'Many small streams of golden water converging into one flowing river at sunset. Connection, coming together, strength in unity. Aerial photography, warm tones, 1:1.',
-        'A bonfire at dusk — warm flames, sparks rising, the golden glow illuminating the surrounding area. Gathering, warmth, belonging. No people visible. Fine art, 1:1.',
-        'A hillside village at twilight — warm light glowing from every window. Community visible through warmth, not faces. Cozy, inviting, alive. Landscape photography, 1:1.',
+        'Several mugs of coffee gathered together on a warm wooden table, as if friends just sat down. Togetherness without showing people. Warm, inviting. 1:1.',
+        'A string of warm fairy lights against a soft background. Simple warmth, gathering energy. Soft bokeh, golden tones. 1:1.',
+        'An open doorway with warm golden light pouring through it. Welcome, invitation, openness. Simple, beautiful. 1:1.',
     ],
     'Ecosystem Update': [
-        'An orchard heavy with golden fruit at sunset — branches bending with abundance. Warm light, rich colors. The system produces. Fine art photography, 1:1.',
-        'Smooth river stones with clear water flowing over them, golden sunlight creating patterns. Flowing, sustainable, clean, managed. Nature macro, warm tones, 1:1.',
-        'A vast field of golden wheat at golden hour, stretching to the horizon. Abundance, yield, the harvest. Cinematic landscape, warm, 1:1.',
+        'A small healthy plant in a terracotta pot, sitting in warm kitchen light. Thriving, tended, growing. Simple and real. 1:1.',
+        'A few coins stacked neatly on a wooden surface, warm side light. Value, care, stewardship. Still life, shallow depth of field. 1:1.',
+        'A glass jar slowly filling with golden honey, warm backlight making it glow. Accumulation, sweetness, patience. Close-up, 1:1.',
     ],
 };
 
@@ -1098,12 +1098,12 @@ Generate ${emptyHours.length} tweets. For EACH tweet, you MUST write a matching 
 IMAGE PROMPTS — THIS IS THE MOST IMPORTANT PART:
 ${cfg.imageContext}
 
-${account === 'inclawbate' ? `EXAMPLES of tweet → image connection:
-- Tweet "108 apps and counting" → "Aerial photograph of a vast coral reef teeming with colorful life — hundreds of unique formations, each one different. Warm turquoise water with golden sunlight filtering down from above. Abundance, interconnection, ecosystem health. Fine art photography, 1:1"
-- Tweet "staking rewards are real" → "Golden wheat field stretching to the horizon at golden hour, heavy with grain. Warm amber light, gentle breeze visible in the stalks. The harvest is real, the yield is tangible. Cinematic landscape, 1:1"
-- Tweet "which app would you build first" → "Two diverging paths in a sunlit forest, each dappled with different colored light — one golden, one teal. Wildflowers along both. Choice, possibility, both paths beautiful. Nature photography, warm tones, 1:1"
+${account === 'inclawbate' ? `EXAMPLES of tweet → image connection (stay CLOSE to the tweet subject, keep it SIMPLE):
+- Tweet "most apps don't need to be built from scratch" → "Wooden building blocks neatly arranged on a clean white desk, some already assembled into a small structure, warm morning light from a window. Simple, practical, warm. 1:1"
+- Tweet "staking rewards are real" → "A small green sprout growing from a single coin sitting in rich soil, soft golden backlight, shallow depth of field. Growth that's quiet and real. 1:1"
+- Tweet "which app would you build first" → "A clean notebook open on a wooden table, two different colored pens laid across it, warm afternoon light. The moment before choosing. Simple, inviting. 1:1"
 
-Each image MUST look different — vary subjects, compositions, and metaphors. NO humans, NO mascot. Abstract, warm, conceptual.` : `EXAMPLES of tweet → image connection:
+Each image should be SIMPLE — one clear subject, warm light, clean composition. NO epic landscapes, NO dramatic skies. Match the tweet's energy. NO humans, NO mascot.` : `EXAMPLES of tweet → image connection:
 - Tweet "108 apps and counting" → "The 3D coral-red lobster floating in a vast dark space, surrounded by over a hundred tiny glowing app interface screens arranged in a spiral galaxy pattern. The lobster spreads its claws wide in amazement. Bird's eye camera angle, teal and coral neon reflections, cinematic 3D render, 1:1"
 - Tweet "staking rewards are real" → "Close-up of the coral-red 3D lobster sitting cross-legged on a floating crystal platform, eyes closed peacefully. Dozens of gold coins orbit around it in slow rings. Soft green upward arrows in background. Warm golden lighting, dark void, 3D render, 1:1"
 - Tweet "which app would you build first" → "The coral-red 3D lobster at a crossroads in a dark neon environment, each path lit by a different color. One claw points left, the other right. Floating app icons hover above each path. Dramatic teal and coral split lighting, cinematic 3D render, 1:1"
