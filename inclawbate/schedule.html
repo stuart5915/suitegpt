@@ -767,6 +767,15 @@
             cursor:pointer;border:1px solid var(--border-subtle);transition:border-color 0.15s;
         }
         .sched-slot-thumb:hover { border-color:var(--lobster-400); }
+        .img-preview-bg {
+            position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);
+            z-index:9998;display:flex;align-items:center;justify-content:center;cursor:zoom-out;
+            animation:fadeIn 0.15s ease;
+        }
+        .img-preview-bg img {
+            max-width:90vw;max-height:90vh;border-radius:var(--radius-lg);
+            box-shadow:0 0 40px rgba(0,0,0,0.5);
+        }
         .approve-all-btn {
             display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
             border-radius:var(--radius-md);border:1px solid rgba(34,197,94,0.4);
@@ -1635,9 +1644,10 @@
 
                 // Image area — show thumbnail or upload button on all non-posted slots
                 if (hasImage) {
-                    html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
+                    html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._previewImage(\'' + escHtml(slotOpts.image_url) + '\')" title="Click to preview">';
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
@@ -1713,9 +1723,10 @@
 
                 // Image area for user-booked slots
                 if (slotOpts2.image_url) {
-                    html += '<img src="' + slotOpts2.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to replace image">';
+                    html += '<img src="' + slotOpts2.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._previewImage(\'' + escHtml(slotOpts2.image_url) + '\')" title="Click to preview">';
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
@@ -2403,6 +2414,18 @@
             reader.readAsDataURL(file);
         };
         inp.click();
+    };
+
+    // ── Image Preview ──
+    window._previewImage = function(url) {
+        var bg = document.createElement('div');
+        bg.className = 'img-preview-bg';
+        bg.onclick = function() { bg.remove(); };
+        bg.innerHTML = '<img src="' + url + '" onclick="event.stopPropagation()">';
+        document.body.appendChild(bg);
+        document.addEventListener('keydown', function handler(e) {
+            if (e.key === 'Escape') { bg.remove(); document.removeEventListener('keydown', handler); }
+        });
     };
 
     // ── Image Overlay System ──
