@@ -10,9 +10,9 @@ const appKit = createAppKit({
   defaultNetwork: base,
   projectId: PROJECT_ID,
   metadata: {
-    name: 'Inclawbate UBI',
-    description: 'Stake CLAWNCH to earn passive UBI from the agent economy',
-    url: 'https://inclawbate.app',
+    name: 'Inclawbate',
+    description: 'The Incubation Layer — tokens, staking, apps',
+    url: 'https://www.inclawbate.app',
     icons: []
   },
   enableCoinbase: true,
@@ -32,30 +32,34 @@ let _connected = false
 const _onConnect = []
 const _onDisconnect = []
 
-appKit.subscribeProvider(state => {
-  _provider = state.provider || null
-
+// v1.8+ API: subscribeAccount replaces subscribeProvider
+appKit.subscribeAccount(account => {
   const wasConnected = _connected
-  _connected = !!state.isConnected
-  const newAddr = state.address || null
+  _connected = !!account.isConnected
+  const newAddr = account.address || null
+
+  if (_connected && newAddr) {
+    try { _provider = appKit.getProvider('eip155') } catch (e) { /* provider not ready yet */ }
+  }
 
   if (_connected && newAddr && !wasConnected) {
     _address = newAddr
     _onConnect.forEach(cb => { try { cb(_address) } catch (e) { console.error('WalletKit onConnect error:', e) } })
   } else if (!_connected && wasConnected) {
     _address = null
+    _provider = null
     _onDisconnect.forEach(cb => { try { cb() } catch (e) { console.error('WalletKit onDisconnect error:', e) } })
   } else if (_connected && newAddr) {
     _address = newAddr
   }
-})
+}, 'eip155')
 
 window.WalletKit = {
   open() { return appKit.open() },
   disconnect() { return appKit.disconnect() },
   getProvider() { return _provider },
-  getAddress() { return _address || appKit.getAddress() },
-  isConnected() { return _connected || appKit.getIsConnected() },
+  getAddress() { return _address || appKit.getAddress('eip155') },
+  isConnected() { return _connected || appKit.getIsConnectedState() },
   onConnect(cb) { _onConnect.push(cb) },
   onDisconnect(cb) { _onDisconnect.push(cb) }
 }
