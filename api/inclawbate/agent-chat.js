@@ -310,7 +310,11 @@ function getEcosystemInfo() {
     what_you_can_do: [
       'Launch tokens on Base or Solana',
       'Deploy staking pools with automatic CLAWS rewards',
+      'Manage your yield — earn on USDC, ETH, or LP strategies across DeFi',
+      'Track your DeFi positions and earnings',
+      'Choose yield payouts in CLAWS (0% fee) or USDC (2% fee)',
       'Create AI marketing agents for X/Twitter',
+      'Build and publish web apps live',
       'Airdrop tokens to your community',
       'Book promotions on the @inclawbate X account',
       'Hire the Council — vetted humans for design, dev, marketing',
@@ -1313,15 +1317,17 @@ export default async function handler(req, res) {
       if (directReply) {
         // Direct response — no second LLM call needed
         history.push({ role: 'assistant', content: directReply });
-        // Extract app_url from build_app results for inline preview
+        // Extract extra data from tool results for frontend rendering
         let appUrl = null;
-        if (functionCalled === 'build_app' && lastToolResult?.content) {
+        let txData = null;
+        if (lastToolResult?.content) {
           try {
             const tr = typeof lastToolResult.content === 'string' ? JSON.parse(lastToolResult.content) : lastToolResult.content;
-            if (tr.url) appUrl = tr.url;
+            if (tr.url && functionCalled === 'build_app') appUrl = tr.url;
+            if (tr.needs_wallet_action) txData = tr; // Pass deposit/withdraw data to frontend
           } catch (_) {}
         }
-        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }) });
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }) });
       }
 
       // Complex tools (health_check) — use LLM to interpret

@@ -284,6 +284,50 @@
             .chat-app-expanded .chat-app-iframe { height: 450px; }
         }
 
+        /* ── Wallet Button ── */
+        .nav-wallet-btn {
+            background: var(--accent-gradient); color: #fff; border: none; border-radius: var(--radius-full);
+            padding: 6px 16px; font-family: var(--font-sans); font-weight: 800; font-size: 0.72rem;
+            cursor: pointer; transition: all 0.15s; letter-spacing: 0.02em;
+        }
+        .nav-wallet-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .nav-wallet-btn.connected { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.25); }
+
+        /* ── Transaction Card (in chat) ── */
+        .tx-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(192,83,77,0.2);
+            border-radius: var(--radius-lg); padding: var(--space-md); margin-top: var(--space-sm);
+            max-width: 100%;
+        }
+        .tx-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-sm); }
+        .tx-card-icon { font-size: 1.2rem; }
+        .tx-card-title { font-weight: 800; font-size: 0.88rem; }
+        .tx-card-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-md); }
+        .tx-card-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; }
+        .tx-card-label { color: var(--text-dim); }
+        .tx-card-value { font-weight: 700; font-family: var(--font-mono); font-size: 0.74rem; }
+        .tx-card-value.green { color: #4ade80; }
+        .tx-card-contract { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); word-break: break-all; margin-bottom: var(--space-sm); }
+        .tx-card-steps { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: var(--space-md); line-height: 1.6; }
+        .tx-card-step { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .tx-card-step-num { width: 18px; height: 18px; border-radius: 50%; background: rgba(192,83,77,0.15); color: var(--lobster-300); font-size: 0.6rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .tx-card-step.done .tx-card-step-num { background: rgba(74,222,128,0.15); color: #4ade80; }
+        .tx-card-step.active .tx-card-step-num { background: var(--lobster-400); color: #fff; animation: c-pulse 1.5s ease-in-out infinite; }
+        .tx-card-btns { display: flex; gap: 8px; }
+        .tx-card-btn {
+            flex: 1; padding: 10px 16px; border-radius: var(--radius-full); font-family: var(--font-sans);
+            font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; border: none; text-align: center;
+        }
+        .tx-card-btn.primary { background: var(--accent-gradient); color: #fff; }
+        .tx-card-btn.primary:hover { opacity: 0.85; transform: translateY(-1px); }
+        .tx-card-btn.primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .tx-card-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+        .tx-card-btn.secondary:hover { border-color: rgba(255,255,255,0.15); color: var(--text-primary); }
+        .tx-card-status { font-size: 0.74rem; text-align: center; margin-top: var(--space-sm); font-weight: 700; }
+        .tx-card-status.pending { color: #facc15; }
+        .tx-card-status.success { color: #4ade80; }
+        .tx-card-status.error { color: #ef4444; }
+
         @media (max-width: 600px) {
             .hero h1 { font-size: 1.8rem; }
             .hero { padding: var(--space-xl) var(--space-md) var(--space-lg); }
@@ -319,6 +363,7 @@
         </div>
         <a href="/dashboard" class="nav-link">Dashboard</a>
         <a href="/blog" class="nav-link">Blog</a>
+        <button class="nav-wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
     </div>
 </nav>
 
@@ -326,7 +371,7 @@
 <section class="hero">
     <div class="hero-icon">&#129438;</div>
     <h1>Meet the <span>Inclawbator</span></h1>
-    <p>An AI agent that launches tokens, checks your fees, hires humans, manages marketing, and runs your project on autopilot. Talk to it anywhere.</p>
+    <p>An AI agent that launches tokens, manages your yield, builds apps, hires humans, and runs your project on autopilot. Talk to it anywhere.</p>
 </section>
 
 <!-- ═══ TALK TO IT ═══ -->
@@ -344,13 +389,16 @@
             <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Incubation</button>
             <button class="chat-prompt-chip" data-prompt="How do I deploy a staking pool?"><span class="chip-icon">&#128171;</span> Deploy staking</button>
             <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
+            <button class="chat-prompt-chip" data-prompt="Show me yield options"><span class="chip-icon">&#128176;</span> Earn yield</button>
+            <button class="chat-prompt-chip" data-prompt="Check my DeFi positions"><span class="chip-icon">&#128200;</span> My positions</button>
+            <button class="chat-prompt-chip" data-prompt="I want to receive yield as CLAWS"><span class="chip-icon">&#129438;</span> Yield as CLAWS</button>
         </div>
     </div>
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
             <div class="chat-msg chat-msg-bot">
                 <div class="chat-avatar">&#129438;</div>
-                <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; I can launch tokens, deploy staking, check fees, hire humans, run marketing agents, and more. What do you need?</div>
+                <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; I can launch tokens, manage your yield, deploy staking, build apps, hire humans, and more. What do you need?</div>
             </div>
         </div>
         <form class="chat-input-row" id="chatForm" autocomplete="off">
@@ -408,6 +456,21 @@
             <div class="cap-icon">&#9881;&#65039;</div>
             <div class="cap-name">Incubation</div>
             <div class="cap-desc">Full-service build-out for AI agents and projects. Token, staking, branding, marketing — we handle it all.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-icon">&#128176;</div>
+            <div class="cap-name">Yield Management</div>
+            <div class="cap-desc">Earn yield on USDC or ETH across curated DeFi protocols. Safe lending, staking, and advanced LP strategies.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-icon">&#128200;</div>
+            <div class="cap-name">Position Tracking</div>
+            <div class="cap-desc">Check your active DeFi positions, earnings, and APY — all from the chat.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-icon">&#129438;</div>
+            <div class="cap-name">Yield as CLAWS</div>
+            <div class="cap-desc">Choose to receive yield as CLAWS (0% fee) or USDC (2% fee). Your yield, your choice.</div>
         </div>
     </div>
 </section>
@@ -538,6 +601,9 @@
             <span class="skill-cap-tag">Hire Council</span>
             <span class="skill-cap-tag">Ecosystem Info</span>
             <span class="skill-cap-tag">Incubation</span>
+            <span class="skill-cap-tag">Yield Strategies</span>
+            <span class="skill-cap-tag">DeFi Deposits</span>
+            <span class="skill-cap-tag">Position Tracking</span>
         </div>
     </div>
 </section>
@@ -652,6 +718,8 @@
     </div>
 </footer>
 
+<script type="module" src="/js/wallet-bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
 <script>
 (function() {
     var AGENT_URL = '/api/inclawbate/agent-chat';
@@ -659,10 +727,134 @@
     var input = document.getElementById('chatInput');
     var messages = document.getElementById('chatMessages');
     var sendBtn = document.getElementById('chatSend');
+    var walletBtn = document.getElementById('walletBtn');
     var sessionId = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     var chatHistory = [];
     var sending = false;
+    var connectedWallet = null;
 
+    // ── Wallet Connection ──
+    window.connectWallet = function() {
+        if (window.WalletKit) {
+            if (WalletKit.isConnected()) { WalletKit.disconnect(); return; }
+            WalletKit.open();
+        } else {
+            addMessage('Wallet not ready — please refresh the page.', false);
+        }
+    };
+
+    function updateWalletUI() {
+        if (!walletBtn) return;
+        if (connectedWallet) {
+            walletBtn.textContent = connectedWallet.slice(0, 6) + '...' + connectedWallet.slice(-4);
+            walletBtn.classList.add('connected');
+        } else {
+            walletBtn.textContent = 'Connect Wallet';
+            walletBtn.classList.remove('connected');
+        }
+    }
+
+    // Listen for wallet events (WalletKit loads async from wallet-bundle.js)
+    function initWalletListeners() {
+        if (!window.WalletKit) { setTimeout(initWalletListeners, 500); return; }
+        if (WalletKit.isConnected()) {
+            connectedWallet = WalletKit.getAddress();
+            updateWalletUI();
+        }
+        WalletKit.onConnect(function(addr) { connectedWallet = addr; updateWalletUI(); });
+        WalletKit.onDisconnect(function() { connectedWallet = null; updateWalletUI(); });
+    }
+    initWalletListeners();
+
+    // ── Protocol ABIs (minimal) ──
+    var ERC20_ABI = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
+    var MOONWELL_ABI = ['function mint(uint256 mintAmount) returns (uint256)'];
+    var AAVE_POOL_ABI = ['function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)'];
+    var COMPOUND_ABI = ['function supply(address asset, uint256 amount)'];
+    var ERC4626_ABI = ['function deposit(uint256 assets, address receiver) returns (uint256)'];
+    // ETH staking on Base = swap on DEX, handled via Uniswap router
+    var SWAP_ROUTER_ABI = ['function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256)'];
+
+    var USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    var WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
+    var UNISWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481'; // SwapRouter02 on Base
+
+    // Protocol deposit addresses (where approval goes)
+    var PROTOCOL_CONTRACTS = {
+        moonwell_usdc:      '0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22',
+        aave_usdc:          '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+        compound_usdc:      '0xb125E6687d4313864e53df431d5425969c15Eb2F',
+        aerodrome_eth_usdc: '0x360019E0ae2Cee51c7A466F69f7e48716438228A',
+        wsteth:             '0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452',
+        cbeth:              '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
+        reth:               '0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c'
+    };
+
+    // ── Transaction Execution ──
+    async function executeTx(strategyId, amount, wallet) {
+        if (!window.WalletKit || !WalletKit.isConnected()) throw new Error('Wallet not connected');
+        var rawProvider = WalletKit.getProvider();
+        if (!rawProvider) throw new Error('No provider available');
+        var provider = new ethers.BrowserProvider(rawProvider);
+        var signer = await provider.getSigner();
+        var contract = PROTOCOL_CONTRACTS[strategyId];
+        if (!contract) throw new Error('Unknown strategy');
+
+        // USDC-based strategies: approve + deposit
+        if (['moonwell_usdc', 'aave_usdc', 'compound_usdc', 'aerodrome_eth_usdc'].includes(strategyId)) {
+            var token = strategyId === 'aerodrome_eth_usdc' ? USDC_ADDRESS : USDC_ADDRESS;
+            var decimals = 6; // USDC
+            var amountWei = ethers.parseUnits(amount, decimals);
+
+            // Step 1: Check allowance + approve if needed
+            var erc20 = new ethers.Contract(token, ERC20_ABI, signer);
+            var allowance = await erc20.allowance(wallet, contract);
+            if (allowance < amountWei) {
+                var approveTx = await erc20.approve(contract, amountWei);
+                await approveTx.wait();
+            }
+
+            // Step 2: Deposit
+            var depositTx;
+            if (strategyId === 'moonwell_usdc') {
+                var pool = new ethers.Contract(contract, MOONWELL_ABI, signer);
+                depositTx = await pool.mint(amountWei);
+            } else if (strategyId === 'aave_usdc') {
+                var pool = new ethers.Contract(contract, AAVE_POOL_ABI, signer);
+                depositTx = await pool.supply(USDC_ADDRESS, amountWei, wallet, 0);
+            } else if (strategyId === 'compound_usdc') {
+                var pool = new ethers.Contract(contract, COMPOUND_ABI, signer);
+                depositTx = await pool.supply(USDC_ADDRESS, amountWei);
+            } else if (strategyId === 'aerodrome_eth_usdc') {
+                var vault = new ethers.Contract(contract, ERC4626_ABI, signer);
+                depositTx = await vault.deposit(amountWei, wallet);
+            }
+            var receipt = await depositTx.wait();
+            return receipt.hash;
+        }
+
+        // ETH staking strategies: swap ETH for LST via Uniswap
+        if (['wsteth', 'cbeth', 'reth'].includes(strategyId)) {
+            var amountWei = ethers.parseEther(amount);
+            var router = new ethers.Contract(UNISWAP_ROUTER, SWAP_ROUTER_ABI, signer);
+            var params = {
+                tokenIn: WETH_ADDRESS,
+                tokenOut: contract, // LST token address
+                fee: 500, // 0.05% fee tier
+                recipient: wallet,
+                amountIn: amountWei,
+                amountOutMinimum: 0, // In production: use quote for slippage protection
+                sqrtPriceLimitX96: 0
+            };
+            var swapTx = await router.exactInputSingle(params, { value: amountWei });
+            var receipt = await swapTx.wait();
+            return receipt.hash;
+        }
+
+        throw new Error('Strategy not supported yet');
+    }
+
+    // ── Chat Helpers ──
     function scrollBottom() { messages.scrollTop = messages.scrollHeight; }
 
     function linkify(text) {
@@ -681,9 +873,87 @@
         request_incubation: [{ label: 'DM @StuartDeFi on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
     };
 
-    var _lastAppPreview = null; // track the latest app iframe for live updates
+    var _lastAppPreview = null;
 
-    function addMessage(text, isUser, functionCalled, appUrl) {
+    // ── Render Transaction Card in Chat ──
+    function renderTxCard(bubble, data) {
+        var card = document.createElement('div');
+        card.className = 'tx-card';
+        var isDeposit = data.action === 'deposit';
+        var steps = data.steps || [];
+
+        card.innerHTML =
+            '<div class="tx-card-header">' +
+                '<span class="tx-card-icon">' + (isDeposit ? '&#128176;' : '&#128284;') + '</span>' +
+                '<span class="tx-card-title">' + (isDeposit ? 'Confirm Deposit' : 'Confirm Withdrawal') + '</span>' +
+            '</div>' +
+            '<div class="tx-card-rows">' +
+                (data.amount ? '<div class="tx-card-row"><span class="tx-card-label">Amount</span><span class="tx-card-value">' + data.amount + ' ' + (data.asset || '') + '</span></div>' : '') +
+                '<div class="tx-card-row"><span class="tx-card-label">Protocol</span><span class="tx-card-value">' + (data.protocol || data.strategy || '') + '</span></div>' +
+                (data.apy ? '<div class="tx-card-row"><span class="tx-card-label">APY</span><span class="tx-card-value green">' + data.apy + '</span></div>' : '') +
+                (data.risk ? '<div class="tx-card-row"><span class="tx-card-label">Risk</span><span class="tx-card-value">' + data.risk + '</span></div>' : '') +
+            '</div>' +
+            '<div class="tx-card-contract">Contract: ' + (data.contract || '') + '</div>' +
+            '<div class="tx-card-steps" id="txSteps_' + Date.now() + '">' +
+                steps.map(function(s, i) { return '<div class="tx-card-step" data-step="' + i + '"><span class="tx-card-step-num">' + (i + 1) + '</span><span>' + s + '</span></div>'; }).join('') +
+            '</div>' +
+            '<div class="tx-card-btns">' +
+                '<button class="tx-card-btn primary" id="txConfirm_' + Date.now() + '">Confirm &amp; Sign</button>' +
+                '<button class="tx-card-btn secondary" id="txCancel_' + Date.now() + '">Cancel</button>' +
+            '</div>' +
+            '<div class="tx-card-status" id="txStatus_' + Date.now() + '"></div>';
+
+        bubble.appendChild(card);
+
+        var confirmBtn = card.querySelector('.tx-card-btn.primary');
+        var cancelBtn = card.querySelector('.tx-card-btn.secondary');
+        var statusEl = card.querySelector('.tx-card-status');
+        var stepsEl = card.querySelectorAll('.tx-card-step');
+
+        cancelBtn.onclick = function() {
+            card.remove();
+            addMessage('Transaction cancelled.', false);
+        };
+
+        confirmBtn.onclick = async function() {
+            if (!connectedWallet) {
+                statusEl.className = 'tx-card-status error';
+                statusEl.textContent = 'Connect your wallet first!';
+                window.connectWallet();
+                return;
+            }
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Signing...';
+            statusEl.className = 'tx-card-status pending';
+            statusEl.textContent = 'Waiting for wallet...';
+
+            // Animate steps
+            if (stepsEl.length) { stepsEl[0].classList.add('active'); }
+
+            try {
+                var txHash = await executeTx(data.strategy_id, data.amount, connectedWallet);
+
+                // Mark steps done
+                stepsEl.forEach(function(s) { s.classList.remove('active'); s.classList.add('done'); });
+
+                statusEl.className = 'tx-card-status success';
+                statusEl.innerHTML = 'Deposited! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:#4ade80;text-decoration:underline;">View on Basescan</a>';
+                confirmBtn.textContent = 'Done';
+
+                addMessage('Your ' + (data.amount || '') + ' ' + (data.asset || '') + ' is now earning yield on ' + (data.protocol || data.strategy) + '! You can say "my positions" anytime to check your earnings.', false);
+            } catch (err) {
+                stepsEl.forEach(function(s) { s.classList.remove('active'); });
+                statusEl.className = 'tx-card-status error';
+                statusEl.textContent = err.reason || err.message || 'Transaction failed';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Retry';
+            }
+        };
+
+        scrollBottom();
+    }
+
+    function addMessage(text, isUser, functionCalled, appUrl, txData) {
         var wrapper = document.createElement('div');
         wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
         var avatar = document.createElement('div');
@@ -710,6 +980,11 @@
                 '<iframe src="' + appUrl + '" class="chat-app-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
             bubble.appendChild(preview);
             _lastAppPreview = preview.querySelector('iframe');
+        }
+
+        // Render transaction card for deposit/withdraw actions
+        if (!isUser && txData && txData.needs_wallet_action) {
+            renderTxCard(bubble, txData);
         }
 
         if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
@@ -757,17 +1032,19 @@
         chatHistory.push({ role: 'user', content: text.trim() });
         showTyping();
         try {
+            var walletAddr = connectedWallet || null;
             var res = await fetch(AGENT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text.trim(), session_id: sessionId, client_history: chatHistory })
+                body: JSON.stringify({ message: text.trim(), session_id: sessionId, wallet: walletAddr, client_history: chatHistory })
             });
             var data = await res.json();
             hideTyping();
             if (data.reply) {
-                addMessage(data.reply, false, data.function_called, data.app_url);
+                // Check for transaction data (deposit/withdraw actions)
+                var txData = data.tx_data || null;
+                addMessage(data.reply, false, data.function_called, data.app_url, txData);
                 chatHistory.push({ role: 'assistant', content: data.reply });
-                // If app was updated and we have a previous preview, refresh it
                 if (data.app_url && _lastAppPreview && _lastAppPreview.src) {
                     _lastAppPreview.src = data.app_url + '?t=' + Date.now();
                 }
