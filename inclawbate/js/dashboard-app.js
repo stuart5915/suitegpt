@@ -74,15 +74,9 @@ async function loadOverview() {
 
     renderProfileCard(profile);
 
-    // Update "View all" link to filter apps by this creator (use all identifiers)
+    // Hide "View all" — all apps now render inline with Manage buttons
     const viewAllLink = document.getElementById('myAppsViewAll');
-    if (viewAllLink) {
-        const vp = new URLSearchParams();
-        if (profile.wallet_address) vp.set('creator_wallet', profile.wallet_address);
-        if (profile.x_handle) vp.set('creator_x_handle', profile.x_handle);
-        if (profile.id) vp.set('creator_id', profile.id);
-        if (vp.toString()) viewAllLink.href = '/apps?' + vp.toString();
-    }
+    if (viewAllLink) viewAllLink.style.display = 'none';
 
     // Build apps query from all available identifiers
     const appParams = new URLSearchParams();
@@ -308,7 +302,7 @@ function renderAppCards(apps) {
     }
 
     container.innerHTML = '';
-    apps.slice(0, 5).forEach(a => {
+    apps.forEach(a => {
         const isPublished = a.is_public !== false;
         const el = document.createElement('div');
         el.className = 'overview-item';
