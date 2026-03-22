@@ -89,31 +89,50 @@ var EXTRA_TOKENS = [
 
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
+async function fetchProjects(attempt) {
+    var res = await fetch(API_BASE);
+    if (!res.ok) throw new Error('API ' + res.status);
+    var data = await res.json();
+    return (data.projects || data || []).filter(function(p) {
+        return p.status === 'active' || p.status === 'launched';
+    });
+}
+
+function mergeExtras(apiProjects) {
+    var existingAddrs = {};
+    apiProjects.forEach(function(p) {
+        if (p.token_address) existingAddrs[p.token_address.toLowerCase()] = true;
+    });
+    EXTRA_TOKENS.forEach(function(t) {
+        if (!existingAddrs[t.token_address.toLowerCase()]) {
+            apiProjects.push(t);
+        }
+    });
+    return apiProjects;
+}
+
 async function loadLiveProjects() {
-    try {
-        var res = await fetch(API_BASE);
-        if (!res.ok) throw new Error('Failed to fetch projects');
-        var data = await res.json();
-        var apiProjects = (data.projects || data || []).filter(function(p) {
-            return p.status === 'active' || p.status === 'launched';
-        });
-        // Merge extra tokens (avoid duplicates by address)
-        var existingAddrs = {};
-        apiProjects.forEach(function(p) {
-            if (p.token_address) existingAddrs[p.token_address.toLowerCase()] = true;
-        });
-        EXTRA_TOKENS.forEach(function(t) {
-            if (!existingAddrs[t.token_address.toLowerCase()]) {
-                apiProjects.push(t);
-            }
-        });
-        lpState.projects = apiProjects;
-        renderTable();
-        fetchMarketCaps();
-    } catch (e) {
-        var c = document.getElementById('tokensContainer');
-        if (c) c.innerHTML = '<div class="tokens-empty">Could not load tokens.</div>';
+    // Show EXTRA_TOKENS immediately so page is never empty
+    lpState.projects = mergeExtras([]);
+    renderTable();
+
+    // Fetch API projects with one retry
+    var apiProjects = null;
+    for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+            apiProjects = await fetchProjects(attempt);
+            break;
+        } catch (e) {
+            if (attempt === 0) await new Promise(function(r) { setTimeout(r, 1500); });
+        }
     }
+
+    if (apiProjects) {
+        lpState.projects = mergeExtras(apiProjects);
+    }
+    // If API failed, lpState.projects still has EXTRA_TOKENS from above
+    renderTable();
+    fetchMarketCaps();
 }
 
 async function fetchMarketCaps() {
