@@ -353,9 +353,9 @@ export default async function handler(req, res) {
         for (const slot of (dueSlots || [])) {
             if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
 
-            // Skip slots that are more than 1 hour overdue — prevents dumping old backlog
+            // Skip slots that are more than 6 hours overdue — prevents dumping old backlog
             const slotTime = new Date(slot.scheduled_at).getTime();
-            if (now - slotTime > 60 * 60 * 1000) {
+            if (now - slotTime > 6 * 60 * 60 * 1000) {
                 await supabase.from('agent_schedule')
                     .update({ status: 'expired' })
                     .eq('id', slot.id);
