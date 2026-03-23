@@ -84,6 +84,9 @@
         .sched-account-tab.active[data-account="inclawbate"] {
             border-color:var(--seafoam-400,#2dd4bf);background:rgba(45,212,191,0.06);
         }
+        .sched-account-tab.active[data-account="publicgoodstech"] {
+            border-color:#34d399;background:rgba(52,211,153,0.06);
+        }
         .sched-account-tab-name {
             font-weight:700;font-size:0.9rem;color:var(--text-primary);
         }
@@ -105,6 +108,15 @@
         }
         [data-active-account="inclawbate"] .sched-book .sched-btn {
             background:linear-gradient(135deg,var(--seafoam-400,#2dd4bf),#6366f1);
+        }
+        [data-active-account="publicgoodstech"] .sched-day.active {
+            border-color:#34d399 !important;background:rgba(52,211,153,0.08) !important;
+        }
+        [data-active-account="publicgoodstech"] .pillar-day-chip.today {
+            border-color:#34d399;color:#34d399;
+        }
+        [data-active-account="publicgoodstech"] .sched-book .sched-btn {
+            background:linear-gradient(135deg,#34d399,#60a5fa);
         }
 
         /* Admin pipeline banner */
@@ -289,6 +301,20 @@
             border-color: var(--seafoam-400);
             background: rgba(45,212,191,0.18);
         }
+        [data-active-account="publicgoodstech"] .sched-theme-hint {
+            background: rgba(52,211,153,0.06);
+            border-color: rgba(52,211,153,0.18);
+        }
+        [data-active-account="publicgoodstech"] .sched-theme-name {
+            color: #34d399;
+        }
+        [data-active-account="publicgoodstech"] .sched-theme-angle {
+            background: rgba(52,211,153,0.1);
+        }
+        [data-active-account="publicgoodstech"] .sched-theme-angle:hover {
+            border-color: #34d399;
+            background: rgba(52,211,153,0.18);
+        }
 
         /* Image prompt generator */
         .sched-imgprompt-btn {
@@ -359,6 +385,18 @@
         [data-active-account="inclawbate"] .sched-imgprompt-copy {
             background: rgba(45,212,191,0.15);
             color: var(--seafoam-400);
+        }
+        [data-active-account="publicgoodstech"] .sched-imgprompt-btn {
+            border-color: rgba(52,211,153,0.35);
+            color: #34d399;
+        }
+        [data-active-account="publicgoodstech"] .sched-imgprompt-btn:hover {
+            background: rgba(52,211,153,0.08);
+            border-color: #34d399;
+        }
+        [data-active-account="publicgoodstech"] .sched-imgprompt-copy {
+            background: rgba(52,211,153,0.15);
+            color: #34d399;
         }
 
         /* Project picker — cards instead of dropdown */
@@ -859,6 +897,9 @@
         [data-active-account="inclawbate"] .sched-week-col.active {
             border-color:var(--seafoam-400);background:rgba(45,212,191,0.06);
         }
+        [data-active-account="publicgoodstech"] .sched-week-col.active {
+            border-color:#34d399;background:rgba(52,211,153,0.06);
+        }
         .sched-week-day { font-size:0.6rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.05em; }
         .sched-week-date { font-family:var(--font-mono);font-size:0.82rem;font-weight:700;color:var(--text-primary);margin:2px 0 6px; }
         .sched-week-dots { display:flex;gap:3px;justify-content:center;flex-wrap:wrap; }
@@ -1062,7 +1103,7 @@
 
     <section class="schedule-hero">
         <h1 id="schedHeroTitle">X Schedules</h1>
-        <p id="schedHeroDesc">Manage content for <a href="https://x.com/inclawbate" target="_blank" rel="noopener" style="color:var(--seafoam-400,#2dd4bf);text-decoration:none;font-weight:700">@inclawbate</a> (company) and <a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a> (launchpad agent). 5x/day at peak hours.</p>
+        <p id="schedHeroDesc">Manage content for <a href="https://x.com/inclawbate" target="_blank" rel="noopener" style="color:var(--seafoam-400,#2dd4bf);text-decoration:none;font-weight:700">@inclawbate</a>, <a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a>, and <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" style="color:#34d399;text-decoration:none;font-weight:700">@publicgoodstech</a>. 5x/day at peak hours.</p>
         <div class="sched-how-it-works">
             <div class="sched-how-step"><span class="sched-how-num">1</span><span>Pick an open slot</span></div>
             <div class="sched-how-arrow">&rarr;</div>
@@ -1088,6 +1129,13 @@
             <div>
                 <div class="sched-account-tab-name">@inclawbator</div>
                 <div class="sched-account-tab-desc">Launchpad Agent</div>
+            </div>
+        </button>
+        <button class="sched-account-tab" data-account="publicgoodstech" onclick="window._switchAccount('publicgoodstech')">
+            <span class="sched-account-tab-avatar">&#127759;</span>
+            <div>
+                <div class="sched-account-tab-name">@publicgoodstech</div>
+                <div class="sched-account-tab-desc">AI Agent News</div>
             </div>
         </button>
     </div>
@@ -1366,7 +1414,7 @@
         });
 
         // Update feed section header
-        var handle = account === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+        var handle = account === 'inclawbate' ? 'inclawbate' : (account === 'publicgoodstech' ? 'publicgoodstech' : 'inclawbator');
         var feedTitle = document.getElementById('xFeedTitle');
         if (feedTitle) {
             feedTitle.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @' + handle + ' Feed';
