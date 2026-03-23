@@ -18,6 +18,104 @@
     <style>
         body { opacity: 1; }
 
+        /* ── Split View (app preview panel) ── */
+        .split-panel {
+            display: none;
+            position: fixed;
+            top: var(--nav-height, 64px);
+            right: 0;
+            width: 50%;
+            height: calc(100vh - var(--nav-height, 64px));
+            background: #000;
+            border-left: 1px solid var(--border-subtle);
+            z-index: 90;
+            flex-direction: column;
+        }
+        .split-panel.active { display: flex; }
+        .split-panel-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 14px;
+            background: hsla(240, 10%, 6%, 0.95);
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+        .split-panel-label {
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+            color: var(--lobster-300); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .split-panel-url {
+            font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim);
+            margin-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .split-panel-btns { display: flex; gap: 6px; }
+        .split-panel-btn {
+            background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+            color: var(--text-dim); font-size: 0.72rem; padding: 4px 8px; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center;
+            transition: all 0.15s;
+        }
+        .split-panel-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.2); }
+        .split-panel-iframe {
+            width: 100%; flex: 1; border: none; background: #0a0a0f;
+        }
+
+        /* When split view is active, squeeze main content to left half */
+        body.split-active .hero,
+        body.split-active .chat-section,
+        body.split-active .section,
+        body.split-active .try-section,
+        body.split-active .footer { display: none; }
+        body.split-active .chat-section { display: block; }
+        body.split-active .chat-section {
+            position: fixed;
+            top: var(--nav-height, 64px);
+            left: 0;
+            width: 50%;
+            height: calc(100vh - var(--nav-height, 64px));
+            max-width: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 89;
+        }
+        body.split-active .chat-prompts { display: none; }
+        body.split-active .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border-radius: 0;
+            border: none;
+            max-height: none;
+        }
+        body.split-active .chat-messages {
+            flex: 1;
+            max-height: none;
+            overflow-y: auto;
+        }
+        body.split-active .chat-input-row {
+            border-top: 1px solid var(--border-subtle);
+            border-radius: 0;
+        }
+        /* Hide inline preview when split view is active */
+        body.split-active .chat-app-preview { display: none; }
+        /* Hide docs link in split mode */
+        body.split-active .chat-section + div { display: none; }
+
+        /* Mobile: split panel goes fullscreen */
+        @media (max-width: 768px) {
+            .split-panel { width: 100%; left: 0; }
+            body.split-active .chat-section { display: none; }
+            body.split-active .split-panel .split-panel-btns .split-back-chat {
+                display: inline-flex;
+            }
+            .split-back-chat { display: none; }
+        }
+        @media (min-width: 769px) {
+            .split-back-chat { display: none; }
+        }
+
         /* Hero */
         .hero { text-align: center; padding: calc(var(--nav-height, 64px) + var(--space-2xl)) var(--space-lg) var(--space-xl); max-width: 720px; margin: 0 auto; }
         .hero-icon { font-size: 4rem; margin-bottom: var(--space-md); }
@@ -346,6 +444,22 @@
         <button class="nav-wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
     </div>
 </nav>
+
+<!-- ═══ SPLIT VIEW PANEL ═══ -->
+<div class="split-panel" id="splitPanel">
+    <div class="split-panel-toolbar">
+        <div style="display:flex;align-items:center;overflow:hidden;">
+            <span class="split-panel-label">Live Preview</span>
+            <span class="split-panel-url" id="splitUrl"></span>
+        </div>
+        <div class="split-panel-btns">
+            <button class="split-panel-btn split-back-chat" onclick="closeSplitView()" title="Back to chat">&#128172; Chat</button>
+            <a class="split-panel-btn" id="splitOpenTab" href="#" target="_blank" title="Open in new tab">&#x2197;</a>
+            <button class="split-panel-btn" onclick="closeSplitView()" title="Close preview">&times;</button>
+        </div>
+    </div>
+    <iframe class="split-panel-iframe" id="splitIframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+</div>
 
 <!-- ═══ HERO ═══ -->
 <section class="hero">
@@ -983,7 +1097,7 @@
                 '<div class="chat-app-toolbar">' +
                     '<span class="chat-app-toolbar-label">Live Preview</span>' +
                     '<div class="chat-app-toolbar-btns">' +
-                        '<button class="chat-app-toolbar-btn" onclick="var f=this.closest(\'.chat-app-preview\');f.classList.toggle(\'chat-app-expanded\')" title="Expand">&#x26F6;</button>' +
+                        '<button class="chat-app-toolbar-btn" onclick="openSplitView(\'' + appUrl.replace(/'/g, "\\'") + '\')" title="Expand side-by-side">&#x26F6;</button>' +
                         '<a class="chat-app-toolbar-btn" href="' + appUrl + '" target="_blank" title="Open in new tab">&#x2197;</a>' +
                     '</div>' +
                 '</div>' +
@@ -1180,6 +1294,33 @@
         chip.addEventListener('click', function() { var p = chip.getAttribute('data-prompt'); if (p) sendMessage(p); });
     });
 })();
+
+// ── Split View (global functions — called from onclick) ──
+function openSplitView(url) {
+    var panel = document.getElementById('splitPanel');
+    var iframe = document.getElementById('splitIframe');
+    var urlLabel = document.getElementById('splitUrl');
+    var openTab = document.getElementById('splitOpenTab');
+
+    iframe.src = url;
+    urlLabel.textContent = url;
+    openTab.href = url;
+    panel.classList.add('active');
+    document.body.classList.add('split-active');
+
+    // Scroll chat to bottom
+    var msgs = document.getElementById('chatMessages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function closeSplitView() {
+    var panel = document.getElementById('splitPanel');
+    var iframe = document.getElementById('splitIframe');
+
+    panel.classList.remove('active');
+    document.body.classList.remove('split-active');
+    iframe.src = '';
+}
 </script>
 </body>
 </html>

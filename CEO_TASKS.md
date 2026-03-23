@@ -11,10 +11,8 @@
 | # | Task | Status | Scope | Why it matters |
 |---|------|--------|-------|----------------|
 | 0 | **Inclawbator — make it PERFECT** | in-progress | L | 26 tools live, promo system, human directory, V3 contracts ready. Deploy V3 contracts, build fee report endpoint, test all flows end-to-end. THE core product. |
-| 1 | **Coinbase Commerce integration (fiat on-ramp)** | todo | L | **DEADLINE MARCH 31 — 8 DAYS.** Unlocks non-crypto users. Biggest growth lever. |
 | 2 | Automated ETH/USDC concentrated LP manager | in-progress | L | Performance fees buy back CLAWS. Passive revenue. |
 | 3 | **App Factory — always running** | in-progress | L | 1 app + 1 token + staking per cycle. Products: #1 OddsClaw (PAUSED), #2 Mirror Mind (Abinav leading). Each product = new token, new fees, new CLAWS staking pool. |
-| 55 | Fix PokerAI "coming soon" on deposits — POKERAI deposits are LIVE | todo | S | Users see "coming soon" on a feature that's already live. Confusing and blocks adoption. |
 
 ## P1 — Growth & Platform
 
@@ -24,8 +22,6 @@
 | 56 | **Discord server + Inclawbator bot** | todo | Discord presence. Bot connects to existing agent-chat backend. Multiple team members requesting. |
 | 57 | Hackathon + grant research — find crypto/web3 hackathons and grants | todo | Free money + exposure. Multiple grant programs exist for Base/AI projects. |
 | 58 | Job postings + hiring pipeline — post roles on crypto job boards | todo | Find builders. Heval managing nordenmethods hiring. |
-| 59 | S4H site admin panel — P.C. needs backend access to add content | todo | S4HMinistries is BLOCKED. Has content ready but can't publish. Unblocking = free content output. |
-| 60 | S4H content schedule page (like inclawbate.app/schedule) | todo | Structured content pipeline for S4H team. |
 | 61 | Bible Memory app fix | todo | P.C. reported issues. Active user friction. |
 
 ## P1 — Marketing
@@ -110,6 +106,7 @@
 
 | Task | Completed | Notes |
 |------|-----------|-------|
+| Fix PokerAI "coming soon" — updated to real blinds + "Deposits Live" | 2026-03-23 | POKERAI tables: Micro 25/50, Mid 125/250, High 625/1250 |
 | Fix unlisted apps visible in store + duplicate deployments | 2026-03-23 | is_listed filter added, agent-chat retry now updates instead of creating duplicates |
 | Conversational DeFi transactions (swap, stake, claim via chat) | 2026-03-23 | Full DeFi actions through Inclawbator chat |
 | Agent activity history log with filters | 2026-03-23 | My Agents panel now shows full activity history |
@@ -144,7 +141,6 @@
 
 ## Notes
 
-- **Coinbase Commerce deadline: March 31 (8 days)** — URGENT
 - **$MIND staking rewards end Apr 19** — campaign active
 - **Angel NFT: 5.1B CLAWS reward pool live**
 - **FreefoRaLLey expense: 185M CLAWS/mo (~$150 USDC)** — first paid contributor
