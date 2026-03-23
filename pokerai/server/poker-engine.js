@@ -1118,6 +1118,7 @@ class PokerEngine {
     for (const a of this.agents) {
       if (a._startChips === undefined) continue; // didn't play
       const delta = a.chips - a._startChips;
+      if (a.isCustom) console.log(`[HandHistory] ${a.name}: start=${a._startChips} end=${a.chips} delta=${delta} folded=${a.folded} bet=${a.currentBet}`);
       const won = delta > 0;
       const entry = {
         hand: this.handsPlayed,
