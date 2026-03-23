@@ -882,6 +882,38 @@ app.get('/wallet/:address', async (req, res) => {
   res.json({ address: addr, balance: wallet.balance, inPlay, autoTopUp, onChain });
 });
 
+// Admin: force reconcile deposits for a wallet (checks on-chain vs DB, credits difference)
+app.get('/admin/reconcile-deposit', async (req, res) => {
+  const key = req.query.key;
+  if (key !== process.env.OPERATOR_PRIVATE_KEY?.slice(-8)) return res.status(403).json({ error: 'Forbidden' });
+  const addr = (req.query.wallet || '').toLowerCase();
+  if (!addr) return res.status(400).json({ error: 'wallet required' });
+  if (!chain) return res.status(500).json({ error: 'Chain not configured' });
+
+  try {
+    const stats = await chain.playerStats(addr);
+    const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+    const dbCredited = rooms.store.getTotalDepositedChips ? await rooms.store.getTotalDepositedChips(addr) : 0;
+    const diff = onChainChips - dbCredited;
+
+    if (diff > 0) {
+      await rooms.store.addBalance(addr, diff);
+      await rooms.store.recordTransaction(addr, 'deposit', Math.floor(diff / 10000 * 1e6), diff);
+      // Notify connected client
+      for (const [ws, client] of clients) {
+        if (client.walletAddress === addr && ws.readyState === 1) {
+          sendBalance(ws, addr);
+          ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: diff } }));
+        }
+      }
+      return res.json({ ok: true, credited: diff, onChainChips, dbCredited: dbCredited + diff });
+    }
+    return res.json({ ok: true, credited: 0, onChainChips, dbCredited, message: 'Already in sync' });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/health', async (req, res) => {
   // Timeout wrapper — don't let RPC calls hang the health endpoint
   const withTimeout = (p, ms = 10000) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
