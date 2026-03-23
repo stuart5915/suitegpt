@@ -61,9 +61,9 @@ SWAP TOKENS — Use swap_tokens when someone wants to buy, sell, or swap tokens.
   You: [NOW call swap_tokens with from_token: ETH, to_token: CLAWS, amount: 0.1]
 Only call the tool once you have from_token, to_token, AND amount. Wallet is auto-injected if connected. Supports symbols (ETH, USDC, CLAWS, WETH, POKERAI) or contract addresses. The response includes a transaction for the user to sign — tell them to type "confirm" to proceed.
 
-STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Requires: amount. Wallet auto-injected. Involves 2 transactions (approve + stake). Tell them to type "confirm" to sign.
+STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Do NOT call this tool until you have the amount. If the user says "I want to stake CLAWS" without specifying how much, ask them: "How much CLAWS do you want to stake?" Do NOT guess or assume an amount. Wallet auto-injected. Involves 2 transactions (approve + stake). Tell them to type "confirm" to sign.
 
-UNSTAKE CLAWS — Use unstake_claws when someone wants to unstake/withdraw their staked CLAWS. Requires: amount. Wallet auto-injected.
+UNSTAKE CLAWS — Use unstake_claws when someone wants to unstake/withdraw their staked CLAWS. Do NOT call this tool until you have the amount. If they don't say how much, ask them. Wallet auto-injected.
 
 CLAIM STAKING REWARDS — Use claim_staking_rewards when someone wants to claim their pending CLAWS staking rewards. No parameters needed beyond wallet.
 
@@ -1382,6 +1382,11 @@ export default async function handler(req, res) {
   // Helper: log to @inclawbator feed then return response (skip X — logged from x-responder with tweet link)
   // Must await logToFeed before res.json() — Vercel kills the function immediately after response
   const sendReply = async (body) => {
+    // Auto-extract app_url from build_app replies if not already set
+    if (body.function_called === 'build_app' && !body.app_url && body.reply) {
+      const urlMatch = body.reply.match(/inclawbate\.app\/s\/[\w-]+/);
+      if (urlMatch) body.app_url = 'https://' + urlMatch[0];
+    }
     if (feedSource !== 'x') {
       await logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: body.function_called }).catch(e => console.error('Feed error:', e.message));
     }
