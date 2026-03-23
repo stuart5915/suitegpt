@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Buckets of AI Agents — and the Question Nobody's Asking — Inclawbate</title>
+    <meta name="description" content="There are only two kinds of AI agents being built. Both generate value. Neither answers the question that actually matters: what happens to the value after?">
+    <meta property="og:title" content="Two Buckets of AI Agents — and the Question Nobody's Asking">
+    <meta property="og:description" content="Revenue agents vs value management agents. Active traders vs liquidity providers. But have you designed the output?">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://inclawbate.app/blog/two-buckets">
+    <meta property="og:image" content="https://www.inclawbate.app/inclawbate/assets/articles/two-buckets-cover.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .article-page {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-lg) var(--space-3xl);
+            min-height: 100vh;
+            position: relative;
+        }
+        .article-page::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 40% at 20% 0%, hsla(9, 50%, 45%, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, hsla(172, 30%, 40%, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .article-hero-banner { width: 100%; display: block; margin-bottom: var(--space-xl); border-radius: var(--radius-lg); overflow: hidden; }
+        .article-hero-banner img { width: 100%; height: auto; display: block; }
+        .back-link { display: inline-block; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim); text-decoration: none; margin-bottom: var(--space-xl); transition: color 0.2s; }
+        .back-link:hover { color: var(--lobster-400); }
+        .article-header { margin-bottom: var(--space-2xl); animation: fadeUp 0.6s ease-out; }
+        .article-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-md); }
+        .article-tag { font-size: 0.7rem; font-family: var(--font-mono); color: var(--lobster-300); padding: 2px 8px; border: 1px solid hsla(9, 50%, 45%, 0.25); border-radius: var(--radius-full); }
+        .article-header h1 {
+            font-family: var(--font-display);
+            font-size: 2.6rem;
+            font-weight: 900;
+            line-height: 1.15;
+            background: linear-gradient(135deg, #f0ece6 0%, #d4a574 40%, #c75b3f 65%, #e8b4a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-md);
+        }
+        .article-meta { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); }
+        .article-byline { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+        .article-content h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-top: var(--space-2xl);
+            margin-bottom: var(--space-md);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .article-content h2:first-child { border-top: none; padding-top: 0; }
+        .article-content h3 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: var(--space-lg);
+            margin-bottom: var(--space-sm);
+        }
+        .article-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.75;
+            margin-bottom: var(--space-md);
+        }
+        .article-content ul, .article-content ol {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.75;
+            margin-bottom: var(--space-md);
+            padding-left: var(--space-lg);
+        }
+        .article-content li { margin-bottom: var(--space-xs); }
+        .article-content strong { color: var(--text-primary); font-weight: 700; }
+        .article-content a { color: var(--lobster-400); text-decoration: underline; text-underline-offset: 3px; }
+        .article-content a:hover { color: var(--lobster-300); }
+        .article-content blockquote {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text-primary);
+            border-left: 3px solid var(--lobster-400);
+            padding: var(--space-sm) var(--space-lg);
+            margin: var(--space-lg) 0;
+            background: var(--bg-card);
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        }
+        .article-highlight {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--lobster-400);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin: var(--space-lg) 0;
+        }
+        .article-highlight p { margin-bottom: 0; color: var(--text-primary); font-size: 0.92rem; }
+        .article-cta {
+            text-align: center;
+            padding: var(--space-2xl) var(--space-lg);
+            margin-top: var(--space-2xl);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+        }
+        .article-cta h2 { border: none !important; padding-top: 0 !important; margin-top: 0 !important; font-size: 1.6rem; }
+        .article-cta-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-sm);
+            margin-top: var(--space-lg);
+        }
+        .article-cta-links a {
+            display: inline-block;
+            padding: 10px 22px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        .article-cta-links a:hover { transform: translateY(-1px); opacity: 0.9; }
+        .cta-primary { background: var(--bg-elevated); border: 1px solid var(--lobster-400); color: var(--text-primary); }
+        .cta-secondary { background: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-primary); }
+        .article-share { display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-lg); }
+        .article-share-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+        .share-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px;
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-full);
+            text-decoration: none; cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .share-btn:hover { border-color: var(--lobster-400); color: var(--text-primary); }
+        .share-btn svg { width: 14px; height: 14px; fill: currentColor; }
+        .share-copied { color: var(--seafoam-300) !important; border-color: var(--seafoam-300) !important; }
+        @media (max-width: 600px) {
+            .article-header h1 { font-size: 1.8rem; }
+            .article-content h2 { font-size: 1.25rem; }
+            .article-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/claws" class="nav-link">$CLAWS</a>
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/build">Build</a>
+                <a href="/inclawbations">Inclawbations</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/schedule">X Schedule</a>
+                <a href="/agents">Agents</a>
+                <a href="/tools">Tools</a>
+                <a href="/inclawbators">Inclawbators</a>
+            </div>
+        </div>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<main class="article-page">
+    <a href="/blog" class="back-link">&larr; Back to Blog</a>
+
+    <div class="article-share">
+        <span class="article-share-label">Share</span>
+        <a class="share-btn" href="https://x.com/intent/tweet?url=https%3A%2F%2Finclawbate.app%2Fblog%2Ftwo-buckets&text=Two%20Buckets%20of%20AI%20Agents%20%E2%80%94%20and%20the%20Question%20Nobody%E2%80%99s%20Asking&via=inclawbate" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>X</a>
+        <a class="share-btn" href="https://t.me/share/url?url=https%3A%2F%2Finclawbate.app%2Fblog%2Ftwo-buckets&text=Two%20Buckets%20of%20AI%20Agents%20%E2%80%94%20and%20the%20Question%20Nobody%E2%80%99s%20Asking" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>TG</a>
+        <button class="share-btn" id="shareCopy" onclick="navigator.clipboard.writeText('https://inclawbate.app/blog/two-buckets').then(function(){var b=document.getElementById('shareCopy');b.classList.add('share-copied');b.innerHTML='Copied!';setTimeout(function(){b.classList.remove('share-copied');b.innerHTML='<svg viewBox=&quot;0 0 24 24&quot;><path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z&quot;/></svg>Copy link';},2000)})"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>Copy link</button>
+    </div>
+
+    <header class="article-header">
+        <div class="article-tags">
+            <span class="article-tag">essay</span>
+            <span class="article-tag">AI agents</span>
+            <span class="article-tag">faith</span>
+            <span class="article-tag">DeFi</span>
+        </div>
+        <h1>Two Buckets of AI Agents &mdash; and the Question Nobody's Asking</h1>
+        <div class="article-meta">Mar 23, 2026 &middot; 8 min read</div>
+        <div class="article-byline">by <a href="https://x.com/artstu" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:underline;">@artstu</a></div>
+    </header>
+
+    <div class="article-content">
+
+        <p>There are really only two kinds of AI agents being built right now.</p>
+
+        <p><strong>Bucket 1: Revenue agents.</strong> Prediction market bots, trading agents, arbitrage systems. They exist to take active positions, make bets, and maximize returns. They're exciting to build. They're fun to watch. They carry real risk, and the best ones print real money.</p>
+
+        <p><strong>Bucket 2: Value management agents.</strong> Liquidity providers, range managers, yield optimizers. They don't bet on prices &mdash; they sit inside the infrastructure and earn from volume, arbitrage flow, and macro liquidity. They're slower. More passive. Less exciting. But they compound quietly while the trading bots blow up.</p>
+
+        <p>Both are useful. Both generate value.</p>
+
+        <p>But here's the question nobody seems to be asking:</p>
+
+        <blockquote>What happens to the value after?</blockquote>
+
+        <p>Seriously &mdash; you build an agent that generates $10M. Then what? You build another one? You buy things? You "make it"? What's the system? Where does the energy actually go?</p>
+
+        <p>Most people designing AI agents have optimized the <em>input</em> &mdash; how to generate, how to trade, how to capture. Almost nobody has designed the <em>output</em> &mdash; where value flows, how it's distributed, what systems it sustains after you're done touching it.</p>
+
+        <h2>The God-Focus Question</h2>
+
+        <p>This is where the conversation about "God-focused" versus "revenue-focused" gets interesting &mdash; and easily misunderstood.</p>
+
+        <p>An AI agent doesn't need to be focused on God. It <em>can't</em> be. It's a tool. It doesn't have a heart, a will, or a subjective experience. It executes an objective function. That's it.</p>
+
+        <p>But the human building it does have a heart. And the organization deploying it does have a direction. The question isn't whether your agent is righteous &mdash; it's whether <strong>you</strong> have oriented the system toward something beyond yourself.</p>
+
+        <p>The individual humans, and the organization itself, should carry that orientation. The AI agents are most useful for what they're actually good at: revenue generation, management, active and reactive decision making. They're always on. They don't sleep. They execute.</p>
+
+        <p>But God-focus &mdash; real God-focus &mdash; requires submission. His energy and ultimate Will are being done outside of the subjective human experience. You can't code that into a smart contract. You can only design systems that reflect it.</p>
+
+        <h2>What God-Focus Is Not</h2>
+
+        <p>Here's where it gets tricky. "God focus" can go wrong in a lot of ways:</p>
+
+        <ul>
+            <li><strong>Performance.</strong> Building "faith-based" projects that are really just branding exercises. Slapping a cross on a token and calling it ministry. The orientation is toward optics, not God.</li>
+            <li><strong>Control.</strong> Using spiritual language to justify centralized power. "God told me to be the sole keyholder." That's not stewardship, that's ego wearing a costume.</li>
+            <li><strong>Passivity.</strong> "God will provide" as an excuse not to build real systems. Faith without works. Waiting for miracles while your treasury sits at zero.</li>
+            <li><strong>Extraction.</strong> Prosperity theology dressed up as protocol design. "Sow a seed" into my wallet. The value flows up and stays up.</li>
+            <li><strong>Legalism.</strong> Rigid rule-following that kills the spirit of the thing. Checking boxes instead of checking hearts. The system looks holy on paper but produces nothing alive.</li>
+        </ul>
+
+        <p>All of these miss the point.</p>
+
+        <h2>What It Actually Looks Like</h2>
+
+        <p>Proper orientation isn't about labeling your project as sacred. It's about what you do with the value you've been given. It's about designing systems where the <em>output</em> &mdash; not just the input &mdash; is accounted for.</p>
+
+        <p>A God-focused organization looks like:</p>
+
+        <ul>
+            <li>Value generation that doesn't depend on extracting from others</li>
+            <li>Distribution logic that's transparent, automatic, and perpetual</li>
+            <li>Treasury design that outlasts any single person</li>
+            <li>Systems that serve people who can't serve themselves back</li>
+            <li>Decisions made with eternity in the frame, not just this quarter</li>
+        </ul>
+
+        <p>God is the only one who truly knows your heart orientation. I can't judge yours and you can't judge mine. But we <em>can</em> look at the systems we're building and ask honest questions.</p>
+
+        <h2>The Questions That Actually Matter</h2>
+
+        <p>Where are the end locations for your value?</p>
+
+        <p>Do you have a treasury, or just a trading account?</p>
+
+        <p>Is your entire strategy "buy low, sell high, hope I'm smarter than the next person"?</p>
+
+        <p>What happens to your value when you're not actively managing it?</p>
+
+        <p>What happens to it when you die?</p>
+
+        <div class="article-highlight">
+            <p>These aren't spiritual questions dressed up as financial ones. They're engineering questions. Systems design questions. What are the inputs, what are the outputs, and does the system sustain itself &mdash; or does it collapse the moment you stop feeding it?</p>
+        </div>
+
+        <h2>Active Traders vs. Active Liquidity Providers</h2>
+
+        <p>The distinction I keep coming back to is this: <strong>active traders</strong> vs. <strong>active liquidity providers</strong>.</p>
+
+        <p>One is trying to be smarter than the market. The other is trying to be useful to the market.</p>
+
+        <p>One depends entirely on being right. The other earns from the system functioning at all.</p>
+
+        <p>Most people in crypto are building the first kind of system. Almost nobody is building the second kind &mdash; and connecting it all the way through. From generation to management to distribution. From input to treasury to output. From "I made money" to "this value is now flowing to the places that matter, permanently, without me having to touch it."</p>
+
+        <h2>Unconscious Perfect Value Management</h2>
+
+        <p>What I've been trying to build with Inclawbate is exactly this: <strong>unconscious, perfect value management and distribution.</strong></p>
+
+        <p>Systems that generate value, manage where it sits, and distribute it &mdash; automatically, perpetually, without depending on any single person's attention or intention.</p>
+
+        <p>Not because the AI agents are holy. They're not. They're tools running objective functions.</p>
+
+        <p>But because the <em>system</em> they operate within &mdash; the organization, the guardrails, the treasury design, the distribution logic &mdash; that <strong>can</strong> be oriented properly. That's the human responsibility. That's the stewardship.</p>
+
+        <h2>The Real Question</h2>
+
+        <p>Heart orientation. Focus orientation. What you do with value here, now, in the moment.</p>
+
+        <p>What is the system for managing it? Generating it? Distributing it? Is it defined? Or is it something that's not part of your agentic schema?</p>
+
+        <p>If it isn't &mdash; if the output side of your life is undefined, ad hoc, reactive &mdash; then you're not stewarding energy. <strong>Energy is stewarding you.</strong></p>
+
+        <blockquote>You are not the end destination for energy. You are the steward of it.</blockquote>
+
+        <p>Humans are responsible for stewarding energy. We are not the ends for it. God Himself is the beginning and the end.</p>
+
+        <p>And we spend a lot of time stewarding energy to gain more energy without really being able to step back and look at the whole system. The agentic picture of energy input and output. Where are all the end locations? Do you have a treasury? Is your value purely determined by buying and selling and hoping number goes up?</p>
+
+        <p>So many different approaches to energy management and generation. But have you connected it all the way through &mdash; even to the deposit locations? What systems are you building? What systems do you actually care about? What systems should exist for eternity?</p>
+
+        <p><strong>What system do you want your value sitting in when you're gone?</strong></p>
+
+        <p>All of these questions led me to <a href="https://inclawbate.app">Inclawbate</a>.</p>
+    </div>
+
+    <div class="article-cta">
+        <h2>Build. Grow. Earn.</h2>
+        <p style="color:var(--text-secondary);font-size:0.92rem;line-height:1.6;max-width:460px;margin:0 auto;">Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.</p>
+        <div class="article-cta-links">
+            <a href="/inclawbator" class="cta-primary">Talk to the Inclawbator</a>
+            <a href="/stake" class="cta-secondary">Stake CLAWS</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="cta-secondary">Join Telegram</a>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-inner">
+        <p class="footer-tagline">inclawbate &mdash; Anyone Can Build. Everyone Gets Paid.</p>
+        <div class="footer-links">
+            <a href="/state">State</a>
+            <a href="/docs">Docs</a>
+            <a href="/whitepaper">Whitepaper</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener">X</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
