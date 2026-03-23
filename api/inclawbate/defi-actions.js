@@ -96,7 +96,7 @@ export async function getSwapQuote({ fromToken, toToken, amount, wallet }) {
     const destAmount = priceRoute.destAmount;
     const gasCostUSD = priceRoute.gasCostUSD || '0.01';
 
-    // Step 2: Build transaction
+    // Step 2: Build transaction (use slippage OR destAmount, not both)
     const txResp = await fetch(`${PARASWAP_API}/transactions/${BASE_CHAIN_ID}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,7 +104,6 @@ export async function getSwapQuote({ fromToken, toToken, amount, wallet }) {
         srcToken: src.address,
         destToken: dest.address,
         srcAmount: rawAmount,
-        destAmount,
         slippage: 150, // 1.5%
         userAddress: wallet,
         priceRoute,

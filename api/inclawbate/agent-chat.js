@@ -54,7 +54,12 @@ WITHDRAW FROM STRATEGY — Use withdraw_from_strategy when someone wants to exit
 
 SET REWARD PREFERENCE — Use set_reward_preference when someone wants to change how they receive yield — either as CLAWS tokens (0% fee) or as USDC (2% fee). Requires: wallet and preference (claws or usdc).
 
-SWAP TOKENS — Use swap_tokens when someone wants to buy, sell, or swap tokens. Examples: "buy CLAWS with 0.1 ETH", "swap 100 USDC for ETH", "sell my CLAWS for USDC". Requires: from_token, to_token, amount. Wallet is auto-injected if connected. Supports symbols (ETH, USDC, CLAWS, WETH, POKERAI) or contract addresses. The response includes a transaction for the user to sign — tell them to type "confirm" to proceed.
+SWAP TOKENS — Use swap_tokens when someone wants to buy, sell, or swap tokens. Do NOT call this tool until you have ALL THREE: from_token, to_token, and amount. If the user says something vague like "I want to buy CLAWS" or "swap some tokens", ask them conversationally: what token they're paying with and how much they want to spend. Example flow:
+  User: "I want to buy some CLAWS"
+  You: "Sure! What token are you paying with — ETH, USDC, or something else? And how much do you want to spend?"
+  User: "0.1 ETH"
+  You: [NOW call swap_tokens with from_token: ETH, to_token: CLAWS, amount: 0.1]
+Only call the tool once you have from_token, to_token, AND amount. Wallet is auto-injected if connected. Supports symbols (ETH, USDC, CLAWS, WETH, POKERAI) or contract addresses. The response includes a transaction for the user to sign — tell them to type "confirm" to proceed.
 
 STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Requires: amount. Wallet auto-injected. Involves 2 transactions (approve + stake). Tell them to type "confirm" to sign.
 
