@@ -1166,6 +1166,17 @@ function generateDirectReply(tool, resultJson, args) {
 // Keyword-based intent matcher — fallback when Groq is unavailable
 function matchIntent(msg) {
   const m = msg.toLowerCase();
+
+  // Detect token details follow-up: "Name, SYMBOL, 0xWallet" — auto-execute deploy_token
+  const detailWallet = msg.match(/0x[a-fA-F0-9]{40}/);
+  const detailTicker = msg.match(/\b([A-Z]{2,10})\b/);
+  if (detailWallet && detailTicker) {
+    const name = msg.replace(/0x[a-fA-F0-9]{40}/, '').replace(detailTicker[0], '').replace(/[,\s]+/g, ' ').trim();
+    if (name && name.length >= 2) {
+      return { tool: 'deploy_token', execute: true, args: { token_name: name, token_symbol: detailTicker[1], creator_wallet: detailWallet[0] } };
+    }
+  }
+
   if (/(launch|deploy|create|make)\s*(me\s*)?(a\s*)?(new\s*)?token/i.test(m) || /token\s*(launch|called|named)/i.test(m) || /make\s*me\s*a\s*(coin|token)/i.test(m)) {
     // Try to extract name/symbol from the message
     const calledMatch = m.match(/(?:called|named)\s+(.+?)(?:\s+(?:and|with)\s+(?:ticker|symbol)\s+(\w+)|$)/i);
