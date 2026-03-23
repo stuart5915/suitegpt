@@ -1,10 +1,9 @@
-// Inclawbate — GitHub Push → Telegram Dev Updates Topic (community)
+// Inclawbate — GitHub Push → Telegram @inclawbator Channel
 // POST /api/inclawbate/github-webhook
-// Receives GitHub webhook push events, posts to TG community topic
+// Receives GitHub webhook push events, posts to @inclawbator channel
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
-const COMMUNITY_CHAT_ID = '-1003756242979';
-const DEV_UPDATES_THREAD_ID = 10548;
+const CHANNEL_ID = '@inclawbator';
 
 // Skip trivial commits
 const SKIP_PATTERNS = [
@@ -38,14 +37,13 @@ function sanitizeMessage(msg) {
     return clean;
 }
 
-async function sendToTopic(text) {
+async function sendToChannel(text) {
     if (!BOT_TOKEN) return;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            chat_id: COMMUNITY_CHAT_ID,
-            message_thread_id: DEV_UPDATES_THREAD_ID,
+            chat_id: CHANNEL_ID,
             text,
             parse_mode: 'HTML',
             disable_web_page_preview: true
@@ -86,7 +84,7 @@ export default async function handler(req, res) {
     msg += `🔗 <a href="${payload.compare}">View changes</a>`;
 
     try {
-        await sendToTopic(msg);
+        await sendToChannel(msg);
         return res.status(200).json({ ok: true, posted: commits.length });
     } catch (err) {
         console.error('GitHub webhook TG error:', err);
