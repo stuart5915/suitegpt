@@ -2453,10 +2453,13 @@
     };
 
     // ── Image Overlay System ──
-    // Preload the actual logo
+    // Preload both logos
     var _brandLogo = new Image();
     _brandLogo.crossOrigin = 'anonymous';
     _brandLogo.src = '/assets/inclawbate-logo.png';
+    var _brandLogoInclawbator = new Image();
+    _brandLogoInclawbator.crossOrigin = 'anonymous';
+    _brandLogoInclawbator.src = '/assets/inclawbator-logo.png';
 
     window._openOverlay = function(slotId) {
         var slot = _schedSlots.find(function(s) { return s.id === slotId; });
@@ -2598,16 +2601,17 @@
             ctx.fillRect(0, size * 0.6, size, size * 0.4);
         }
 
-        // Logo (bottom-left) — use actual logo PNG
-        if (showLogo && _brandLogo.complete && _brandLogo.naturalWidth > 0) {
+        // Logo (bottom-left) — use correct logo based on wordmark selection
+        var activeLogo = (wordmarkValue === 'inclawbator' && _brandLogoInclawbator.complete && _brandLogoInclawbator.naturalWidth > 0) ? _brandLogoInclawbator : _brandLogo;
+        if (showLogo && activeLogo.complete && activeLogo.naturalWidth > 0) {
             var logoH = size * 0.07;
-            var logoW = logoH * (_brandLogo.naturalWidth / _brandLogo.naturalHeight);
+            var logoW = logoH * (activeLogo.naturalWidth / activeLogo.naturalHeight);
             var lx = pad;
             var ly = size - pad - logoH;
             // Subtle shadow behind logo for visibility
             ctx.shadowColor = 'rgba(0,0,0,0.4)';
             ctx.shadowBlur = logoH * 0.15;
-            ctx.drawImage(_brandLogo, lx, ly, logoW, logoH);
+            ctx.drawImage(activeLogo, lx, ly, logoW, logoH);
             ctx.shadowBlur = 0;
 
             // Wordmark next to logo
