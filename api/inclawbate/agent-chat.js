@@ -36,7 +36,9 @@ BOOK PROMO — Use book_promo when someone wants to promote their project throug
 
 AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
-BUILD AN APP — Use build_app when someone says "build", "make", "create", or "generate" a website, app, page, site, landing page, dashboard, or UI. This tool AUTOMATICALLY builds and publishes a live web app — no human needed. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. If they want updates to an existing app, include update: true and the same app_name. IMPORTANT: If someone asks to "build a website" or "make me an app", use build_app — NOT hire_inclawbator.
+MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects", or when you need to check if they already have an app before building a new one. Requires wallet. Returns a list of their published apps with names, URLs, and descriptions.
+
+BUILD AN APP — Use build_app when someone says "build", "make", "create", or "generate" a website, app, page, site, landing page, dashboard, or UI. IMPORTANT: If the user has a wallet connected, call list_my_apps FIRST to check if they already have a similar app. If they do, ask: "You already have [app name] — want me to update that one, or create something new?" If they want updates, include update: true and the same app_name. This tool AUTOMATICALLY builds and publishes a live web app — no human needed. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. IMPORTANT: If someone asks to "build a website" or "make me an app", use build_app — NOT hire_inclawbator.
 
 HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
@@ -371,6 +373,20 @@ const TOOLS = [
         required: []
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_my_apps',
+      description: 'List apps the user has built/published on Inclawbate. Returns app names, URLs, and descriptions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
   }
 ];
 
@@ -564,6 +580,29 @@ Rules:
 - Make it look professional and polished
 - No external JS libraries unless absolutely necessary (use CDN if needed)
 - Include proper meta tags and title`;
+
+async function listMyApps(args) {
+  if (!args.wallet) return JSON.stringify({ error: 'Connect your wallet so I can look up your apps.' });
+  try {
+    const res = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(args.wallet) + '&limit=20');
+    const data = await res.json();
+    const apps = (data.apps || []).filter(a => a.is_listed !== false);
+    if (!apps.length) return JSON.stringify({ apps: [], message: 'You haven\'t built any apps yet. Want me to build one for you?' });
+    return JSON.stringify({
+      apps: apps.map(a => ({
+        name: a.name,
+        slug: a.slug,
+        url: 'https://inclawbate.app/s/' + a.slug,
+        description: (a.description || '').slice(0, 100),
+        created: a.created_at?.split('T')[0] || null
+      })),
+      total: apps.length,
+      message: 'You have ' + apps.length + ' app' + (apps.length === 1 ? '' : 's') + '. You can update any of them or build something new.'
+    });
+  } catch (e) {
+    return JSON.stringify({ error: 'Could not fetch your apps: ' + e.message });
+  }
+}
 
 async function buildAppAction(args) {
   if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: 'What should we call this app? I need a short name for the URL.' });
@@ -1032,6 +1071,7 @@ async function executeTool(name, args) {
     case 'stake_claws': return JSON.stringify(await stakeClaws({ amount: args.amount, wallet: args.wallet }));
     case 'unstake_claws': return JSON.stringify(await unstakeClaws({ amount: args.amount, wallet: args.wallet }));
     case 'claim_staking_rewards': return JSON.stringify(await claimStakingRewards({ wallet: args.wallet }));
+    case 'list_my_apps': return await listMyApps(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
@@ -1254,6 +1294,13 @@ function generateDirectReply(tool, resultJson, args) {
         // Let LLM interpret health checks — they need nuanced advice
         return null;
 
+      case 'list_my_apps':
+        if (d.error) return d.error;
+        if (!d.apps || !d.apps.length) return d.message || "You haven't built any apps yet. Want me to build one for you?";
+        return '**Your apps** (' + d.total + '):\n\n' + d.apps.map(function(a, i) {
+          return (i + 1) + '. **' + a.name + '** — ' + a.url + (a.description ? '\n   ' + a.description : '');
+        }).join('\n') + '\n\nWant to update one of these, or build something new?';
+
       default:
         return null;
     }
@@ -1445,7 +1492,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject wallet into tools that accept it
-        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards')) {
+        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps')) {
           args.wallet = wallet;
         }
         toolArgs = args;
