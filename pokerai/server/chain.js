@@ -18,10 +18,10 @@ const USDC_DECIMALS = 1_000_000; // 1e6
 
 // Fallback RPCs — tried in order if primary fails
 const FALLBACK_RPCS = [
-  'https://base.llamarpc.com',
   'https://base-mainnet.public.blastapi.io',
   'https://1rpc.io/base',
-  'https://mainnet.base.org'
+  'https://mainnet.base.org',
+  'https://base.llamarpc.com'  // Moved to last — known to fall behind
 ];
 
 // Wrap any promise with a timeout
