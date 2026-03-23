@@ -304,23 +304,47 @@
         }
         .chat-cat-btn .cat-icon { font-size: 1.1rem; }
         .chat-cat-actions {
-            display: none; flex-wrap: wrap; gap: 6px; justify-content: center;
+            display: none; flex-direction: column; gap: 2px;
             animation: catFadeIn 0.2s ease;
         }
         .chat-cat-actions.visible { display: flex; }
         @keyframes catFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-        .chat-prompt-chip {
-            background: transparent;
-            border: 1px solid hsla(0,0%,100%,0.08); border-radius: var(--radius-full);
-            padding: 5px 14px; font-family: var(--font-sans);
-            font-size: 0.72rem; font-weight: 500; color: var(--text-dim);
-            white-space: nowrap; cursor: pointer; transition: all 0.2s ease;
+        .cat-action-row {
+            display: flex; align-items: stretch;
+            border-radius: 10px; overflow: hidden;
+            background: hsla(240,10%,8%,0.6);
+            border: 1px solid hsla(0,0%,100%,0.04);
+            transition: border-color 0.2s;
         }
-        .chat-prompt-chip:hover {
-            border-color: hsla(0,0%,100%,0.2); color: var(--text-secondary);
-            background: hsla(0,0%,100%,0.04);
+        .cat-action-row:hover { border-color: hsla(9,52%,54%,0.15); }
+        .cat-action-label {
+            flex-shrink: 0; width: 140px; padding: 10px 14px;
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.76rem; font-weight: 700; color: var(--text-secondary);
+            border-right: 1px solid hsla(0,0%,100%,0.04);
+            cursor: pointer; transition: all 0.15s;
         }
-        .chip-icon { margin-right: 3px; font-size: 0.78rem; }
+        .cat-action-label:hover { color: #fff; background: hsla(9,52%,54%,0.08); }
+        .cat-action-label .action-icon { font-size: 0.85rem; flex-shrink: 0; }
+        .cat-action-examples {
+            flex: 1; display: flex; flex-wrap: wrap; gap: 4px;
+            padding: 7px 10px; align-items: center;
+        }
+        .cat-example-chip {
+            background: transparent; border: none;
+            padding: 4px 10px; border-radius: var(--radius-full);
+            font-family: var(--font-sans); font-size: 0.68rem; font-weight: 500;
+            color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .cat-example-chip:hover {
+            color: var(--lobster-300); background: hsla(9,52%,54%,0.1);
+        }
+        @media (max-width: 600px) {
+            .cat-action-row { flex-direction: column; }
+            .cat-action-label { width: auto; border-right: none; border-bottom: 1px solid hsla(0,0%,100%,0.04); padding: 8px 12px; }
+            .cat-action-examples { padding: 6px 10px 8px; }
+        }
         .chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-sm); }
         .chat-action-btn {
             display: inline-flex; align-items: center; gap: 5px;
@@ -478,28 +502,126 @@
             <button class="chat-cat-btn" data-cat="manage"><span class="cat-icon">&#128202;</span> Manage</button>
         </div>
         <div class="chat-cat-actions visible" data-cat-panel="launch">
-            <button class="chat-prompt-chip" data-prompt="I want to launch a token"><span class="chip-icon">&#128640;</span> Launch a token</button>
-            <button class="chat-prompt-chip" data-prompt="How do I deploy a staking pool?"><span class="chip-icon">&#128171;</span> Deploy staking</button>
-            <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to multiple wallets"><span class="chip-icon">&#127919;</span> Airdrop tokens</button>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to launch a token"><span class="action-icon">&#128640;</span> Launch a token</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Launch a meme token on Base for me">"launch a meme token"</button>
+                    <button class="cat-example-chip" data-prompt="I want to launch a community token with staking">"community token with staking"</button>
+                    <button class="cat-example-chip" data-prompt="Launch a charity token that donates fees">"charity token"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="How do I deploy a staking pool?"><span class="action-icon">&#128171;</span> Deploy staking</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Deploy a staking pool for my token">"staking pool for my token"</button>
+                    <button class="cat-example-chip" data-prompt="I want my holders to earn CLAWS rewards">"holders earn CLAWS"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to airdrop tokens to multiple wallets"><span class="action-icon">&#127919;</span> Airdrop tokens</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Airdrop tokens to my community">"airdrop to my community"</button>
+                    <button class="cat-example-chip" data-prompt="Send tokens to 50 wallets at once">"send to 50 wallets"</button>
+                </div>
+            </div>
         </div>
         <div class="chat-cat-actions" data-cat-panel="earn">
-            <button class="chat-prompt-chip" data-prompt="I want to buy some CLAWS"><span class="chip-icon">&#128184;</span> Buy CLAWS</button>
-            <button class="chat-prompt-chip" data-prompt="I want to stake my CLAWS"><span class="chip-icon">&#128171;</span> Stake CLAWS</button>
-            <button class="chat-prompt-chip" data-prompt="Show me yield options"><span class="chip-icon">&#128176;</span> Earn yield</button>
-            <button class="chat-prompt-chip" data-prompt="I want to swap some tokens"><span class="chip-icon">&#128260;</span> Swap tokens</button>
-            <button class="chat-prompt-chip" data-prompt="Claim my staking rewards"><span class="chip-icon">&#127873;</span> Claim rewards</button>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to buy some CLAWS"><span class="action-icon">&#128184;</span> Buy CLAWS</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="I want to buy CLAWS with ETH">"buy CLAWS with ETH"</button>
+                    <button class="cat-example-chip" data-prompt="I want to buy CLAWS with USDC">"buy CLAWS with USDC"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to stake my CLAWS"><span class="action-icon">&#128171;</span> Stake CLAWS</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Stake 10000 CLAWS">"stake 10,000 CLAWS"</button>
+                    <button class="cat-example-chip" data-prompt="What's the staking APY?">"what's the APY?"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Show me yield options"><span class="action-icon">&#128176;</span> Earn yield</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Where can I earn yield on USDC?">"yield on USDC"</button>
+                    <button class="cat-example-chip" data-prompt="What's the safest way to earn passive income?">"safest passive income"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to swap some tokens"><span class="action-icon">&#128260;</span> Swap tokens</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Swap my USDC for ETH">"USDC to ETH"</button>
+                    <button class="cat-example-chip" data-prompt="Swap ETH for CLAWS">"ETH to CLAWS"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Claim my staking rewards"><span class="action-icon">&#127873;</span> Claim rewards</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Claim my staking rewards">"claim my rewards"</button>
+                    <button class="cat-example-chip" data-prompt="How much have I earned from staking?">"how much earned?"</button>
+                </div>
+            </div>
         </div>
         <div class="chat-cat-actions" data-cat-panel="build">
-            <button class="chat-prompt-chip" data-prompt="I want to build an app"><span class="chip-icon">&#128296;</span> Build an app</button>
-            <button class="chat-prompt-chip" data-prompt="Create an AI marketing agent for X"><span class="chip-icon">&#128227;</span> Marketing agent</button>
-            <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Full incubation</button>
-            <button class="chat-prompt-chip" data-prompt="I want to hire someone from the Council"><span class="chip-icon">&#129438;</span> Hire the Council</button>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to build an app"><span class="action-icon">&#128296;</span> Build an app</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Build me a portfolio tracker">"portfolio tracker"</button>
+                    <button class="cat-example-chip" data-prompt="I need a landing page for my project">"landing page"</button>
+                    <button class="cat-example-chip" data-prompt="Build a staking dashboard">"staking dashboard"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Create an AI marketing agent for X"><span class="action-icon">&#128227;</span> Marketing agent</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="Create an AI agent that posts about my token on X">"agent for my token"</button>
+                    <button class="cat-example-chip" data-prompt="I need an AI that writes tweets for me">"auto-tweet for me"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Tell me about full incubation services"><span class="action-icon">&#9881;&#65039;</span> Full incubation</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="I want you to handle everything for my project">"handle everything"</button>
+                    <button class="cat-example-chip" data-prompt="What does full incubation include?">"what's included?"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="I want to hire someone from the Council"><span class="action-icon">&#129438;</span> Hire the Council</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="I need a designer for my project">"need a designer"</button>
+                    <button class="cat-example-chip" data-prompt="I need help with marketing strategy">"marketing help"</button>
+                </div>
+            </div>
         </div>
         <div class="chat-cat-actions" data-cat-panel="manage">
-            <button class="chat-prompt-chip" data-prompt="Run a health check on my project"><span class="chip-icon">&#128202;</span> Health check</button>
-            <button class="chat-prompt-chip" data-prompt="Check my pending fees"><span class="chip-icon">&#128176;</span> Check my fees</button>
-            <button class="chat-prompt-chip" data-prompt="Show me CLAWS staking stats"><span class="chip-icon">&#128200;</span> Staking stats</button>
-            <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Run a health check on my project"><span class="action-icon">&#128202;</span> Health check</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="How is my token doing?">"how's my token doing?"</button>
+                    <button class="cat-example-chip" data-prompt="Check the price and liquidity for my token">"price and liquidity"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Check my pending fees"><span class="action-icon">&#128176;</span> Check my fees</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="How much WETH have I earned from LP fees?">"how much WETH earned?"</button>
+                    <button class="cat-example-chip" data-prompt="Check my pending fees and claim them">"check and claim fees"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="Show me CLAWS staking stats"><span class="action-icon">&#128200;</span> Staking stats</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="How many people are staking CLAWS?">"how many stakers?"</button>
+                    <button class="cat-example-chip" data-prompt="What's the total value locked in staking?">"total value locked"</button>
+                </div>
+            </div>
+            <div class="cat-action-row">
+                <div class="cat-action-label" data-prompt="What is Inclawbate?"><span class="action-icon">&#10067;</span> What is Inclawbate?</div>
+                <div class="cat-action-examples">
+                    <button class="cat-example-chip" data-prompt="What can I do on Inclawbate?">"what can I do here?"</button>
+                    <button class="cat-example-chip" data-prompt="How does Inclawbate work?">"how does it work?"</button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="chat-container">
@@ -1290,7 +1412,13 @@
         });
     });
 
-    document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
+    // Action label clicks (left side of row)
+    document.querySelectorAll('.cat-action-label').forEach(function(label) {
+        label.addEventListener('click', function() { var p = label.getAttribute('data-prompt'); if (p) sendMessage(p); });
+    });
+
+    // Example chip clicks (right side of row)
+    document.querySelectorAll('.cat-example-chip').forEach(function(chip) {
         chip.addEventListener('click', function() { var p = chip.getAttribute('data-prompt'); if (p) sendMessage(p); });
     });
 })();
