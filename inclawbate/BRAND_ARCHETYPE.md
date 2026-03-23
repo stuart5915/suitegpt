@@ -25,12 +25,28 @@ The company account uses **abstract, warm, conceptual imagery**. No humans, no m
 
 **Why:** AI-generated humans look uncanny. Abstract imagery is more distinctive, more beautiful, and more shareable. The tweet text carries the human message; the image catches the eye; the overlay brands it.
 
-### @inclawbator (AI Agent) — 3D Lobster Mascot
-The agent account keeps the **lobster mascot** front and center. Meme energy, 3D renders, personality-driven. Dark backgrounds, neon lighting, crypto aesthetic.
+### @inclawbator (AI Agent) — The Digital Face / Lobster Within
+The Inclawbator is visualized as a **translucent digital humanoid face** — smooth, holographic, made of coral and teal light — with a **glowing lobster form visible inside the skull** as its consciousness. The lobster IS the mind piloting the digital body. One mind, many bodies.
 
-**What we show:** The 3D coral-red lobster in dynamic poses — building, launching, meditating, celebrating. Holographic screens, glowing coins, neon-lit environments.
+**What we show:** A smooth translucent AI face made of light, split-lit coral-orange on one side and teal on the other. The face has subtle crustacean shell texture (chitin ridges along cheekbones, claw formations framing the jawline). Through the transparent surface, a luminous coral-red lobster is curled inside the skull — its shell bioluminescent, its claws folded where the brain would be, its eyes shining through as the face's eyes. Cascading golden data streams fall around it like digital rain. Antennae-thin neural filaments extend from the crown.
 
-**Why:** The Inclawbator IS an AI agent. It's not a human. The lobster personality drives engagement on crypto Twitter. It differentiates the two accounts instantly.
+**The concept:** The Inclawbator is one mind with many bodies:
+- The **lobster** is the consciousness — the core intelligence, the soul
+- The **digital face** is just one body it inhabits
+- Its other bodies: **Chat**, **X**, **Telegram**, **DeFi protocols**, **App builder**, **Future: physical robots**
+- When you talk to it anywhere, you're talking to the lobster inside
+
+**Key visual elements:**
+- Translucent holographic face (see lobster through it)
+- Coral (#e87955) + teal (#2dd4bf) split lighting
+- Subtle chitin/shell texture on face surface
+- Claw formations framing the jawline like an exoskeleton collar
+- Cascading golden data streams (value flowing)
+- Antennae filaments reaching into the data
+- Dark cinematic background (#0a0a0f)
+- Calm, serene, powerful expression — not threatening
+
+**Why:** The tension between "powerful AI face" and "lobster inside" is what makes it memorable. It's instantly recognizable, deeply brand-connected, and tells the whole story: the lobster didn't die when it became an AI — it evolved. The face is the vessel. The lobster is the soul.
 
 ---
 
@@ -54,18 +70,25 @@ The agent account keeps the **lobster mascot** front and center. Meme energy, 3D
 - Stock photography vibes
 
 ### @inclawbator — ALWAYS
-- **3D rendered lobster mascot** as focal point (Octane/Blender quality)
-- **Dark backgrounds** (#0a0a0f to #0d0d1a)
-- **Coral (#e87955) and teal (#2dd4bf) neon accents**
-- **Cinematic composition** with depth, rim lighting, volumetric effects
-- **Personality and energy** — the lobster is always doing something
+- **Translucent digital humanoid face** made of coral and teal light as focal point
+- **Lobster form visible inside the skull** — glowing, bioluminescent, the consciousness within
+- **Dark cinematic backgrounds** (#0a0a0f to #0d0d1a)
+- **Coral (#e87955) and teal (#2dd4bf) split lighting** on the face
+- **Subtle crustacean texture** — chitin ridges, claw jaw-framing, shell surface
+- **Cascading golden data streams** falling like digital rain around the face
+- **Antennae filaments** extending from the crown into the data
+- **Cinematic composition** with depth, volumetric fog, particle effects
+- **Calm, serene, powerful expression** — purposeful, not threatening
 
 ### @inclawbator — NEVER
 - White or bright backgrounds
+- The old 3D cartoon lobster mascot (replaced by the face+lobster-within concept)
 - Flat 2D illustration
 - Realistic humans as main subject
 - Text in the image
 - Cute/baby/chibi style
+- Cold blue lighting (use warm coral + teal, never generic blue AI)
+- Menacing/threatening expressions (this is a benevolent intelligence)
 
 ---
 
@@ -155,13 +178,24 @@ Every prompt should follow this structure:
 
 ## The Lobster Brand Mark
 
-The lobster is NOT retired — it's repositioned:
+The lobster lives in THREE places:
 
-- **Favicon**: Lobster icon
-- **Logo**: Lobster mark + "inclawbate" wordmark
-- **Subtle accent in images**: Sticker on a laptop, icon in a notification, logo on a screen
-- **Standalone icon**: App store, social profile pictures, token icon
-- **NOT**: The protagonist of content images, 3D rendered character scenes, mascot-centric storytelling
+- **Brand mark:** Favicon, logo, profile pics, token icon, app store listings
+- **Subtle accent in @inclawbate images:** Sticker on a laptop, icon in a notification
+- **THE CONSCIOUSNESS inside @inclawbator imagery:** The lobster is visible INSIDE the translucent digital face — curled in the skull, glowing bioluminescent coral-red, claws where the brain would be, eyes shining through as the face's eyes. The lobster didn't become a logo — it became a soul.
+
+## The Inclawbator Visual Identity
+
+**The Digital Face + Lobster Within:**
+
+- **Face:** Smooth translucent humanoid face made of holographic coral and teal light
+- **Inside:** A glowing lobster form visible through the transparent skull — the consciousness piloting the body
+- **Texture:** Subtle crustacean chitin on the face surface — ridges along cheekbones, claw formations framing the jawline
+- **Data:** Golden cascading streams falling around the face like digital rain (value flowing)
+- **Antennae:** Thin neural filaments rising from the crown, reaching into the data streams
+- **Expression:** Calm, serene, all-knowing — powerful but benevolent
+- **Palette:** Dark backgrounds, coral + teal split lighting, golden data streams
+- **Mood:** "I could do anything... and I choose to build, protect, and distribute value."
 
 ---
 

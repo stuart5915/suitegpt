@@ -1448,7 +1448,18 @@
 
     function toggleModelMenu() {
         var selector = document.getElementById('modelSelector');
-        if (selector) selector.classList.toggle('open');
+        if (!selector) return;
+        var isOpening = !selector.classList.contains('open');
+        selector.classList.toggle('open');
+        // On mobile, position the fixed dropup above the trigger
+        if (isOpening && window.innerWidth <= 768) {
+            var dropup = document.getElementById('modelDropup');
+            var trigger = document.getElementById('modelTrigger');
+            if (dropup && trigger) {
+                var rect = trigger.getBoundingClientRect();
+                dropup.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            }
+        }
     }
 
     // Close dropup when clicking outside

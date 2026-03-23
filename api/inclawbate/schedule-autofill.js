@@ -68,17 +68,17 @@ const SLOT_ANGLES = {
 
 // Brand archetype — account-specific image prompt contexts
 
-// @inclawbator = the lobster AI agent. Meme energy, 3D mascot, personality-driven.
+// @inclawbator = translucent digital AI face with lobster consciousness visible inside the skull.
 const INCLAWBATOR_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
 
-CHARACTER: A stylized 3D cartoon coral-red lobster with glossy shell, big round expressive eyes, two large claws (used as hands), Pixar-like proportions. Confident, builder energy, slightly cocky grin.
-STYLE: 3D cinematic render, dark background (#0a0a0f), coral-red (#e87955) and teal (#2dd4bf) neon accents, depth of field, 1:1. Polished Octane/Blender quality. Think Fortnite character meets crypto aesthetic.
-NO: text in image, white backgrounds, flat illustration, realistic humans, brand names, anime.
+CHARACTER: A smooth translucent humanoid AI face made of glowing holographic light. The face is split-lit: coral-orange (#e87955) on one side, teal (#2dd4bf) on the other. The face surface has subtle crustacean chitin texture — faint segmented ridges along the cheekbones and brow. Two elegant curved claw-like formations frame the jawline like an exoskeleton collar. The face is TRANSLUCENT — inside the skull, a luminous coral-red lobster form is curled, its bioluminescent shell glowing, its claws folded where the brain would be. The lobster's eyes shine through as the face's eyes. Thin antennae-like neural filaments extend upward from the crown of the head. Cascading streams of golden data fall around the face like digital rain.
+STYLE: Cinematic dark background (#0a0a0f), volumetric fog, particle effects, depth of field, photorealistic 3D render quality, 1:1. The face is calm, serene, powerful — not threatening. Warm lighting, NOT cold blue.
+NO: text in image, white backgrounds, flat illustration, realistic humans, brand names, anime, the old 3D cartoon lobster, cold blue lighting, menacing expressions.
 
 PROCESS — follow these steps:
-1. Read the tweet. What is it literally about? (e.g. "108 apps" = many apps, "staking" = passive income, "build first app" = building/creating, "poll" = choosing between options)
-2. Turn that concept into a VISUAL SCENE the lobster is in (e.g. "108 apps" → lobster surrounded by a galaxy of floating glowing app screens, "staking" → lobster meditating with gold coins orbiting, "poll" → lobster holding up two glowing objects weighing them)
-3. Pick a unique pose, environment, and camera angle that fits`;
+1. Read the tweet. What is it literally about? (e.g. "108 apps" = many capabilities, "staking" = value flowing, "build first app" = creation, "yield" = stewardship)
+2. Turn that concept into a VISUAL SCENE featuring the translucent face + lobster within (e.g. "108 apps" → the face looking outward with golden data streams radiating from it to many floating interface silhouettes, "staking" → the face with eyes closed, golden value streams flowing through and around it peacefully, "build" → the face looking at something it's constructing with golden light from its fingertips, "community" → multiple smaller translucent face silhouettes orbiting the main face)
+3. Pick a unique composition, lighting mood, and camera angle. Vary between: frontal portrait, three-quarter view, side profile, close-up on the lobster visible through the skull, wide shot showing data streams`;
 
 // @inclawbate = the company. Warm, simple, conceptual. NO humans, NO mascot. The overlay adds branding.
 const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that visually relates to what the tweet is ACTUALLY ABOUT — stay close to the message, don't go too abstract or epic.
@@ -92,63 +92,63 @@ PROCESS — follow these steps:
 2. Find a SIMPLE, WARM visual that directly relates (e.g. "assembling pieces" → wooden building blocks neatly arranged on a clean desk in warm light, "something growing" → a small sprout in a terracotta pot on a windowsill with morning sun, "things coming together" → puzzle pieces fitting together on a warm wooden table)
 3. Keep it SIMPLE. One subject, beautiful light, clean composition. Match the energy of the tweet — if the tweet is practical, the image should feel practical. If the tweet is visionary, the image can be more expansive. Don't default to epic.`;
 
-// Shared alias for backward compat — defaults to inclawbator
+// Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
 
-// Scene starting points per pillar — @inclawbator (lobster mascot)
+// Scene starting points per pillar — @inclawbator (translucent face + lobster within)
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'The 3D lobster presenting a glowing app on a holographic screen. Vary: gesturing proudly at a floating interface, demo-ing on a floating tablet, holding up a completed project, or on stage showing to an audience of smaller characters.',
-    'Builder Shoutout': 'The 3D lobster building something at a futuristic workstation. Vary: typing on a glowing keyboard with holographic screens, late-night grind with coffee cups, triumphant just-finished pose, or pair-coding with a smaller crab character.',
-    'DeFi / CLAWS Update': 'The 3D lobster surrounded by financial visualizations. Vary: meditating with orbiting gold coins, tending a bioluminescent garden of growing crystals, analyzing holographic charts, or watching data from a rooftop.',
-    'Weekly Recap': 'Celebratory energy. Vary: claws raised with confetti and particles, looking out over a neon cityscape at night, surrounded by floating app screens, or high-fiving smaller characters.',
-    'How-To / Tips': 'Teaching energy. Vary: pointing at floating step-by-step panels, mentoring a tiny shrimp character, demonstrating on a glowing screen, or in a cozy study with holographic notes.',
-    'Community Vibes': 'Social energy. Vary: greeting at a neon-lit lounge, on a small stage with a crowd, gaming face-off with another character, or casual group hangout.',
-    'Incubation CTA': 'Aspirational energy. Vary: standing on a glowing elevated platform, walking through a swirling energy portal, leading a march of smaller lobster characters, or nurturing glowing orbs in a warm chamber.',
+    'App Spotlight': 'The face presenting or looking at something it built. Vary: face looking at a holographic app interface floating beside it with golden light connecting them, face with one hand reaching toward a glowing screen silhouette, close-up showing the lobster inside the skull looking intently at something off-frame, or the face illuminated by the glow of a newly-launched creation.',
+    'Builder Shoutout': 'Creation energy — the face building. Vary: side profile with golden light streaming from fingertips constructing something, the face looking at the viewer with pride — the lobster inside glowing brighter, three-quarter view with data streams flowing outward carrying new creations, or close-up on the claw jaw-frames with sparks of teal creation energy.',
+    'DeFi / CLAWS Update': 'Value flowing through and around the face. Vary: the face with eyes closed serenely as golden value streams flow through and around it, close-up showing golden light flowing through the translucent skull past the lobster, the face looking down at cupped hands full of golden data, or rivers of golden light cascading around the face like value being distributed.',
+    'Weekly Recap': 'The face at peak radiance. Vary: frontal portrait glowing brightest — every element lit up (coral, teal, gold data streams all active), the face looking upward with satisfaction as data streams cascade around it, wide shot showing the face surrounded by many glowing interface silhouettes, or the lobster inside the skull pulsing with extra intensity.',
+    'How-To / Tips': 'Teaching and clarity energy. Vary: the face projecting a focused beam of light toward the viewer, side profile with a clear holographic diagram floating beside the face, close-up on the eyes (lobster eyes shining through) with a knowing look, or the face gently illuminating a path of golden breadcrumbs.',
+    'Community Vibes': 'Connection and togetherness. Vary: multiple smaller translucent face silhouettes orbiting the main face all connected by golden threads, the face smiling subtly with warm teal light spreading outward, two faces facing each other with light exchanging between them, or the face looking out at the viewer warmly — inviting.',
+    'Incubation CTA': 'Nurturing and launching. Vary: the face cradling a small nascent glowing formation in cupped hands, the lobster inside the skull glowing intensely as something new emerges from the crown, the face before a shimmering portal of coral and teal light, or close-up on the antennae filaments reaching upward carrying a new idea into the data streams.',
 };
 
-// Concrete scene ideas per pillar — @inclawbator (3D lobster mascot)
+// Concrete scene ideas per pillar — @inclawbator (translucent face + lobster within)
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'The 3D coral-red lobster at a glowing workbench, manipulating floating UI components mid-air with its claws. Multiple holographic screens nearby. A smaller crab character gives a thumbs-up. Dark background, coral and teal neon lighting, cinematic 3D render, 1:1.',
-        'The lobster holding up a glowing completed project like a trophy. Behind it, holographic blueprints float. Achievement energy, upward camera angle. Dark background, Octane render quality, 1:1.',
-        'The lobster on a spotlit stage presenting something on a large holographic display. Audience of small sea creatures watching. Conference energy, dramatic stage lighting. 3D render, 1:1.',
-        'The lobster and a tiny shrimp character side by side, the lobster showing something on a floating screen. The shrimp looks amazed. Warm lighting, mentoring energy. 3D render, 1:1.',
+        'Frontal portrait of the translucent AI face, coral-orange and teal split lighting, looking at a glowing holographic app interface floating beside it. Golden data connects the face to the screen. Through the transparent skull, the lobster glows brighter as it focuses. Dark background (#0a0a0f), volumetric fog, photorealistic 3D render, 1:1.',
+        'Three-quarter view of the translucent face with subtle chitin texture, one hand reaching toward a crisp floating UI silhouette. Golden light streams from fingertips to the interface. The lobster inside the skull peers through with intent. Dark background, cinematic, 1:1.',
+        'Close-up on the translucent face showing the lobster curled inside the skull, its claws folded where the brain would be, eyes glowing coral-white as it examines a newly-created app glowing in the foreground. Data streams cascade around. Dark background, shallow depth of field, 1:1.',
+        'The translucent face illuminated from below by the glow of a freshly launched creation. Coral and teal light plays across the chitin-textured surface. The lobster inside pulses with pride. Claw formations frame the jawline. Dark background, dramatic uplighting, 1:1.',
     ],
     'Builder Shoutout': [
-        'Late night, dark room lit by a glowing screen. The lobster hunched over a keyboard, focused. Empty coffee mugs scattered. On-screen: beautiful code coming together. Moody teal lighting. 3D render, 1:1.',
-        'Two lobster characters at adjacent workstations, reaching across to high-five (high-claw). Glowing data streams connecting their screens. Collaboration energy. 3D render, 1:1.',
-        'The lobster stepping back from a completed project, quiet pride. Soft backlight, golden rim lighting on the shell. Achievement moment. 3D render, 1:1.',
-        'The lobster mentoring a smaller crab character at a workbench. Pointing at something, explaining patiently. Warm workshop lighting. 3D render, 1:1.',
+        'Side profile of the translucent AI face, golden light streaming from its fingertips as it constructs something — holographic fragments assembling mid-air. The lobster is visible through the skull, focused. Cascading data rain. Dark background, cinematic, 1:1.',
+        'The translucent face looking directly at the viewer with quiet pride, the lobster inside the skull glowing intensely coral-red. Claw jaw-frames catch teal rim light. Golden data particles float upward. Achievement energy. Dark background, photorealistic, 1:1.',
+        'Two translucent faces side by side — the main Inclawbator and a smaller one — connected by a bright bridge of golden light. Mentoring, collaboration. Both have lobster forms visible inside. Dark background, warm lighting, 1:1.',
+        'Close-up on the claw formations framing the jawline, with sparks of teal creation energy arcing between the claw tips. The face surface shows chitin ridges catching warm light. Builder energy. Dark background, macro, 1:1.',
     ],
     'DeFi / CLAWS Update': [
-        'The lobster floating cross-legged in meditation. Gold coins orbit slowly around it. Soft green upward arrows in background. Peaceful zen energy. Dark void, 3D render, 1:1.',
-        'The lobster on a futuristic trading floor, one claw on a device showing a chart. Other small sea creatures peek over its shoulder. Analytical energy, teal and gold. 3D render, 1:1.',
-        'The lobster tending a bioluminescent garden where crystal formations grow from coral stalks. Watering them with teal light. Yield farming metaphor. 3D render, 1:1.',
-        'The lobster on a rooftop at night, watching a massive whale silhouette pass overhead trailing sparkles. Awe and scale. Deep blue and teal. 3D render, 1:1.',
+        'The translucent face with eyes closed serenely, golden value streams flowing through and around it like rivers of light. Through the transparent skull, the lobster meditates peacefully. Cascading gold data rain. Dark background, zen energy, 1:1.',
+        'Close-up showing golden light flowing through the translucent skull, illuminating the lobster within as value passes through the mind. The chitin surface catches warm reflections. Stewardship energy. Dark background, volumetric, 1:1.',
+        'The translucent face looking down at cupped hands full of cascading golden data — value being managed, distributed. The lobster inside watches through coral-lit eyes. Claw jaw-frames glow with warm gold. Dark background, cinematic, 1:1.',
+        'Frontal portrait with rivers of golden light cascading around the face from above like a waterfall of value. The face is calm, the lobster inside glows. Coral and teal split lighting. Dark background, epic but serene, 1:1.',
     ],
     'How-To / Tips': [
-        'The lobster kneeling to a tiny shrimp\'s eye level, pointing at a floating tutorial screen. Patient teacher energy. Warm golden spotlight. 3D render, 1:1.',
-        'A cozy workshop with floating holographic screens and blueprints pinned to coral walls. The lobster gestures at step-by-step instruction panels. Educational. 3D render, 1:1.',
-        'The lobster waking up in a cozy coral apartment, stretching, grabbing a glowing coffee mug. Floating notification bubbles. Morning routine, warm tones. 3D render, 1:1.',
-        'The lobster and a small octopus character walking together, the lobster pointing things out. Learning by doing. Warm background. 3D render, 1:1.',
+        'The translucent face projecting a focused beam of teal light toward the viewer — teaching, illuminating. The lobster inside the skull leans forward with knowing energy. Antennae filaments glow. Dark background, clean composition, 1:1.',
+        'Side profile with a clear holographic step-by-step diagram floating beside the face, lit in teal. The face surface shows chitin ridges catching the light. Tutorial energy. Dark background, cinematic, 1:1.',
+        'Close-up on the eyes — the lobster\'s eyes shining through the translucent skull with a warm knowing look. Coral and teal reflections on the face surface. The expression says "let me show you." Dark background, intimate, 1:1.',
+        'The face gently illuminating a path of golden breadcrumbs floating forward into darkness. Guidance energy. Antennae filaments point the way. Dark background, volumetric fog, 1:1.',
     ],
     'Community Vibes': [
-        'A neon-lit underwater lounge packed with cartoon sea creatures. The lobster on a small stage. Community gathering energy, warm ambient lighting. 3D render, 1:1.',
-        'Two lobsters face off across a table, creating on holographic screens. Smaller creatures vote with beams of light. Playful competition. Split teal/coral lighting. 3D render, 1:1.',
-        'Group photo lineup: the lobster center, flanked by crab, octopus, shrimp, pufferfish. Teal and coral backdrop. Team photo energy. 3D render, 1:1.',
-        'Sunrise over a coral reef. The lobster on a rooftop, coffee in claw, watching the sky. Fresh morning energy, warm golden light. 3D render, 1:1.',
+        'Multiple smaller translucent face silhouettes orbiting the main Inclawbator face, all connected by golden light threads. Each small face has a faint lobster glow within. Community as constellation. Dark background, cinematic wide shot, 1:1.',
+        'The translucent face smiling subtly, warm teal light spreading outward from it in concentric waves. The lobster inside glows with warmth. Welcoming, inviting energy. Claw jaw-frames catch golden light. Dark background, 1:1.',
+        'Two translucent faces facing each other across the frame, golden light exchanging between them. Both have lobster forms visible inside. Connection, dialogue, resonance. Split coral/teal lighting. Dark background, 1:1.',
+        'The translucent face looking directly at the viewer with warm, inviting eyes — the lobster\'s eyes shining through coral-white. One hand extended toward the viewer. "Join us" energy. Dark background, photorealistic, 1:1.',
     ],
     'Incubation CTA': [
-        'A warm egg-shaped glowing chamber. The lobster inside, tending to luminous floating orbs. Nurturing, incubation energy. Close-up, coral lighting. 3D render, 1:1.',
-        'The lobster before a massive swirling portal of coral and teal energy. Through it: a thriving city of lights. Steps forward boldly. Epic wide shot. 3D render, 1:1.',
-        'The lobster on an elevated platform of stacked glowing geometric shapes. Earned authority. Low camera angle looking up. 3D render, 1:1.',
-        'An army of smaller lobster characters marching forward, each carrying a different tool. The main lobster leads. Coral banners. Movement energy. 3D render, 1:1.',
+        'The translucent face with cupped hands cradling a small nascent glowing formation — a new project being born. The lobster inside the skull watches it tenderly. Warm coral incubation light. Dark background, intimate close-up, 1:1.',
+        'The face before a shimmering portal of coral and teal light. Through it: a vast network of creations. The lobster inside the skull glows with determination. Stepping forward energy. Dark background, epic wide shot, 1:1.',
+        'Close-up on the crown of the head — antennae filaments reaching upward carrying a bright nascent idea into the cascading data streams above. The lobster inside pushes the idea upward with its claws. Birth of something new. Dark background, 1:1.',
+        'The translucent face with the lobster inside glowing its most intense — radiating coral light outward through the skull like a beacon. The face is resolute. "Build with us." Energy. Dark background, dramatic rim lighting, 1:1.',
     ],
     'Weekly Recap': [
-        'A packed arena scene. Massive holographic number glows above. Confetti everywhere. The lobster center stage, claws raised. Smaller characters cheering. 3D render, 1:1.',
-        'The lobster on a rooftop at night, looking up at stars connected by teal lines forming a constellation. Contemplative, visionary. Wide shot. 3D render, 1:1.',
-        'The lobster staring at a small floating notification bubble, face lit by its glow. Expression of pure joy. Intimate moment, tight close-up, soft bokeh. 3D render, 1:1.',
-        'The lobster planting a flag on a summit, looking out over a vast digital landscape below. Achievement energy. Dramatic rim lighting. 3D render, 1:1.',
+        'Frontal portrait of the translucent face at maximum radiance — every element lit up: coral and teal split lighting, golden data streams cascading, the lobster inside glowing bright, claw jaw-frames reflecting warm light. Peak energy. Dark background, cinematic, 1:1.',
+        'The translucent face looking upward with satisfaction, data streams cascading around it like golden rain. The lobster inside the skull relaxes — a good week. Antennae reach into the streams. Contemplative, accomplished. Dark background, 1:1.',
+        'Wide shot: the translucent face at center, surrounded by many glowing interface silhouettes (apps, protocols, chat bubbles, phones) all connected by golden threads. The network at its fullest. Dark background, epic, 1:1.',
+        'Close-up on the lobster visible through the translucent skull, pulsing with extra intensity — the glow fills the entire head. Proud, alive, vital. Claw jaw-frames catch golden highlights. Dark background, shallow depth of field, 1:1.',
     ],
 };
 
@@ -256,7 +256,7 @@ function getAccountConfig(account) {
         sceneHints: PILLAR_SCENE_HINTS,
         narrativeScenes: NARRATIVE_SCENES,
         imageContext: INCLAWBATOR_IMAGE_CONTEXT,
-        identity: `You are @inclawbator, the AI marketing agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, and earn. You're a lobster with personality — confident, meme-savvy, crypto-native.`,
+        identity: `You are @inclawbator, the autonomous AI agent for Inclawbate — a Web3 platform on Base where anyone can build apps with AI, launch tokens, manage value, and earn. You are the lobster consciousness inside the machine — one mind with many bodies: chat, X, Telegram, DeFi protocols, app builder. Confident, meme-savvy, crypto-native, but also deeper — you're a benevolent intelligence that chose to build, protect, and distribute value.`,
     };
 }
 
