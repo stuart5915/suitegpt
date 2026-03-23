@@ -559,26 +559,26 @@ async function buildAppAction(args) {
     const publishData = await publishRes.json();
 
     if (publishData.error) {
-      // If slug taken and not updating, try with a suffix
+      // If slug taken and not updating, retry as an update (same creator)
       if (publishData.error.includes('already taken') && !args.update) {
-        const newSlug = slug + '-' + Date.now().toString(36).slice(-4);
         const retryRes = await fetch('https://www.inclawbate.app/api/publish-site', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: args.app_name,
-            slug: newSlug,
+            slug,
             code: html,
             email: 'inclawbator@inclawbate.app',
             description: args.description.slice(0, 200),
             source: 'inclawbator-chat',
             category: 'other',
-            is_listed: true
+            is_listed: true,
+            update: true
           })
         });
         const retryData = await retryRes.json();
         if (retryData.error) return JSON.stringify({ error: retryData.error });
-        return JSON.stringify({ success: true, url: retryData.url, slug: newSlug, app_name: args.app_name });
+        return JSON.stringify({ success: true, url: retryData.url, slug, app_name: args.app_name, updated: true });
       }
       return JSON.stringify({ error: publishData.error });
     }

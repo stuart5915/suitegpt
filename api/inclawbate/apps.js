@@ -194,6 +194,8 @@ export default async function handler(req, res) {
                 query = query.ilike('creator_x_handle', creator);
             } else {
                 query = query.eq('is_public', true);
+                // Hide unlisted apps from public store (creators can still see their own via creator filters above)
+                query = query.eq('is_listed', true);
                 // Hide moderated apps from public listing (admins see all via show_hidden param)
                 if (!isSuperAdmin(user) || !req.query.show_hidden) {
                     query = query.or('moderated.is.null,moderated.eq.false');

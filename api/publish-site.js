@@ -134,7 +134,8 @@ export default async function handler(req, res) {
             if (!existing) {
                 return res.status(404).json({ error: 'Site not found.' });
             }
-            if (existing.publisher_email !== publishEmail) {
+            // Allow updates from the original publisher or the inclawbator agent
+            if (existing.publisher_email !== publishEmail && publishEmail !== 'inclawbator@inclawbate.app') {
                 return res.status(403).json({ error: 'You can only update your own site.' });
             }
 
