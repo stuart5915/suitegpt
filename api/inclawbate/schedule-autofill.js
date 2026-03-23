@@ -244,8 +244,107 @@ const INCLAWBATE_NARRATIVE_SCENES = {
     ],
 };
 
+// ═══════════════════════════════════════════
+// @publicgoodstech — AI Agent News & Directory
+// ═══════════════════════════════════════════
+
+const PGT_PILLARS = [
+    { name: 'Weekly Roundup',       emoji: '📊', needsImage: true,  desc: 'Recap of the biggest AI agent news this week — launches, milestones, funding' },
+    { name: 'Agent Spotlight',      emoji: '🤖', needsImage: true,  desc: 'Deep dive on one AI agent project — what it does, how it works, why it matters' },
+    { name: 'Builder / Vibecoder',  emoji: '👷', needsImage: false, desc: 'Spotlight a builder, vibecoder, or team shipping AI agents — their story, their stack' },
+    { name: 'Data & Rankings',      emoji: '📈', needsImage: true,  desc: 'AI agent rankings by TVL, users, activity, GitHub commits, shipping velocity' },
+    { name: 'How It Works',         emoji: '💡', needsImage: false, desc: 'Explain an AI agent concept, framework, or protocol in simple terms' },
+    { name: 'Ecosystem News',       emoji: '🔥', needsImage: true,  desc: 'Breaking news, launches, partnerships, integrations across the AI agent space' },
+    { name: 'Public Goods Feature', emoji: '🌍', needsImage: true,  desc: 'Highlight a public good — open source tool, free infra, community resource' },
+];
+
+const PGT_SLOT_ANGLES = {
+    'Weekly Roundup':       ['biggest launches', 'most active agents', 'funding & raises', 'community growth', 'tech breakthroughs'],
+    'Agent Spotlight':      ['what it does', 'how it compares', 'the team behind it', 'tokenomics & incentives', 'roadmap & vision'],
+    'Builder / Vibecoder':  ['their origin story', 'what they shipped', 'their tech stack', 'advice for new builders', 'what they are building next'],
+    'Data & Rankings':      ['top agents by TVL', 'fastest growing', 'most GitHub commits', 'highest user count', 'best performing tokens'],
+    'How It Works':         ['agent frameworks explained', 'how agents earn', 'agent vs bot', 'multi-agent systems', 'on-chain vs off-chain agents'],
+    'Ecosystem News':       ['new launches', 'partnerships', 'protocol upgrades', 'regulatory news', 'industry takes'],
+    'Public Goods Feature': ['open source tools', 'free infrastructure', 'community DAOs', 'education platforms', 'developer resources'],
+};
+
+const PGT_IMAGE_CONTEXT = `BRAND: Public Goods Tech — AI agent ecosystem tracker
+VISUAL IDENTITY: Dark navy (#0b0f14) backgrounds with glowing green (#34d399) network nodes connected by thin luminous lines. Subtle grid patterns. Circuit board traces flowing across globe/earth shapes. Data visualization aesthetic meets sci-fi network maps.
+STYLE: Clean, dark, data-driven. Bloomberg terminal meets crypto Twitter. Futuristic but grounded.
+PALETTE: Primary green (#34d399), secondary blue (#60a5fa), dark navy backgrounds, white/gray text elements, subtle gold (#fbbf24) for highlights.
+ELEMENTS: Glowing nodes, network connections, globe silhouettes with circuit traces, data streams, floating particles, grid overlays.
+NEVER: Humans, faces, mascots, cartoons, lobsters, memes. Keep it abstract, data-focused, network-visual.
+FORMAT: 1:1 square for social posts.`;
+
+const PGT_SCENE_HINTS = {
+    'Weekly Roundup': 'Network overview. Vary: constellation of connected nodes pulsing with activity, data streams flowing between clusters, a globe with highlighted hotspots.',
+    'Agent Spotlight': 'Single agent focus. Vary: one bright glowing node at center with radiating connections, a magnifying lens over a network cluster, a spotlight beam on a circuit pattern.',
+    'Builder / Vibecoder': 'Human creativity meets code. Vary: keyboard with glowing green code reflections, terminal screen with network visualization, hands-free — just the tools and the glow.',
+    'Data & Rankings': 'Data visualization. Vary: bar charts made of glowing nodes, leaderboard with green accent highlights, ascending graph with network overlay.',
+    'How It Works': 'Explanation visual. Vary: flowchart of connected nodes with labels, layered architecture diagram in green and blue, branching decision tree with glowing endpoints.',
+    'Ecosystem News': 'Breaking energy. Vary: burst of green light radiating from center, network expanding outward rapidly, signal pulse traveling across connected nodes.',
+    'Public Goods Feature': 'Open and shared. Vary: globe with evenly distributed green nodes, open hands releasing light particles (abstract), interconnected circles forming a larger pattern.',
+};
+
+const PGT_NARRATIVE_SCENES = {
+    'Weekly Roundup': [
+        'A dark dashboard with multiple glowing green data panels, each showing a different metric pulsing with new data. Network connections between panels. Clean, editorial. 1:1.',
+        'A constellation map where each star is a green node representing an AI agent, with the brightest ones connected by luminous lines. Dark space background with subtle grid. 1:1.',
+        'A globe rendered in dark navy with circuit traces for continents, green nodes pulsing at key locations, data streams arcing between them. Overhead view. 1:1.',
+    ],
+    'Agent Spotlight': [
+        'A single brilliant green node at the center of a dark field, dozens of thin connection lines radiating outward to smaller nodes. The spotlight agent. Dramatic, focused. 1:1.',
+        'A detailed circuit board pattern forming the silhouette of a brain, with one section glowing brighter green than the rest. Dark background, high contrast. 1:1.',
+        'A magnifying glass hovering over a network map, the area under the lens glowing brighter with more detail visible. Investigative, editorial. 1:1.',
+    ],
+    'Builder / Vibecoder': [
+        'A glowing terminal screen in a dark room, green code scrolling, the reflection casting a soft glow on the desk surface. No person visible — just the work. Atmospheric. 1:1.',
+        'Keyboard keys from above with soft green backlighting, code reflected in the surface. Clean, minimal, the tools of a builder. Shallow depth of field. 1:1.',
+        'Abstract representation of code becoming a network — lines of text on the left transforming into connected glowing nodes on the right. Dark background. 1:1.',
+    ],
+    'Data & Rankings': [
+        'Vertical bar chart made of stacked glowing green cubes, tallest bar brightest, dark grid background. Clean data visualization aesthetic. 1:1.',
+        'A leaderboard rendered as floating panels in dark space, #1 glowing gold, rest in green, connected by thin ranking lines. Futuristic sports scoreboard. 1:1.',
+        'An ascending line graph with each data point as a glowing node, the line itself made of connected particles. Upward trajectory. Dark background with grid. 1:1.',
+    ],
+    'How It Works': [
+        'A flowchart diagram with rounded boxes connected by glowing green arrows, each box containing an abstract icon. Educational, clear, dark background. 1:1.',
+        'Layered horizontal slices showing different levels of a system, each layer a slightly different shade of dark blue with green connection points between them. Architecture diagram feel. 1:1.',
+        'A tree diagram branching outward from a single root node, each branch ending in a glowing green leaf-node. Knowledge tree. Dark, clean. 1:1.',
+    ],
+    'Ecosystem News': [
+        'A burst of green energy radiating from a central point, particles and connection lines flying outward in all directions. Breaking news energy. Dark background. 1:1.',
+        'Multiple notification-style cards floating in dark space, each with a green accent dot, slightly overlapping. News feed aesthetic. Clean, editorial. 1:1.',
+        'A signal pulse traveling across a network of nodes, lighting each one up in sequence like a chain reaction. Movement, speed, news spreading. 1:1.',
+    ],
+    'Public Goods Feature': [
+        'A globe made entirely of interconnected green nodes and lines, no solid surface — just the network itself. Beautiful, open, shared. Dark background. 1:1.',
+        'Concentric circles of nodes expanding outward, each ring connected to the next, representing open layers of infrastructure. Green on dark navy. 1:1.',
+        'An open book rendered as a glowing circuit board, knowledge flowing outward as particle streams. Education as public good. Dark, atmospheric. 1:1.',
+    ],
+};
+
+const PGT_STYLE_EXAMPLES = [
+    'The AI agent space just hit a new milestone.\n\nHere\'s what happened this week 🧵',
+    'Most people are sleeping on @projectname.\n\nHere\'s why it matters.',
+    '5 AI agents that shipped real features this week:\n\n1. ...\n2. ...\n3. ...\n4. ...\n5. ...',
+    'The future of work isn\'t human vs AI.\n\nIt\'s humans building AI agents that work for everyone.',
+    'This builder went from idea to live agent in 48 hours.\n\nNo VC. No team. Just vibes and code.',
+];
+
 // Helper: get config for an account
 function getAccountConfig(account) {
+    if (account === 'publicgoodstech') {
+        return {
+            pillars: PGT_PILLARS,
+            slotAngles: PGT_SLOT_ANGLES,
+            styleExamples: PGT_STYLE_EXAMPLES,
+            sceneHints: PGT_SCENE_HINTS,
+            narrativeScenes: PGT_NARRATIVE_SCENES,
+            imageContext: PGT_IMAGE_CONTEXT,
+            identity: `You are @publicgoodstech, an independent AI agent ecosystem news source. You track and cover the AI agent space — launches, rankings, builders, frameworks, and public goods. Your voice is informed, concise, and neutral but excited about AI agents. You're a tech journalist, not a shill. You tag projects you cover. You spotlight builders and vibecoders. You post data and rankings. You never shill bags — you cover what's real. Think: baseposting but for AI agents. Your site is publicgoods.tech.`,
+        };
+    }
     if (account === 'inclawbate') {
         return {
             pillars: INCLAWBATE_PILLARS,
@@ -760,7 +859,7 @@ Output ONLY the prompt, nothing else.`;
 // ── OAuth 1.0a signing for X API ──
 
 function buildOAuth1Header(method, url, extraParams, account) {
-    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : 'INCLAWBATOR';
+    const prefix = account === 'publicgoodstech' ? 'PUBLICGOODS' : (account === 'inclawbate' ? 'INCLAWBATE' : 'INCLAWBATOR');
     const X_API_KEY = process.env[prefix + '_X_API_KEY'] || process.env.INCLAWBATOR_X_API_KEY;
     const X_API_SECRET = process.env[prefix + '_X_API_SECRET'] || process.env.INCLAWBATOR_X_API_SECRET;
     const X_ACCESS_TOKEN = process.env[prefix + '_X_ACCESS_TOKEN'];
