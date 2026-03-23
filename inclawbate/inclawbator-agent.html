@@ -34,6 +34,7 @@
         .cap-icon { font-size: 1.5rem; margin-bottom: var(--space-xs); }
         .cap-name { font-weight: 800; font-size: 0.92rem; margin-bottom: 4px; }
         .cap-desc { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
+        .cap-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lobster-400); opacity: 0.7; margin-bottom: 6px; }
 
         /* Platforms */
         .platforms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-md); }
@@ -189,7 +190,26 @@
         .chat-send:hover { transform: scale(1.08); }
         .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
         .chat-prompts { margin-bottom: var(--space-md); }
-        .chat-prompts-scroll { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+        .chat-categories { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+        .chat-cat-btn {
+            background: hsla(240,10%,8%,0.85); backdrop-filter: blur(12px);
+            border: 1px solid hsla(9,52%,54%,0.1); border-radius: var(--radius-full);
+            padding: 7px 16px; font-family: var(--font-sans);
+            font-size: 0.78rem; font-weight: 700; color: var(--text-dim);
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .chat-cat-btn:hover { border-color: hsla(9,52%,54%,0.3); color: var(--text-secondary); }
+        .chat-cat-btn.active {
+            background: hsla(9,52%,54%,0.12); border-color: var(--lobster-400);
+            color: var(--lobster-300); box-shadow: 0 0 12px hsla(9,52%,54%,0.1);
+        }
+        .chat-cat-btn .cat-icon { margin-right: 4px; }
+        .chat-cat-actions {
+            display: none; flex-wrap: wrap; gap: 6px; justify-content: center;
+            animation: catFadeIn 0.2s ease;
+        }
+        .chat-cat-actions.visible { display: flex; }
+        @keyframes catFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .chat-prompt-chip {
             background: hsla(240,10%,8%,0.85); backdrop-filter: blur(12px);
             border: 1px solid hsla(9,52%,54%,0.12); border-radius: var(--radius-full);
@@ -336,23 +356,35 @@
 <!-- ═══ TALK TO IT ═══ -->
 <section class="chat-section">
     <div class="chat-prompts">
-        <div class="chat-prompts-scroll">
+        <div class="chat-categories">
+            <button class="chat-cat-btn active" data-cat="launch"><span class="cat-icon">&#128640;</span> Launch</button>
+            <button class="chat-cat-btn" data-cat="earn"><span class="cat-icon">&#128176;</span> Earn</button>
+            <button class="chat-cat-btn" data-cat="build"><span class="cat-icon">&#128296;</span> Build</button>
+            <button class="chat-cat-btn" data-cat="manage"><span class="cat-icon">&#128202;</span> Manage</button>
+        </div>
+        <div class="chat-cat-actions visible" data-cat-panel="launch">
             <button class="chat-prompt-chip" data-prompt="I want to launch a token"><span class="chip-icon">&#128640;</span> Launch a token</button>
-            <button class="chat-prompt-chip" data-prompt="Check my pending fees"><span class="chip-icon">&#128176;</span> Check my fees</button>
-            <button class="chat-prompt-chip" data-prompt="Run a health check on my project"><span class="chip-icon">&#128202;</span> Health check</button>
-            <button class="chat-prompt-chip" data-prompt="I want to hire an Inclawbator"><span class="chip-icon">&#129438;</span> Hire someone</button>
-            <button class="chat-prompt-chip" data-prompt="Create an AI marketing agent for X"><span class="chip-icon">&#128227;</span> Marketing agent</button>
-            <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to multiple wallets"><span class="chip-icon">&#127919;</span> Airdrop tokens</button>
-            <button class="chat-prompt-chip" data-prompt="Show me apps on Inclawbate"><span class="chip-icon">&#128218;</span> Browse apps</button>
-            <button class="chat-prompt-chip" data-prompt="Show me CLAWS staking stats"><span class="chip-icon">&#128200;</span> Staking stats</button>
-            <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Incubation</button>
             <button class="chat-prompt-chip" data-prompt="How do I deploy a staking pool?"><span class="chip-icon">&#128171;</span> Deploy staking</button>
-            <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
-            <button class="chat-prompt-chip" data-prompt="Buy CLAWS with 0.1 ETH"><span class="chip-icon">&#128184;</span> Buy CLAWS</button>
-            <button class="chat-prompt-chip" data-prompt="Stake 1000 CLAWS"><span class="chip-icon">&#128171;</span> Stake CLAWS</button>
-            <button class="chat-prompt-chip" data-prompt="Claim my staking rewards"><span class="chip-icon">&#127873;</span> Claim rewards</button>
+            <button class="chat-prompt-chip" data-prompt="I want to airdrop tokens to multiple wallets"><span class="chip-icon">&#127919;</span> Airdrop tokens</button>
+        </div>
+        <div class="chat-cat-actions" data-cat-panel="earn">
+            <button class="chat-prompt-chip" data-prompt="I want to buy some CLAWS"><span class="chip-icon">&#128184;</span> Buy CLAWS</button>
+            <button class="chat-prompt-chip" data-prompt="I want to stake my CLAWS"><span class="chip-icon">&#128171;</span> Stake CLAWS</button>
             <button class="chat-prompt-chip" data-prompt="Show me yield options"><span class="chip-icon">&#128176;</span> Earn yield</button>
-            <button class="chat-prompt-chip" data-prompt="Swap 50 USDC for ETH"><span class="chip-icon">&#128260;</span> Swap tokens</button>
+            <button class="chat-prompt-chip" data-prompt="I want to swap some tokens"><span class="chip-icon">&#128260;</span> Swap tokens</button>
+            <button class="chat-prompt-chip" data-prompt="Claim my staking rewards"><span class="chip-icon">&#127873;</span> Claim rewards</button>
+        </div>
+        <div class="chat-cat-actions" data-cat-panel="build">
+            <button class="chat-prompt-chip" data-prompt="I want to build an app"><span class="chip-icon">&#128296;</span> Build an app</button>
+            <button class="chat-prompt-chip" data-prompt="Create an AI marketing agent for X"><span class="chip-icon">&#128227;</span> Marketing agent</button>
+            <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Full incubation</button>
+            <button class="chat-prompt-chip" data-prompt="I want to hire someone from the Council"><span class="chip-icon">&#129438;</span> Hire the Council</button>
+        </div>
+        <div class="chat-cat-actions" data-cat-panel="manage">
+            <button class="chat-prompt-chip" data-prompt="Run a health check on my project"><span class="chip-icon">&#128202;</span> Health check</button>
+            <button class="chat-prompt-chip" data-prompt="Check my pending fees"><span class="chip-icon">&#128176;</span> Check my fees</button>
+            <button class="chat-prompt-chip" data-prompt="Show me CLAWS staking stats"><span class="chip-icon">&#128200;</span> Staking stats</button>
+            <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
         </div>
     </div>
     <div class="chat-container">
@@ -377,64 +409,76 @@
     <h2 class="section-title">What It Can Do</h2>
     <div class="cap-grid">
         <div class="cap-card">
+            <div class="cap-label">Launch</div>
             <div class="cap-icon">&#128640;</div>
             <div class="cap-name">Launch Tokens</div>
-            <div class="cap-desc">Deploy on Base (Clanker) or Solana (BAGS) with LP, staking pool, and landing page included.</div>
+            <div class="cap-desc">Deploy on Base or Solana with automatic LP, staking pool, and landing page.</div>
         </div>
         <div class="cap-card">
-            <div class="cap-icon">&#128176;</div>
-            <div class="cap-name">Fee Report & Claims</div>
-            <div class="cap-desc">See your pending WETH from trading fees across all your tokens. Claim directly — no dashboard needed.</div>
+            <div class="cap-label">Launch</div>
+            <div class="cap-icon">&#128171;</div>
+            <div class="cap-name">Deploy Staking</div>
+            <div class="cap-desc">Create a staking pool for any token. Holders stake and earn CLAWS rewards.</div>
         </div>
         <div class="cap-card">
-            <div class="cap-icon">&#128202;</div>
-            <div class="cap-name">Health Check</div>
-            <div class="cap-desc">Live price, volume, liquidity, and staking data for any token. Instant diagnostics.</div>
-        </div>
-        <div class="cap-card">
-            <div class="cap-icon">&#129438;</div>
-            <div class="cap-name">Hire Inclawbators</div>
-            <div class="cap-desc">Post gigs, browse open work, and hire human freelancers for branding, strategy, and dev.</div>
-        </div>
-        <div class="cap-card">
-            <div class="cap-icon">&#128227;</div>
-            <div class="cap-name">Marketing Agents</div>
-            <div class="cap-desc">Create AI agents that auto-post to X on your behalf. Set a schedule and let it run forever. Free.</div>
-        </div>
-        <div class="cap-card">
+            <div class="cap-label">Launch</div>
             <div class="cap-icon">&#127919;</div>
             <div class="cap-name">Airdrop Tokens</div>
             <div class="cap-desc">Distribute tokens to multiple wallets in one transaction. CSV upload or paste addresses.</div>
         </div>
         <div class="cap-card">
-            <div class="cap-icon">&#128218;</div>
-            <div class="cap-name">Browse Apps</div>
-            <div class="cap-desc">Discover 12+ community-built apps — games, tools, dashboards — all on Inclawbate.</div>
-        </div>
-        <div class="cap-card">
-            <div class="cap-icon">&#128200;</div>
-            <div class="cap-name">Staking Stats</div>
-            <div class="cap-desc">Live APY, TVL, staker count, and reward rates for CLAWS and ecosystem tokens.</div>
-        </div>
-        <div class="cap-card">
-            <div class="cap-icon">&#9881;&#65039;</div>
-            <div class="cap-name">Incubation</div>
-            <div class="cap-desc">Full-service build-out for AI agents and projects. Token, staking, branding, marketing — we handle it all.</div>
-        </div>
-        <div class="cap-card">
+            <div class="cap-label">Earn</div>
             <div class="cap-icon">&#128176;</div>
-            <div class="cap-name">Yield Management</div>
-            <div class="cap-desc">Earn yield on USDC or ETH across curated DeFi protocols. Safe lending, staking, and advanced LP strategies.</div>
+            <div class="cap-name">Earn Yield</div>
+            <div class="cap-desc">Deposit USDC or ETH across curated DeFi protocols. Safe lending, staking, and LP strategies.</div>
         </div>
         <div class="cap-card">
+            <div class="cap-label">Earn</div>
+            <div class="cap-icon">&#128260;</div>
+            <div class="cap-name">Buy &amp; Swap</div>
+            <div class="cap-desc">Buy CLAWS, swap tokens, or trade any asset on Base. Conversational — just say what you want.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Earn</div>
             <div class="cap-icon">&#128200;</div>
-            <div class="cap-name">Position Tracking</div>
-            <div class="cap-desc">Check your active DeFi positions, earnings, and APY — all from the chat.</div>
+            <div class="cap-name">Stake &amp; Claim</div>
+            <div class="cap-desc">Stake CLAWS to earn rewards. Claim anytime. Choose payouts in CLAWS (0% fee) or USDC (2% fee).</div>
         </div>
         <div class="cap-card">
+            <div class="cap-label">Build</div>
+            <div class="cap-icon">&#128296;</div>
+            <div class="cap-name">Build Apps</div>
+            <div class="cap-desc">Describe what you want and get a live web app published instantly. No code needed.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Build</div>
+            <div class="cap-icon">&#128227;</div>
+            <div class="cap-name">Marketing Agents</div>
+            <div class="cap-desc">Create AI agents that auto-post to X on your behalf. Set a schedule and let it run. Free.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Build</div>
+            <div class="cap-icon">&#9881;&#65039;</div>
+            <div class="cap-name">Full Incubation</div>
+            <div class="cap-desc">Full-service build-out: token, staking, branding, marketing, landing page — we handle everything.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Manage</div>
+            <div class="cap-icon">&#128202;</div>
+            <div class="cap-name">Health Check</div>
+            <div class="cap-desc">Live price, volume, liquidity, and staking data for any token. Instant diagnostics.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Manage</div>
             <div class="cap-icon">&#129438;</div>
-            <div class="cap-name">Yield as CLAWS</div>
-            <div class="cap-desc">Choose to receive yield as CLAWS (0% fee) or USDC (2% fee). Your yield, your choice.</div>
+            <div class="cap-name">Hire the Council</div>
+            <div class="cap-desc">Hire vetted humans for design, dev, strategy, and marketing. Real people, real work.</div>
+        </div>
+        <div class="cap-card">
+            <div class="cap-label">Manage</div>
+            <div class="cap-icon">&#128176;</div>
+            <div class="cap-name">Track Fees &amp; Positions</div>
+            <div class="cap-desc">See pending WETH from trading fees, check active DeFi positions, and monitor earnings.</div>
         </div>
     </div>
 </section>
@@ -1118,6 +1162,19 @@
     }
 
     form.addEventListener('submit', function(e) { e.preventDefault(); sendMessage(input.value); });
+
+    // Category tab switching
+    document.querySelectorAll('.chat-cat-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var cat = btn.getAttribute('data-cat');
+            document.querySelectorAll('.chat-cat-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            document.querySelectorAll('.chat-cat-actions').forEach(function(p) { p.classList.remove('visible'); });
+            var panel = document.querySelector('[data-cat-panel="' + cat + '"]');
+            if (panel) panel.classList.add('visible');
+        });
+    });
+
     document.querySelectorAll('.chat-prompt-chip').forEach(function(chip) {
         chip.addEventListener('click', function() { var p = chip.getAttribute('data-prompt'); if (p) sendMessage(p); });
     });
