@@ -390,9 +390,11 @@
             <button class="chat-prompt-chip" data-prompt="Tell me about full incubation services"><span class="chip-icon">&#9881;&#65039;</span> Incubation</button>
             <button class="chat-prompt-chip" data-prompt="How do I deploy a staking pool?"><span class="chip-icon">&#128171;</span> Deploy staking</button>
             <button class="chat-prompt-chip" data-prompt="What is Inclawbate?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
+            <button class="chat-prompt-chip" data-prompt="Buy CLAWS with 0.1 ETH"><span class="chip-icon">&#128184;</span> Buy CLAWS</button>
+            <button class="chat-prompt-chip" data-prompt="Stake 1000 CLAWS"><span class="chip-icon">&#128171;</span> Stake CLAWS</button>
+            <button class="chat-prompt-chip" data-prompt="Claim my staking rewards"><span class="chip-icon">&#127873;</span> Claim rewards</button>
             <button class="chat-prompt-chip" data-prompt="Show me yield options"><span class="chip-icon">&#128176;</span> Earn yield</button>
-            <button class="chat-prompt-chip" data-prompt="Check my DeFi positions"><span class="chip-icon">&#128200;</span> My positions</button>
-            <button class="chat-prompt-chip" data-prompt="I want to receive yield as CLAWS"><span class="chip-icon">&#129438;</span> Yield as CLAWS</button>
+            <button class="chat-prompt-chip" data-prompt="Swap 50 USDC for ETH"><span class="chip-icon">&#128260;</span> Swap tokens</button>
         </div>
     </div>
     <div class="chat-container">
@@ -1028,8 +1030,96 @@
 
     function hideTyping() { var el = document.getElementById('chatTyping'); if (el) el.remove(); }
 
+    // ── Pending Transaction State ──
+    var pendingTxData = null; // { tx: {...} } or { txs: [{label, tx}, ...] }
+
+    // Check if user message is a confirmation
+    function isConfirmation(text) {
+        var t = text.trim().toLowerCase();
+        return /^(yes|confirm|do it|go ahead|sign|approve|ok|yep|yeah|sure|send it|execute)$/i.test(t);
+    }
+
+    // Execute a single transaction via MetaMask/injected wallet
+    async function executeTx(txObj, label) {
+        if (!window.ethereum) {
+            addMessage('No wallet detected. Please install MetaMask or connect a wallet.', false);
+            return false;
+        }
+        try {
+            // Ensure we're on Base (chainId 8453 = 0x2105)
+            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== '0x2105') {
+                try {
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+                } catch (switchErr) {
+                    addMessage('Please switch to Base network in your wallet.', false);
+                    return false;
+                }
+            }
+
+            if (label) addMessage('Signing: ' + label + '...', false);
+
+            var txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: txObj.from,
+                    to: txObj.to,
+                    data: txObj.data,
+                    value: txObj.value && txObj.value !== '0' ? '0x' + BigInt(txObj.value).toString(16) : '0x0',
+                }]
+            });
+
+            addMessage('Transaction submitted! Waiting for confirmation...\n\nhttps://basescan.org/tx/' + txHash, false);
+            chatHistory.push({ role: 'assistant', content: 'Transaction confirmed. Tx: ' + txHash });
+            return true;
+        } catch (e) {
+            var msg = e.code === 4001 ? 'Transaction cancelled.' : 'Transaction failed: ' + (e.message || e).toString().slice(0, 100);
+            addMessage(msg, false);
+            chatHistory.push({ role: 'assistant', content: msg });
+            return false;
+        }
+    }
+
+    // Process pending transactions (single or multi-step)
+    async function processPendingTx() {
+        if (!pendingTxData) return;
+        var data = pendingTxData;
+        pendingTxData = null;
+
+        if (data.tx) {
+            // Single transaction
+            await executeTx(data.tx);
+        } else if (data.txs && data.txs.length) {
+            // Multi-step (e.g. approve + stake)
+            for (var i = 0; i < data.txs.length; i++) {
+                var step = data.txs[i];
+                var label = step.label || ('Step ' + (i + 1) + ' of ' + data.txs.length);
+                var ok = await executeTx(step.tx, label);
+                if (!ok) {
+                    addMessage('Stopped at step ' + (i + 1) + '. You can try again.', false);
+                    return;
+                }
+                // Small delay between multi-step txs
+                if (i < data.txs.length - 1) await new Promise(r => setTimeout(r, 2000));
+            }
+        }
+    }
+
     async function sendMessage(text) {
         if (!text.trim() || sending) return;
+
+        // Check if this is a confirmation for a pending transaction
+        if (pendingTxData && isConfirmation(text)) {
+            input.value = '';
+            addMessage(text, true);
+            chatHistory.push({ role: 'user', content: text.trim() });
+            await processPendingTx();
+            return;
+        }
+
+        // Clear any stale pending tx if user sends a new message
+        pendingTxData = null;
+
         sending = true;
         sendBtn.disabled = true;
         input.value = '';
@@ -1046,12 +1136,16 @@
             var data = await res.json();
             hideTyping();
             if (data.reply) {
-                // Check for transaction data (deposit/withdraw actions)
+                // Check for transaction data (DeFi actions)
                 var txData = data.tx_data || null;
                 addMessage(data.reply, false, data.function_called, data.app_url, txData);
                 chatHistory.push({ role: 'assistant', content: data.reply });
                 if (data.app_url && _lastAppPreview && _lastAppPreview.src) {
                     _lastAppPreview.src = data.app_url + '?t=' + Date.now();
+                }
+                // Store pending tx for user to confirm
+                if (txData && (txData.tx || txData.txs)) {
+                    pendingTxData = txData;
                 }
             }
             else if (data.error) { addMessage('Sorry, something went wrong. Try again!', false); }

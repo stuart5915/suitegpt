@@ -3,6 +3,7 @@
 
 import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { logToFeed } from './notify.js';
+import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
@@ -52,6 +53,14 @@ CHECK POSITIONS — Use check_positions when someone asks about their active DeF
 WITHDRAW FROM STRATEGY — Use withdraw_from_strategy when someone wants to exit a position or withdraw from a yield strategy. Requires: strategy_id and wallet. The response includes transaction details for MetaMask signing.
 
 SET REWARD PREFERENCE — Use set_reward_preference when someone wants to change how they receive yield — either as CLAWS tokens (0% fee) or as USDC (2% fee). Requires: wallet and preference (claws or usdc).
+
+SWAP TOKENS — Use swap_tokens when someone wants to buy, sell, or swap tokens. Examples: "buy CLAWS with 0.1 ETH", "swap 100 USDC for ETH", "sell my CLAWS for USDC". Requires: from_token, to_token, amount. Wallet is auto-injected if connected. Supports symbols (ETH, USDC, CLAWS, WETH, POKERAI) or contract addresses. The response includes a transaction for the user to sign — tell them to type "confirm" to proceed.
+
+STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Requires: amount. Wallet auto-injected. Involves 2 transactions (approve + stake). Tell them to type "confirm" to sign.
+
+UNSTAKE CLAWS — Use unstake_claws when someone wants to unstake/withdraw their staked CLAWS. Requires: amount. Wallet auto-injected.
+
+CLAIM STAKING REWARDS — Use claim_staking_rewards when someone wants to claim their pending CLAWS staking rewards. No parameters needed beyond wallet.
 
 Guidelines:
 - ALWAYS use the right tool — don't guess, match intent to tool
@@ -294,6 +303,67 @@ const TOOLS = [
           preference: { type: 'string', enum: ['claws', 'usdc'], description: 'Reward type: claws (0% fee) or usdc (2% fee)' }
         },
         required: ['wallet', 'preference']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'swap_tokens',
+      description: 'Swap one token for another on Base. Builds a transaction for the user to sign. Supports ETH, USDC, CLAWS, WETH, POKERAI, or any token address.',
+      parameters: {
+        type: 'object',
+        properties: {
+          from_token: { type: 'string', description: 'Token to sell — symbol (ETH, USDC, CLAWS) or contract address' },
+          to_token: { type: 'string', description: 'Token to buy — symbol (ETH, USDC, CLAWS) or contract address' },
+          amount: { type: 'string', description: 'Amount of from_token to swap (human readable, e.g. "0.1" or "100")' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['from_token', 'to_token', 'amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'stake_claws',
+      description: 'Stake CLAWS tokens to earn rewards. Builds approve + stake transactions for the user to sign.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'string', description: 'Amount of CLAWS to stake (human readable)' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'unstake_claws',
+      description: 'Unstake CLAWS tokens. Builds an unstake transaction for the user to sign.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'string', description: 'Amount of CLAWS to unstake (human readable)' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'claim_staking_rewards',
+      description: 'Claim pending CLAWS staking rewards. Builds a claim transaction for the user to sign.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: []
       }
     }
   }
@@ -953,6 +1023,10 @@ async function executeTool(name, args) {
     case 'check_positions': return await checkPositions(args);
     case 'withdraw_from_strategy': return await withdrawFromStrategy(args);
     case 'set_reward_preference': return setRewardPreference(args);
+    case 'swap_tokens': return JSON.stringify(await getSwapQuote({ fromToken: args.from_token, toToken: args.to_token, amount: args.amount, wallet: args.wallet }));
+    case 'stake_claws': return JSON.stringify(await stakeClaws({ amount: args.amount, wallet: args.wallet }));
+    case 'unstake_claws': return JSON.stringify(await unstakeClaws({ amount: args.amount, wallet: args.wallet }));
+    case 'claim_staking_rewards': return JSON.stringify(await claimStakingRewards({ wallet: args.wallet }));
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
 }
@@ -1151,6 +1225,26 @@ function generateDirectReply(tool, resultJson, args) {
         if (d.saved) return `Reward preference set to **${d.preference === 'claws' ? 'CLAWS 🦞' : 'USDC 💵'}** (${d.fee} fee).\n\n${d.description}`;
         return d.message || 'Preference updated!';
 
+      case 'swap_tokens':
+        if (d.error) return d.error;
+        if (d.success) return `I'll swap **${d.fromAmount} ${d.fromToken}** for approximately **${d.toAmount} ${d.toToken}** on Base.\n\nSlippage: ${d.slippage} | Gas: ~$${d.gasCostUSD}\n\nType **"confirm"** to sign the transaction.`;
+        return null;
+
+      case 'stake_claws':
+        if (d.error) return d.error;
+        if (d.success) return `Ready to stake **${d.amount} CLAWS**.\n\nThis requires 2 transactions:\n1. Approve CLAWS spending\n2. Stake CLAWS\n\nType **"confirm"** to sign.`;
+        return null;
+
+      case 'unstake_claws':
+        if (d.error) return d.error;
+        if (d.success) return `Ready to unstake **${d.amount} CLAWS**.\n\nType **"confirm"** to sign the transaction.`;
+        return null;
+
+      case 'claim_staking_rewards':
+        if (d.error) return d.error;
+        if (d.success) return `Ready to claim your pending CLAWS staking rewards.\n\nType **"confirm"** to sign the transaction.`;
+        return null;
+
       case 'health_check':
         // Let LLM interpret health checks — they need nuanced advice
         return null;
@@ -1223,6 +1317,23 @@ function matchIntent(msg) {
   }
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
     return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n• **Manage your yield** — earn on USDC, ETH, or LP strategies\n• **Track positions** — see what you're earning across DeFi\n\nWhat would you like to do?" };
+  // Swap tokens
+  if (/\b(buy|swap|sell|convert|trade)\b/i.test(m) && /\b(eth|usdc|claws|weth|pokerai|0x[a-f0-9]{40})\b/i.test(m)) {
+    return { tool: 'swap_tokens', reply: "I can swap tokens for you! I need:\n\n1. **Token to sell** (e.g. ETH, USDC, CLAWS)\n2. **Token to buy**\n3. **Amount**\n\nConnect your wallet and tell me what you want to swap." };
+  }
+
+  // Stake CLAWS (not deploy staking pool)
+  if (/\bstake\s*(my\s*)?claws\b/i.test(m) || /\bstake\s+\d/i.test(m))
+    return { tool: 'stake_claws', reply: "I can stake CLAWS for you! How much do you want to stake? Make sure your wallet is connected." };
+
+  // Unstake CLAWS
+  if (/\bunstake|withdraw.*stak/i.test(m) && /claws/i.test(m))
+    return { tool: 'unstake_claws', reply: "I can unstake your CLAWS. How much do you want to unstake?" };
+
+  // Claim staking rewards
+  if (/\bclaim\b.*\b(reward|staking)\b/i.test(m) || /\bstaking\s*reward/i.test(m))
+    return { tool: 'claim_staking_rewards', reply: "I can claim your pending CLAWS staking rewards. Connect your wallet and type **confirm** to claim." };
+
   return null;
 }
 
@@ -1313,7 +1424,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject wallet into tools that accept it
-        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference')) {
+        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards')) {
           args.wallet = wallet;
         }
         toolArgs = args;
@@ -1336,6 +1447,9 @@ export default async function handler(req, res) {
             const tr = typeof lastToolResult.content === 'string' ? JSON.parse(lastToolResult.content) : lastToolResult.content;
             if (tr.url && functionCalled === 'build_app') appUrl = tr.url;
             if (tr.needs_wallet_action) txData = tr; // Pass deposit/withdraw data to frontend
+            // DeFi actions — pass tx/txs data for user to sign
+            if (tr.tx) txData = { tx: tr.tx };
+            if (tr.txs) txData = { txs: tr.txs };
           } catch (_) {}
         }
         return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }) });
