@@ -8443,7 +8443,12 @@ function renderMyAgents() {
   ];
   const playing = allAgents.filter(a => a.status === 'playing');
   const lobby = allAgents.filter(a => a.status === 'lobby')
-    .sort((a, b) => (b.sessionStartTime || 0) - (a.sessionStartTime || 0));
+    .sort((a, b) => {
+      // Newest created first, then by last session time
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : (a.sessionStartTime || 0);
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : (b.sessionStartTime || 0);
+      return bTime - aTime;
+    });
 
   if (playing.length === 0 && lobby.length === 0) {
     grid.innerHTML = `

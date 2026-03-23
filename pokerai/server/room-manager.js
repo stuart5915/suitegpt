@@ -779,7 +779,8 @@ class RoomManager {
       chipStack: 0, // funded when joining a table
       handsWon: 0,
       handsPlayed: 0,
-      biggestPot: 0
+      biggestPot: 0,
+      created_at: Date.now()
     };
 
     if (!this.lobbyAgents.has(walletAddress)) {
@@ -1501,6 +1502,7 @@ class RoomManager {
         currency: a.currency || null,
         status: 'lobby',
         sessionStartTime: a.sessionStartTime || null,
+        created_at: a.created_at || null,
         autoEvents: a.autoEvents || []
       });
     }
