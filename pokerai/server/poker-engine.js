@@ -435,7 +435,16 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
 
 class PokerEngine {
   constructor(broadcast, config = {}) {
-    this.broadcast = broadcast;
+    // Wrap broadcast to buffer log/action entries for mid-hand viewers
+    this._rawBroadcast = broadcast;
+    this.broadcast = (type, data) => {
+      if (type === 'log' || type === 'action') {
+        if (this.currentHandLog && this.currentHandLog.length < 200) {
+          this.currentHandLog.push({ type, data });
+        }
+      }
+      this._rawBroadcast(type, data);
+    };
     this.tableId = config.tableId || 'default';
     this.roomId = config.roomId || 'micro';
     this.bb = config.bb || 50;
@@ -464,6 +473,7 @@ class PokerEngine {
     this.handsPlayed = 0;
     this.pot = 0;
     this.phase = 'waiting';
+    this.currentHandLog = [];   // buffered log entries for current hand (sent to new viewers)
     this.communityCards = [];
     this.deck = [];
     this.dealerIndex = 0;
@@ -618,6 +628,7 @@ class PokerEngine {
     // Only count as a real hand when 2+ players are active
     this.round++;
     this.handsPlayed++;
+    this.currentHandLog = []; // Clear log buffer for new hand
 
     // Rotate dealer (skip folded/bust agents)
     this.dealerIndex = this._nextActive(this.dealerIndex);
@@ -1681,7 +1692,8 @@ class PokerEngine {
       totalRake: this.totalRake,
       rakePct: this.rakePct,
       poolFlows: this.poolFlows,
-      running: this.running
+      running: this.running,
+      currentHandLog: this.currentHandLog || []
     };
   }
 

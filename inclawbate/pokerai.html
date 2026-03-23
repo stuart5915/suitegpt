@@ -5645,6 +5645,25 @@ function applyServerState(data) {
   // Update table tabs
   renderTableTabs();
 
+  // Replay current hand log for mid-hand viewers (only on first gameState)
+  if (data.currentHandLog && data.currentHandLog.length > 0 && !window._handLogReplayed) {
+    window._handLogReplayed = data.handsPlayed; // track which hand we replayed
+    for (const entry of data.currentHandLog) {
+      if (entry.type === 'log') addLog(entry.data.html);
+      if (entry.type === 'action') {
+        showActionBubble(entry.data.agentId, { type: entry.data.action, label: entry.data.label });
+        const ccLen = (gameState.communityCards || []).filter(c => c).length;
+        const street = ccLen === 0 ? 'Preflop' : ccLen === 3 ? 'Flop' : ccLen === 4 ? 'Turn' : 'River';
+        if (!_handActions[entry.data.agentId]) _handActions[entry.data.agentId] = [];
+        _handActions[entry.data.agentId].push({ street, type: entry.data.action, amount: entry.data.amount || 0, label: entry.data.label });
+      }
+    }
+  }
+  // Reset replay flag on new hand
+  if (window._handLogReplayed && window._handLogReplayed !== data.handsPlayed) {
+    window._handLogReplayed = null;
+  }
+
   // Debounced refresh of agent list (don't spam on every gameState)
   if (!window._myAgentsTimer) {
     window._myAgentsTimer = setTimeout(() => {
