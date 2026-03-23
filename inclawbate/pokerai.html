@@ -5306,6 +5306,7 @@ function handleMessage(msg) {
         if (fundedAgent) {
           fundedAgent.chipStack = msg.data.chipStack;
           fundedAgent.chips = msg.data.chipStack;
+          if (msg.data.currency) fundedAgent.currency = msg.data.currency;
         }
         if (msg.data.newBalance !== undefined) {
           if (msg.data.currency === 'pokerai') {
@@ -8393,7 +8394,7 @@ function _renderLobbySection(lobby) {
           <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
           <button onclick="confirmFund('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
         </div>
-        <div id="fundBalLabel-${agent.id}" style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> USDC chips</div>
+        <div id="fundBalLabel-${agent.id}" style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${(agent.currency === 'pokerai' ? pokeraiWalletBalance : walletBalance).toLocaleString()}</span> ${agent.currency === 'pokerai' ? '$POKERAI' : 'USDC'} chips</div>
       </div>
       <!-- Withdraw panel -->
       <div id="withdrawPanel-${agent.id}" data-currency="${agent.currency || 'usdc'}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px">
