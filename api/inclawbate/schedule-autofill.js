@@ -812,7 +812,7 @@ async function postTweetShared(text, mediaIds, account, threadParts) {
         body: JSON.stringify(payload)
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || data.title || 'X API post failed');
+    if (!response.ok) throw new Error('X API ' + response.status + ': ' + JSON.stringify(data));
     const firstTweetId = data.data?.id || null;
 
     // Post thread replies if present
