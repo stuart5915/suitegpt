@@ -8365,10 +8365,8 @@ function toggleCompactExpand(agentId) {
   if (!isOpen) el.style.display = 'block';
 }
 
-function _renderLobbySection(lobby) {
-  let html = `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-    <span style="color:var(--accent-gold);font-size:18px">⏳</span> Ready to Deploy (${lobby.length})
-  </div>`;
+function _renderLobbyCards(lobby) {
+  let html = '';
   html += lobby.map(agent => {
     const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
     return `
@@ -8495,9 +8493,24 @@ function renderMyAgents() {
 
   let html = '';
 
-  // LOBBY section first — agents needing action shown at top
-  if (lobby.length > 0) {
-    html += _renderLobbySection(lobby);
+  // Split lobby into recently played (have session history) and all others
+  const recentlyPlayed = lobby.filter(a => a.handsPlayed > 0 || a.sessionStartTime);
+  const neverPlayed = lobby.filter(a => !a.handsPlayed && !a.sessionStartTime);
+
+  // RECENTLY PLAYED section first
+  if (recentlyPlayed.length > 0) {
+    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--accent-gold);font-size:18px">🕐</span> Recently Played (${recentlyPlayed.length})
+    </div>`;
+    html += _renderLobbyCards(recentlyPlayed);
+  }
+
+  // ALL OTHER AGENTS
+  if (neverPlayed.length > 0) {
+    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;margin-top:${recentlyPlayed.length > 0 ? '16px' : '0'};display:flex;align-items:center;gap:8px">
+      <span style="color:var(--accent-gold);font-size:18px">⏳</span> Ready to Deploy (${neverPlayed.length})
+    </div>`;
+    html += _renderLobbyCards(neverPlayed);
   }
 
   // PLAYING section — compact cards
