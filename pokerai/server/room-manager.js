@@ -602,11 +602,14 @@ class RoomManager {
 
   async computeAgentStats(agentId, includeSandbox = false, sessionStartTime = null) {
     if (!this.store.getAgentHandHistory) return null;
+    // Force flush any pending hand history so stats are accurate
+    if (this.store._flushHandHistory) await this.store._flushHandHistory();
     const rows = await this.store.getAgentHandHistory(agentId, 200, includeSandbox);
     if (!rows || rows.length === 0) return { handsPlayed: 0 };
 
     const hands = sessionStartTime
-      ? rows.filter(h => new Date(h.created_at).getTime() >= sessionStartTime)
+      // Subtract 10s buffer to account for batch write delay and timing drift
+      ? rows.filter(h => new Date(h.created_at).getTime() >= (sessionStartTime - 10000))
       : rows;
     if (hands.length === 0) return { handsPlayed: 0 };
     const wins = hands.filter(h => h.result === 'win');
