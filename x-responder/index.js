@@ -136,11 +136,13 @@ async function logToFeed(authorUsername, mentionText, replyText, replyTweetId) {
   if (text.length > 4000) text = text.slice(0, 3997) + '...';
 
   try {
-    await fetch(`https://api.telegram.org/bot${FEED_BOT_TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${FEED_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: FEED_CHANNEL, text, parse_mode: 'HTML', disable_web_page_preview: true })
+      body: JSON.stringify({ chat_id: FEED_CHANNEL, text, parse_mode: 'HTML', disable_web_page_preview: true, disable_notification: true })
     });
+    const data = await res.json();
+    if (!data.ok) console.error('Feed log failed:', data.description);
   } catch (e) {
     console.error('Feed log error:', e.message);
   }
