@@ -249,6 +249,18 @@ class SupabaseStore {
     });
   }
 
+  async getRecentDepositTxHashes() {
+    const { data, error } = await this.supabase
+      .from('poker_transactions')
+      .select('tx_hash')
+      .eq('type', 'deposit')
+      .not('tx_hash', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) { console.error('[SupabaseStore] getRecentDepositTxHashes failed:', error.message); return []; }
+    return (data || []).map(r => r.tx_hash).filter(Boolean);
+  }
+
   async getTotalDepositedChips(walletAddress) {
     const addr = walletAddress.toLowerCase();
     const { data, error } = await this.supabase

@@ -21,6 +21,7 @@ process.on('unhandledRejection', (reason) => {
 // Optional: chain + supabase (graceful fallback to JSON store if not configured)
 let chain = null;
 let tokenChain = null; // POKERAI token vault + rewards
+let processedDepositTxs = new Set(); // Track processed deposit tx hashes to prevent double-crediting
 let useSupabase = false;
 let rewardEngine = null;
 
@@ -303,36 +304,50 @@ wss.on('connection', (ws) => {
         }
 
         case 'checkDeposit': {
-          // Reconcile: compare on-chain GROSS deposits vs total deposit credits ever given
-          // (Old logic used net deposits which broke when users withdrew admin-credited chips)
+          // Scan recent on-chain deposits and credit any that haven't been processed yet (by tx hash)
           if (!requireAuth(client, ws)) break;
           if (!chain) { ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'Chain not configured' } })); break; }
           try {
             const addr = client.walletAddress;
-            const stats = await chain.playerStats(addr); // resilient call with fallback RPCs
-            const onChainDepositedChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+            // Get recent Deposit events for this wallet from on-chain
+            const currentBlock = await chain.provider.getBlockNumber();
+            const fromBlock = Math.max(0, currentBlock - 50000); // ~24 hours of blocks
+            const events = await chain._resilientCall(async (contract) => {
+              return contract.queryFilter('Deposit', fromBlock, currentBlock);
+            }, 15000);
 
-            // How many chips have we EVER credited for deposits? (from poker_transactions table)
-            const dbCredited = rooms.store.getTotalDepositedChips
-              ? await rooms.store.getTotalDepositedChips(addr)
-              : 0;
+            let credited = 0;
+            const myEvents = (events || []).filter(e => e.args[0].toLowerCase() === addr);
 
-            // If on-chain gross deposits > total credits ever given, chips are missing
-            if (onChainDepositedChips > dbCredited && onChainDepositedChips - dbCredited >= 100) {
-              const credit = onChainDepositedChips - dbCredited;
-              await rooms.store.addBalance(addr, credit);
-              await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
-              sendBalance(ws, addr);
-              ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: credit } }));
-              console.log(`[CheckDeposit] Credited ${credit} chips to ${addr} (on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited})`);
-            } else {
-              const walletBal = rooms.getWalletBalance(addr).balance || 0;
-              const agentChips = rooms.getChipsInPlay(addr) || 0;
-              // Always send fresh balance so client stays in sync
-              sendBalance(ws, addr);
-              ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited: 0, message: 'Balance is correct' } }));
-              console.log(`[CheckDeposit] ${addr} OK — on-chain gross: ${onChainDepositedChips}, db credits: ${dbCredited}, wallet: ${walletBal}, agents: ${agentChips}`);
+            for (const evt of myEvents) {
+              const txHash = evt.transactionHash;
+              if (processedDepositTxs && processedDepositTxs.has(txHash)) continue;
+
+              // Check if this tx is already in DB
+              if (rooms.store.supabase) {
+                const { data } = await rooms.store.supabase
+                  .from('poker_transactions')
+                  .select('id')
+                  .eq('tx_hash', txHash)
+                  .limit(1);
+                if (data && data.length > 0) {
+                  if (processedDepositTxs) processedDepositTxs.add(txHash);
+                  continue;
+                }
+              }
+
+              const chips = Number(evt.args[2]);
+              const usdcRaw = Number(evt.args[1]);
+              await rooms.store.addBalance(addr, chips);
+              await rooms.store.recordTransaction(addr, 'deposit', usdcRaw, chips, txHash);
+              if (processedDepositTxs) processedDepositTxs.add(txHash);
+              credited += chips;
+              console.log(`[CheckDeposit] Credited ${chips} chips for tx ${txHash}`);
             }
+
+            sendBalance(ws, addr);
+            ws.send(JSON.stringify({ type: 'checkDepositResult', data: { credited, txsScanned: myEvents.length } }));
+            console.log(`[CheckDeposit] ${addr} — scanned ${myEvents.length} txs, credited ${credited} chips`);
           } catch (e) {
             console.error('[CheckDeposit] Failed:', e.message);
             ws.send(JSON.stringify({ type: 'checkDepositResult', data: { error: 'RPC error — try again in a moment' } }));
@@ -1499,34 +1514,35 @@ async function initChainServices() {
         operatorKey: process.env.OPERATOR_PRIVATE_KEY
       });
 
-      chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
-        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (${usdcRaw / 1e6} USDC)`);
+      // On startup, load recent deposit tx hashes from DB so replayed events are skipped
+      if (rooms.store.getRecentDepositTxHashes) {
+        const recent = await rooms.store.getRecentDepositTxHashes();
+        recent.forEach(h => processedDepositTxs.add(h));
+        console.log(`[Chain] Loaded ${processedDepositTxs.size} recent deposit tx hashes`);
+      }
+
+      chain.onDeposit = async (walletAddress, chips, usdcRaw, txHash) => {
+        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (${usdcRaw / 1e6} USDC) tx: ${txHash || 'unknown'}`);
         try {
-          // Deduplicate: compare on-chain gross deposits vs total credits in DB
-          // Only credit the DIFFERENCE to avoid double-crediting replayed events
-          const stats = await chain.playerStats(walletAddress);
-          const onChainTotal = Math.floor((Number(stats[0]) * 10000) / 1e6);
-          const dbCredited = rooms.store.getTotalDepositedChips
-            ? await rooms.store.getTotalDepositedChips(walletAddress)
-            : 0;
-          const diff = onChainTotal - dbCredited;
-          if (diff < 100) {
-            console.log(`[Chain] Deposit event for ${walletAddress} already credited (on-chain: ${onChainTotal}, db: ${dbCredited}) — skipping`);
-            // Still notify client to refresh balance in case it's stale
+          // Deduplicate by tx hash — simple, reliable, works even with admin credits
+          if (txHash && processedDepositTxs.has(txHash)) {
+            console.log(`[Chain] Tx ${txHash} already processed — skipping`);
             for (const [ws, client] of clients) {
-              if (client.walletAddress === walletAddress && ws.readyState === 1) {
-                sendBalance(ws, walletAddress);
-              }
+              if (client.walletAddress === walletAddress && ws.readyState === 1) sendBalance(ws, walletAddress);
             }
             return;
           }
-          await rooms.store.addBalance(walletAddress, diff);
-          await rooms.store.recordTransaction(walletAddress, 'deposit', Math.floor(diff / 10000 * 1e6), diff);
-          console.log(`[Chain] Credited ${diff} chips to ${walletAddress} (on-chain: ${onChainTotal}, was: ${dbCredited})`);
+
+          // Credit the exact chips from this deposit event
+          await rooms.store.addBalance(walletAddress, chips);
+          await rooms.store.recordTransaction(walletAddress, 'deposit', usdcRaw, chips, txHash);
+          if (txHash) processedDepositTxs.add(txHash);
+
+          console.log(`[Chain] Credited ${chips} chips to ${walletAddress} (tx: ${txHash || 'event'})`);
           for (const [ws, client] of clients) {
             if (client.walletAddress === walletAddress && ws.readyState === 1) {
               sendBalance(ws, walletAddress);
-              ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: diff, usdcAmount: diff / 10000 } }));
+              ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, usdcAmount: chips / 10000 } }));
             }
           }
         } catch (e) {

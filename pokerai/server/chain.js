@@ -93,13 +93,14 @@ class ChainService {
   _startListener() {
     try { this.provider.removeAllListeners(); } catch (e) { /* ignore */ }
     const readOnly = new ethers.Contract(this.vaultAddress, VAULT_ABI, this.provider);
-    readOnly.on('Deposit', (player, usdcAmount, chips) => {
+    readOnly.on('Deposit', (player, usdcAmount, chips, event) => {
       const addr = player.toLowerCase();
       const usdc = Number(usdcAmount) / USDC_DECIMALS;
       const chipAmt = Number(chips);
-      console.log(`[Chain] Deposit: ${addr} → ${usdc} USDC → ${chipAmt} chips`);
+      const txHash = event?.log?.transactionHash || event?.transactionHash || null;
+      console.log(`[Chain] Deposit: ${addr} → ${usdc} USDC → ${chipAmt} chips (tx: ${txHash || 'unknown'})`);
       if (this.onDeposit) {
-        this.onDeposit(addr, chipAmt, Number(usdcAmount));
+        this.onDeposit(addr, chipAmt, Number(usdcAmount), txHash);
       }
     });
     // Catch polling errors from ethers event subscription (prevents unhandled rejections)
@@ -177,10 +178,10 @@ class ChainService {
             const addr = evt.args[0].toLowerCase();
             const usdcAmt = Number(evt.args[1]);
             const chips = Number(evt.args[2]);
-            console.log(`[Chain:Poller] Found deposit: ${addr} → ${chips} chips (block ${evt.blockNumber})`);
+            const txHash = evt.transactionHash || null;
+            console.log(`[Chain:Poller] Found deposit: ${addr} → ${chips} chips (block ${evt.blockNumber}, tx: ${txHash})`);
             if (this.onDeposit) {
-              // onDeposit already deduplicates, so calling it again is safe
-              await this.onDeposit(addr, chips, usdcAmt);
+              await this.onDeposit(addr, chips, usdcAmt, txHash);
             }
           }
         }
