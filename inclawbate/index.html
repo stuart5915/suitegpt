@@ -3042,11 +3042,19 @@ function addClawsToWallet() {
     }
 
     function linkify(text) {
-        return text.replace(/(https?:\/\/[^\s,)]+)/g, function(url) {
+        // Escape HTML first (prevent XSS), then apply markdown
+        var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // URLs → links
+        escaped = escaped.replace(/(https?:\/\/[^\s,)]+)/g, function(url) {
             var label = url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
             if (label.length > 40) label = label.slice(0, 37) + '...';
             return '<a href="' + url + '" target="_blank" rel="noopener">' + label + '</a>';
         });
+        // **bold** → <strong>
+        escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Newlines → <br>
+        escaped = escaped.replace(/\n/g, '<br>');
+        return escaped;
     }
 
     // Map function_called to action buttons
