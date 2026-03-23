@@ -129,7 +129,18 @@
         }
 
         /* ── Hero ── */
+        .hero-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
         .hero {
+            position: relative;
+            z-index: 1;
             max-width: var(--max-w);
             margin: 0 auto;
             padding: 120px 24px 80px;
@@ -153,10 +164,7 @@
             letter-spacing: -0.03em;
             line-height: 1.1;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #e8ecf1 0%, #34d399 45%, #60a5fa 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #ffffff;
         }
         .hero p {
             font-size: 1.12rem;
@@ -257,9 +265,9 @@
             flex-direction: column;
         }
         .card:hover {
-            border-color: var(--border-hover);
+            border-color: rgba(52, 211, 153, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px rgba(52, 211, 153, 0.05);
         }
 
         .card-banner {
@@ -519,15 +527,18 @@
 </nav>
 
 <!-- Hero -->
-<section class="hero">
-    <div class="hero-badge">&#129302; AI Agent Ecosystem &middot; Updated Daily</div>
-    <h1>Tracking the Agents Building the Future</h1>
-    <p>Daily news, project spotlights, and a comprehensive directory of AI agents across crypto. The independent source for what's shipping in the AI agent ecosystem.</p>
-    <div class="hero-actions">
-        <a href="#directory" class="btn btn-primary">Explore Agents &darr;</a>
-        <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" class="btn btn-secondary">Follow Updates</a>
-    </div>
-</section>
+<div class="hero-wrap">
+    <canvas class="hero-canvas" id="networkCanvas"></canvas>
+    <section class="hero">
+        <div class="hero-badge">&#129302; AI Agent Ecosystem &middot; Updated Daily</div>
+        <h1>Tracking the Agents<br>Building the Future</h1>
+        <p>Daily news, project spotlights, and a comprehensive directory of AI agents across crypto. The independent source for what's shipping in the AI agent ecosystem.</p>
+        <div class="hero-actions">
+            <a href="#directory" class="btn btn-primary">Explore Agents &darr;</a>
+            <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" class="btn btn-secondary">Follow Updates</a>
+        </div>
+    </section>
+</div>
 
 <!-- Stats -->
 <div class="stats-strip">
@@ -762,5 +773,104 @@
     </div>
 </footer>
 
+<script>
+// Animated network background — matches the banner aesthetic
+(function() {
+    const canvas = document.getElementById('networkCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const wrap = canvas.parentElement;
+
+    let nodes = [];
+    const NODE_COUNT = 35;
+    const CONNECT_DIST = 180;
+    let w, h;
+
+    function resize() {
+        w = canvas.width = wrap.offsetWidth;
+        h = canvas.height = wrap.offsetHeight;
+    }
+
+    function initNodes() {
+        nodes = [];
+        for (let i = 0; i < NODE_COUNT; i++) {
+            nodes.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                r: Math.random() * 2 + 1.5,
+                glow: Math.random() > 0.7 // 30% of nodes glow brighter
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+
+        // Subtle grid
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.03)';
+        ctx.lineWidth = 0.5;
+        const gridSize = 60;
+        for (let x = 0; x < w; x += gridSize) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y < h; y += gridSize) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Connection lines
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const dx = nodes[i].x - nodes[j].x;
+                const dy = nodes[i].y - nodes[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < CONNECT_DIST) {
+                    const alpha = (1 - dist / CONNECT_DIST) * 0.15;
+                    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Nodes
+        for (const n of nodes) {
+            // Glow
+            if (n.glow) {
+                const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 12);
+                grad.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
+                grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Dot
+            ctx.fillStyle = n.glow ? '#34d399' : 'rgba(52, 211, 153, 0.5)';
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Move
+            n.x += n.vx;
+            n.y += n.vy;
+            if (n.x < 0 || n.x > w) n.vx *= -1;
+            if (n.y < 0 || n.y > h) n.vy *= -1;
+        }
+
+        requestAnimationFrame(draw);
+    }
+
+    resize();
+    initNodes();
+    draw();
+    window.addEventListener('resize', () => { resize(); initNodes(); });
+})();
+</script>
 </body>
 </html>
