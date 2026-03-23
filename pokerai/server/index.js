@@ -684,7 +684,7 @@ wss.on('connection', (ws) => {
         case 'getMyAgents': {
           const addr = getClientWallet(client);
           const result = rooms.getAgentsForWallet(addr);
-          const autoTopUp = addr ? rooms.getAutoTopUp(addr) : { enabled: false };
+          const autoTopUp = addr ? rooms.getAutoTopUp(addr) : { usdc: { enabled: false }, pokerai: { enabled: false } };
           ws.send(JSON.stringify({ type: 'myAgents', data: result, autoTopUp }));
           break;
         }
@@ -696,7 +696,8 @@ wss.on('connection', (ws) => {
             enabled: msg.enabled,
             targetChips: msg.targetChips,
             cashOutAt: msg.cashOutAt,
-            maxTopUps: msg.maxTopUps || 0
+            maxTopUps: msg.maxTopUps || 0,
+            currency: msg.currency || 'usdc'
           });
           ws.send(JSON.stringify({ type: 'autoTopUpResult', data: result }));
           break;

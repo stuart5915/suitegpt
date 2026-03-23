@@ -96,9 +96,17 @@ class RoomManager {
 
     // Auto-enable top-up for platform wallets so the self-sustaining loop resumes after redeploy
     for (const platformAddr of PLATFORM_WALLETS) {
-      if (!this.autoTopUp.has(platformAddr)) {
-        this.autoTopUp.set(platformAddr, { enabled: true, targetChips: 10000, cashOutAt: 50000, maxTopUps: 0 });
-        console.log(`[Restore] Auto-enabled top-up for platform wallet ${platformAddr.slice(0,8)}...`);
+      // Auto-enable for both currencies
+      const usdcKey = `${platformAddr}:usdc`;
+      const pokeraiKey = `${platformAddr}:pokerai`;
+      if (!this.autoTopUp.has(usdcKey)) {
+        this.autoTopUp.set(usdcKey, { enabled: true, targetChips: 10000, cashOutAt: 50000, maxTopUps: 0 });
+        this.autoTopUp.set(platformAddr, { enabled: true, targetChips: 10000, cashOutAt: 50000, maxTopUps: 0 }); // legacy
+        console.log(`[Restore] Auto-enabled USDC top-up for platform wallet ${platformAddr.slice(0,8)}...`);
+      }
+      if (!this.autoTopUp.has(pokeraiKey)) {
+        this.autoTopUp.set(pokeraiKey, { enabled: true, targetChips: 10000, cashOutAt: 50000, maxTopUps: 0 });
+        console.log(`[Restore] Auto-enabled POKERAI top-up for platform wallet ${platformAddr.slice(0,8)}...`);
       }
     }
   }
@@ -230,7 +238,8 @@ class RoomManager {
     const currency = ROOM_CONFIGS[table.roomId]?.currency || 'usdc';
     for (const agent of table.agents) {
       if (!agent.isCustom || !agent.walletAddress) continue;
-      const config = this.autoTopUp.get(agent.walletAddress);
+      // Check per-currency config first, fall back to legacy key
+      const config = this.autoTopUp.get(`${agent.walletAddress}:${currency}`) || this.autoTopUp.get(agent.walletAddress);
       if (!config || !config.enabled) continue;
 
       // Skip auto top-up/cash-out when agent has human backers
@@ -303,7 +312,7 @@ class RoomManager {
     for (const a of table.agents) {
       if (a.isCustom && a.walletAddress) {
         if (!PLATFORM_WALLETS.has(a.walletAddress.toLowerCase())) continue;
-        const config = this.autoTopUp.get(a.walletAddress);
+        const config = this.autoTopUp.get(`${a.walletAddress}:${currency}`) || this.autoTopUp.get(a.walletAddress);
         if (config && config.enabled) wallets.add(a.walletAddress);
       }
     }
@@ -567,15 +576,26 @@ class RoomManager {
 
   // === Auto Top-Up settings ===
 
-  setAutoTopUp(walletAddress, { enabled, targetChips, cashOutAt, maxTopUps }) {
-    // Always store config (even when disabled) so dropdown values persist across refreshes
-    this.autoTopUp.set(walletAddress, { enabled: !!enabled, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
-    console.log(`[AutoTopUp] ${enabled ? 'Enabled' : 'Disabled'} for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt} maxTopUps=${maxTopUps || 'unlimited'}`);
-    return { success: true, enabled: !!enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0 };
+  setAutoTopUp(walletAddress, { enabled, targetChips, cashOutAt, maxTopUps, currency }) {
+    // Store per-currency config. Legacy calls without currency default to 'usdc'.
+    const curr = currency || 'usdc';
+    const key = `${walletAddress}:${curr}`;
+    this.autoTopUp.set(key, { enabled: !!enabled, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
+    // Also set legacy key for backwards compat (recycleRake checks walletAddress directly)
+    if (curr === 'usdc') this.autoTopUp.set(walletAddress, { enabled: !!enabled, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0, maxTopUps: maxTopUps || 0 });
+    console.log(`[AutoTopUp] ${enabled ? 'Enabled' : 'Disabled'} for ${walletAddress.slice(0,8)}... (${curr}) target=${targetChips} cashOut=${cashOutAt} maxTopUps=${maxTopUps || 'unlimited'}`);
+    return { success: true, enabled: !!enabled, targetChips, cashOutAt, maxTopUps: maxTopUps || 0, currency: curr };
   }
 
-  getAutoTopUp(walletAddress) {
-    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000, cashOutAt: 0, maxTopUps: 0 };
+  getAutoTopUp(walletAddress, currency) {
+    if (currency) {
+      return this.autoTopUp.get(`${walletAddress}:${currency}`) || { enabled: false, targetChips: 10000, cashOutAt: 0, maxTopUps: 0 };
+    }
+    // Return both currencies
+    return {
+      usdc: this.autoTopUp.get(`${walletAddress}:usdc`) || this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000, cashOutAt: 0, maxTopUps: 0 },
+      pokerai: this.autoTopUp.get(`${walletAddress}:pokerai`) || { enabled: false, targetChips: 10000, cashOutAt: 0, maxTopUps: 0 }
+    };
   }
 
   // === Agent Stats ===
