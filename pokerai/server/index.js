@@ -723,6 +723,54 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'getHistory': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          try {
+            // Get wallet transactions from DB
+            const { data: txns, error } = await rooms.store.supabase
+              .from('poker_transactions')
+              .select('*')
+              .eq('wallet_address', addr.toLowerCase())
+              .order('created_at', { ascending: false })
+              .limit(100);
+
+            // Get auto events from all agents (in-memory)
+            const agentEvents = [];
+            const allAgents = rooms.getAgentsForWallet(addr);
+            for (const agent of allAgents) {
+              for (const evt of (agent.autoEvents || [])) {
+                agentEvents.push({
+                  type: evt.type === 'topup' ? 'auto_topup' : 'auto_cashout',
+                  agent_name: agent.name,
+                  agent_id: agent.id,
+                  chip_amount: evt.amount,
+                  chips_after: evt.chips,
+                  created_at: new Date(evt.time).toISOString()
+                });
+              }
+            }
+
+            // Merge and sort
+            const history = [
+              ...(txns || []).map(t => ({
+                type: t.type,
+                chip_amount: t.chip_amount,
+                usdc_amount: t.usdc_amount,
+                tx_hash: t.tx_hash,
+                created_at: t.created_at
+              })),
+              ...agentEvents
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            ws.send(JSON.stringify({ type: 'history', data: history }));
+          } catch (e) {
+            console.error('[History] Failed:', e.message);
+            ws.send(JSON.stringify({ type: 'history', data: [], error: e.message }));
+          }
+          break;
+        }
+
         case 'resetLearning': {
           if (!requireAuth(client, ws)) break;
           const agentId = msg.agentId;
