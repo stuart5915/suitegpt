@@ -1355,6 +1355,9 @@ export default async function handler(req, res) {
   const sid = session_id || 'anon_' + Date.now();
 
   // Prefer client-side history (Vercel serverless functions are stateless across cold starts)
+  // NOTE: client_history already includes the current user message (frontend pushes before fetch),
+  // so we must NOT push it again — duplicate consecutive user messages cause LLM API errors.
+  let usedClientHistory = false;
   if (Array.isArray(client_history) && client_history.length > 0) {
     // Rebuild history from client — only allow user/assistant roles, sanitize
     const rebuilt = [{ role: 'system', content: SYSTEM_PROMPT }];
@@ -1364,6 +1367,7 @@ export default async function handler(req, res) {
       }
     }
     sessions.set(sid, rebuilt);
+    usedClientHistory = true;
   }
 
   if (!sessions.has(sid)) sessions.set(sid, [{ role: 'system', content: SYSTEM_PROMPT }]);
@@ -1384,9 +1388,16 @@ export default async function handler(req, res) {
     return res.status(200).json(body);
   };
 
-  // Inject wallet context if provided
-  const userMsg = wallet ? message + '\n\n[User wallet: ' + wallet + ']' : message;
-  history.push({ role: 'user', content: userMsg });
+  // Add current message to history (inject wallet context if provided)
+  // If client_history was used, it already contains the current message — just inject wallet into it
+  if (usedClientHistory && history.length > 1 && history[history.length - 1].role === 'user') {
+    if (wallet) {
+      history[history.length - 1].content += '\n\n[User wallet: ' + wallet + ']';
+    }
+  } else {
+    const userMsg = wallet ? message + '\n\n[User wallet: ' + wallet + ']' : message;
+    history.push({ role: 'user', content: userMsg });
+  }
 
   // Keep history manageable
   if (history.length > 22) {
