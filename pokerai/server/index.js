@@ -896,19 +896,22 @@ app.get('/admin/reconcile-deposit', async (req, res) => {
     const dbCredited = rooms.store.getTotalDepositedChips ? await rooms.store.getTotalDepositedChips(addr) : 0;
     const diff = onChainChips - dbCredited;
 
-    if (diff > 0) {
-      await rooms.store.addBalance(addr, diff);
-      await rooms.store.recordTransaction(addr, 'deposit', Math.floor(diff / 10000 * 1e6), diff);
-      // Notify connected client
+    // Force credit a specific amount (bypass dedup)
+    const forceAmount = parseInt(req.query.force) || 0;
+    const creditAmount = forceAmount > 0 ? forceAmount : (diff > 0 ? diff : 0);
+
+    if (creditAmount > 0) {
+      await rooms.store.addBalance(addr, creditAmount);
+      await rooms.store.recordTransaction(addr, 'deposit', Math.floor(creditAmount / 10000 * 1e6), creditAmount);
       for (const [ws, client] of clients) {
         if (client.walletAddress === addr && ws.readyState === 1) {
           sendBalance(ws, addr);
-          ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: diff } }));
+          ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: creditAmount } }));
         }
       }
-      return res.json({ ok: true, credited: diff, onChainChips, dbCredited: dbCredited + diff });
+      return res.json({ ok: true, credited: creditAmount, forced: forceAmount > 0, onChainChips, dbCredited: dbCredited + creditAmount });
     }
-    return res.json({ ok: true, credited: 0, onChainChips, dbCredited, message: 'Already in sync' });
+    return res.json({ ok: true, credited: 0, onChainChips, dbCredited, message: 'Already in sync — use &force=50000 to manually credit' });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
