@@ -53,7 +53,8 @@ export async function logToFeed({ source, user, message, reply, tool, extra }) {
                 chat_id: FEED_CHANNEL,
                 text,
                 parse_mode: 'HTML',
-                disable_web_page_preview: true
+                disable_web_page_preview: true,
+                disable_notification: true
             })
         });
     } catch (e) {
