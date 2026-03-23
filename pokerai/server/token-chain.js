@@ -105,6 +105,54 @@ class TokenChainService {
     }
   }
 
+  // =========== Deposit Poller (catches missed events) ===========
+
+  startDepositPoller(intervalMs = 30_000) {
+    if (!this.vaultReadOnly) return;
+    this._lastPolledBlock = 0;
+    console.log(`[TokenChain] Deposit poller active (every ${intervalMs / 1000}s)`);
+
+    const poll = async () => {
+      try {
+        let currentBlock;
+        try {
+          currentBlock = await Promise.race([
+            this.provider.getBlockNumber(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+          ]);
+        } catch (e) { return; }
+        if (!currentBlock) return;
+
+        if (this._lastPolledBlock === 0) {
+          this._lastPolledBlock = currentBlock - 100;
+        }
+        if (currentBlock <= this._lastPolledBlock) return;
+
+        const fromBlock = Math.max(this._lastPolledBlock + 1, currentBlock - 500);
+        const events = await this.vaultReadOnly.queryFilter('Deposit', fromBlock, currentBlock);
+
+        if (events && events.length > 0) {
+          for (const evt of events) {
+            const addr = evt.args[0].toLowerCase();
+            const tokenAmt = Number(evt.args[1]);
+            const chips = Number(evt.args[2]);
+            console.log(`[TokenChain:Poller] Found deposit: ${addr} → ${chips} chips (block ${evt.blockNumber})`);
+            if (this.onDeposit) {
+              await this.onDeposit(addr, chips, tokenAmt);
+            }
+          }
+        }
+
+        this._lastPolledBlock = currentBlock;
+      } catch (e) {
+        console.error('[TokenChain:Poller] Error:', e.message?.slice(0, 100));
+      }
+    };
+
+    poll();
+    this._pollInterval = setInterval(poll, intervalMs);
+  }
+
   // =========== Withdrawal ===========
 
   async processWithdraw(playerAddress, chipAmount) {

@@ -129,6 +129,73 @@ class ChainService {
     this._startListener();
   }
 
+  // =========== Deposit Poller (catches missed events) ===========
+
+  // Scans recent blocks for Deposit events every 30s as a safety net.
+  // Even if the event listener dies, this WILL catch every deposit.
+  startDepositPoller(intervalMs = 30_000) {
+    this._lastPolledBlock = 0;
+    console.log(`[Chain] Deposit poller active (every ${intervalMs / 1000}s)`);
+
+    const poll = async () => {
+      try {
+        // Get current block
+        let currentBlock;
+        try {
+          currentBlock = await withTimeout(this.provider.getBlockNumber(), 5000);
+        } catch (e) {
+          // Try fallback
+          for (const rpc of this.rpcList) {
+            try {
+              const p = new ethers.JsonRpcProvider(rpc, 8453, { staticNetwork: true });
+              currentBlock = await withTimeout(p.getBlockNumber(), 5000);
+              p.destroy();
+              break;
+            } catch (_) {}
+          }
+        }
+        if (!currentBlock) return;
+
+        // On first run, only look back 100 blocks (~3 minutes)
+        if (this._lastPolledBlock === 0) {
+          this._lastPolledBlock = currentBlock - 100;
+        }
+
+        // Don't scan if no new blocks
+        if (currentBlock <= this._lastPolledBlock) return;
+
+        // Cap scan range to 500 blocks to avoid RPC limits
+        const fromBlock = Math.max(this._lastPolledBlock + 1, currentBlock - 500);
+
+        // Query Deposit events in range using resilient call
+        const events = await this._resilientCall(async (contract) => {
+          return contract.queryFilter('Deposit', fromBlock, currentBlock);
+        }, 15000);
+
+        if (events && events.length > 0) {
+          for (const evt of events) {
+            const addr = evt.args[0].toLowerCase();
+            const usdcAmt = Number(evt.args[1]);
+            const chips = Number(evt.args[2]);
+            console.log(`[Chain:Poller] Found deposit: ${addr} → ${chips} chips (block ${evt.blockNumber})`);
+            if (this.onDeposit) {
+              // onDeposit already deduplicates, so calling it again is safe
+              await this.onDeposit(addr, chips, usdcAmt);
+            }
+          }
+        }
+
+        this._lastPolledBlock = currentBlock;
+      } catch (e) {
+        console.error('[Chain:Poller] Error:', e.message?.slice(0, 100));
+      }
+    };
+
+    // Run immediately, then on interval
+    poll();
+    this._pollInterval = setInterval(poll, intervalMs);
+  }
+
   // =========== Read operations (resilient) ===========
 
   async playerStats(address) {

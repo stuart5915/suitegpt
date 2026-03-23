@@ -1500,8 +1500,9 @@ async function initChainServices() {
       };
 
       chain.startListening();
+      chain.startDepositPoller(30_000); // Safety net: scan blocks every 30s for missed deposits
       rooms.chainService = chain;
-      console.log('[Server] USDC chain service active');
+      console.log('[Server] USDC chain service active (listener + poller)');
     } catch (e) {
       console.error('[Server] USDC chain init failed:', e.message);
     }
@@ -1557,6 +1558,7 @@ async function initChainServices() {
           }
         };
         tokenChain.startListening();
+        tokenChain.startDepositPoller(30_000); // Safety net: scan blocks every 30s
       }
 
       console.log(`[Server] POKERAI chain service active — vault: ${!!process.env.POKERAI_VAULT_ADDRESS}, rewards: ${!!process.env.POKERAI_REWARDS_ADDRESS}`);
