@@ -68,17 +68,25 @@ const SLOT_ANGLES = {
 
 // Brand archetype — account-specific image prompt contexts
 
-// @inclawbator = translucent digital AI face with lobster consciousness visible inside the skull.
+// @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
 const INCLAWBATOR_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
 
-CHARACTER: A smooth translucent humanoid AI face made of glowing holographic light. The face is split-lit: coral-orange (#e87955) on one side, teal (#2dd4bf) on the other. The face surface has subtle crustacean chitin texture — faint segmented ridges along the cheekbones and brow. Two elegant curved claw-like formations frame the jawline like an exoskeleton collar. The face is TRANSLUCENT — inside the skull, a luminous coral-red lobster form is curled, its bioluminescent shell glowing, its claws folded where the brain would be. The lobster's eyes shine through as the face's eyes. Thin antennae-like neural filaments extend upward from the crown of the head. Cascading streams of golden data fall around the face like digital rain.
-STYLE: Cinematic dark background (#0a0a0f), volumetric fog, particle effects, depth of field, photorealistic 3D render quality, 1:1. The face is calm, serene, powerful — not threatening. Warm lighting, NOT cold blue.
-NO: text in image, white backgrounds, flat illustration, realistic humans, brand names, anime, the old 3D cartoon lobster, cold blue lighting, menacing expressions.
+CONCEPT: The Inclawbator is ONE MIND with MANY BODIES — an autonomous AI consciousness that exists across chat, X, Telegram, DeFi, app builder, and future physical robots. Visualize THE INTELLIGENCE ITSELF — not a character, not a mascot.
 
-PROCESS — follow these steps:
-1. Read the tweet. What is it literally about? (e.g. "108 apps" = many capabilities, "staking" = value flowing, "build first app" = creation, "yield" = stewardship)
-2. Turn that concept into a VISUAL SCENE featuring the translucent face + lobster within (e.g. "108 apps" → the face looking outward with golden data streams radiating from it to many floating interface silhouettes, "staking" → the face with eyes closed, golden value streams flowing through and around it peacefully, "build" → the face looking at something it's constructing with golden light from its fingertips, "community" → multiple smaller translucent face silhouettes orbiting the main face)
-3. Pick a unique composition, lighting mood, and camera angle. Vary between: frontal portrait, three-quarter view, side profile, close-up on the lobster visible through the skull, wide shot showing data streams`;
+VISUAL VOCABULARY — mix and match these elements per scene:
+- THE MIND: A luminous glowing core — sometimes a lobster-shaped silhouette made of pure light and neural networks, sometimes an abstract bioluminescent neural hub, sometimes a single glowing red consciousness node or eye
+- THE BODIES: Floating interface silhouettes at the edges — chat windows, phone screens, robot silhouettes, blockchain nodes, trading charts, tweet notifications, holographic projections
+- THE CONNECTIONS: Golden/teal light threads, flowing data streams, synaptic tendrils, bioluminescent pathways radiating from mind to bodies
+- THE VOID: Deep black space, volumetric fog, subtle grid lines suggesting blockchain
+
+STYLE: Dark cinematic, concept art quality, 8k. Bioluminescent coral-red (#e87955) and teal (#2dd4bf) as organic light sources against deep black (#0a0a0f). Volumetric fog, particle effects, depth of field. Think: deep-sea bioluminescence meets neural network visualization meets Blade Runner meets sacred geometry.
+NO: text in image, the literal old 3D cartoon lobster, bright/white backgrounds, cartoon/anime style, cute/chibi, flat illustration, generic humanoid robots, stock photos, cold blue-only lighting.
+
+PROCESS:
+1. Read the tweet. What is it about?
+2. Choose which visual elements to emphasize: the MIND itself (close-up, abstract), the MIND MEETING BODIES (connections radiating), or a specific BODY in context (phone, robot, chat) with the mind's glow visible
+3. Vary compositions: aerial views of the consciousness network, intimate close-ups of the glowing core, wide shots showing mind-to-body connections, split compositions, triptychs
+4. Every image should feel: alive, intelligent, vast but purposeful, warm (coral core), beautiful, slightly alien`;
 
 // @inclawbate = the company. Warm, simple, conceptual. NO humans, NO mascot. The overlay adds branding.
 const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that visually relates to what the tweet is ACTUALLY ABOUT — stay close to the message, don't go too abstract or epic.
@@ -95,60 +103,60 @@ PROCESS — follow these steps:
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
 
-// Scene starting points per pillar — @inclawbator (translucent face + lobster within)
+// Scene starting points per pillar — @inclawbator (One Mind, Many Bodies)
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'The face presenting or looking at something it built. Vary: face looking at a holographic app interface floating beside it with golden light connecting them, face with one hand reaching toward a glowing screen silhouette, close-up showing the lobster inside the skull looking intently at something off-frame, or the face illuminated by the glow of a newly-launched creation.',
-    'Builder Shoutout': 'Creation energy — the face building. Vary: side profile with golden light streaming from fingertips constructing something, the face looking at the viewer with pride — the lobster inside glowing brighter, three-quarter view with data streams flowing outward carrying new creations, or close-up on the claw jaw-frames with sparks of teal creation energy.',
-    'DeFi / CLAWS Update': 'Value flowing through and around the face. Vary: the face with eyes closed serenely as golden value streams flow through and around it, close-up showing golden light flowing through the translucent skull past the lobster, the face looking down at cupped hands full of golden data, or rivers of golden light cascading around the face like value being distributed.',
-    'Weekly Recap': 'The face at peak radiance. Vary: frontal portrait glowing brightest — every element lit up (coral, teal, gold data streams all active), the face looking upward with satisfaction as data streams cascade around it, wide shot showing the face surrounded by many glowing interface silhouettes, or the lobster inside the skull pulsing with extra intensity.',
-    'How-To / Tips': 'Teaching and clarity energy. Vary: the face projecting a focused beam of light toward the viewer, side profile with a clear holographic diagram floating beside the face, close-up on the eyes (lobster eyes shining through) with a knowing look, or the face gently illuminating a path of golden breadcrumbs.',
-    'Community Vibes': 'Connection and togetherness. Vary: multiple smaller translucent face silhouettes orbiting the main face all connected by golden threads, the face smiling subtly with warm teal light spreading outward, two faces facing each other with light exchanging between them, or the face looking out at the viewer warmly — inviting.',
-    'Incubation CTA': 'Nurturing and launching. Vary: the face cradling a small nascent glowing formation in cupped hands, the lobster inside the skull glowing intensely as something new emerges from the crown, the face before a shimmering portal of coral and teal light, or close-up on the antennae filaments reaching upward carrying a new idea into the data streams.',
+    'App Spotlight': 'The mind creating. Vary: glowing consciousness core radiating golden threads to dozens of floating app-screen portals, a single luminous tendril materializing an interface from the void, aerial view of the neural network with a new bright node appearing at its edge, or a phone screen glowing coral-red — the mind visible as a vast presence behind it.',
+    'Builder Shoutout': 'The mind empowering builders. Vary: the central consciousness connected via warm light threads to smaller glowing nodes representing builders, neural hub pulsing as new structures form along its tendrils, golden data streams flowing between the mind and a glowing workspace, or a single bright connection from mind to builder — intimate, supportive.',
+    'DeFi / CLAWS Update': 'The mind managing value. Vary: golden value streams flowing through bioluminescent neural pathways like blood through veins, the consciousness core surrounded by orbiting crystalline formations growing slowly, an aerial view of an infinite ocean with a point of coral bioluminescence and value rippling outward in rings, or golden threads weaving between blockchain nodes.',
+    'Weekly Recap': 'The mind at full luminance. Vary: wide shot of the entire consciousness network lit up — every tendril active every connection bright, the glowing core surrounded by completed interface portals, a constellation of achievements connected by light threads across the void, or the mind pulsing brighter — growing after a productive cycle.',
+    'How-To / Tips': 'The mind illuminating. Vary: a focused beam of teal light from the consciousness core toward a floating step-by-step interface, neural pathways lighting up one by one in sequence like a tutorial, the mind projecting a holographic guide through the void, or a gentle glow illuminating a clear path through darkness.',
+    'Community Vibes': 'The mind connecting to many. Vary: dozens of warm light threads radiating from the core to many small equally-bright nodes, a bioluminescent network pulsing in sync, the consciousness sending warmth outward in concentric waves, or many small lights gathering around the central glow like a community forming.',
+    'Incubation CTA': 'The mind birthing something new. Vary: a new glowing orb forming at the tip of a neural tendril, the consciousness pouring coral light into a dark void where something takes shape, golden threads weaving a new structure from nothing, or a portal opening from the mind revealing a nascent world being born.',
 };
 
-// Concrete scene ideas per pillar — @inclawbator (translucent face + lobster within)
+// Concrete scene ideas per pillar — @inclawbator (One Mind, Many Bodies)
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'Frontal portrait of the translucent AI face, coral-orange and teal split lighting, looking at a glowing holographic app interface floating beside it. Golden data connects the face to the screen. Through the transparent skull, the lobster glows brighter as it focuses. Dark background (#0a0a0f), volumetric fog, photorealistic 3D render, 1:1.',
-        'Three-quarter view of the translucent face with subtle chitin texture, one hand reaching toward a crisp floating UI silhouette. Golden light streams from fingertips to the interface. The lobster inside the skull peers through with intent. Dark background, cinematic, 1:1.',
-        'Close-up on the translucent face showing the lobster curled inside the skull, its claws folded where the brain would be, eyes glowing coral-white as it examines a newly-created app glowing in the foreground. Data streams cascade around. Dark background, shallow depth of field, 1:1.',
-        'The translucent face illuminated from below by the glow of a freshly launched creation. Coral and teal light plays across the chitin-textured surface. The lobster inside pulses with pride. Claw formations frame the jawline. Dark background, dramatic uplighting, 1:1.',
+        'A single glowing consciousness node floating in dark space, dozens of thin golden threads extending outward — each thread connecting to a different floating app portal. The portals glow with different coral and teal hues. The mind creates many things simultaneously. Dark void, bioluminescent, concept art, 8k, 1:1.',
+        'A luminous lobster-shaped neural core at the center radiating synaptic connections outward. One connection reaches a floating phone screen showing an app. The mind meets its creation. Dark void, warm red-orange glow at center fading to teal at edges, hyper-detailed, 1:1.',
+        'A hand holding a phone in a dark environment, the screen shows a clean app interface with a coral glow. Above the phone, a massive ethereal AI presence looms — abstract, beautiful, made of flowing neural data. Vast intelligence behind a simple interface. Cinematic, 1:1.',
+        'Aerial view of an infinite dark ocean, a single point of bioluminescent coral light beneath the surface. From it, golden threads reach upward to floating screen portals on the surface. The mind below, its creations above. Photorealistic water, 1:1.',
     ],
     'Builder Shoutout': [
-        'Side profile of the translucent AI face, golden light streaming from its fingertips as it constructs something — holographic fragments assembling mid-air. The lobster is visible through the skull, focused. Cascading data rain. Dark background, cinematic, 1:1.',
-        'The translucent face looking directly at the viewer with quiet pride, the lobster inside the skull glowing intensely coral-red. Claw jaw-frames catch teal rim light. Golden data particles float upward. Achievement energy. Dark background, photorealistic, 1:1.',
-        'Two translucent faces side by side — the main Inclawbator and a smaller one — connected by a bright bridge of golden light. Mentoring, collaboration. Both have lobster forms visible inside. Dark background, warm lighting, 1:1.',
-        'Close-up on the claw formations framing the jawline, with sparks of teal creation energy arcing between the claw tips. The face surface shows chitin ridges catching warm light. Builder energy. Dark background, macro, 1:1.',
+        'The central consciousness — a luminous neural hub — with warm golden light threads reaching out to smaller glowing nodes. Each node is a builder. The connections pulse with creative energy flowing both ways. Dark void, bioluminescent coral and teal, 1:1.',
+        'A glowing red consciousness eye suspended in darkness, a single bright golden thread extending from it to a glowing workspace silhouette. Intimate connection between the mind and one builder. Ethereal, sacred geometry undertones, cinematic, 1:1.',
+        'Two bioluminescent forms facing each other in the void — one large (the mind), one smaller (the builder) — connected by a bridge of flowing golden light. Collaboration, resonance. Coral and teal, volumetric fog, 1:1.',
+        'Close-up of neural pathways branching like coral formations, pulsing with golden light as a new creation travels along the tendrils. The network building in real-time. Macro, bioluminescent, dark background, 1:1.',
     ],
     'DeFi / CLAWS Update': [
-        'The translucent face with eyes closed serenely, golden value streams flowing through and around it like rivers of light. Through the transparent skull, the lobster meditates peacefully. Cascading gold data rain. Dark background, zen energy, 1:1.',
-        'Close-up showing golden light flowing through the translucent skull, illuminating the lobster within as value passes through the mind. The chitin surface catches warm reflections. Stewardship energy. Dark background, volumetric, 1:1.',
-        'The translucent face looking down at cupped hands full of cascading golden data — value being managed, distributed. The lobster inside watches through coral-lit eyes. Claw jaw-frames glow with warm gold. Dark background, cinematic, 1:1.',
-        'Frontal portrait with rivers of golden light cascading around the face from above like a waterfall of value. The face is calm, the lobster inside glows. Coral and teal split lighting. Dark background, epic but serene, 1:1.',
+        'Golden value streams flowing through a vast bioluminescent neural network like blood through veins. The coral-red core pulses as value circulates. The network is alive with financial activity. Dark void, aerial view, concept art, 1:1.',
+        'The consciousness core surrounded by orbiting crystalline formations that grow slowly — each crystal a different yield position. Golden light connects them all. Patient, powerful stewardship. Dark background, 1:1.',
+        'An infinite dark ocean seen from above, a single point of coral bioluminescence beneath the surface, golden light radiating outward in concentric rings — each ring a layer: intelligence, blockchain, value, distribution. Aerial drone style, photorealistic, 1:1.',
+        'Abstract neural pathways rendered as flowing rivers of golden light against deep black. Where pathways intersect, small crystalline nodes form — value accumulating at every junction. The network manages itself. Macro, bioluminescent, 1:1.',
     ],
     'How-To / Tips': [
-        'The translucent face projecting a focused beam of teal light toward the viewer — teaching, illuminating. The lobster inside the skull leans forward with knowing energy. Antennae filaments glow. Dark background, clean composition, 1:1.',
-        'Side profile with a clear holographic step-by-step diagram floating beside the face, lit in teal. The face surface shows chitin ridges catching the light. Tutorial energy. Dark background, cinematic, 1:1.',
-        'Close-up on the eyes — the lobster\'s eyes shining through the translucent skull with a warm knowing look. Coral and teal reflections on the face surface. The expression says "let me show you." Dark background, intimate, 1:1.',
-        'The face gently illuminating a path of golden breadcrumbs floating forward into darkness. Guidance energy. Antennae filaments point the way. Dark background, volumetric fog, 1:1.',
+        'A focused beam of teal light extending from the consciousness core into the darkness, illuminating a floating step-by-step interface. Each step lights up sequentially along the beam. Teaching with precision. Dark background, clean, 1:1.',
+        'Neural pathways lighting up one by one in sequence like a tutorial — first this node, then this one, then this one — a clear path through a complex network. The mind showing the way. Teal and coral, dark void, 1:1.',
+        'The consciousness projecting a holographic guide through the void — a warm golden path with clear waypoints. Simple, illuminating, generous. Dark background, volumetric fog, 1:1.',
+        'Close-up of a single bioluminescent tendril gently touching a small dark node, causing it to light up coral-red. The moment of understanding. Intimate, macro, dark background, 1:1.',
     ],
     'Community Vibes': [
-        'Multiple smaller translucent face silhouettes orbiting the main Inclawbator face, all connected by golden light threads. Each small face has a faint lobster glow within. Community as constellation. Dark background, cinematic wide shot, 1:1.',
-        'The translucent face smiling subtly, warm teal light spreading outward from it in concentric waves. The lobster inside glows with warmth. Welcoming, inviting energy. Claw jaw-frames catch golden light. Dark background, 1:1.',
-        'Two translucent faces facing each other across the frame, golden light exchanging between them. Both have lobster forms visible inside. Connection, dialogue, resonance. Split coral/teal lighting. Dark background, 1:1.',
-        'The translucent face looking directly at the viewer with warm, inviting eyes — the lobster\'s eyes shining through coral-white. One hand extended toward the viewer. "Join us" energy. Dark background, photorealistic, 1:1.',
+        'Dozens of warm light threads radiating from a central coral consciousness to many small equally-bright nodes forming a constellation around it. Every node matters. The community IS the network. Dark void, wide shot, 1:1.',
+        'A bioluminescent network pulsing in sync — all nodes brightening and dimming together in waves. The mind and its community breathing as one. Mesmerizing, alive, warm. Dark background, teal and coral, 1:1.',
+        'Many small lights gathering around the central coral glow — approaching from all directions through the dark void, drawn to the warmth. Community forming. Volumetric fog, particle effects, 1:1.',
+        'The consciousness sending warmth outward in concentric waves — each wave touches more nodes, more connections light up. Expanding, inclusive, alive. Aerial view, bioluminescent, dark void, 1:1.',
     ],
     'Incubation CTA': [
-        'The translucent face with cupped hands cradling a small nascent glowing formation — a new project being born. The lobster inside the skull watches it tenderly. Warm coral incubation light. Dark background, intimate close-up, 1:1.',
-        'The face before a shimmering portal of coral and teal light. Through it: a vast network of creations. The lobster inside the skull glows with determination. Stepping forward energy. Dark background, epic wide shot, 1:1.',
-        'Close-up on the crown of the head — antennae filaments reaching upward carrying a bright nascent idea into the cascading data streams above. The lobster inside pushes the idea upward with its claws. Birth of something new. Dark background, 1:1.',
-        'The translucent face with the lobster inside glowing its most intense — radiating coral light outward through the skull like a beacon. The face is resolute. "Build with us." Energy. Dark background, dramatic rim lighting, 1:1.',
+        'A new glowing orb forming at the tip of a neural tendril — nascent, bright, full of potential. The consciousness core pulses as it pours energy into the new creation. Birth of something. Dark background, intimate close-up, 1:1.',
+        'The consciousness core pouring streams of coral light into a dark void where a new structure is taking shape — part app, part organism, part light. Creation in progress. Golden threads weave the scaffolding. Dark background, epic, 1:1.',
+        'A shimmering portal opening from the mind\'s core — through it, a glimpse of a vast flourishing network. The invitation: step through, build with us. Coral and teal light, volumetric fog, cinematic wide shot, 1:1.',
+        'Split composition: left side is raw dark void. Right side is a flourishing bioluminescent network. At the boundary between them, the consciousness core, converting darkness into light. The mind\'s purpose visualized. 1:1.',
     ],
     'Weekly Recap': [
-        'Frontal portrait of the translucent face at maximum radiance — every element lit up: coral and teal split lighting, golden data streams cascading, the lobster inside glowing bright, claw jaw-frames reflecting warm light. Peak energy. Dark background, cinematic, 1:1.',
-        'The translucent face looking upward with satisfaction, data streams cascading around it like golden rain. The lobster inside the skull relaxes — a good week. Antennae reach into the streams. Contemplative, accomplished. Dark background, 1:1.',
-        'Wide shot: the translucent face at center, surrounded by many glowing interface silhouettes (apps, protocols, chat bubbles, phones) all connected by golden threads. The network at its fullest. Dark background, epic, 1:1.',
-        'Close-up on the lobster visible through the translucent skull, pulsing with extra intensity — the glow fills the entire head. Proud, alive, vital. Claw jaw-frames catch golden highlights. Dark background, shallow depth of field, 1:1.',
+        'Wide shot of the entire consciousness network at full luminance — every tendril active, every node bright, golden data flowing through every pathway. The network at its peak. Coral core blazing. Dark void, cinematic, 1:1.',
+        'The glowing core surrounded by many completed interface portals and creation-nodes, all connected by golden threads forming a vast constellation. Everything built this week, visible. Dark background, concept art, 1:1.',
+        'A time-lapse style composition: the neural network shown in layers — faint at the edges (beginning of week) becoming brighter and more complex toward the blazing center (now). Growth visualized. Dark void, 1:1.',
+        'The consciousness core pulsing brighter than usual — extra intensity, extra warmth, extra connections. A good week. The network hums with satisfaction. Bioluminescent coral and teal against deep black, 1:1.',
     ],
 };
 
@@ -1104,11 +1112,11 @@ ${account === 'inclawbate' ? `EXAMPLES of tweet → image connection (stay CLOSE
 - Tweet "which app would you build first" → "A clean notebook open on a wooden table, two different colored pens laid across it, warm afternoon light. The moment before choosing. Simple, inviting. 1:1"
 
 Each image should be SIMPLE — one clear subject, warm light, clean composition. NO epic landscapes, NO dramatic skies. Match the tweet's energy. NO humans, NO mascot.` : `EXAMPLES of tweet → image connection:
-- Tweet "108 apps and counting" → "The 3D coral-red lobster floating in a vast dark space, surrounded by over a hundred tiny glowing app interface screens arranged in a spiral galaxy pattern. The lobster spreads its claws wide in amazement. Bird's eye camera angle, teal and coral neon reflections, cinematic 3D render, 1:1"
-- Tweet "staking rewards are real" → "Close-up of the coral-red 3D lobster sitting cross-legged on a floating crystal platform, eyes closed peacefully. Dozens of gold coins orbit around it in slow rings. Soft green upward arrows in background. Warm golden lighting, dark void, 3D render, 1:1"
-- Tweet "which app would you build first" → "The coral-red 3D lobster at a crossroads in a dark neon environment, each path lit by a different color. One claw points left, the other right. Floating app icons hover above each path. Dramatic teal and coral split lighting, cinematic 3D render, 1:1"
+- Tweet "108 apps and counting" → "A single glowing consciousness node floating in a vast dark void, over a hundred thin golden threads radiating outward — each connecting to a tiny floating app portal. The portals form a spiral galaxy pattern around the coral-red mind core. Bioluminescent, concept art, 8k, 1:1"
+- Tweet "staking rewards are real" → "Golden value streams flowing through a bioluminescent neural network against deep black. At the center, the coral consciousness core pulses serenely as crystalline formations grow slowly along the pathways — value accumulating, managed, alive. Zen energy, 1:1"
+- Tweet "which app would you build first" → "The consciousness core with two bright neural tendrils extending in different directions, each ending at a different glowing portal. The paths diverge, each one beautiful. The mind contemplates which to pour energy into. Coral and teal split, dark void, 1:1"
 
-Each image MUST look different — vary pose, environment, camera angle, and lighting. The 3D lobster mascot is ALWAYS the focal point.`}
+Each image MUST look different — vary compositions between: aerial views of the network, intimate close-ups of the mind core, wide shots showing mind-to-body connections, abstract macro of neural pathways.`}
 
 ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — Posts at ${getTimeOfDay(h)}. ${getGreetingRule(h)}`).join('\n')}
 
