@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclawbator Docs — Inclawbate</title>
+    <meta name="description" content="Everything the Inclawbator can do. Launch tokens, build apps, deploy staking, hire humans, and more.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(255,255,255,0.03);
+            --border-subtle: rgba(255,255,255,0.06);
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b0;
+            --text-dim: #606070;
+            --lobster-400: #c0534d;
+            --lobster-300: #d4716b;
+            --accent-gradient: linear-gradient(135deg, #c0534d 0%, #d4716b 100%);
+            --font-sans: 'Nunito', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-sans); background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+        a { color: inherit; text-decoration: none; }
+
+        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; position: sticky; top: 0; z-index: 100; background: rgba(10,10,15,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-subtle); }
+        .top-bar-brand { font-weight: 900; font-size: 1.1rem; color: var(--lobster-400); }
+        .top-bar-back { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); transition: color 0.15s; }
+        .top-bar-back:hover { color: var(--text-primary); }
+
+        .page { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+
+        .hero { text-align: center; margin-bottom: 56px; }
+        .hero h1 { font-size: 2.2rem; font-weight: 900; line-height: 1.15; margin-bottom: 8px; }
+        .hero h1 span { color: var(--lobster-400); }
+        .hero p { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; }
+
+        .category { margin-bottom: 48px; }
+        .cat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle); }
+        .cat-icon { font-size: 1.4rem; }
+        .cat-name { font-weight: 900; font-size: 1.15rem; }
+        .cat-badge { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 999px; margin-left: auto; }
+        .badge-live { background: rgba(74,222,128,0.1); color: #4ade80; }
+        .badge-soon { background: rgba(250,204,21,0.1); color: #facc15; }
+
+        .skill { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 10px; }
+        .skill-name { font-weight: 800; font-size: 0.92rem; margin-bottom: 4px; }
+        .skill-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 10px; }
+        .skill-example { position: relative; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 40px 10px 14px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--lobster-300); line-height: 1.5; cursor: pointer; transition: border-color 0.15s; margin-bottom: 6px; }
+        .skill-example:hover { border-color: rgba(192,83,77,0.3); }
+        .skill-example::after { content: 'copy'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); transition: color 0.15s; }
+        .skill-example:hover::after { color: var(--lobster-300); }
+        .skill-example.copied::after { content: 'copied!'; color: #4ade80; }
+
+        .platforms { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+        .plat { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 16px; text-align: center; transition: border-color 0.2s; }
+        .plat:hover { border-color: rgba(192,83,77,0.3); }
+        .plat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+        .plat-name { font-weight: 800; font-size: 0.88rem; margin-bottom: 2px; }
+        .plat-url { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); }
+
+        .footer { text-align: center; padding: 32px; border-top: 1px solid var(--border-subtle); color: var(--text-dim); font-size: 0.75rem; }
+
+        @media (max-width: 600px) {
+            .top-bar { padding: 12px 16px; }
+            .page { padding: 32px 16px 72px; }
+            .hero h1 { font-size: 1.8rem; }
+            .platforms { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <a href="/inclawbator" class="top-bar-brand">&#129438; Inclawbator</a>
+    <a href="/inclawbator" class="top-bar-back">&larr; Back to Chat</a>
+</div>
+
+<div class="page">
+
+<div class="hero">
+    <h1>What the <span>Inclawbator</span> Can Do</h1>
+    <p>Every capability in one place. Click any example to copy it, then paste it in the chat.</p>
+</div>
+
+<!-- Token Launch -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128640;</span>
+        <span class="cat-name">Token Launch</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Launch a Token</div>
+        <div class="skill-desc">Deploy an ERC-20 on Base via Clanker with automatic Uniswap liquidity. Your wallet receives 80% of LP fee rewards.</div>
+        <div class="skill-example" onclick="copyExample(this)">Launch a token called DogCoin, ticker DOG, wallet 0x123...</div>
+    </div>
+</div>
+
+<!-- Staking -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128171;</span>
+        <span class="cat-name">Staking</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Deploy Staking Pool</div>
+        <div class="skill-desc">Create a staking pool for any token. Holders stake to earn CLAWS rewards. You become the pool admin.</div>
+        <div class="skill-example" onclick="copyExample(this)">Deploy a staking pool for 0x7ca4...</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Check Staking Stats</div>
+        <div class="skill-desc">Live APY, TVL, staker count, and your position if you share your wallet.</div>
+        <div class="skill-example" onclick="copyExample(this)">Show me CLAWS staking stats</div>
+    </div>
+</div>
+
+<!-- Token Management -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128200;</span>
+        <span class="cat-name">Token Analytics</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Token Price &amp; Volume</div>
+        <div class="skill-desc">Real-time price, 24h volume, liquidity, and FDV for any token on Base.</div>
+        <div class="skill-example" onclick="copyExample(this)">What's the price of 0x7ca4...?</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Airdrop Tokens</div>
+        <div class="skill-desc">Distribute tokens to multiple wallets in one transaction. Provide addresses and amounts.</div>
+        <div class="skill-example" onclick="copyExample(this)">Airdrop 1000 CLAWS to 0xabc, 0xdef, 0x123</div>
+    </div>
+</div>
+
+<!-- App Builder -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128187;</span>
+        <span class="cat-name">App Builder</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Build an App</div>
+        <div class="skill-desc">AI generates and publishes a live web app instantly at inclawbate.app/s/your-app. Games, tools, landing pages, dashboards.</div>
+        <div class="skill-example" onclick="copyExample(this)">Build me a snake game</div>
+        <div class="skill-example" onclick="copyExample(this)">Make a landing page for my coffee shop called Bean Dream</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Update an App</div>
+        <div class="skill-desc">Modify an existing app you built. Just describe the changes.</div>
+        <div class="skill-example" onclick="copyExample(this)">Update snakegame to add a high score board</div>
+    </div>
+</div>
+
+<!-- Marketing -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128227;</span>
+        <span class="cat-name">Marketing</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">AI Marketing Agent</div>
+        <div class="skill-desc">Create an agent that auto-posts to X on a schedule. Set a vibe, connect your account, and let it run. Free.</div>
+        <div class="skill-example" onclick="copyExample(this)">Create an AI marketing agent for X</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Book a Promo</div>
+        <div class="skill-desc">Promote your project through the @inclawbate X account. Pay in CLAWS.</div>
+        <div class="skill-example" onclick="copyExample(this)">I want to promote my token on @inclawbate</div>
+    </div>
+</div>
+
+<!-- Hiring -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#129309;</span>
+        <span class="cat-name">Hiring</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Hire the Council</div>
+        <div class="skill-desc">Post gigs for real human builders — devs, designers, marketers, strategists. Your request goes straight to the team on Telegram.</div>
+        <div class="skill-example" onclick="copyExample(this)">I need a designer for my landing page, reach me @myhandle on X</div>
+    </div>
+</div>
+
+<!-- DeFi / Yield -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128176;</span>
+        <span class="cat-name">DeFi &amp; Yield</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Yield Options</div>
+        <div class="skill-desc">Browse curated yield strategies for USDC, ETH, and more. Safe lending, staking, and LP strategies.</div>
+        <div class="skill-example" onclick="copyExample(this)">Show me yield options</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Deposit to Strategy</div>
+        <div class="skill-desc">Deposit into a yield strategy directly from chat.</div>
+        <div class="skill-example" onclick="copyExample(this)">Deposit 100 USDC into the safest strategy</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Check Positions</div>
+        <div class="skill-desc">View your active DeFi positions, earnings, and APY.</div>
+        <div class="skill-example" onclick="copyExample(this)">Check my DeFi positions</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Withdraw</div>
+        <div class="skill-desc">Exit a yield strategy and get your funds back.</div>
+        <div class="skill-example" onclick="copyExample(this)">Withdraw from my USDC position</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Set Reward Preference</div>
+        <div class="skill-desc">Choose to receive yield as CLAWS (0% fee) or USDC (2% fee).</div>
+        <div class="skill-example" onclick="copyExample(this)">I want to receive yield as CLAWS</div>
+    </div>
+</div>
+
+<!-- Diagnostics -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128202;</span>
+        <span class="cat-name">Diagnostics</span>
+        <span class="cat-badge badge-live">Live</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Health Check</div>
+        <div class="skill-desc">Full project diagnostic — price, volume, staking, liquidity, and recommendations.</div>
+        <div class="skill-example" onclick="copyExample(this)">Run a health check on my project</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Ecosystem Info</div>
+        <div class="skill-desc">Learn what Inclawbate is, how it works, and everything about CLAWS.</div>
+        <div class="skill-example" onclick="copyExample(this)">What is Inclawbate?</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Incubation Services</div>
+        <div class="skill-desc">Full-service build-out: token, staking, branding, marketing, app — we handle everything.</div>
+        <div class="skill-example" onclick="copyExample(this)">Tell me about full incubation services</div>
+    </div>
+</div>
+
+<!-- Smart Contracts — Coming Soon -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128220;</span>
+        <span class="cat-name">Smart Contracts</span>
+        <span class="cat-badge badge-soon">Coming Soon</span>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Deploy ERC-20</div>
+        <div class="skill-desc">Custom ERC-20 token with configurable supply, name, and symbol. Deployed on Base.</div>
+        <div class="skill-example" onclick="copyExample(this)">Deploy an ERC-20 with 1M supply called TestCoin</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Deploy NFT Collection</div>
+        <div class="skill-desc">Basic ERC-721 with minting. Set name, symbol, and max supply.</div>
+        <div class="skill-example" onclick="copyExample(this)">Deploy an NFT collection called CoolCats, 10k supply</div>
+    </div>
+    <div class="skill">
+        <div class="skill-name">Payment Splitter</div>
+        <div class="skill-desc">Automatically split incoming payments across multiple wallets by percentage.</div>
+        <div class="skill-example" onclick="copyExample(this)">Deploy a payment splitter: 60% to 0xabc, 40% to 0xdef</div>
+    </div>
+</div>
+
+<!-- Where to Talk -->
+<div class="category">
+    <div class="cat-header">
+        <span class="cat-icon">&#128172;</span>
+        <span class="cat-name">Where to Talk to It</span>
+    </div>
+    <div class="platforms">
+        <a href="/inclawbator" class="plat">
+            <div class="plat-icon">&#129438;</div>
+            <div class="plat-name">Website Chat</div>
+            <div class="plat-url">inclawbate.app/inclawbator</div>
+        </a>
+        <a href="https://x.com/inclawbator" target="_blank" class="plat">
+            <div class="plat-icon">&#120143;</div>
+            <div class="plat-name">X / Twitter</div>
+            <div class="plat-url">@inclawbator</div>
+        </a>
+        <a href="https://t.me/inclawbator" target="_blank" class="plat">
+            <div class="plat-icon">&#9992;</div>
+            <div class="plat-name">Activity Feed</div>
+            <div class="plat-url">t.me/inclawbator</div>
+        </a>
+    </div>
+</div>
+
+</div>
+
+<div class="footer">&copy; 2026 Inclawbate. Anyone Can Build. Everyone Gets Paid.</div>
+
+<script>
+function copyExample(el) {
+    navigator.clipboard.writeText(el.textContent.trim());
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1200);
+}
+</script>
+
+</body>
+</html>
