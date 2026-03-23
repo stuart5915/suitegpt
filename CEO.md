@@ -64,12 +64,15 @@ When deciding what to work on next, prioritize in this order:
 
 ## Current State (update this section regularly)
 
-- **Last updated**: 2026-03-06
-- **Active users**: Growing, mobile wallet issues being resolved
-- **Apps published**: Waves 1+2 done (12 apps), targeting 50 total
-- **Staking**: CLAWS pool active, INCLAWNCH pool migrated, S4H staking live
-- **Biggest friction**: Mobile wallet connection (just shipped fix), no fiat on-ramp yet
-- **Next milestone**: Coinbase Commerce by March 31, then 50 apps
+- **Last updated**: 2026-03-23
+- **Active incubations**: 12 live (basisubi, publicgoods, DeFiKnowledge, crash, S4H, nordenmethods, pokerai, fightfarm, mirrormind, e3ministry, protogolf, oddsclaw)
+- **Apps published**: 98+ live, AI builder chat on /apps, Build Studio at /build
+- **Team**: Stuart (dev), FreefoRaLLey (X growth, 185M CLAWS/mo), S4HMinistries (content), Manto (PokerAI X), unknownking7 ($MIND/crash), HevalYucedag (nordenmethods), ItsEvilDuck (ISB token)
+- **Staking**: CLAWS pool active, $MIND staking live (1mo rewards ends Apr 19), Angel NFT 5.1B CLAWS pool, S4H staking live
+- **PokerAI**: Token launched, contracts deployed, USDC tables live, POKERAI tables need final testing
+- **Revenue**: 5 active streams (LP fees, staking fees, Clanker fees, FLR rewards, staking-as-a-service). FreefoRaLLey is first paid contributor.
+- **Biggest friction**: No fiat on-ramp (Coinbase Commerce deadline March 31 — 8 DAYS), S4H team blocked on site admin access
+- **Next milestone**: Coinbase Commerce by March 31, Discord presence, OddsClaw relaunch
 
 ## Key Links
 
