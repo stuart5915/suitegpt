@@ -2488,7 +2488,7 @@
                 '<div class="overlay-opt"><input type="checkbox" id="ovText" checked><label for="ovText">Key phrase (bottom-right)</label></div>' +
                 '<div class="overlay-opt"><input type="text" id="ovTextEdit" value="' + escHtml(keyPhrase) + '" placeholder="Custom text..."></div>' +
                 '<div class="overlay-opt"><input type="checkbox" id="ovGradient" checked><label for="ovGradient">Bottom gradient</label></div>' +
-                '<div class="overlay-opt"><input type="checkbox" id="ovWordmark"><label for="ovWordmark">Wordmark "inclawbate" (next to logo)</label></div>' +
+                '<div class="overlay-opt"><label for="ovWordmark">Wordmark</label><select id="ovWordmark" style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:4px 8px;color:var(--text-primary);font-size:0.75rem;font-family:var(--font-display);cursor:pointer"><option value="">None</option><option value="inclawbate"' + (_activeAccount === 'inclawbate' ? ' selected' : '') + '>inclawbate</option><option value="inclawbator"' + (_activeAccount !== 'inclawbate' ? ' selected' : '') + '>inclawbator</option></select></div>' +
             '</div>' +
             '<div class="overlay-actions">' +
                 '<button class="overlay-btn-cancel" onclick="this.closest(\'.overlay-modal-bg\').remove()">Cancel</button>' +
@@ -2582,7 +2582,7 @@
         var showPillar = document.getElementById('ovPillar').checked;
         var showText = document.getElementById('ovText').checked;
         var showGradient = document.getElementById('ovGradient').checked;
-        var showWordmark = document.getElementById('ovWordmark').checked;
+        var wordmarkValue = document.getElementById('ovWordmark').value;
         var customText = document.getElementById('ovTextEdit').value.trim();
 
         var pad = size * 0.04;
@@ -2611,7 +2611,7 @@
             ctx.shadowBlur = 0;
 
             // Wordmark next to logo
-            if (showWordmark) {
+            if (wordmarkValue) {
                 var wmSize = logoH * 0.45;
                 ctx.font = '800 ' + wmSize + 'px "Nunito", sans-serif';
                 ctx.fillStyle = '#ffffff';
@@ -2619,7 +2619,7 @@
                 ctx.textAlign = 'left';
                 ctx.shadowColor = 'rgba(0,0,0,0.4)';
                 ctx.shadowBlur = 4;
-                ctx.fillText('inclawbate', lx + logoW + pad * 0.4, ly + logoH / 2);
+                ctx.fillText(wordmarkValue, lx + logoW + pad * 0.4, ly + logoH / 2);
                 ctx.shadowBlur = 0;
             }
         }
