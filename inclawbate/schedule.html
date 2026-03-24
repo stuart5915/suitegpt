@@ -1482,25 +1482,20 @@
             { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
             { type: 'goods', emoji: '🎨', label: 'Content Creators' },
         ],
-        'inclawbator': [
-            { type: 'builders', emoji: '🤝', label: 'Project Founders / Builders' },
-            { type: 'protocols', emoji: '📢', label: 'Crypto/DeFi Influencers' },
-            { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
-            { type: 'goods', emoji: '🎨', label: 'Content Creators' },
-        ],
+        'inclawbator': null, // No research database for inclawbator
     };
 
     function _showResearchPanel() {
         var panel = document.getElementById('researchPanel');
+        var tabs = RESEARCH_TABS[_activeAccount];
+        // Hide panel entirely for accounts with no database (inclawbator)
+        if (!tabs) { if (panel) panel.style.display = 'none'; return; }
         if (panel) panel.style.display = _hasEditAccess() ? '' : 'none';
         if (!_hasEditAccess()) return;
 
         // Update title based on account
         var title = document.getElementById('researchTitle');
         if (title) title.textContent = _activeAccount === 'publicgoodstech' ? 'Research Database' : 'Partnership Database';
-
-        // Render tabs for this account
-        var tabs = RESEARCH_TABS[_activeAccount] || RESEARCH_TABS['publicgoodstech'];
         var tabContainer = document.getElementById('researchTabs');
         if (tabContainer) {
             tabContainer.innerHTML = tabs.map(function(t, i) {
