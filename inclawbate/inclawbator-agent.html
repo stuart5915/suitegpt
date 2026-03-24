@@ -730,9 +730,12 @@
 
                 <div id="defiDashboard" style="display:none;">
                     <!-- Total Portfolio -->
-                    <div style="margin-bottom:20px;">
-                        <div style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Your Portfolio</div>
-                        <div id="defiTotalUsd" style="font-size:1.8rem;font-weight:900;color:#fff;">—</div>
+                    <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Your Portfolio</div>
+                            <div id="defiTotalUsd" style="font-size:1.8rem;font-weight:900;color:#fff;">—</div>
+                        </div>
+                        <button id="defiRefreshBtn" onclick="loadDefiDashboard()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-dim);font-size:0.72rem;padding:6px 12px;cursor:pointer;transition:all 0.15s;">&#8635; Refresh</button>
                     </div>
 
                     <!-- Token Balances -->
@@ -1761,43 +1764,8 @@ function defiChat(msg) {
     }
 }
 
-async function rpcCall(to, data) {
-    try {
-        var res = await fetch(BASE_RPC, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: to, data: data }, 'latest'], id: 1 })
-        });
-        var json = await res.json();
-        return json.result || '0x0';
-    } catch (e) { return '0x0'; }
-}
-
-async function getEthBalance(wallet) {
-    try {
-        var res = await fetch(BASE_RPC, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [wallet, 'latest'], id: 1 })
-        });
-        var json = await res.json();
-        return Number(BigInt(json.result || '0x0')) / 1e18;
-    } catch (e) { return 0; }
-}
-
-async function getErc20Balance(token, wallet, decimals) {
-    var paddedWallet = wallet.toLowerCase().replace('0x', '').padStart(64, '0');
-    var hex = await rpcCall(token, BALANCEOF_SIG + paddedWallet);
-    return Number(BigInt(hex)) / (10 ** decimals);
-}
-
-async function getStakingData(wallet) {
-    var paddedWallet = wallet.toLowerCase().replace('0x', '').padStart(64, '0');
-    var stakedHex = await rpcCall(STAKING_ADDR, BALANCEOF_SIG + paddedWallet);
-    var earnedHex = await rpcCall(STAKING_ADDR, EARNED_SIG + paddedWallet);
-    return {
-        staked: Number(BigInt(stakedHex)) / 1e18,
-        earned: Number(BigInt(earnedHex)) / 1e18
-    };
-}
+// Multicall3 on Base — batch all reads into ONE RPC call
+var MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11';
 
 function fmtNum(n, d) {
     if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
@@ -1806,6 +1774,66 @@ function fmtNum(n, d) {
     return n.toFixed(d || 2);
 }
 
+function padAddr(addr) { return addr.toLowerCase().replace('0x', '').padStart(64, '0'); }
+
+function encodeCall(target, calldata) {
+    // Multicall3.Call3: (address target, bool allowFailure, bytes callData)
+    var t = padAddr(target);
+    var offset = '0000000000000000000000000000000000000000000000000000000000000060'; // offset to callData
+    var allowFail = '0000000000000000000000000000000000000000000000000000000000000001'; // true
+    var dataBytes = calldata.replace('0x', '');
+    var dataLen = (dataBytes.length / 2).toString(16).padStart(64, '0');
+    var dataPadded = dataBytes + '0'.repeat((64 - (dataBytes.length % 64)) % 64);
+    return t + allowFail + offset + dataLen + dataPadded;
+}
+
+async function batchRead(wallet) {
+    var paddedWallet = padAddr(wallet);
+    // Build 4 calls: USDC balanceOf, CLAWS balanceOf, staking balanceOf, staking earned
+    // Plus getEthBalance via Multicall3.getEthBalance(address)
+    var calls = [
+        { target: USDC_ADDR, data: BALANCEOF_SIG + paddedWallet },
+        { target: CLAWS_ADDR, data: BALANCEOF_SIG + paddedWallet },
+        { target: STAKING_ADDR, data: BALANCEOF_SIG + paddedWallet },
+        { target: STAKING_ADDR, data: EARNED_SIG + paddedWallet },
+    ];
+
+    // Use JSON-RPC batch: eth_getBalance + one multicall = 2 RPC calls total in one HTTP request
+    var batchBody = [
+        { jsonrpc: '2.0', method: 'eth_getBalance', params: [wallet, 'latest'], id: 1 }
+    ];
+    // Build aggregate3 call for the 4 reads
+    // aggregate3((address,bool,bytes)[]) selector: 0x82ad56cb
+    // We'll just do individual eth_calls in a JSON-RPC batch (simpler, still 1 HTTP request)
+    calls.forEach(function(c, i) {
+        batchBody.push({
+            jsonrpc: '2.0', method: 'eth_call',
+            params: [{ to: c.target, data: c.data }, 'latest'],
+            id: i + 2
+        });
+    });
+
+    try {
+        var res = await fetch(BASE_RPC, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(batchBody)
+        });
+        var results = await res.json();
+        // Sort by id to ensure order
+        results.sort(function(a, b) { return a.id - b.id; });
+        var ethBal = Number(BigInt(results[0].result || '0x0')) / 1e18;
+        var usdcBal = Number(BigInt(results[1].result || '0x0')) / 1e6;
+        var clawsBal = Number(BigInt(results[2].result || '0x0')) / 1e18;
+        var staked = Number(BigInt(results[3].result || '0x0')) / 1e18;
+        var earned = Number(BigInt(results[4].result || '0x0')) / 1e18;
+        return { ethBal: ethBal, usdcBal: usdcBal, clawsBal: clawsBal, staked: staked, earned: earned };
+    } catch (e) {
+        console.error('Batch RPC error:', e);
+        return { ethBal: 0, usdcBal: 0, clawsBal: 0, staked: 0, earned: 0 };
+    }
+}
+
+var _defiLoading = false;
 async function loadDefiDashboard() {
     var wallet = window.WalletKit && WalletKit.isConnected() ? WalletKit.getAddress() : null;
     if (!wallet) {
@@ -1813,49 +1841,53 @@ async function loadDefiDashboard() {
         document.getElementById('defiDashboard').style.display = 'none';
         return;
     }
+    if (_defiLoading) return;
+    _defiLoading = true;
     document.getElementById('defiConnect').style.display = 'none';
     document.getElementById('defiDashboard').style.display = 'block';
+    var refreshBtn = document.getElementById('defiRefreshBtn');
+    if (refreshBtn) { refreshBtn.textContent = 'Loading...'; refreshBtn.disabled = true; }
 
-    // Fetch all data in parallel
-    var [ethBal, usdcBal, clawsBal, staking, clawsDex, ethDex] = await Promise.all([
-        getEthBalance(wallet),
-        getErc20Balance(USDC_ADDR, wallet, 6),
-        getErc20Balance(CLAWS_ADDR, wallet, 18),
-        getStakingData(wallet),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDR).then(r => r.json()).catch(() => ({})),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006').then(r => r.json()).catch(() => ({}))
+    // ONE batch RPC call + ONE DexScreener call (for both prices)
+    var [data, clawsDex] = await Promise.all([
+        batchRead(wallet),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDR).then(function(r) { return r.json(); }).catch(function() { return {}; })
     ]);
 
     var clawsPair = (clawsDex.pairs || [])[0] || {};
-    var ethPair = (ethDex.pairs || []).find(function(p) { return p.quoteToken && p.quoteToken.symbol === 'USDbC' || p.quoteToken && p.quoteToken.symbol === 'USDC'; }) || (ethDex.pairs || [])[0] || {};
     var clawsPrice = parseFloat(clawsPair.priceUsd || '0');
-    var ethPrice = parseFloat(ethPair.priceUsd || '2500');
+    // Get ETH price from CLAWS pair's quoteToken if it's WETH, or use a reasonable default
+    var ethPrice = clawsPair.priceNative ? (clawsPrice / parseFloat(clawsPair.priceNative)) : 2500;
+    if (!ethPrice || ethPrice < 100) ethPrice = 2500;
 
     // Update balances
-    document.getElementById('defiEthBal').textContent = fmtNum(ethBal, 4);
-    document.getElementById('defiEthUsd').textContent = '$' + fmtNum(ethBal * ethPrice);
-    document.getElementById('defiUsdcBal').textContent = fmtNum(usdcBal);
-    document.getElementById('defiUsdcUsd').textContent = '$' + fmtNum(usdcBal);
-    document.getElementById('defiClawsBal').textContent = fmtNum(clawsBal);
-    document.getElementById('defiClawsUsd').textContent = clawsPrice > 0 ? '$' + fmtNum(clawsBal * clawsPrice) : '—';
+    document.getElementById('defiEthBal').textContent = fmtNum(data.ethBal, 4);
+    document.getElementById('defiEthUsd').textContent = '$' + fmtNum(data.ethBal * ethPrice);
+    document.getElementById('defiUsdcBal').textContent = fmtNum(data.usdcBal);
+    document.getElementById('defiUsdcUsd').textContent = '$' + fmtNum(data.usdcBal);
+    document.getElementById('defiClawsBal').textContent = fmtNum(data.clawsBal);
+    document.getElementById('defiClawsUsd').textContent = clawsPrice > 0 ? '$' + fmtNum(data.clawsBal * clawsPrice) : '—';
 
     // Total portfolio
-    var total = (ethBal * ethPrice) + usdcBal + (clawsBal * clawsPrice) + (staking.staked * clawsPrice);
+    var total = (data.ethBal * ethPrice) + data.usdcBal + (data.clawsBal * clawsPrice) + (data.staked * clawsPrice);
     document.getElementById('defiTotalUsd').textContent = '$' + fmtNum(total);
 
     // Staking position
-    if (staking.staked > 0) {
+    if (data.staked > 0) {
         document.getElementById('defiStakePos').style.display = 'block';
         document.getElementById('defiNoPositions').style.display = 'none';
-        document.getElementById('defiStaked').textContent = fmtNum(staking.staked) + ' CLAWS';
-        document.getElementById('defiRewards').textContent = fmtNum(staking.earned) + ' CLAWS';
+        document.getElementById('defiStaked').textContent = fmtNum(data.staked) + ' CLAWS';
+        document.getElementById('defiRewards').textContent = fmtNum(data.earned) + ' CLAWS';
     } else {
         document.getElementById('defiStakePos').style.display = 'none';
         document.getElementById('defiNoPositions').style.display = 'block';
     }
+
+    _defiLoading = false;
+    if (refreshBtn) { refreshBtn.textContent = '&#8635; Refresh'; refreshBtn.disabled = false; }
 }
 
-// Load dashboard when DeFi tab is clicked or wallet connects
+// Only load on explicit tab click — no auto-loading
 document.querySelectorAll('.inclaw-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         if (tab.dataset.tab === 'defi') {
