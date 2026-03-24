@@ -1810,6 +1810,32 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions: ['A game', 'A dashboard', 'A landing page', 'A tool or calculator', 'Something else'] });
     }
 
+    // Intercept detailed app requests — has name + type, just build it directly
+    const appNameMatch = message.match(/^(?:a\s+)?(.+?)(?:\s+called\s+|\s+named\s+)(.+)$/i);
+    if (appNameMatch && appNameMatch[1].length >= 3 && appNameMatch[2].length >= 2) {
+      const description = appNameMatch[1].trim();
+      const appName = appNameMatch[2].trim().replace(/[^a-zA-Z0-9\s-]/g, '');
+      const result = await executeTool('build_app', { app_name: appName, description });
+      const directReply = generateDirectReply('build_app', result, { app_name: appName, description });
+      if (directReply) {
+        history.push({ role: 'assistant', content: directReply });
+        return sendReply({ reply: directReply, function_called: 'build_app', session_id: sid });
+      }
+    }
+
+    // Also intercept "Build/Make me a [description]" with enough detail
+    const buildMatch = message.match(/^(?:build|make|create)\s+(?:me\s+)?(?:a\s+)?(.{15,})$/i);
+    if (buildMatch && !/^(something|an app|a website|a game|a dashboard)/i.test(buildMatch[1])) {
+      const desc = buildMatch[1].trim();
+      const slug = desc.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+      const result = await executeTool('build_app', { app_name: slug, description: desc });
+      const directReply = generateDirectReply('build_app', result, { app_name: slug, description: desc });
+      if (directReply) {
+        history.push({ role: 'assistant', content: directReply });
+        return sendReply({ reply: directReply, function_called: 'build_app', session_id: sid });
+      }
+    }
+
     // Intercept short app-type follow-ups (e.g. user clicked "A game" pill)
     if (/^a\s+(game|dashboard|landing\s*page|tool|calculator|portfolio|tracker|social|chat|blog|store|shop|website)$/i.test(msgLower) || /^(game|dashboard|landing\s*page|tool|calculator|something else)$/i.test(msgLower)) {
       const appType = message.replace(/^a\s+/i, '').trim().toLowerCase();
