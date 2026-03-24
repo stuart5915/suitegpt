@@ -1352,6 +1352,27 @@
         <div id="reviewQueueList" style="display:flex;flex-direction:column;gap:8px"></div>
     </section>
 
+    <!-- ═══ Research Database (Admin/Editor Only) — ABOVE X Feed ═══ -->
+    <section id="researchPanel" style="display:none;margin-bottom:var(--space-lg)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);flex-wrap:wrap;gap:10px">
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px">
+                <span style="font-size:1.2rem">📋</span> <span id="researchTitle">Research Database</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="researchTabs"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap">
+            <input type="text" id="researchSearch" placeholder="Search..." oninput="_searchResearch()" style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none;font-family:var(--font-body)">
+            <button onclick="_addResearchEntry()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);border-radius:8px;color:#34d399;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">+ Add New</button>
+        </div>
+
+        <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:var(--space-sm);font-family:var(--font-mono)" id="researchStats">Loading...</div>
+
+        <div id="researchGrid" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;padding-right:4px">
+            <div style="color:var(--text-dim);text-align:center;padding:40px;font-size:0.85rem">Loading research database...</div>
+        </div>
+    </section>
+
     <!-- X Feed (account-aware) -->
     <section class="x-feed-section">
         <div class="x-feed-header">
@@ -1369,31 +1390,6 @@
         </div>
     </section>
 
-    <!-- ═══ Research Database (Admin/Editor Only) ═══ -->
-    <section id="researchPanel" style="display:none;margin-top:var(--space-lg)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);flex-wrap:wrap;gap:10px">
-            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px">
-                <span style="font-size:1.2rem">📋</span> Research Database
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="rb-tab active" data-rtype="agents" onclick="_switchResearchTab('agents',this)">🤖 Agents</button>
-                <button class="rb-tab" data-rtype="goods" onclick="_switchResearchTab('goods',this)">🌍 Public Goods</button>
-                <button class="rb-tab" data-rtype="builders" onclick="_switchResearchTab('builders',this)">👷 Builders</button>
-                <button class="rb-tab" data-rtype="protocols" onclick="_switchResearchTab('protocols',this)">⛓ Protocols</button>
-            </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap">
-            <input type="text" id="researchSearch" placeholder="Search..." oninput="_searchResearch()" style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none;font-family:var(--font-body)">
-            <button onclick="_addResearchEntry()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);border-radius:8px;color:#34d399;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">+ Add New</button>
-        </div>
-
-        <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:var(--space-sm);font-family:var(--font-mono)" id="researchStats">Loading...</div>
-
-        <div id="researchGrid" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;padding-right:4px">
-            <div style="color:var(--text-dim);text-align:center;padding:40px;font-size:0.85rem">Loading research database...</div>
-        </div>
-    </section>
 
 </div>
 
@@ -1461,10 +1457,48 @@
     var _researchType = 'agents';
     var _researchData = [];
 
+    // Account-specific research tabs
+    var RESEARCH_TABS = {
+        'publicgoodstech': [
+            { type: 'agents', emoji: '🤖', label: 'AI Agents' },
+            { type: 'goods', emoji: '🌍', label: 'Public Goods' },
+            { type: 'builders', emoji: '👷', label: 'Builders' },
+            { type: 'protocols', emoji: '⛓', label: 'Protocols' },
+        ],
+        'inclawbate': [
+            { type: 'builders', emoji: '🤝', label: 'Project Founders / Builders' },
+            { type: 'protocols', emoji: '📢', label: 'Crypto/DeFi Influencers' },
+            { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
+            { type: 'goods', emoji: '🎨', label: 'Content Creators' },
+        ],
+        'inclawbator': [
+            { type: 'builders', emoji: '🤝', label: 'Project Founders / Builders' },
+            { type: 'protocols', emoji: '📢', label: 'Crypto/DeFi Influencers' },
+            { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
+            { type: 'goods', emoji: '🎨', label: 'Content Creators' },
+        ],
+    };
+
     function _showResearchPanel() {
         var panel = document.getElementById('researchPanel');
         if (panel) panel.style.display = _hasEditAccess() ? '' : 'none';
-        if (_hasEditAccess()) _loadResearch();
+        if (!_hasEditAccess()) return;
+
+        // Update title based on account
+        var title = document.getElementById('researchTitle');
+        if (title) title.textContent = _activeAccount === 'publicgoodstech' ? 'Research Database' : 'Partnership Database';
+
+        // Render tabs for this account
+        var tabs = RESEARCH_TABS[_activeAccount] || RESEARCH_TABS['publicgoodstech'];
+        var tabContainer = document.getElementById('researchTabs');
+        if (tabContainer) {
+            tabContainer.innerHTML = tabs.map(function(t, i) {
+                return '<button class="rb-tab ' + (i === 0 ? 'active' : '') + '" data-rtype="' + t.type + '" onclick="_switchResearchTab(\'' + t.type + '\',this)">' + t.emoji + ' ' + t.label + '</button>';
+            }).join('');
+        }
+
+        _researchType = tabs[0].type;
+        _loadResearch();
     }
 
     window._switchResearchTab = function(type, btn) {
@@ -1728,6 +1762,7 @@
         _schedSlots = [];
         initSchedule().catch(function(e) { console.error('Switch error:', e); });
         loadFeed().catch(function(e) { console.error('Feed switch error:', e); });
+        _showResearchPanel(); // Refresh research tabs for this account
     };
 
     function getAuth() {
