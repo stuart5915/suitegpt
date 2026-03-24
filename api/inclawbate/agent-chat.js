@@ -1707,7 +1707,7 @@ export default async function handler(req, res) {
 
   // ── Server-side intercept: "work on [app]" / "edit [app]" / "I want to work on [app]" ──
   // Handles this directly without LLM to avoid it calling list_my_apps again
-  const workOnMatch = sanitizedMessage.match(/(?:work on|edit|update|open|load)\s+(.+)/i);
+  const workOnMatch = sanitizedMessage.match(/(?:(?:i\s+want\s+to\s+|i\s+wanna\s+|let'?s\s+|can\s+(?:you|we)\s+|please\s+)?(?:work on|edit|update|open|load|modify|change|fix|improve))\s+(.+)/i);
   if (workOnMatch && sanitizedWallet) {
     const appQuery = workOnMatch[1].replace(/['"]/g, '').trim().toLowerCase();
     if (appQuery.length > 1 && appQuery.length < 100) {
