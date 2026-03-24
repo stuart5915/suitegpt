@@ -3464,7 +3464,26 @@
                 previewArea.innerHTML = '<div class="overlay-preview-wrap"><canvas id="tplCanvas"></canvas></div>';
                 document.getElementById('tplActions').style.display = 'flex';
 
-                await _renderPgtTemplate(tplId, items);
+                // Pass slot project info so spotlights use the correct project
+                var slotProject = null;
+                if (slot && slot.tweet_options && slot.tweet_options.pgt_project_id) {
+                    var pid = slot.tweet_options.pgt_project_id;
+                    slotProject = items.find(function(i) { return i.id === pid; });
+                    // If not in this data type's items, build a stub from tweet_options
+                    if (!slotProject) {
+                        slotProject = {
+                            id: pid,
+                            name: slot.tweet_options.pgt_project_name || 'Unknown',
+                            x_handle: slot.tweet_options.pgt_project_handle,
+                            logo_url: slot.tweet_options.pgt_project_logo,
+                            avatar_url: slot.tweet_options.pgt_project_logo,
+                            description: '',
+                            bio: '',
+                            category: slot.tweet_options.pgt_project_type || '',
+                        };
+                    }
+                }
+                await _renderPgtTemplate(tplId, items, slotProject);
 
                 // Wire download + upload
                 document.getElementById('tplDownload').onclick = function() {
@@ -3605,7 +3624,7 @@
         ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.stroke();
     }
 
-    async function _renderPgtTemplate(tplId, items) {
+    async function _renderPgtTemplate(tplId, items, slotProject) {
         var canvas = document.getElementById('tplCanvas');
         if (!canvas) return;
         var size = 1080;
@@ -3684,8 +3703,7 @@
             });
 
         } else if (tplId === 'agent_spotlight') {
-            var featured = items.filter(function(a) { return a.featured; });
-            var agent = featured.length > 0 ? featured[Math.floor(Math.random() * featured.length)] : items[Math.floor(Math.random() * items.length)];
+            var agent = slotProject || (items.filter(function(a) { return a.featured; })[0]) || items[0];
             if (!agent) { ctx.fillStyle = '#fff'; ctx.fillText('No agents found', size/2, size/2); return; }
 
             var agentLogos = await _loadLogos([agent]);
@@ -3872,9 +3890,7 @@
             });
 
         } else if (tplId === 'builder_spotlight') {
-            var builders = items;
-            var featured = builders.filter(function(b) { return b.featured; });
-            var builder = featured.length > 0 ? featured[Math.floor(Math.random() * featured.length)] : builders[Math.floor(Math.random() * builders.length)];
+            var builder = slotProject || (items.filter(function(b) { return b.featured; })[0]) || items[0];
             if (!builder) { _pgtDrawBg(ctx, size); ctx.fillStyle='#fff'; ctx.font='20px sans-serif'; ctx.fillText('No builders found',size/2,size/2); return; }
 
             var bLogos = await _loadLogos([builder]);
@@ -3928,7 +3944,7 @@
             }
 
         } else if (tplId === 'public_good') {
-            var good = items.filter(function(g) { return g.featured; })[0] || items[Math.floor(Math.random() * items.length)];
+            var good = slotProject || items.filter(function(g) { return g.featured; })[0] || items[0];
             if (!good) { _pgtDrawBg(ctx, size); return; }
 
             var gLogos = await _loadLogos([good]);
