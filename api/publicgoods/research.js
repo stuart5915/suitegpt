@@ -43,10 +43,16 @@ export default async function handler(req, res) {
         if (!name) return res.status(400).json({ error: 'name required' });
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-        let row = { name, slug, description, website, x_handle, github, category, notes, approved: true };
+        let row = { name, slug, x_handle, github, notes, approved: true };
+        if (type === 'builders') {
+            Object.assign(row, { bio: bio || description, website, skills: skills || [], projects: projects || [], wallet_address: wallet });
+        } else {
+            row.description = description;
+            row.website = website;
+            row.category = category;
+        }
         if (type === 'agents') Object.assign(row, { telegram, chain: chain || 'multi', status: status || 'live', logo_url, token_address, token_symbol, submitted_by: wallet });
         if (type === 'goods') Object.assign(row, { chain, logo_url, submitted_by: wallet });
-        if (type === 'builders') Object.assign(row, { bio, skills: skills || [], projects: projects || [], wallet_address: wallet });
         if (type === 'protocols') Object.assign(row, { chain, logo_url, token_symbol, submitted_by: wallet });
 
         const { data, error } = await supabase.from(table).insert(row).select().single();
