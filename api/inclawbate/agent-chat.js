@@ -1857,7 +1857,7 @@ export default async function handler(req, res) {
     return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
   } catch (e) {
     console.error('Agent chat error:', e);
-    console.error('Agent chat error:', e);
-    return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    const errHint = e?.message?.includes('fetch') ? 'network' : e?.message?.includes('JSON') ? 'parse' : e?.message?.includes('Cannot read') ? 'null_ref' : e?.message?.slice(0, 50) || 'unknown';
+    return res.status(500).json({ error: 'Something went wrong (' + errHint + '). Please try again.' });
   }
 }
