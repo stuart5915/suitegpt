@@ -1410,8 +1410,13 @@
         }
     }
 
+    var lastSendTime = 0;
     async function sendMessage(text) {
         if (!text.trim() || sending) return;
+        // Throttle: minimum 2 seconds between messages to avoid rate limits
+        var now = Date.now();
+        if (now - lastSendTime < 2000) return;
+        lastSendTime = now;
         // Clear suggestion pills when user sends any message
         var sugBar = document.getElementById('chatSuggestionsBar');
         if (sugBar) sugBar.innerHTML = '';

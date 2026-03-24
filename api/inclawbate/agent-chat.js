@@ -1770,6 +1770,14 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions: ['A game', 'A dashboard', 'A landing page', 'A tool or calculator', 'Something else'] });
     }
 
+    // Intercept short app-type follow-ups (e.g. user clicked "A game" pill)
+    if (/^a\s+(game|dashboard|landing\s*page|tool|calculator|portfolio|tracker|social|chat|blog|store|shop|website)$/i.test(msgLower) || /^(game|dashboard|landing\s*page|tool|calculator|something else)$/i.test(msgLower)) {
+      const appType = message.replace(/^a\s+/i, '').trim();
+      const reply = `A ${appType.toLowerCase()} — nice! Tell me more:\n\n• What should it be called?\n• What features do you want?\n• Any specific style or theme?\n\nThe more detail you give me, the better I'll build it!`;
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid });
+    }
+
     let functionCalled = null;
     let toolArgs = null;
     let data = await callLLM(history);
