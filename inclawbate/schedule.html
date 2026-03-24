@@ -912,6 +912,26 @@
         .overlay-btn-cancel { background:none;color:var(--text-dim); }
         .overlay-btn-cancel:hover { color:var(--text-secondary); }
 
+        /* ── PGT Template Picker ── */
+        .tpl-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px; }
+        .tpl-card {
+            background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-md);padding:14px;cursor:pointer;transition:all 0.15s;
+        }
+        .tpl-card:hover { border-color:#34d399;background:rgba(52,211,153,0.05); }
+        .tpl-card.selected { border-color:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,0.2); }
+        .tpl-card-title { font-size:0.82rem;font-weight:700;color:var(--text-primary);margin-bottom:4px; }
+        .tpl-card-desc { font-size:0.68rem;color:var(--text-dim);line-height:1.4; }
+        .tpl-card-icon { font-size:1.4rem;margin-bottom:6px; }
+        .tpl-options { display:flex;flex-direction:column;gap:10px;margin-bottom:16px; }
+        .tpl-opt { display:flex;align-items:center;gap:10px;font-size:0.78rem;color:var(--text-secondary); }
+        .tpl-opt select, .tpl-opt input[type="text"] {
+            flex:1;background:var(--bg-elevated);border:1px solid var(--border-subtle);
+            border-radius:var(--radius-sm);padding:6px 10px;color:var(--text-primary);
+            font-size:0.75rem;font-family:var(--font-display);
+        }
+        .tpl-loading { text-align:center;padding:40px;color:var(--text-dim);font-size:0.8rem; }
+
         /* ── Weekly Overview Bar ── */
         .sched-week-overview {
             display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
@@ -2138,10 +2158,16 @@
                     html += '<img src="' + slotOpts.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._previewImage(\'' + escHtml(slotOpts.image_url) + '\')" title="Click to preview">';
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                        if (_activeAccount === 'publicgoodstech') {
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openPgtTemplate(\'' + booked.id + '\')" title="PGT template image" style="border-color:rgba(45,212,191,0.4);color:#2dd4bf">template</button>';
+                        }
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
+                    if (_activeAccount === 'publicgoodstech') {
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openPgtTemplate(\'' + booked.id + '\')" title="PGT template image" style="border-color:rgba(45,212,191,0.4);color:#2dd4bf">template</button>';
+                    }
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
 
@@ -2218,10 +2244,16 @@
                     html += '<img src="' + slotOpts2.image_url + '" class="sched-slot-thumb" onclick="event.stopPropagation();window._previewImage(\'' + escHtml(slotOpts2.image_url) + '\')" title="Click to preview">';
                     if (_hasEditAccess() && !isPosted) {
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openOverlay(\'' + booked.id + '\')" title="Add brand overlay">overlay</button>';
+                        if (_activeAccount === 'publicgoodstech') {
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openPgtTemplate(\'' + booked.id + '\')" title="PGT template image" style="border-color:rgba(45,212,191,0.4);color:#2dd4bf">template</button>';
+                        }
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
                     }
                 } else if (!isPosted && _hasEditAccess()) {
+                    if (_activeAccount === 'publicgoodstech') {
+                        html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openPgtTemplate(\'' + booked.id + '\')" title="PGT template image" style="border-color:rgba(45,212,191,0.4);color:#2dd4bf">template</button>';
+                    }
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
 
@@ -3147,6 +3179,703 @@
             ctx.fillText(customText, size - pad, size - pad);
             ctx.shadowBlur = 0;
             ctx.textAlign = 'left';
+        }
+    }
+
+    // ── PGT Template System ──
+    var _pgtLogo = new Image();
+    _pgtLogo.crossOrigin = 'anonymous';
+    _pgtLogo.src = '/assets/publicgoodstech-logo.png';
+
+    var _pgtCache = { agents: null, goods: null, builders: null };
+
+    async function _fetchPgtData(type) {
+        if (_pgtCache[type]) return _pgtCache[type];
+        try {
+            var resp = await fetch('/api/publicgoods/' + (type === 'goods' ? 'goods' : type === 'builders' ? 'builders' : 'agents'));
+            var data = await resp.json();
+            _pgtCache[type] = data[type] || data.agents || data.goods || data.builders || [];
+            return _pgtCache[type];
+        } catch(e) { return []; }
+    }
+
+    // Load logo images for a list of items, returns promise
+    function _loadLogos(items) {
+        return Promise.all(items.map(function(item) {
+            return new Promise(function(resolve) {
+                if (!item.logo_url && !item.avatar_url) { resolve(null); return; }
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() { resolve(img); };
+                img.onerror = function() { resolve(null); };
+                img.src = item.logo_url || item.avatar_url;
+            });
+        }));
+    }
+
+    var PGT_TEMPLATES = [
+        { id: 'ecosystem_map', icon: '\u{1F5FA}', title: 'Ecosystem Map', desc: 'Grid of agents grouped by category', dataType: 'agents' },
+        { id: 'agent_spotlight', icon: '\u{1F916}', title: 'Agent Spotlight', desc: 'Hero layout — one featured agent', dataType: 'agents' },
+        { id: 'top_agents', icon: '\u{1F3C6}', title: 'Top Agents', desc: 'Ranked list by mentions', dataType: 'agents' },
+        { id: 'new_radar', icon: '\u{1F4E1}', title: 'New on the Radar', desc: 'Recently added projects', dataType: 'agents' },
+        { id: 'builder_spotlight', icon: '\u{1F477}', title: 'Builder Spotlight', desc: 'Feature a builder / vibecoder', dataType: 'builders' },
+        { id: 'public_good', icon: '\u{1F30D}', title: 'Public Good', desc: 'Highlight an open-source tool or resource', dataType: 'goods' },
+        { id: 'category_focus', icon: '\u{1F50D}', title: 'Category Focus', desc: 'Deep dive on one category', dataType: 'agents' },
+        { id: 'weekly_recap', icon: '\u{1F4CA}', title: 'Weekly Recap', desc: 'Stats + top mentioned + new additions', dataType: 'agents' },
+    ];
+
+    window._openPgtTemplate = function(slotId) {
+        var modal = document.createElement('div');
+        modal.className = 'overlay-modal-bg';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+        var gridHtml = PGT_TEMPLATES.map(function(t) {
+            return '<div class="tpl-card" data-tpl="' + t.id + '">' +
+                '<div class="tpl-card-icon">' + t.icon + '</div>' +
+                '<div class="tpl-card-title">' + t.title + '</div>' +
+                '<div class="tpl-card-desc">' + t.desc + '</div>' +
+            '</div>';
+        }).join('');
+
+        modal.innerHTML = '<div class="overlay-modal">' +
+            '<h3>Create Template Image</h3>' +
+            '<div class="tpl-grid">' + gridHtml + '</div>' +
+            '<div id="tplPreviewArea"></div>' +
+            '<div class="overlay-actions" id="tplActions" style="display:none">' +
+                '<button class="overlay-btn-cancel" onclick="this.closest(\'.overlay-modal-bg\').remove()">Cancel</button>' +
+                '<button class="overlay-btn-download" id="tplDownload">Download</button>' +
+                '<button class="overlay-btn-apply" id="tplApply">Apply &amp; Upload</button>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(modal);
+
+        // Template card selection
+        modal.querySelectorAll('.tpl-card').forEach(function(card) {
+            card.addEventListener('click', async function() {
+                modal.querySelectorAll('.tpl-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+                var tplId = this.getAttribute('data-tpl');
+                var tpl = PGT_TEMPLATES.find(function(t) { return t.id === tplId; });
+                if (!tpl) return;
+
+                var previewArea = document.getElementById('tplPreviewArea');
+                previewArea.innerHTML = '<div class="tpl-loading">Loading data...</div>';
+
+                var items = await _fetchPgtData(tpl.dataType);
+                previewArea.innerHTML = '<div class="overlay-preview-wrap"><canvas id="tplCanvas"></canvas></div>';
+                document.getElementById('tplActions').style.display = 'flex';
+
+                await _renderPgtTemplate(tplId, items);
+
+                // Wire download + upload
+                document.getElementById('tplDownload').onclick = function() {
+                    var canvas = document.getElementById('tplCanvas');
+                    var link = document.createElement('a');
+                    link.download = 'pgt-' + tplId + '.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                };
+                document.getElementById('tplApply').onclick = async function() {
+                    var canvas = document.getElementById('tplCanvas');
+                    var dataUrl = canvas.toDataURL('image/png');
+                    var auth = getAuth();
+                    if (!auth || !auth.token) { alert('Sign in first'); return; }
+                    this.textContent = 'Uploading...';
+                    this.disabled = true;
+                    try {
+                        var uploadResp = await fetch('/api/inclawbate/upload', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                            body: JSON.stringify({ file_data: dataUrl, file_name: 'pgt-' + tplId + '-' + Date.now() + '.png', file_type: 'image/png' })
+                        });
+                        var uploadData = await uploadResp.json();
+                        if (uploadData.error) { alert(uploadData.error); return; }
+                        var resp = await fetch('/api/inclawbate/schedule-autofill', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                            body: JSON.stringify({ action: 'set_image', slot_id: slotId, image_url: uploadData.url })
+                        });
+                        var data = await resp.json();
+                        if (data.error) { alert(data.error); return; }
+                        var s = _schedSlots.find(function(s) { return s.id === slotId; });
+                        if (s) { if (!s.tweet_options) s.tweet_options = {}; s.tweet_options.image_url = uploadData.url; }
+                        modal.remove();
+                        renderSlots(_selectedDay);
+                    } catch(e) { alert('Upload failed: ' + e.message); this.textContent = 'Apply & Upload'; this.disabled = false; }
+                };
+            });
+        });
+    };
+
+    // ── PGT Template Renderers ──
+
+    var PGT_BG = '#0b0f14';
+    var PGT_GREEN = '#34d399';
+    var PGT_BLUE = '#60a5fa';
+    var PGT_GOLD = '#fbbf24';
+
+    function _pgtDrawBg(ctx, size) {
+        ctx.fillStyle = PGT_BG;
+        ctx.fillRect(0, 0, size, size);
+        // Subtle grid
+        ctx.strokeStyle = 'rgba(52,211,153,0.06)';
+        ctx.lineWidth = 1;
+        var step = size / 20;
+        for (var i = step; i < size; i += step) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, size); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(size, i); ctx.stroke();
+        }
+    }
+
+    function _pgtDrawHeader(ctx, size, title) {
+        var y = size * 0.06;
+        ctx.font = '800 ' + (size * 0.038) + 'px "Nunito", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(title, size / 2, y);
+        // Green underline
+        var tw = ctx.measureText(title).width;
+        ctx.fillStyle = PGT_GREEN;
+        ctx.fillRect(size / 2 - tw / 2, y + size * 0.048, tw, 3);
+    }
+
+    function _pgtDrawFooter(ctx, size) {
+        var footY = size * 0.93;
+        // PGT logo
+        if (_pgtLogo.complete && _pgtLogo.naturalWidth > 0) {
+            var lh = size * 0.04;
+            var lw = lh * (_pgtLogo.naturalWidth / _pgtLogo.naturalHeight);
+            ctx.drawImage(_pgtLogo, size * 0.04, footY, lw, lh);
+        }
+        // Date
+        var today = new Date();
+        var dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dateStr, size / 2, footY + size * 0.02);
+        // Handle
+        ctx.textAlign = 'right';
+        ctx.fillText('@publicgoodstech', size * 0.96, footY + size * 0.02);
+        ctx.textAlign = 'left';
+    }
+
+    function _pgtDrawLogoCircle(ctx, img, x, y, r) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        if (img) {
+            ctx.drawImage(img, x, y, r * 2, r * 2);
+        } else {
+            ctx.fillStyle = 'rgba(52,211,153,0.15)';
+            ctx.fillRect(x, y, r * 2, r * 2);
+            ctx.fillStyle = PGT_GREEN;
+            ctx.font = '700 ' + r + 'px "Nunito", sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('?', x + r, y + r);
+        }
+        ctx.restore();
+    }
+
+    function _pgtDrawLogoRounded(ctx, img, x, y, w, h, radius) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, radius);
+        ctx.closePath();
+        ctx.clip();
+        if (img) {
+            ctx.drawImage(img, x, y, w, h);
+        } else {
+            ctx.fillStyle = 'rgba(52,211,153,0.1)';
+            ctx.fillRect(x, y, w, h);
+        }
+        ctx.restore();
+        // Border
+        ctx.strokeStyle = 'rgba(52,211,153,0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.stroke();
+    }
+
+    async function _renderPgtTemplate(tplId, items) {
+        var canvas = document.getElementById('tplCanvas');
+        if (!canvas) return;
+        var size = 1080;
+        canvas.width = size;
+        canvas.height = size;
+        var ctx = canvas.getContext('2d');
+
+        if (tplId === 'ecosystem_map') {
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'AI AGENT ECOSYSTEM');
+            _pgtDrawFooter(ctx, size);
+
+            // Group by category
+            var cats = {};
+            items.forEach(function(a) {
+                var c = a.category || 'Other';
+                if (!cats[c]) cats[c] = [];
+                cats[c].push(a);
+            });
+            var catNames = Object.keys(cats).sort(function(a, b) { return cats[b].length - cats[a].length; });
+            if (catNames.length > 8) catNames = catNames.slice(0, 8);
+
+            // Load logos
+            var allItems = [];
+            catNames.forEach(function(c) { allItems = allItems.concat(cats[c].slice(0, 5)); });
+            var logos = await _loadLogos(allItems);
+            var logoMap = {};
+            var idx = 0;
+            catNames.forEach(function(c) {
+                cats[c].slice(0, 5).forEach(function(a) { logoMap[a.id] = logos[idx++]; });
+            });
+
+            // Layout: 2-column grid of category boxes
+            var startY = size * 0.13;
+            var boxW = size * 0.44;
+            var gap = size * 0.04;
+            var boxH = size * 0.09;
+            var cols = 2;
+            var leftX = size * 0.04;
+            var rightX = size * 0.52;
+
+            catNames.forEach(function(catName, ci) {
+                var col = ci % cols;
+                var row = Math.floor(ci / cols);
+                var bx = col === 0 ? leftX : rightX;
+                var by = startY + row * (boxH + size * 0.008 + gap);
+                var catItems = cats[catName].slice(0, 5);
+
+                // Category box background
+                ctx.fillStyle = 'rgba(52,211,153,0.04)';
+                ctx.strokeStyle = 'rgba(52,211,153,0.15)';
+                ctx.lineWidth = 1;
+                var catBoxH = boxH + size * 0.06;
+                ctx.beginPath(); ctx.roundRect(bx, by, boxW, catBoxH, 8); ctx.fill(); ctx.stroke();
+
+                // Category label
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(bx + size * 0.04, by - size * 0.008, ctx.measureText(catName).width + size * 0.03, size * 0.03);
+                ctx.font = '700 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                var labelW = ctx.measureText(catName).width + size * 0.02;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(bx + size * 0.03, by - size * 0.006, labelW, size * 0.026);
+                ctx.fillStyle = PGT_BG;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(catName, bx + size * 0.04, by + size * 0.007);
+
+                // Logo row
+                var logoSize = size * 0.055;
+                var logoGap = size * 0.015;
+                var lx = bx + size * 0.02;
+                var ly = by + size * 0.035;
+                catItems.forEach(function(item) {
+                    _pgtDrawLogoRounded(ctx, logoMap[item.id], lx, ly, logoSize, logoSize, 8);
+                    lx += logoSize + logoGap;
+                });
+            });
+
+        } else if (tplId === 'agent_spotlight') {
+            var featured = items.filter(function(a) { return a.featured; });
+            var agent = featured.length > 0 ? featured[Math.floor(Math.random() * featured.length)] : items[Math.floor(Math.random() * items.length)];
+            if (!agent) { ctx.fillStyle = '#fff'; ctx.fillText('No agents found', size/2, size/2); return; }
+
+            var agentLogos = await _loadLogos([agent]);
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'AGENT SPOTLIGHT');
+            _pgtDrawFooter(ctx, size);
+
+            // Center logo large
+            var logoR = size * 0.12;
+            var cx = size / 2 - logoR;
+            var cy = size * 0.22;
+            _pgtDrawLogoCircle(ctx, agentLogos[0], cx, cy, logoR);
+
+            // Glow ring
+            ctx.strokeStyle = PGT_GREEN;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = PGT_GREEN;
+            ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(size / 2, cy + logoR, logoR + 6, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Name
+            ctx.font = '800 ' + (size * 0.045) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(agent.name, size / 2, cy + logoR * 2 + size * 0.06);
+
+            // Category + chain badges
+            var badgeY = cy + logoR * 2 + size * 0.1;
+            [agent.category, agent.chain].filter(Boolean).forEach(function(badge, bi) {
+                var bw = ctx.measureText(badge).width + size * 0.03;
+                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                bw = ctx.measureText(badge).width + size * 0.03;
+                var bx = size / 2 + (bi === 0 ? -bw - 4 : 4);
+                ctx.fillStyle = bi === 0 ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)';
+                ctx.beginPath(); ctx.roundRect(bx, badgeY, bw, size * 0.032, 20); ctx.fill();
+                ctx.fillStyle = bi === 0 ? PGT_GREEN : PGT_BLUE;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(badge, bx + bw / 2, badgeY + size * 0.016);
+            });
+
+            // Description
+            if (agent.description) {
+                var desc = agent.description.length > 160 ? agent.description.substring(0, 157) + '...' : agent.description;
+                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.textAlign = 'center';
+                // Word wrap
+                var words = desc.split(' ');
+                var line = '';
+                var descY = badgeY + size * 0.07;
+                var maxW = size * 0.7;
+                words.forEach(function(word) {
+                    var test = line + word + ' ';
+                    if (ctx.measureText(test).width > maxW && line) {
+                        ctx.fillText(line.trim(), size / 2, descY);
+                        descY += size * 0.032;
+                        line = word + ' ';
+                    } else { line = test; }
+                });
+                if (line.trim()) ctx.fillText(line.trim(), size / 2, descY);
+            }
+
+            // X handle
+            if (agent.x_handle) {
+                ctx.font = '600 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_GREEN;
+                ctx.textAlign = 'center';
+                ctx.fillText('@' + agent.x_handle, size / 2, size * 0.85);
+            }
+
+        } else if (tplId === 'top_agents') {
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'TOP AI AGENTS');
+            _pgtDrawFooter(ctx, size);
+
+            var sorted = items.slice().sort(function(a, b) { return (b.mentions_count || 0) - (a.mentions_count || 0); });
+            var top = sorted.slice(0, 8);
+            var topLogos = await _loadLogos(top);
+
+            var startY = size * 0.14;
+            var rowH = size * 0.09;
+            top.forEach(function(agent, i) {
+                var y = startY + i * rowH;
+                // Rank number
+                ctx.font = '800 ' + (size * 0.032) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = i < 3 ? PGT_GOLD : 'rgba(255,255,255,0.4)';
+                ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                ctx.fillText('#' + (i + 1), size * 0.08, y + rowH / 2);
+
+                // Logo
+                var lr = size * 0.025;
+                _pgtDrawLogoCircle(ctx, topLogos[i], size * 0.1, y + rowH / 2 - lr, lr);
+
+                // Name
+                ctx.font = '700 ' + (size * 0.024) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'left';
+                ctx.fillText(agent.name, size * 0.17, y + rowH / 2 - size * 0.008);
+
+                // Category
+                ctx.font = '400 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillText(agent.category || '', size * 0.17, y + rowH / 2 + size * 0.02);
+
+                // Mentions
+                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_GREEN;
+                ctx.textAlign = 'right';
+                ctx.fillText((agent.mentions_count || 0) + ' mentions', size * 0.92, y + rowH / 2);
+                ctx.textAlign = 'left';
+
+                // Separator
+                if (i < top.length - 1) {
+                    ctx.strokeStyle = 'rgba(52,211,153,0.08)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(size * 0.08, y + rowH); ctx.lineTo(size * 0.92, y + rowH); ctx.stroke();
+                }
+            });
+
+        } else if (tplId === 'new_radar') {
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'NEW ON THE RADAR');
+            _pgtDrawFooter(ctx, size);
+
+            var recent = items.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 6);
+            var recentLogos = await _loadLogos(recent);
+
+            var cols = 3;
+            var cardW = size * 0.27;
+            var cardH = size * 0.32;
+            var gapX = size * 0.045;
+            var startX = (size - cols * cardW - (cols - 1) * gapX) / 2;
+            var startY = size * 0.14;
+
+            recent.forEach(function(agent, i) {
+                var col = i % cols;
+                var row = Math.floor(i / cols);
+                var x = startX + col * (cardW + gapX);
+                var y = startY + row * (cardH + size * 0.04);
+
+                // Card bg
+                ctx.fillStyle = 'rgba(52,211,153,0.04)';
+                ctx.strokeStyle = 'rgba(52,211,153,0.12)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(x, y, cardW, cardH, 10); ctx.fill(); ctx.stroke();
+
+                // Logo centered
+                var lr = size * 0.04;
+                _pgtDrawLogoRounded(ctx, recentLogos[i], x + cardW / 2 - lr, y + size * 0.03, lr * 2, lr * 2, 10);
+
+                // Name
+                ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                var name = agent.name.length > 16 ? agent.name.substring(0, 14) + '..' : agent.name;
+                ctx.fillText(name, x + cardW / 2, y + size * 0.12);
+
+                // Category badge
+                if (agent.category) {
+                    ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = PGT_GREEN;
+                    ctx.fillText(agent.category, x + cardW / 2, y + size * 0.15);
+                }
+
+                // Description snippet
+                if (agent.description) {
+                    var snippet = agent.description.length > 60 ? agent.description.substring(0, 57) + '...' : agent.description;
+                    ctx.font = '400 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    // Simple 2-line wrap
+                    var sw = cardW - size * 0.03;
+                    var swords = snippet.split(' ');
+                    var sline = ''; var sy = y + size * 0.19; var slines = 0;
+                    swords.forEach(function(w) {
+                        if (ctx.measureText(sline + w + ' ').width > sw && sline && slines < 2) {
+                            ctx.fillText(sline.trim(), x + cardW / 2, sy);
+                            sy += size * 0.02;
+                            sline = w + ' '; slines++;
+                        } else { sline += w + ' '; }
+                    });
+                    if (sline.trim() && slines < 3) ctx.fillText(sline.trim(), x + cardW / 2, sy);
+                }
+            });
+
+        } else if (tplId === 'builder_spotlight') {
+            var builders = items;
+            var featured = builders.filter(function(b) { return b.featured; });
+            var builder = featured.length > 0 ? featured[Math.floor(Math.random() * featured.length)] : builders[Math.floor(Math.random() * builders.length)];
+            if (!builder) { _pgtDrawBg(ctx, size); ctx.fillStyle='#fff'; ctx.font='20px sans-serif'; ctx.fillText('No builders found',size/2,size/2); return; }
+
+            var bLogos = await _loadLogos([builder]);
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'BUILDER SPOTLIGHT');
+            _pgtDrawFooter(ctx, size);
+
+            var lr = size * 0.12;
+            _pgtDrawLogoCircle(ctx, bLogos[0], size / 2 - lr, size * 0.22, lr);
+            ctx.strokeStyle = PGT_BLUE;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = PGT_BLUE; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(size / 2, size * 0.22 + lr, lr + 6, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.font = '800 ' + (size * 0.042) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+            ctx.fillText(builder.name, size / 2, size * 0.52);
+
+            if (builder.x_handle) {
+                ctx.font = '600 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_BLUE;
+                ctx.fillText('@' + builder.x_handle, size / 2, size * 0.56);
+            }
+
+            if (builder.bio) {
+                var bio = builder.bio.length > 200 ? builder.bio.substring(0, 197) + '...' : builder.bio;
+                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                var bwords = bio.split(' '); var bline = ''; var by = size * 0.63; var bmax = size * 0.7;
+                bwords.forEach(function(w) {
+                    if (ctx.measureText(bline + w + ' ').width > bmax && bline) {
+                        ctx.fillText(bline.trim(), size / 2, by); by += size * 0.032; bline = w + ' ';
+                    } else { bline += w + ' '; }
+                });
+                if (bline.trim()) ctx.fillText(bline.trim(), size / 2, by);
+            }
+
+            if (builder.skills && builder.skills.length) {
+                var sy = size * 0.82;
+                ctx.font = '600 ' + (size * 0.015) + 'px "Nunito", sans-serif';
+                var sx = size / 2 - builder.skills.slice(0, 4).reduce(function(acc, s) { return acc + ctx.measureText(s).width + size * 0.04; }, 0) / 2;
+                builder.skills.slice(0, 4).forEach(function(skill) {
+                    var sw = ctx.measureText(skill).width + size * 0.025;
+                    ctx.fillStyle = 'rgba(96,165,250,0.12)';
+                    ctx.beginPath(); ctx.roundRect(sx, sy, sw, size * 0.028, 20); ctx.fill();
+                    ctx.fillStyle = PGT_BLUE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(skill, sx + sw / 2, sy + size * 0.014);
+                    sx += sw + size * 0.01;
+                });
+            }
+
+        } else if (tplId === 'public_good') {
+            var good = items.filter(function(g) { return g.featured; })[0] || items[Math.floor(Math.random() * items.length)];
+            if (!good) { _pgtDrawBg(ctx, size); return; }
+
+            var gLogos = await _loadLogos([good]);
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'PUBLIC GOOD HIGHLIGHT');
+            _pgtDrawFooter(ctx, size);
+
+            var lr = size * 0.1;
+            _pgtDrawLogoCircle(ctx, gLogos[0], size / 2 - lr, size * 0.24, lr);
+            // Green glow
+            ctx.strokeStyle = PGT_GREEN; ctx.lineWidth = 3; ctx.shadowColor = PGT_GREEN; ctx.shadowBlur = 25;
+            ctx.beginPath(); ctx.arc(size / 2, size * 0.24 + lr, lr + 6, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.font = '800 ' + (size * 0.04) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+            ctx.fillText(good.name, size / 2, size * 0.5);
+
+            if (good.category) {
+                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_GREEN;
+                ctx.fillText(good.category, size / 2, size * 0.54);
+            }
+
+            if (good.description) {
+                var gd = good.description.length > 200 ? good.description.substring(0, 197) + '...' : good.description;
+                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                var gwords = gd.split(' '); var gline = ''; var gy = size * 0.6; var gmax = size * 0.7;
+                gwords.forEach(function(w) {
+                    if (ctx.measureText(gline + w + ' ').width > gmax && gline) {
+                        ctx.fillText(gline.trim(), size / 2, gy); gy += size * 0.032; gline = w + ' ';
+                    } else { gline += w + ' '; }
+                });
+                if (gline.trim()) ctx.fillText(gline.trim(), size / 2, gy);
+            }
+
+        } else if (tplId === 'category_focus') {
+            var cats = {};
+            items.forEach(function(a) { var c = a.category || 'Other'; if (!cats[c]) cats[c] = []; cats[c].push(a); });
+            var catNames = Object.keys(cats).sort(function(a, b) { return cats[b].length - cats[a].length; });
+            // Pick a random substantial category
+            var bigCats = catNames.filter(function(c) { return cats[c].length >= 2; });
+            var catName = bigCats.length > 0 ? bigCats[Math.floor(Math.random() * bigCats.length)] : catNames[0];
+            var catItems = (cats[catName] || []).slice(0, 9);
+
+            var catLogos = await _loadLogos(catItems);
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, catName.toUpperCase() + ' AGENTS');
+            _pgtDrawFooter(ctx, size);
+
+            // 3x3 grid
+            var cols = 3;
+            var cardW = size * 0.26;
+            var cardH = size * 0.22;
+            var gapX = size * 0.04;
+            var startX = (size - cols * cardW - (cols - 1) * gapX) / 2;
+            var startY = size * 0.15;
+
+            catItems.forEach(function(agent, i) {
+                var col = i % cols;
+                var row = Math.floor(i / cols);
+                var x = startX + col * (cardW + gapX);
+                var y = startY + row * (cardH + size * 0.03);
+
+                ctx.fillStyle = 'rgba(52,211,153,0.04)';
+                ctx.strokeStyle = 'rgba(52,211,153,0.1)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(x, y, cardW, cardH, 10); ctx.fill(); ctx.stroke();
+
+                var lr = size * 0.035;
+                _pgtDrawLogoRounded(ctx, catLogos[i], x + cardW / 2 - lr, y + size * 0.02, lr * 2, lr * 2, 8);
+
+                ctx.font = '700 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                var n = agent.name.length > 14 ? agent.name.substring(0, 12) + '..' : agent.name;
+                ctx.fillText(n, x + cardW / 2, y + size * 0.1);
+
+                if (agent.x_handle) {
+                    ctx.font = '400 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.fillText('@' + agent.x_handle, x + cardW / 2, y + size * 0.13);
+                }
+            });
+
+        } else if (tplId === 'weekly_recap') {
+            _pgtDrawBg(ctx, size);
+            _pgtDrawHeader(ctx, size, 'WEEKLY RECAP');
+            _pgtDrawFooter(ctx, size);
+
+            // Stats row
+            var stats = [
+                { label: 'Total Agents', value: items.length.toString() },
+                { label: 'Featured', value: items.filter(function(a) { return a.featured; }).length.toString() },
+                { label: 'Categories', value: Object.keys(items.reduce(function(acc, a) { acc[a.category || 'Other'] = 1; return acc; }, {})).length.toString() },
+            ];
+            var statW = size * 0.25;
+            var statStartX = (size - stats.length * statW - (stats.length - 1) * size * 0.04) / 2;
+            stats.forEach(function(stat, i) {
+                var sx = statStartX + i * (statW + size * 0.04);
+                var sy = size * 0.15;
+                ctx.fillStyle = 'rgba(52,211,153,0.06)';
+                ctx.strokeStyle = 'rgba(52,211,153,0.12)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(sx, sy, statW, size * 0.1, 10); ctx.fill(); ctx.stroke();
+
+                ctx.font = '800 ' + (size * 0.04) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_GREEN; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(stat.value, sx + statW / 2, sy + size * 0.04);
+                ctx.font = '500 ' + (size * 0.015) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fillText(stat.label, sx + statW / 2, sy + size * 0.075);
+            });
+
+            // Top mentioned
+            ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = PGT_GREEN; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText('TOP MENTIONED', size * 0.06, size * 0.3);
+
+            var sorted = items.slice().sort(function(a, b) { return (b.mentions_count || 0) - (a.mentions_count || 0); });
+            var topM = sorted.slice(0, 5);
+            var tmLogos = await _loadLogos(topM);
+            topM.forEach(function(agent, i) {
+                var y = size * 0.34 + i * size * 0.065;
+                var lr = size * 0.02;
+                _pgtDrawLogoCircle(ctx, tmLogos[i], size * 0.06, y, lr);
+                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(agent.name, size * 0.12, y + lr);
+                ctx.font = '400 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.textAlign = 'right';
+                ctx.fillText((agent.mentions_count || 0) + ' mentions', size * 0.94, y + lr);
+                ctx.textAlign = 'left';
+            });
+
+            // Recently added
+            ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = PGT_BLUE; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText('RECENTLY ADDED', size * 0.06, size * 0.7);
+
+            var recent = items.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 4);
+            var rrLogos = await _loadLogos(recent);
+            var rlx = size * 0.06;
+            recent.forEach(function(agent, i) {
+                var lr = size * 0.03;
+                _pgtDrawLogoRounded(ctx, rrLogos[i], rlx, size * 0.74, lr * 2, lr * 2, 8);
+                ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                var rn = agent.name.length > 10 ? agent.name.substring(0, 8) + '..' : agent.name;
+                ctx.fillText(rn, rlx + lr, size * 0.81);
+                rlx += size * 0.22;
+            });
         }
     }
 
