@@ -163,6 +163,46 @@ async function logMentionReply(mentionId, mentionText, author, replyText, status
   });
 }
 
+// ── Check if tweet is actually directed at the bot ──
+
+function shouldReply(tweet) {
+  const text = tweet.text || '';
+
+  // Strip all @mentions and emojis to get the actual content
+  const cleanText = text.replace(/@\w+/g, '').replace(/[\u{1F000}-\u{1FFFF}]/gu, '').trim();
+
+  // Skip if there's basically no real text content (just @mentions, emojis, or very short reactions)
+  if (cleanText.length < 15) {
+    // Exception: if it contains a question mark, still reply
+    if (!cleanText.includes('?')) {
+      console.log(`Skipping (too short/reaction): "${text.slice(0, 80)}"`);
+      return false;
+    }
+  }
+
+  // Check if @inclawbator is a direct mention (at or near the start, after other @mentions)
+  // e.g., "@inclawbator build me an app" → direct
+  // e.g., "Exactly what @inclawbator is doing!" → conversational
+  const textBeforeBot = text.slice(0, text.search(/@inclawbator/i)).replace(/@\w+\s*/g, '').trim();
+  if (textBeforeBot.length > 5) {
+    // There's real text before @inclawbator → conversational mention, not directed at the bot
+    // Only reply if there's a question directed at the bot
+    if (!cleanText.includes('?')) {
+      console.log(`Skipping (conversational mention): "${text.slice(0, 80)}"`);
+      return false;
+    }
+  }
+
+  // Skip simple reactions/agreements to the bot's own tweets
+  const reactionPatterns = /^(nice|cool|true|exactly|facts|based|agreed|yep|yes|no|lol|lmao|haha|wow|love it|great|good|as it should|this is the way|for sure|absolutely|right|word|damn|dope|fire|lit|amazing|awesome|interesting|noted|thanks|thank you|gm|gn|lfg|wagmi|fax|real|fr|w\b|huge|massive|big|lets go|let's go)[\s.!,]*$/i;
+  if (reactionPatterns.test(cleanText)) {
+    console.log(`Skipping (reaction): "${text.slice(0, 80)}"`);
+    return false;
+  }
+
+  return true;
+}
+
 // ── Process a mention ──
 
 async function handleMention(tweet, authors) {
@@ -179,6 +219,9 @@ async function handleMention(tweet, authors) {
   // Skip old mentions
   if (tweet.created_at && (Date.now() - new Date(tweet.created_at).getTime()) > MENTION_MAX_AGE_MS) return;
 
+  // Skip conversational mentions, reactions, and non-directed tweets
+  if (!shouldReply(tweet)) return;
+
   // Skip if already replied (DB dedup)
   const { data: existing } = await supabase
     .from('agent_replies')
@@ -187,7 +230,7 @@ async function handleMention(tweet, authors) {
     .limit(1);
   if (existing?.length > 0) return;
 
-  console.log(`Mention from @${authorUsername}: ${tweet.text?.slice(0, 80)}`);
+  console.log(`Replying to @${authorUsername}: ${tweet.text?.slice(0, 80)}`);
 
   try {
     const reply = await getAgentReply(tweet.text, `X mention from @${authorUsername}`, `x_mention_${authorUsername}`);
