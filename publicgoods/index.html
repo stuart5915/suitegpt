@@ -517,13 +517,30 @@
             opacity: 0; transition: opacity 0.15s;
         }
         .news-link-card:hover .news-read-arrow { opacity: 1; }
-        .pgt-chip {
-            padding: 6px 14px; border-radius: var(--radius-full);
-            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-            color: var(--text-secondary); font-size: 0.75rem; font-weight: 600;
-            cursor: pointer; transition: all 0.15s; font-family: var(--font);
+        .pgt-pill {
+            padding: 5px 12px; border-radius: var(--radius-full);
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            color: var(--text-dim); font-size: 0.7rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: var(--mono);
+            letter-spacing: 0.02em;
         }
-        .pgt-chip:hover { border-color: rgba(52,211,153,0.3); color: var(--accent); background: rgba(52,211,153,0.06); }
+        .pgt-pill:hover { border-color: rgba(52,211,153,0.3); color: var(--accent); background: rgba(52,211,153,0.06); }
+        .pgt-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(52,211,153,0.1); }
+        .hero-field { margin-bottom: 8px; }
+        .hero-field label { display: block; font-size: 0.65rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; font-family: var(--mono); }
+        .hero-field input, .hero-field select, .hero-field textarea {
+            width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); font-size: 0.8rem; outline: none; font-family: var(--font);
+        }
+        .hero-field input:focus, .hero-field textarea:focus { border-color: rgba(52,211,153,0.4); }
+        .hero-field textarea { min-height: 50px; resize: vertical; }
+        .hero-submit {
+            width: 100%; padding: 10px; background: var(--accent); border: none; border-radius: 8px;
+            color: #0b0f14; font-weight: 800; font-size: 0.82rem; cursor: pointer; font-family: var(--font);
+            margin-top: 4px; transition: opacity 0.15s;
+        }
+        .hero-submit:hover { opacity: 0.88; }
+        .hero-submit:disabled { opacity: 0.4; cursor: not-allowed; }
         .news-list {
             display: flex; flex-direction: column; gap: 6px;
         }
@@ -977,24 +994,16 @@
             <h1>Tracking the Agents<br>Building the Future</h1>
             <p>The open directory of AI agents, public goods, and builders shaping the decentralized web.</p>
             <div class="hero-buttons">
-                <!-- Chat submission input -->
-                <div id="heroChatWrap" style="max-width:520px;margin:0 auto;width:100%">
-                    <div style="display:flex;gap:6px;margin-bottom:10px;justify-content:center;flex-wrap:wrap">
-                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Add my AI agent to the directory';heroInput.focus()">Add my AI agent</button>
-                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='I am a builder, feature me';heroInput.focus()">I'm a builder</button>
-                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Submit a public good';heroInput.focus()">Submit a public good</button>
-                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Share a news link';heroInput.focus()">Share news</button>
+                <!-- Submission pills + inline forms -->
+                <div id="heroSubmitWrap" style="max-width:480px;margin:0 auto;width:100%">
+                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px">
+                        <button class="pgt-pill" data-form="agent" onclick="toggleHeroForm('agent',this)">+ AI Agent</button>
+                        <button class="pgt-pill" data-form="builder" onclick="toggleHeroForm('builder',this)">+ Builder</button>
+                        <button class="pgt-pill" data-form="good" onclick="toggleHeroForm('good',this)">+ Public Good</button>
+                        <button class="pgt-pill" data-form="news" onclick="toggleHeroForm('news',this)">+ News</button>
                     </div>
-                    <form id="heroChatForm" onsubmit="sendHeroChat(event)" style="display:flex;gap:8px">
-                        <input type="text" id="heroInput" placeholder="Tell us about your project, or just say hi..." style="flex:1;padding:12px 18px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:var(--radius-full);color:var(--text);font-size:0.88rem;outline:none;font-family:var(--font);transition:border-color 0.2s" onfocus="this.style.borderColor='rgba(52,211,153,0.4)'" onblur="this.style.borderColor='var(--border)'">
-                        <button type="submit" id="heroSendBtn" style="padding:12px 20px;background:var(--accent);border:none;border-radius:var(--radius-full);color:#0b0f14;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:var(--font);white-space:nowrap;transition:opacity 0.15s">Send</button>
-                    </form>
-                    <div id="heroChatReply" style="display:none;margin-top:12px;padding:14px 18px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:12px;font-size:0.85rem;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap"></div>
-                </div>
-
-                <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
-                    <button onclick="switchTab('agents')" style="padding:8px 20px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-full);color:var(--text-secondary);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(52,211,153,0.3)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Browse Agents</button>
-                    <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" style="padding:8px 20px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-full);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-decoration:none;font-family:var(--font);transition:all 0.15s" onmouseover="this.style.borderColor='rgba(52,211,153,0.3)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Follow on X</a>
+                    <div id="heroFormWrap" style="display:none;margin-top:12px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px"></div>
+                    <div id="heroFormMsg" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:0.82rem;text-align:center"></div>
                 </div>
             </div>
         </div>
@@ -2122,52 +2131,143 @@ async function initSeedNews() {
     renderNews();
 }
 
-// ── Hero Chat ──
-let _chatHistory = [];
-let _chatSending = false;
+// ── Hero Submission Forms ──
+let _activeHeroForm = null;
 
-async function sendHeroChat(e) {
-    e.preventDefault();
-    const input = document.getElementById('heroInput');
-    const reply = document.getElementById('heroChatReply');
-    const btn = document.getElementById('heroSendBtn');
-    const msg = input.value.trim();
-    if (!msg || _chatSending) return;
+const HERO_FORMS = {
+    agent: {
+        title: 'Add an AI Agent',
+        fields: [
+            { id: 'hf_name', label: 'Name', type: 'text', placeholder: 'e.g. Virtuals Protocol', required: true },
+            { id: 'hf_handle', label: 'X Handle', type: 'text', placeholder: '@handle' },
+            { id: 'hf_desc', label: 'What does it do?', type: 'textarea', placeholder: 'Brief description...' },
+            { id: 'hf_website', label: 'Website', type: 'text', placeholder: 'https://...' },
+            { id: 'hf_chain', label: 'Chain', type: 'select', options: ['multi','base','ethereum','solana'] },
+            { id: 'hf_category', label: 'Category', type: 'select', options: ['general','defi','social','gaming','infra','devtools','dao'] },
+        ],
+        endpoint: '/agents',
+        buildBody: () => ({
+            name: v('hf_name'), x_handle: v('hf_handle').replace('@',''), description: v('hf_desc'),
+            website: v('hf_website'), chain: v('hf_chain'), category: v('hf_category'), submitted_by: 'hero'
+        })
+    },
+    builder: {
+        title: 'Submit as a Builder',
+        fields: [
+            { id: 'hf_name', label: 'Name', type: 'text', placeholder: 'Your name or alias', required: true },
+            { id: 'hf_handle', label: 'X Handle', type: 'text', placeholder: '@handle' },
+            { id: 'hf_bio', label: 'What do you build?', type: 'textarea', placeholder: 'Tell us about yourself...' },
+            { id: 'hf_website', label: 'Website or GitHub', type: 'text', placeholder: 'https://...' },
+        ],
+        endpoint: '/builders',
+        buildBody: () => ({
+            name: v('hf_name'), x_handle: v('hf_handle').replace('@',''), bio: v('hf_bio'),
+            website: v('hf_website'), submitted_by: 'hero'
+        })
+    },
+    good: {
+        title: 'Submit a Public Good',
+        fields: [
+            { id: 'hf_name', label: 'Name', type: 'text', placeholder: 'e.g. Gitcoin Grants', required: true },
+            { id: 'hf_handle', label: 'X Handle', type: 'text', placeholder: '@handle' },
+            { id: 'hf_desc', label: 'What is it?', type: 'textarea', placeholder: 'Brief description...' },
+            { id: 'hf_website', label: 'Website', type: 'text', placeholder: 'https://...' },
+            { id: 'hf_category', label: 'Category', type: 'select', options: ['tool','infra','education','community','protocol','dao'] },
+        ],
+        endpoint: '/goods',
+        buildBody: () => ({
+            name: v('hf_name'), x_handle: v('hf_handle').replace('@',''), description: v('hf_desc'),
+            website: v('hf_website'), category: v('hf_category'), submitted_by: 'hero'
+        })
+    },
+    news: {
+        title: 'Share a News Link',
+        fields: [
+            { id: 'hf_title', label: 'Headline', type: 'text', placeholder: 'What happened?', required: true },
+            { id: 'hf_url', label: 'Link', type: 'text', placeholder: 'https://...', required: true },
+            { id: 'hf_summary', label: 'Summary (1-2 sentences)', type: 'textarea', placeholder: 'Brief summary...' },
+            { id: 'hf_source', label: 'Source', type: 'text', placeholder: 'CoinDesk, TheBlock, etc.' },
+        ],
+        endpoint: '/news',
+        buildBody: () => ({
+            title: v('hf_title'), url: v('hf_url'), summary: v('hf_summary'),
+            source: v('hf_source'), submitted_by: 'hero'
+        })
+    }
+};
 
-    _chatSending = true;
-    btn.textContent = '...';
-    btn.disabled = true;
-    reply.style.display = 'block';
-    reply.textContent = 'Thinking...';
-    reply.style.color = 'var(--text-dim)';
+function v(id) { return (document.getElementById(id) || {}).value || ''; }
 
-    _chatHistory.push({ role: 'user', content: msg });
+function toggleHeroForm(type, btn) {
+    const wrap = document.getElementById('heroFormWrap');
+    const msg = document.getElementById('heroFormMsg');
+    msg.style.display = 'none';
 
-    try {
-        const res = await fetch('/api/publicgoods/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg, history: _chatHistory.slice(-10) })
-        });
-        const data = await res.json();
-        const text = data.reply || 'How can I help?';
-        reply.textContent = text;
-        reply.style.color = 'var(--text-secondary)';
-        _chatHistory.push({ role: 'assistant', content: text });
-
-        if (data.submitted) {
-            reply.style.borderColor = 'rgba(52,211,153,0.4)';
-            reply.style.background = 'rgba(52,211,153,0.08)';
-        }
-    } catch (err) {
-        reply.textContent = 'Something went wrong — try again.';
-        reply.style.color = 'var(--coral)';
+    // Toggle off if same pill clicked
+    if (_activeHeroForm === type) {
+        _activeHeroForm = null;
+        wrap.style.display = 'none';
+        document.querySelectorAll('.pgt-pill').forEach(p => p.classList.remove('active'));
+        return;
     }
 
-    input.value = '';
-    btn.textContent = 'Send';
-    btn.disabled = false;
-    _chatSending = false;
+    _activeHeroForm = type;
+    document.querySelectorAll('.pgt-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+
+    const form = HERO_FORMS[type];
+    wrap.style.display = 'block';
+    wrap.innerHTML = `<div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:10px">${form.title}</div>` +
+        form.fields.map(f => {
+            if (f.type === 'select') {
+                return `<div class="hero-field"><label>${f.label}</label><select id="${f.id}">${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select></div>`;
+            }
+            if (f.type === 'textarea') {
+                return `<div class="hero-field"><label>${f.label}</label><textarea id="${f.id}" placeholder="${f.placeholder || ''}"></textarea></div>`;
+            }
+            return `<div class="hero-field"><label>${f.label}</label><input type="text" id="${f.id}" placeholder="${f.placeholder || ''}" ${f.required ? 'required' : ''}></div>`;
+        }).join('') +
+        `<button class="hero-submit" id="heroSubmitBtn" onclick="submitHeroForm()">Submit</button>`;
+}
+
+async function submitHeroForm() {
+    const form = HERO_FORMS[_activeHeroForm];
+    if (!form) return;
+    const body = form.buildBody();
+    if (!body.name && !body.title) { showHeroMsg('Name is required', true); return; }
+
+    const btn = document.getElementById('heroSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    try {
+        const res = await fetch('/api/publicgoods' + form.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok || data.agent || data.builder || data.good || data.item) {
+            showHeroMsg('Submitted for review! Thanks for contributing.', false);
+            document.getElementById('heroFormWrap').style.display = 'none';
+            document.querySelectorAll('.pgt-pill').forEach(p => p.classList.remove('active'));
+            _activeHeroForm = null;
+        } else {
+            showHeroMsg(data.error || 'Something went wrong', true);
+        }
+    } catch (e) {
+        showHeroMsg('Failed to submit — try again', true);
+    }
+    btn.disabled = false; btn.textContent = 'Submit';
+}
+
+function showHeroMsg(text, isError) {
+    const msg = document.getElementById('heroFormMsg');
+    msg.style.display = 'block';
+    msg.textContent = text;
+    msg.style.background = isError ? 'rgba(249,112,102,0.08)' : 'rgba(52,211,153,0.08)';
+    msg.style.border = '1px solid ' + (isError ? 'rgba(249,112,102,0.2)' : 'rgba(52,211,153,0.2)');
+    msg.style.color = isError ? 'var(--coral)' : 'var(--accent)';
+    setTimeout(() => { msg.style.display = 'none'; }, 5000);
 }
 
 // ── Initialize ──
