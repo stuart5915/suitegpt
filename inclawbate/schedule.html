@@ -1170,6 +1170,17 @@
         </button>
     </div>
 
+    <!-- Daily Tasks Guide (admin/editor only) -->
+    <div id="dailyTasksPanel" style="display:none;margin-bottom:var(--space-md)">
+        <div onclick="document.getElementById('dailyTasksBody').style.display=document.getElementById('dailyTasksBody').style.display==='none'?'block':'none';this.querySelector('.dt-arrow').textContent=document.getElementById('dailyTasksBody').style.display==='none'?'▶':'▼'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:10px;cursor:pointer">
+            <span class="dt-arrow" style="font-size:0.7rem;color:var(--text-dim)">▶</span>
+            <span style="font-family:var(--font-display);font-size:0.88rem;font-weight:700;color:var(--text-primary)">📋 Daily Tasks</span>
+            <span style="font-size:0.68rem;color:var(--text-dim);margin-left:auto" id="dailyTasksAccount">@publicgoodstech</span>
+        </div>
+        <div id="dailyTasksBody" style="display:none;padding:14px;background:var(--bg-card);border:1px solid var(--border-default);border-top:none;border-radius:0 0 10px 10px;font-size:0.78rem;color:var(--text-secondary);line-height:1.7">
+        </div>
+    </div>
+
     <!-- Admin pipeline banner -->
     <section class="sched-admin-banner" id="adminBanner" style="display:none">
         <div class="sched-admin-banner-title">Admin Pipeline</div>
@@ -1731,8 +1742,115 @@
         }, 50);
     };
 
-    // Show research panel after auth
-    setTimeout(function() { _showResearchPanel(); }, 2000);
+    // ═══ Daily Tasks Guide ═══
+    var DAILY_TASKS = {
+        'publicgoodstech': {
+            title: '@publicgoodstech — Daily Workflow (1.5 hrs)',
+            tasks: [
+                { time: 'AM (30 min)', label: 'Research', items: [
+                    'Scan X for "AI agent", "autonomous agent", "public goods", "vibecoder"',
+                    'Find 2-3 new projects/builders → add to Research Database',
+                    'Check yesterday\'s tagged projects — did they retweet? Reply to engagers',
+                ]},
+                { time: 'MID (30 min)', label: 'Content', items: [
+                    'Generate today\'s 4 tweets on the schedule page',
+                    'Review — make sure @handles are correct, images look good',
+                    'Approve and schedule all 4 posts',
+                    'Hit 📢 on each database entry you mentioned',
+                ]},
+                { time: 'PM (15 min)', label: 'Engage', items: [
+                    'Reply to comments on today\'s posts — be genuine',
+                    'Quote retweet 1-2 interesting posts from projects in database',
+                ]},
+                { time: 'EVE (15 min)', label: 'Grow', items: [
+                    'Follow 10-15 new accounts — builders, agents, protocols',
+                    'DM 1-2 builders: "saw you shipped X, want to be featured on publicgoods.tech?"',
+                ]},
+                { time: 'WEEKLY (Fri)', label: 'Review', items: [
+                    'Review database — sort by least mentioned, plan next week',
+                    'Write 1 blog article for publicgoods.tech (recap, tutorial, or spotlight)',
+                    'Check metrics — follower growth, engagement, best-performing posts',
+                ]},
+            ]
+        },
+        'inclawbate': {
+            title: '@inclawbate — Daily Workflow (1 hr)',
+            tasks: [
+                { time: 'AM (20 min)', label: 'Research', items: [
+                    'Scan Partnership Database — who haven\'t we engaged with recently?',
+                    'Find 1-2 new potential partners (builders, influencers, protocols)',
+                    'Add them to the database with notes on what they could do for Inclawbate',
+                ]},
+                { time: 'MID (20 min)', label: 'Content', items: [
+                    'Generate today\'s 3 tweets — focus on what Inclawbate is building/shipping',
+                    'Review, tweak copy, approve and schedule',
+                    'Include relevant ecosystem links (apps, staking, tools)',
+                ]},
+                { time: 'PM (20 min)', label: 'Engage & Partner', items: [
+                    'Reply to comments and DMs on @inclawbate posts',
+                    'DM 1 potential partner — propose collaboration or incubation',
+                    'Engage with ecosystem projects\' posts (comment, retweet)',
+                ]},
+                { time: 'WEEKLY (Fri)', label: 'Review', items: [
+                    'Review partnership pipeline — who\'s warm? Who needs follow-up?',
+                    'Update CEO_TASKS.md with partnership progress',
+                    'Plan next week\'s content themes around upcoming launches/events',
+                ]},
+            ]
+        },
+        'inclawbator': {
+            title: '@inclawbator — Daily Workflow (45 min)',
+            tasks: [
+                { time: 'AM (15 min)', label: 'Monitor', items: [
+                    'Check X mentions of @inclawbator — the bot auto-replies but review quality',
+                    'Check Telegram for any Inclawbator agent issues',
+                    'Review agent-chat logs for common questions (improve responses)',
+                ]},
+                { time: 'MID (15 min)', label: 'Content', items: [
+                    'Generate today\'s 3 tweets — the Inclawbator speaks as an AI agent',
+                    'Vibe: crypto-native, meme-savvy, but deeper — benevolent intelligence',
+                    'Approve and schedule',
+                ]},
+                { time: 'PM (15 min)', label: 'Ecosystem', items: [
+                    'Check incubation requests — any new projects applying?',
+                    'Review agent performance — is the X responder working? Any errors?',
+                    'Engage as @inclawbator on interesting AI/crypto threads',
+                ]},
+                { time: 'WEEKLY (Fri)', label: 'Review', items: [
+                    'Review Inclawbator agent skills — anything missing or broken?',
+                    'Check agent distribution — are we on all target platforms?',
+                    'Plan any new capabilities or integrations for next week',
+                ]},
+            ]
+        },
+    };
+
+    function _renderDailyTasks() {
+        var panel = document.getElementById('dailyTasksPanel');
+        var body = document.getElementById('dailyTasksBody');
+        var label = document.getElementById('dailyTasksAccount');
+        if (!panel || !body) return;
+        panel.style.display = _hasEditAccess() ? '' : 'none';
+        if (!_hasEditAccess()) return;
+
+        var config = DAILY_TASKS[_activeAccount] || DAILY_TASKS['publicgoodstech'];
+        if (label) label.textContent = '@' + _activeAccount;
+
+        body.innerHTML = '<div style="font-family:var(--font-display);font-weight:800;font-size:0.92rem;color:var(--text-primary);margin-bottom:10px">' + config.title + '</div>' +
+            config.tasks.map(function(section) {
+                return '<div style="margin-bottom:12px">' +
+                    '<div style="font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">' + section.time + ' — ' + section.label + '</div>' +
+                    '<ul style="margin:0;padding-left:18px;color:var(--text-secondary)">' +
+                        section.items.map(function(item) {
+                            return '<li style="margin-bottom:3px">' + item + '</li>';
+                        }).join('') +
+                    '</ul>' +
+                '</div>';
+            }).join('');
+    }
+
+    // Show panels after auth
+    setTimeout(function() { _showResearchPanel(); _renderDailyTasks(); }, 2000);
 
     window._switchAccount = function(account) {
         if (account === _activeAccount) return;
@@ -1763,6 +1881,7 @@
         initSchedule().catch(function(e) { console.error('Switch error:', e); });
         loadFeed().catch(function(e) { console.error('Feed switch error:', e); });
         _showResearchPanel(); // Refresh research tabs for this account
+        _renderDailyTasks(); // Update daily tasks for this account
     };
 
     function getAuth() {

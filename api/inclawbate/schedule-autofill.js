@@ -17,7 +17,13 @@ const GROQ_API_KEY = _groqKeys[0] || '';
 const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 // Editors can generate, edit, delete drafts — but NOT approve/reject
 const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655']; // @FreefoRaLLey
-const VALID_HOURS = [13, 18, 23]; // 3 posts/day: 9 AM ET, 2 PM ET, 7 PM ET
+const VALID_HOURS = [13, 18, 23]; // Default: 3 posts/day: 9 AM ET, 2 PM ET, 7 PM ET
+// Account-specific slot counts
+const ACCOUNT_HOURS = {
+    'inclawbate': [13, 18, 23],          // 3 posts: 9 AM, 2 PM, 7 PM ET
+    'inclawbator': [13, 18, 23],          // 3 posts: 9 AM, 2 PM, 7 PM ET
+    'publicgoodstech': [13, 16, 20, 23],  // 4 posts: 9 AM, 12 PM, 4 PM, 7 PM ET
+};
 
 // Time-of-day context for AI prompts (UTC hours → ET labels)
 function getTimeOfDay(utcHour) {
@@ -364,12 +370,13 @@ const PGT_PILLARS = [
     PGT_DAILY_PILLAR, // Saturday
 ];
 
-// Each slot angle maps to a section of the site. 5 posts/day, each covering a different area.
+// 4 posts/day, each covering a different database tab.
 const PGT_SLOT_ANGLES = {
     'Daily Coverage': [
-        'AGENT SPOTLIGHT: Pick one AI agent project and spotlight it. Tag their @handle. Explain what it does and why it matters. Link to their site.',
+        'AGENT SPOTLIGHT: Pick one AI agent project and spotlight it. Tag their @handle. Explain what it does and why it matters.',
         'BUILDER/VIBECODER: Spotlight one builder or vibecoder shipping AI agents or public goods. Tag their @handle. Celebrate what they built.',
-        'NEWS/HOT TAKE: Share one piece of ecosystem news, a hot take, or an interesting observation about AI agents. Tag relevant projects.',
+        'PUBLIC GOOD: Highlight one public good — a free tool, open source project, or community resource. Tag their @handle.',
+        'PROTOCOL/ECOSYSTEM: Cover a protocol, chain, or company in the ecosystem. Tag their @handle. Share news, analysis, or a hot take.',
     ],
 };
 
@@ -1317,7 +1324,8 @@ async function generateDrafts(req, res, targetDate, account, style) {
         .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image']);
 
     const bookedHours = new Set((existing || []).map(s => new Date(s.scheduled_at).getUTCHours()));
-    const emptyHours = VALID_HOURS.filter(h => !bookedHours.has(h));
+    const accountHours = ACCOUNT_HOURS[account] || VALID_HOURS;
+    const emptyHours = accountHours.filter(h => !bookedHours.has(h));
     if (!emptyHours.length) {
         return res.json({ message: 'All slots filled', date, pillar: pillar.name });
     }
