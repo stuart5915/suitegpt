@@ -1705,6 +1705,9 @@ export default async function handler(req, res) {
 
   const sid = session_id || 'anon_' + crypto.randomUUID();
 
+  // Sanitize wallet early — needed by intercepts below
+  const sanitizedWallet = (typeof wallet === 'string' && /^0x[a-fA-F0-9]{40}$/.test(wallet.trim())) ? wallet.trim() : '';
+
   // ── Server-side intercept: "work on [app]" / "edit [app]" / "I want to work on [app]" ──
   const workOnMatch = sanitizedMessage.match(/(?:(?:i\s+want\s+to\s+|i\s+wanna\s+|let'?s\s+|can\s+(?:you|we)\s+|please\s+)?(?:work on|edit|update|open|load|modify|change|fix|improve))\s+(.+)/i);
   if (workOnMatch && sanitizedWallet) {
@@ -1843,8 +1846,7 @@ export default async function handler(req, res) {
 
   // Add current message to history (inject wallet context if provided)
   // If client_history was used, it already contains the current message — just inject wallet into it
-  // Sanitize wallet — must be a valid hex address or empty
-  const sanitizedWallet = (typeof wallet === 'string' && /^0x[a-fA-F0-9]{40}$/.test(wallet.trim())) ? wallet.trim() : '';
+  // sanitizedWallet already defined above (before intercepts)
 
   if (usedClientHistory && history.length > 1 && history[history.length - 1].role === 'user') {
     if (sanitizedWallet) {
