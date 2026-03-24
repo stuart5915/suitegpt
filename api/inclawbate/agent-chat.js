@@ -672,12 +672,27 @@ async function listMyApps(args) {
 }
 
 async function buildAppAction(args) {
-  if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: "What kind of app are you thinking? A game, a dashboard, a landing page? Describe your idea and I'll bring it to life!" });
-  if (!args.description || args.description.length < 20) return JSON.stringify({ needs_info: true, missing: ['description'], message: "Tell me more! What should this app look like and do? The more detail you give me, the better I can build it." });
+  if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: "What kind of app are you thinking? A game, a dashboard, a landing page? Describe your idea and I'll bring it to life!", suggestions: ['A multiplayer game', 'A crypto dashboard', 'A landing page', 'A useful tool'] });
+  if (!args.description || args.description.length < 20) {
+    // Generate smart suggestions based on the app name they gave
+    const name = (args.app_name || '').toLowerCase();
+    let suggestions;
+    if (/snake/i.test(name)) suggestions = ['Classic snake with power-ups and levels', 'Neon-themed with leaderboard and speed modes', 'Multiplayer snake battle arena', 'Retro pixel art with high score board'];
+    else if (/game|play|arcade/i.test(name)) suggestions = ['Add a leaderboard and difficulty levels', 'Multiplayer mode with real-time battles', 'Pixel art style with sound effects', 'Dark theme with neon colors and animations'];
+    else if (/poker|card/i.test(name)) suggestions = ['Texas Hold\'em with AI opponents', 'Multiplayer card game with chat', 'Casino-style with chips and betting', 'Minimalist card game with statistics'];
+    else if (/dash|tracker|monitor|analytics/i.test(name)) suggestions = ['Charts and graphs with live data', 'Dark theme with real-time price feeds', 'Portfolio view with P&L tracking', 'Clean cards layout with filters and search'];
+    else if (/land|page|site|portfolio|resume/i.test(name)) suggestions = ['Hero section with call-to-action button', 'Animated sections with smooth scrolling', 'Clean minimal design with contact form', 'Dark modern theme with project gallery'];
+    else if (/shop|store|market/i.test(name)) suggestions = ['Product grid with cart and checkout', 'Minimal storefront with categories', 'Dark luxury theme with product showcase', 'Simple catalog with search and filters'];
+    else if (/chat|social|message/i.test(name)) suggestions = ['Real-time chat with emoji reactions', 'Threaded conversations with user profiles', 'Minimal chat with dark theme', 'Social feed with likes and comments'];
+    else if (/quiz|trivia/i.test(name)) suggestions = ['Multiple choice with timer and scoring', 'Category-based with difficulty levels', 'Multiplayer quiz competition mode', 'Flashcard-style with streak tracking'];
+    else if (/calc|convert|tool/i.test(name)) suggestions = ['Clean interface with instant results', 'Multiple modes with history tracking', 'Dark theme with keyboard shortcuts', 'Mobile-first design with large buttons'];
+    else suggestions = ['Add a leaderboard or scoreboard', 'Dark theme with smooth animations', 'Mobile-friendly with clean layout', 'Include user accounts and saving progress'];
+    return JSON.stringify({ needs_info: true, missing: ['description'], message: `Love the name "${args.app_name}"! Now tell me what it should do. Pick a suggestion or describe your vision:`, suggestions });
+  }
   // Reject overly generic names the LLM might invent
   const genericNames = ['new-app', 'my-app', 'app', 'website', 'site', 'new-site', 'my-website', 'test', 'untitled'];
   if (genericNames.includes(args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')))
-    return JSON.stringify({ needs_info: true, missing: ['app name'], message: "Give me a more specific name for your app! Something like 'portfolio-tracker' or 'snake-game'. What are we building?" });
+    return JSON.stringify({ needs_info: true, missing: ['app name'], message: "Give me a more specific name for your app! Something like 'portfolio-tracker' or 'snake-game'. What are we building?", suggestions: ['A multiplayer game', 'A crypto dashboard', 'A landing page', 'A useful tool'] });
 
   let slug = args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   if (!slug) return JSON.stringify({ error: 'Invalid app name — use letters and numbers.' });
@@ -1389,7 +1404,7 @@ function generateDirectReply(tool, resultJson, args) {
 
       case 'build_app':
         if (d.error) return "App build failed: " + d.error;
-        if (d.needs_info) return d.message;
+        if (d.needs_info) return { reply: d.message, suggestions: d.suggestions || ['Describe your idea in detail', 'Show me examples', 'Build something else'] };
         return {
           reply: (d.updated ? "App updated!" : "Your app is live!") + "\n\n" + d.url + "\n\nTake a look and tell me what you think. I can tweak anything — layout, colors, features, content. What jumps out?",
           suggestions: ['Looks good! Suggest improvements', 'Change the colors/style', 'Add more features', 'Start something new']
