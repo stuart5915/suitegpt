@@ -1733,6 +1733,34 @@ export default async function handler(req, res) {
         body.app_url = validatedUrl;
       }
     }
+    // Always include suggestion pills — contextual based on what just happened
+    if (!body.suggestions && body.reply) {
+      const tool = body.function_called;
+      if (tool === 'build_app') {
+        body.suggestions = ['Make changes', 'Build something new', 'Do something else'];
+      } else if (tool === 'deploy_token') {
+        body.suggestions = ['Check token analytics', 'Deploy staking pool', 'Airdrop tokens', 'Do something else'];
+      } else if (tool === 'deploy_staking') {
+        body.suggestions = ['Check staking stats', 'Launch a token', 'Do something else'];
+      } else if (tool === 'swap_tokens') {
+        body.suggestions = ['Swap more tokens', 'Stake CLAWS', 'Check staking stats', 'Do something else'];
+      } else if (tool === 'stake_claws' || tool === 'unstake_claws' || tool === 'claim_staking_rewards') {
+        body.suggestions = ['Check staking stats', 'Swap tokens', 'Claim rewards', 'Do something else'];
+      } else if (tool === 'get_token_analytics') {
+        body.suggestions = ['Check another token', 'Launch a token', 'Do something else'];
+      } else if (tool === 'get_staking_stats') {
+        body.suggestions = ['Stake CLAWS', 'Claim rewards', 'Do something else'];
+      } else if (tool === 'hire_inclawbator') {
+        body.suggestions = ['Build me an app', 'Launch a token', 'Do something else'];
+      } else if (tool === 'health_check') {
+        body.suggestions = ['Check token analytics', 'Deploy staking', 'Hire the Council', 'Do something else'];
+      } else if (tool === 'list_my_apps') {
+        // Already has suggestions from generateDirectReply
+      } else {
+        body.suggestions = ['Build me an app', 'Launch a token', 'Swap tokens', 'Stake CLAWS', 'What can you do?'];
+      }
+    }
+
     if (feedSource !== 'x') {
       // Map technical tool names to human-friendly labels for public feed (never leak function names)
       const TOOL_LABELS = { deploy_token: 'Token Launch', deploy_staking: 'Staking Deploy', build_app: 'App Build', get_ecosystem_info: 'Ecosystem Info', get_incubation_info: 'Incubation Info', get_token_analytics: 'Analytics', get_staking_stats: 'Staking Stats', health_check: 'Health Check', create_agent_info: 'Agent Info', book_promo: 'Promo Booking', disperse_tokens: 'Airdrop', hire_inclawbator: 'Council Hire', get_yield_options: 'Yield Options', deposit_to_strategy: 'Deposit', withdraw_from_strategy: 'Withdraw', check_positions: 'Positions', set_reward_preference: 'Reward Pref', swap_tokens: 'Swap', stake_claws: 'Stake', unstake_claws: 'Unstake', claim_staking_rewards: 'Claim Rewards', list_my_apps: 'My Apps' };
