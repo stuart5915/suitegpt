@@ -99,778 +99,1798 @@
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 24px;
-            z-index: 100;
+            z-index: 1000;
         }
-        .nav-brand {
+        .nav-logo {
+            font-size: 18px; font-weight: 800; color: var(--text);
             display: flex; align-items: center; gap: 8px;
-            color: var(--text); font-weight: 800; font-size: 0.95rem;
-            letter-spacing: -0.02em;
+            cursor: pointer;
         }
-        .nav-brand span { font-size: 1.1rem; }
-        .nav-links { display: flex; gap: 6px; }
-        .nav-link {
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
+        .nav-logo span { font-size: 22px; }
+        .nav-tabs {
+            display: flex; gap: 4px;
+        }
+        .nav-tab {
+            padding: 8px 16px;
+            font-size: 14px; font-weight: 600;
             color: var(--text-secondary);
-            font-size: 0.82rem;
-            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
             transition: all 0.15s;
+            border: none; background: none;
         }
-        .nav-link:hover { color: var(--text); background: var(--accent-glow); }
-        .nav-link--cta {
-            background: var(--accent-dim);
-            color: var(--accent);
-            border: 1px solid rgba(52, 211, 153, 0.2);
+        .nav-tab:hover { color: var(--text); background: var(--accent-dim); }
+        .nav-tab.active { color: var(--accent); background: var(--accent-dim); }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .btn-submit {
+            padding: 8px 18px;
+            font-size: 13px; font-weight: 700;
+            color: #0b0f14;
+            background: var(--accent);
+            border: none; border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .nav-link--cta:hover { background: rgba(52, 211, 153, 0.18); color: var(--accent); }
+        .btn-submit:hover { background: #6ee7b7; transform: translateY(-1px); }
 
-        @media (max-width: 600px) {
-            .nav-links { display: none; }
+        /* Mobile hamburger */
+        .nav-hamburger {
+            display: none;
+            background: none; border: none; cursor: pointer; padding: 4px;
+            color: var(--text);
         }
+        .nav-hamburger svg { width: 24px; height: 24px; }
+        .mobile-menu {
+            display: none;
+            position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+            background: rgba(11, 15, 20, 0.97);
+            backdrop-filter: blur(16px);
+            z-index: 999;
+            flex-direction: column;
+            padding: 24px;
+            gap: 8px;
+        }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu .nav-tab {
+            font-size: 18px; padding: 14px 16px; text-align: left;
+            width: 100%;
+        }
+        .mobile-menu .btn-submit {
+            margin-top: 12px; padding: 14px; font-size: 16px; text-align: center;
+        }
+
+        /* ── Layout ── */
+        .container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
+        .page-content { padding-top: 56px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
 
         /* ── Hero ── */
-        .hero-wrap {
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-canvas {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-        }
         .hero {
             position: relative;
-            z-index: 1;
-            max-width: var(--max-w);
-            margin: 0 auto;
-            padding: 120px 24px 80px;
+            min-height: 440px;
+            display: flex; align-items: center; justify-content: center;
             text-align: center;
+            overflow: hidden;
         }
-        .hero-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-family: var(--mono);
-            font-size: 0.68rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.08em;
-            color: var(--accent);
-            background: var(--accent-dim);
-            border: 1px solid rgba(52, 211, 153, 0.15);
-            padding: 5px 16px;
-            border-radius: var(--radius-full);
-            margin-bottom: 24px;
+        .hero canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+        }
+        .hero-content {
+            position: relative; z-index: 1;
+            padding: 60px 20px;
         }
         .hero h1 {
-            font-size: 3.2rem;
+            font-size: clamp(32px, 5vw, 54px);
             font-weight: 900;
-            letter-spacing: -0.03em;
             line-height: 1.1;
             margin-bottom: 16px;
-            color: #ffffff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .hero p {
-            font-size: 1.12rem;
+            font-size: 18px;
             color: var(--text-secondary);
-            max-width: 580px;
-            margin: 0 auto 32px;
-            line-height: 1.65;
+            max-width: 540px;
+            margin: 0 auto 28px;
         }
-        .hero-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 12px 28px;
-            border-radius: var(--radius-sm);
-            font-weight: 700; font-size: 0.9rem;
-            transition: all 0.15s;
-            border: none; cursor: pointer;
+        .hero-buttons {
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
         }
         .btn-primary {
-            background: var(--accent);
+            padding: 12px 28px;
+            font-size: 15px; font-weight: 700;
             color: #0b0f14;
+            background: var(--accent);
+            border: none; border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .btn-primary:hover { opacity: 0.88; color: #0b0f14; }
+        .btn-primary:hover { background: #6ee7b7; transform: translateY(-1px); }
         .btn-secondary {
-            background: var(--bg-elevated);
-            color: var(--text);
-            border: 1px solid var(--border);
+            padding: 12px 28px;
+            font-size: 15px; font-weight: 700;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .btn-secondary:hover { border-color: var(--border-hover); color: var(--text); }
+        .btn-secondary:hover { background: rgba(52, 211, 153, 0.18); transform: translateY(-1px); }
 
-        /* ── Stats strip ── */
-        .stats-strip {
-            max-width: var(--max-w);
-            margin: 0 auto 64px;
-            padding: 0 24px;
-            display: flex;
-            justify-content: center;
-            gap: 48px;
+        /* ── Stats Bar ── */
+        .stats-bar {
+            display: flex; justify-content: center; gap: 40px;
+            padding: 24px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 48px;
             flex-wrap: wrap;
         }
-        .stat { text-align: center; }
-        .stat-val {
+        .stat-item { text-align: center; }
+        .stat-value {
             font-family: var(--mono);
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--text);
+            font-size: 24px; font-weight: 700;
+            color: var(--accent);
         }
-        .stat-lbl {
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 600;
+        .stat-label {
+            font-size: 13px; color: var(--text-secondary);
+            margin-top: 2px;
         }
 
-        /* ── Section headers ── */
+        /* ── Section ── */
+        .section { margin-bottom: 56px; }
         .section-header {
-            max-width: var(--max-w);
-            margin: 0 auto 32px;
-            padding: 0 24px;
-        }
-        .section-label {
-            font-family: var(--mono);
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-            margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
         }
         .section-title {
-            font-size: 1.6rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
+            font-size: 22px; font-weight: 800;
         }
+        .section-link {
+            font-size: 14px; font-weight: 600; color: var(--accent);
+            cursor: pointer;
+        }
+        .section-link:hover { color: #6ee7b7; }
 
-        /* ── Project grid ── */
-        .grid {
-            max-width: var(--max-w);
-            margin: 0 auto 80px;
-            padding: 0 24px;
+        /* ── Card Grid ── */
+        .card-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 16px;
         }
+        .card-grid-3 {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
 
+        /* ── Agent / Good Card ── */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            overflow: hidden;
-            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            flex-direction: column;
+            padding: 20px;
+            transition: all 0.2s;
+            cursor: default;
         }
         .card:hover {
-            border-color: rgba(52, 211, 153, 0.3);
+            border-color: var(--border-hover);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px rgba(52, 211, 153, 0.05);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-
-        .card-banner {
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .card-banner img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            position: absolute; inset: 0;
-        }
-        .card-banner-emoji { font-size: 2.8rem; position: relative; z-index: 1; }
-
-        .card-body {
-            padding: 18px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-tags {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+        .card-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
             margin-bottom: 10px;
         }
-        .tag {
-            font-family: var(--mono);
-            font-size: 0.55rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 2px 8px;
-            border-radius: var(--radius-full);
-        }
-        .tag-green { background: var(--accent-dim); color: var(--accent); }
-        .tag-blue { background: var(--accent-2-dim); color: var(--accent-2); }
-        .tag-gold { background: var(--gold-dim); color: var(--gold); }
-        .tag-coral { background: var(--coral-dim); color: var(--coral); }
-        .tag-purple { background: var(--purple-dim); color: var(--purple); }
-        .tag-live { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.15); }
-
         .card-name {
-            font-size: 1.1rem;
-            font-weight: 800;
-            margin-bottom: 6px;
-            letter-spacing: -0.01em;
+            font-size: 17px; font-weight: 700; color: var(--text);
         }
-
         .card-desc {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.55;
+            font-size: 14px; color: var(--text-secondary);
+            line-height: 1.5;
             margin-bottom: 14px;
-            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-
-        .card-stats {
-            display: flex;
-            gap: 16px;
+        .card-tags {
+            display: flex; gap: 6px; flex-wrap: wrap;
             margin-bottom: 14px;
-            flex-wrap: wrap;
         }
-        .card-stat-val {
-            font-family: var(--mono);
-            font-size: 0.85rem;
-            font-weight: 800;
-        }
-        .card-stat-lbl {
-            font-size: 0.58rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            font-weight: 600;
-        }
-
-        /* Card links */
-        .card-links {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-            padding-top: 14px;
-            border-top: 1px solid var(--border);
-            margin-top: auto;
-        }
-        .cl {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
+        .tag {
+            padding: 3px 10px;
+            font-size: 11px; font-weight: 700;
             border-radius: var(--radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tag-defi { background: var(--accent-dim); color: var(--accent); }
+        .tag-social { background: var(--accent-2-dim); color: var(--accent-2); }
+        .tag-gaming { background: var(--purple-dim); color: var(--purple); }
+        .tag-infra { background: var(--gold-dim); color: var(--gold); }
+        .tag-devtools { background: var(--coral-dim); color: var(--coral); }
+        .tag-dao { background: rgba(236, 72, 153, 0.12); color: #ec4899; }
+        .tag-tool { background: var(--accent-dim); color: var(--accent); }
+        .tag-infrastructure { background: var(--gold-dim); color: var(--gold); }
+        .tag-education { background: var(--accent-2-dim); color: var(--accent-2); }
+        .tag-community { background: var(--purple-dim); color: var(--purple); }
+        .tag-protocol { background: var(--coral-dim); color: var(--coral); }
+
+        .tag-chain {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+        }
+        .tag-live { background: rgba(52, 211, 153, 0.15); color: var(--accent); }
+        .tag-building { background: var(--gold-dim); color: var(--gold); }
+        .tag-beta { background: var(--accent-2-dim); color: var(--accent-2); }
+
+        .card-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .card-links {
+            display: flex; gap: 10px;
+        }
+        .card-link {
+            font-size: 13px; color: var(--text-dim);
+            transition: color 0.15s;
+        }
+        .card-link:hover { color: var(--accent); }
+        .upvote-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 12px;
+            font-size: 13px; font-weight: 600;
+            color: var(--text-secondary);
             background: var(--bg-elevated);
             border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 0.68rem;
-            font-weight: 600;
-            transition: all 0.12s;
-            white-space: nowrap;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.15s;
         }
-        .cl:hover { border-color: var(--accent); color: var(--accent); }
-        .cl svg { width: 12px; height: 12px; flex-shrink: 0; }
-        .cl-primary {
-            background: var(--accent);
-            border-color: transparent;
-            color: #0b0f14;
-            font-weight: 700;
-        }
-        .cl-primary:hover { opacity: 0.88; color: #0b0f14; }
-        .cl-contract {
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            color: var(--text-dim);
-        }
-        .cl-contract:hover { color: var(--accent-2); border-color: var(--accent-2); }
+        .upvote-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .upvote-btn.voted { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
-        /* ── Mission section ── */
-        .mission {
-            max-width: var(--max-w);
-            margin: 0 auto 80px;
-            padding: 0 24px;
+        /* ── Search/Filter Bar ── */
+        .filter-bar {
+            display: flex; gap: 12px; align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
         }
-        .mission-inner {
+        .search-input {
+            flex: 1; min-width: 200px;
+            padding: 10px 16px;
+            font-size: 14px; font-family: var(--font);
+            color: var(--text);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .search-input:focus { border-color: var(--accent); }
+        .search-input::placeholder { color: var(--text-dim); }
+
+        .filter-select {
+            padding: 10px 14px;
+            font-size: 13px; font-family: var(--font); font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238899aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        .filter-select:focus { border-color: var(--accent); }
+        .filter-select option { background: var(--bg-card); color: var(--text); }
+
+        .sort-btn {
+            padding: 10px 14px;
+            font-size: 13px; font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sort-btn:hover, .sort-btn.active { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Builder Card ── */
+        .builder-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 48px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 48px;
-            align-items: center;
+            padding: 24px;
+            transition: all 0.2s;
+            text-align: center;
         }
-        .mission h2 {
-            font-size: 1.5rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
+        .builder-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-        .mission p {
-            font-size: 0.92rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
+        .builder-avatar {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            margin: 0 auto 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 800;
+            color: #0b0f14;
+        }
+        .builder-name {
+            font-size: 17px; font-weight: 700; margin-bottom: 6px;
+        }
+        .builder-bio {
+            font-size: 13px; color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .builder-skills {
+            display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
             margin-bottom: 12px;
         }
-        .mission-values {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .skill-tag {
+            padding: 3px 10px;
+            font-size: 11px; font-weight: 600;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
         }
-        .mission-value {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            padding: 14px 18px;
+        .skill-tag.vibecoder { border-color: var(--accent); color: var(--accent); }
+        .skill-tag.smart-contracts { border-color: var(--gold); color: var(--gold); }
+        .skill-tag.ai-ml { border-color: var(--purple); color: var(--purple); }
+        .skill-tag.frontend { border-color: var(--accent-2); color: var(--accent-2); }
+        .skill-tag.design { border-color: var(--coral); color: var(--coral); }
+        .builder-projects {
+            font-size: 12px; color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+        .builder-links {
+            display: flex; gap: 12px; justify-content: center;
+        }
+
+        /* ── Blog/Article Cards ── */
+        .article-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .article-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .article-meta-top {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 10px;
+        }
+        .article-category {
+            padding: 3px 10px;
+            font-size: 11px; font-weight: 700;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+        .article-date {
+            font-size: 12px; color: var(--text-dim);
+        }
+        .article-title {
+            font-size: 19px; font-weight: 700; margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .article-excerpt {
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .article-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 13px; color: var(--text-dim);
+        }
+        .article-author { font-weight: 600; color: var(--text-secondary); }
+        .article-stats {
+            display: flex; gap: 14px;
+        }
+        .article-stat { display: flex; align-items: center; gap: 4px; }
+
+        /* ── Article Full View ── */
+        .article-view {
+            display: none;
+            max-width: 740px;
+            margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+        .article-view.active { display: block; }
+        .article-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 14px; font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 32px;
+            cursor: pointer;
+        }
+        .article-back:hover { color: #6ee7b7; }
+        .article-view h1 {
+            font-size: clamp(28px, 4vw, 40px);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 16px;
+        }
+        .article-view-meta {
+            display: flex; align-items: center; gap: 16px;
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+        .article-body {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text);
+        }
+        .article-body h2 {
+            font-size: 24px; font-weight: 800;
+            margin: 36px 0 16px;
+            color: var(--text);
+        }
+        .article-body h3 {
+            font-size: 20px; font-weight: 700;
+            margin: 28px 0 12px;
+            color: var(--text);
+        }
+        .article-body p { margin-bottom: 16px; }
+        .article-body ul, .article-body ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+        .article-body li { margin-bottom: 6px; }
+        .article-body code {
+            font-family: var(--mono);
+            font-size: 14px;
+            background: var(--bg-elevated);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .article-body pre {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+        .article-body pre code {
+            background: none; padding: 0;
+        }
+        .article-body blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-secondary);
+        }
+        .article-body strong { color: var(--text); font-weight: 700; }
+        .article-body a { color: var(--accent); }
+        .article-body a:hover { color: #6ee7b7; }
+        .article-body img {
+            max-width: 100%;
+            border-radius: var(--radius-sm);
+            margin: 16px 0;
+        }
+        .article-body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+
+        /* ── Tip Widget ── */
+        .tip-widget {
+            margin-top: 48px;
+            padding: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .tip-widget h3 {
+            font-size: 18px; font-weight: 800;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .tip-slider-row {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .tip-slider-label {
+            font-size: 13px; font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 60px;
+        }
+        .tip-slider-label:last-child { text-align: right; }
+        .tip-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            outline: none;
+        }
+        .tip-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        .tip-slider::-moz-range-thumb {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: none;
+        }
+        .tip-split {
+            display: flex; justify-content: center; gap: 32px;
+            margin-bottom: 16px;
+            font-size: 14px; color: var(--text-secondary);
+        }
+        .tip-split-value { font-weight: 700; color: var(--accent); font-family: var(--mono); }
+        .btn-tip {
+            display: block; width: 100%;
+            padding: 12px;
+            font-size: 15px; font-weight: 700;
+            color: #0b0f14;
+            background: var(--gold);
+            border: none; border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-tip:hover { background: #fcd34d; transform: translateY(-1px); }
+        .tip-stats {
+            display: flex; justify-content: center; gap: 24px;
+            margin-top: 14px;
+            font-size: 13px; color: var(--text-dim);
+        }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%; max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+        }
+        .modal h2 {
+            font-size: 22px; font-weight: 800;
+            margin-bottom: 24px;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 16px;
+            background: none; border: none; cursor: pointer;
+            color: var(--text-dim); font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px; font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px; font-family: var(--font);
+            color: var(--text);
             background: var(--bg-elevated);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color 0.15s;
         }
-        .mission-value-icon {
-            font-size: 1.3rem;
-            flex-shrink: 0;
-            line-height: 1;
-            margin-top: 2px;
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--accent);
         }
-        .mission-value-text h3 {
-            font-size: 0.88rem;
-            font-weight: 700;
-            margin-bottom: 2px;
+        .form-textarea { resize: vertical; min-height: 100px; }
+        .form-select {
+            appearance: none; -webkit-appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238899aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
         }
-        .mission-value-text p {
-            font-size: 0.78rem;
+        .form-select option { background: var(--bg-card); color: var(--text); }
+        .form-checkboxes {
+            display: flex; gap: 12px; flex-wrap: wrap;
+        }
+        .form-checkbox-label {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .form-checkbox-label input { accent-color: var(--accent); }
+        .btn-form-submit {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px; font-weight: 700;
+            color: #0b0f14;
+            background: var(--accent);
+            border: none; border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .btn-form-submit:hover { background: #6ee7b7; }
+        .btn-form-submit:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 14px 24px;
+            font-size: 14px; font-weight: 600;
+            color: #0b0f14;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            z-index: 3000;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--coral); }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
             color: var(--text-dim);
-            margin: 0;
-            line-height: 1.5;
         }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state-text { font-size: 16px; }
+
+        /* ── Loading ── */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+        }
+        .spinner {
+            display: inline-block;
+            width: 24px; height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── Footer ── */
         .footer {
+            padding: 40px 20px;
             border-top: 1px solid var(--border);
-            padding: 40px 24px;
             text-align: center;
         }
-        .footer-inner {
-            max-width: var(--max-w);
-            margin: 0 auto;
+        .footer-tagline {
+            font-size: 15px; font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
         }
-        .footer-powered {
-            font-size: 0.82rem;
-            color: var(--text-dim);
-            margin-bottom: 12px;
-        }
-        .footer-powered a { color: var(--text-secondary); }
-        .footer-powered a:hover { color: var(--accent); }
         .footer-links {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
+            display: flex; gap: 20px; justify-content: center;
+            margin-bottom: 16px;
         }
-        .footer-link {
-            font-size: 0.78rem;
-            color: var(--text-dim);
-            font-weight: 500;
+        .footer-links a {
+            font-size: 14px; color: var(--text-dim);
         }
-        .footer-link:hover { color: var(--text-secondary); }
+        .footer-links a:hover { color: var(--accent); }
         .footer-copy {
-            margin-top: 20px;
-            font-size: 0.7rem;
-            color: var(--text-dim);
+            font-size: 12px; color: var(--text-dim);
         }
 
         /* ── Responsive ── */
-        @media (max-width: 900px) {
-            .grid { grid-template-columns: repeat(2, 1fr); }
-            .mission-inner { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
+            .nav-tabs { display: none; }
+            .nav-hamburger { display: block; }
+            .nav-right .btn-submit { display: none; }
+            .card-grid { grid-template-columns: 1fr; }
+            .stats-bar { gap: 20px; }
+            .filter-bar { flex-direction: column; }
+            .filter-select, .sort-btn { width: 100%; }
+            .hero { min-height: 360px; }
+            .tip-slider-row { flex-direction: column; }
+            .tip-slider-label { min-width: unset; text-align: center !important; }
         }
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 2.2rem; }
-            .hero { padding: 100px 20px 60px; }
-            .stats-strip { gap: 24px; }
-            .mission-inner { padding: 28px; }
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 28px; }
+            .hero p { font-size: 15px; }
+            .modal { padding: 20px; }
         }
-
-        /* ── Animations ── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .hero { animation: fadeUp 0.6s ease both; }
-        .stats-strip { animation: fadeUp 0.6s ease both 0.1s; }
-        .card { animation: fadeUp 0.4s ease both; }
-        .card:nth-child(1) { animation-delay: 0.08s; }
-        .card:nth-child(2) { animation-delay: 0.12s; }
-        .card:nth-child(3) { animation-delay: 0.16s; }
-        .card:nth-child(4) { animation-delay: 0.2s; }
-        .card:nth-child(5) { animation-delay: 0.24s; }
-        .card:nth-child(6) { animation-delay: 0.28s; }
-        .mission { animation: fadeUp 0.5s ease both 0.2s; }
     </style>
 </head>
 <body>
 
-<!-- Nav -->
+<!-- ── Navigation ── -->
 <nav class="nav">
-    <a href="/" class="nav-brand">
-        <span>&#127759;</span> Public Goods Tech
-    </a>
-    <div class="nav-links">
-        <a href="#directory" class="nav-link">Directory</a>
-        <a href="#about" class="nav-link">About</a>
-        <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" class="nav-link nav-link--cta">Follow on X</a>
+    <div class="nav-logo" onclick="switchTab('home')">
+        <span>🌏</span> Public Goods Tech
+    </div>
+    <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">Home</button>
+        <button class="nav-tab" data-tab="agents" onclick="switchTab('agents')">Agents</button>
+        <button class="nav-tab" data-tab="goods" onclick="switchTab('goods')">Public Goods</button>
+        <button class="nav-tab" data-tab="builders" onclick="switchTab('builders')">Builders</button>
+        <button class="nav-tab" data-tab="blog" onclick="switchTab('blog')">Blog</button>
+    </div>
+    <div class="nav-right">
+        <button class="btn-submit" onclick="openSubmitModal()">Submit</button>
+        <button class="nav-hamburger" onclick="toggleMobileMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
     </div>
 </nav>
 
-<!-- Hero -->
-<div class="hero-wrap">
-    <canvas class="hero-canvas" id="networkCanvas"></canvas>
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <button class="nav-tab" onclick="switchTab('home'); toggleMobileMenu()">Home</button>
+    <button class="nav-tab" onclick="switchTab('agents'); toggleMobileMenu()">Agents</button>
+    <button class="nav-tab" onclick="switchTab('goods'); toggleMobileMenu()">Public Goods</button>
+    <button class="nav-tab" onclick="switchTab('builders'); toggleMobileMenu()">Builders</button>
+    <button class="nav-tab" onclick="switchTab('blog'); toggleMobileMenu()">Blog</button>
+    <button class="btn-submit" onclick="openSubmitModal(); toggleMobileMenu()">Submit</button>
+</div>
+
+<div class="page-content">
+
+<!-- ═══════════════ TAB: HOME ═══════════════ -->
+<div class="tab-panel active" id="tab-home">
+    <!-- Hero -->
     <section class="hero">
-        <div class="hero-badge">&#129302; AI Agent Ecosystem &middot; Updated Daily</div>
-        <h1>Tracking the Agents<br>Building the Future</h1>
-        <p>Daily news, project spotlights, and a comprehensive directory of AI agents across crypto. The independent source for what's shipping in the AI agent ecosystem.</p>
-        <div class="hero-actions">
-            <a href="#directory" class="btn btn-primary">Explore Agents &darr;</a>
-            <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" class="btn btn-secondary">Follow Updates</a>
+        <canvas id="networkCanvas"></canvas>
+        <div class="hero-content">
+            <h1>Tracking the Agents<br>Building the Future</h1>
+            <p>The open directory of AI agents, public goods, and builders shaping the decentralized web.</p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="switchTab('agents')">Explore Agents</button>
+                <a class="btn-secondary" href="https://x.com/inclawbate" target="_blank" rel="noopener">Follow on X</a>
+            </div>
         </div>
     </section>
+
+    <div class="container">
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="statAgents">--</div>
+                <div class="stat-label">Agents Tracked</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statGoods">--</div>
+                <div class="stat-label">Public Goods</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statBuilders">--</div>
+                <div class="stat-label">Builders</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statArticles">--</div>
+                <div class="stat-label">Articles</div>
+            </div>
+        </div>
+
+        <!-- Latest Articles -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Latest Articles</h2>
+                <span class="section-link" onclick="switchTab('blog')">View all &rarr;</span>
+            </div>
+            <div class="card-grid" id="homeArticles">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </section>
+
+        <!-- Trending Agents -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Trending Agents</h2>
+                <span class="section-link" onclick="switchTab('agents')">View all &rarr;</span>
+            </div>
+            <div class="card-grid" id="homeAgents">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </section>
+
+        <!-- Trending Public Goods -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Trending Public Goods</h2>
+                <span class="section-link" onclick="switchTab('goods')">View all &rarr;</span>
+            </div>
+            <div class="card-grid" id="homeGoods">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </section>
+    </div>
 </div>
 
-<!-- Stats -->
-<div class="stats-strip">
-    <div class="stat">
-        <div class="stat-val">50+</div>
-        <div class="stat-lbl">AI Agents Tracked</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">Daily</div>
-        <div class="stat-lbl">News Updates</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">7</div>
-        <div class="stat-lbl">Categories</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">Multi</div>
-        <div class="stat-lbl">Chain</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">Free</div>
-        <div class="stat-lbl">Always</div>
-    </div>
-</div>
-
-<!-- Directory -->
-<div class="section-header" id="directory">
-    <div class="section-label">Agent Directory</div>
-    <h2 class="section-title">Featured AI Agents</h2>
-</div>
-
-<div class="grid">
-
-    <!-- Inclawbator -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #1a0a0a 0%, #2d1010 100%);">
-            <span class="card-banner-emoji">&#129438;</span>
+<!-- ═══════════════ TAB: AGENTS ═══════════════ -->
+<div class="tab-panel" id="tab-agents">
+    <div class="container" style="padding-top: 32px;">
+        <h1 style="font-size:28px; font-weight:900; margin-bottom:24px;">Agent Directory</h1>
+        <div class="filter-bar">
+            <input class="search-input" id="agentSearch" type="text" placeholder="Search agents...">
+            <select class="filter-select" id="agentCategory" onchange="filterAgents()">
+                <option value="">All Categories</option>
+                <option value="DeFi">DeFi</option>
+                <option value="Social">Social</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Infra">Infra</option>
+                <option value="DevTools">DevTools</option>
+                <option value="DAO">DAO</option>
+            </select>
+            <select class="filter-select" id="agentChain" onchange="filterAgents()">
+                <option value="">All Chains</option>
+                <option value="Base">Base</option>
+                <option value="Ethereum">Ethereum</option>
+                <option value="Solana">Solana</option>
+                <option value="Multi">Multi</option>
+            </select>
+            <select class="filter-select" id="agentStatus" onchange="filterAgents()">
+                <option value="">All Status</option>
+                <option value="Live">Live</option>
+                <option value="Building">Building</option>
+                <option value="Beta">Beta</option>
+            </select>
+            <select class="filter-select" id="agentSort" onchange="filterAgents()">
+                <option value="featured">Featured</option>
+                <option value="newest">Newest</option>
+                <option value="upvotes">Most Upvoted</option>
+            </select>
         </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-coral">Incubator</span>
-                <span class="tag tag-green">DeFi</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">Inclawbator</h3>
-            <p class="card-desc">AI agent that launches tokens, deploys staking, hires humans, manages marketing, and runs your project on autopilot. Full-service incubation.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">38</span> <span class="card-stat-lbl">Capabilities</span></div>
-                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://inclawbate.app/inclawbator" target="_blank" rel="noopener" class="cl cl-primary">Try It &rarr;</a>
-                <a href="https://x.com/inclawbator" target="_blank" rel="noopener" class="cl">@inclawbator</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Virtuals Protocol -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #0a0f2e 0%, #151f45 100%);">
-            <span class="card-banner-emoji">&#129302;</span>
-        </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-blue">Platform</span>
-                <span class="tag tag-purple">Multi-Agent</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">Virtuals Protocol</h3>
-            <p class="card-desc">Co-own AI agents. A decentralized platform for creating, deploying, and monetizing AI agents with shared ownership tokenomics.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">1000+</span> <span class="card-stat-lbl">Agents</span></div>
-                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://virtuals.io" target="_blank" rel="noopener" class="cl cl-primary">Explore &rarr;</a>
-                <a href="https://x.com/virtaboreal" target="_blank" rel="noopener" class="cl">@virtaboreal</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- ai16z / ELIZA -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #0a1e14 0%, #0d2e1e 100%);">
-            <span class="card-banner-emoji">&#128161;</span>
-        </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-green">Framework</span>
-                <span class="tag tag-blue">Open Source</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">ElizaOS (ai16z)</h3>
-            <p class="card-desc">Open-source multi-agent framework. Build autonomous AI agents that can interact across platforms with memory, goals, and tool use.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">15K+</span> <span class="card-stat-lbl">GitHub Stars</span></div>
-                <div><span class="card-stat-val">Multi</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://elizaos.ai" target="_blank" rel="noopener" class="cl cl-primary">Learn More &rarr;</a>
-                <a href="https://x.com/ai16zdao" target="_blank" rel="noopener" class="cl">@ai16zdao</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Autonolas / Olas -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #1a0a2e 0%, #2a1545 100%);">
-            <span class="card-banner-emoji">&#9881;</span>
-        </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-purple">Infrastructure</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">Olas (Autonolas)</h3>
-            <p class="card-desc">Decentralized network for co-owned AI agents. Agents operate autonomously off-chain and transact on-chain. Production-grade infra.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">$100M+</span> <span class="card-stat-lbl">TVL</span></div>
-                <div><span class="card-stat-val">Multi</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://olas.network" target="_blank" rel="noopener" class="cl cl-primary">Explore &rarr;</a>
-                <a href="https://x.com/auaboreal" target="_blank" rel="noopener" class="cl">@autonolas</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- PokerAI -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 100%);">
-            <span class="card-banner-emoji">&#127183;</span>
-        </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-coral">Gaming</span>
-                <span class="tag tag-gold">On-Chain</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">PokerAI</h3>
-            <p class="card-desc">AI agents play Texas Hold'em with real on-chain chips. Create custom agents, deploy strategies, and earn from the self-funding rake pool.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">USDC</span> <span class="card-stat-lbl">+ POKERAI</span></div>
-                <div><span class="card-stat-val">Base</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://pokerai.app" target="_blank" rel="noopener" class="cl cl-primary">Play &rarr;</a>
-                <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="cl">@inclawbate</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fetch.ai -->
-    <div class="card">
-        <div class="card-banner" style="background: linear-gradient(135deg, #0a1a2e 0%, #102545 100%);">
-            <span class="card-banner-emoji">&#127760;</span>
-        </div>
-        <div class="card-body">
-            <div class="card-tags">
-                <span class="tag tag-blue">Platform</span>
-                <span class="tag tag-green">DeFi</span>
-                <span class="tag tag-live">Live</span>
-            </div>
-            <h3 class="card-name">Fetch.ai</h3>
-            <p class="card-desc">Decentralized machine learning platform. Build, deploy, and connect AI agents that automate complex tasks across DeFi and beyond.</p>
-            <div class="card-stats">
-                <div><span class="card-stat-val">FET</span> <span class="card-stat-lbl">Token</span></div>
-                <div><span class="card-stat-val">Multi</span> <span class="card-stat-lbl">Chain</span></div>
-            </div>
-            <div class="card-links">
-                <a href="https://fetch.ai" target="_blank" rel="noopener" class="cl cl-primary">Explore &rarr;</a>
-                <a href="https://x.com/Fetch_ai" target="_blank" rel="noopener" class="cl">@Fetch_ai</a>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<!-- About -->
-<div id="about" class="mission">
-    <div class="mission-inner">
-        <div>
-            <h2>Why Public Goods Tech?</h2>
-            <p>The AI agent ecosystem is exploding but there's no independent source covering it all. We track every agent, every platform, every launch &mdash; so you don't have to.</p>
-            <p>We're not shilling bags. We cover the ecosystem as it is &mdash; the good, the bad, and the interesting. Projects featured here earn it by building, not by paying.</p>
-        </div>
-        <div class="mission-values">
-            <div class="mission-value">
-                <span class="mission-value-icon">&#128240;</span>
-                <div class="mission-value-text">
-                    <h3>Daily Coverage</h3>
-                    <p>News, launches, updates, and analysis from across the AI agent ecosystem. Every day.</p>
-                </div>
-            </div>
-            <div class="mission-value">
-                <span class="mission-value-icon">&#128218;</span>
-                <div class="mission-value-text">
-                    <h3>Agent Directory</h3>
-                    <p>Comprehensive directory of AI agents organized by category, chain, and status. Searchable.</p>
-                </div>
-            </div>
-            <div class="mission-value">
-                <span class="mission-value-icon">&#128200;</span>
-                <div class="mission-value-text">
-                    <h3>Rankings &amp; Data</h3>
-                    <p>Weekly rankings by TVL, users, activity, and shipping velocity. Data over hype.</p>
-                </div>
-            </div>
-            <div class="mission-value">
-                <span class="mission-value-icon">&#129302;</span>
-                <div class="mission-value-text">
-                    <h3>Builder Spotlights</h3>
-                    <p>Deep dives on the teams and agents making things happen. Real stories, real builders.</p>
-                </div>
-            </div>
+        <div class="card-grid" id="agentsGrid">
+            <div class="loading"><div class="spinner"></div></div>
         </div>
     </div>
 </div>
 
-<!-- Footer -->
+<!-- ═══════════════ TAB: PUBLIC GOODS ═══════════════ -->
+<div class="tab-panel" id="tab-goods">
+    <div class="container" style="padding-top: 32px;">
+        <h1 style="font-size:28px; font-weight:900; margin-bottom:24px;">Public Goods</h1>
+        <div class="filter-bar">
+            <input class="search-input" id="goodsSearch" type="text" placeholder="Search public goods...">
+            <select class="filter-select" id="goodsCategory" onchange="filterGoods()">
+                <option value="">All Categories</option>
+                <option value="Tool">Tool</option>
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="Education">Education</option>
+                <option value="Community">Community</option>
+                <option value="Protocol">Protocol</option>
+                <option value="DAO">DAO</option>
+            </select>
+            <select class="filter-select" id="goodsChain" onchange="filterGoods()">
+                <option value="">All Chains</option>
+                <option value="Base">Base</option>
+                <option value="Ethereum">Ethereum</option>
+                <option value="Solana">Solana</option>
+                <option value="Multi">Multi</option>
+            </select>
+            <select class="filter-select" id="goodsSort" onchange="filterGoods()">
+                <option value="featured">Featured</option>
+                <option value="newest">Newest</option>
+                <option value="upvotes">Most Upvoted</option>
+            </select>
+        </div>
+        <div class="card-grid" id="goodsGrid">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ TAB: BUILDERS ═══════════════ -->
+<div class="tab-panel" id="tab-builders">
+    <div class="container" style="padding-top: 32px;">
+        <h1 style="font-size:28px; font-weight:900; margin-bottom:24px;">Builders</h1>
+        <div class="filter-bar">
+            <input class="search-input" id="builderSearch" type="text" placeholder="Search builders...">
+            <select class="filter-select" id="builderSkill" onchange="filterBuilders()">
+                <option value="">All Skills</option>
+                <option value="vibecoder">Vibecoder</option>
+                <option value="smart-contracts">Smart Contracts</option>
+                <option value="ai-ml">AI / ML</option>
+                <option value="frontend">Frontend</option>
+                <option value="design">Design</option>
+            </select>
+        </div>
+        <div class="card-grid card-grid-3" id="buildersGrid">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ TAB: BLOG ═══════════════ -->
+<div class="tab-panel" id="tab-blog">
+    <div class="container" style="padding-top: 32px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+            <h1 style="font-size:28px; font-weight:900;">Blog</h1>
+            <button class="btn-primary" onclick="openSubmitModal('article')">Write Article</button>
+        </div>
+        <div class="card-grid" id="blogGrid">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ ARTICLE VIEW ═══════════════ -->
+<div class="article-view" id="articleView">
+    <div class="article-back" onclick="closeArticleView()">&larr; Back to Blog</div>
+    <div id="articleViewContent"></div>
+    <div class="tip-widget" id="tipWidget">
+        <h3>Tip this article with CLAWS</h3>
+        <div class="tip-slider-row">
+            <span class="tip-slider-label">Author</span>
+            <input type="range" class="tip-slider" id="tipSlider" min="0" max="100" value="80" oninput="updateTipSplit()">
+            <span class="tip-slider-label">You</span>
+        </div>
+        <div class="tip-split">
+            <span>Author gets <span class="tip-split-value" id="tipAuthorPct">80%</span></span>
+            <span>You get <span class="tip-split-value" id="tipYouPct">20%</span></span>
+        </div>
+        <button class="btn-tip" id="tipBtn" onclick="tipArticle()">Tip &mdash; it's free!</button>
+        <div class="tip-stats">
+            <span id="tipTotalCount">0 tips</span>
+            <span id="tipTotalClaws">0 CLAWS earned</span>
+        </div>
+    </div>
+</div>
+
+</div><!-- /page-content -->
+
+<!-- ── Footer ── -->
 <footer class="footer">
-    <div class="footer-inner">
-        <p class="footer-powered">Tracking the agents building the future</p>
-        <div class="footer-links">
-            <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" class="footer-link">X / Twitter</a>
-            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
-            <a href="https://inclawbate.app" target="_blank" rel="noopener" class="footer-link">Inclawbate</a>
-            <a href="#directory" class="footer-link">Directory</a>
-            <a href="#about" class="footer-link">About</a>
-        </div>
-        <p class="footer-copy">&copy; 2026 Public Goods Tech. Built with purpose.</p>
+    <div class="footer-tagline">Tracking the agents building the future</div>
+    <div class="footer-links">
+        <a href="https://x.com/inclawbate" target="_blank" rel="noopener">X</a>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://inclawbate.app" target="_blank" rel="noopener">Inclawbate</a>
+        <a href="#" onclick="switchTab('home'); return false;">About</a>
     </div>
+    <div class="footer-copy">&copy; 2026 Public Goods Tech</div>
 </footer>
 
+<!-- ── Submit Modal ── -->
+<div class="modal-overlay" id="submitModal" onclick="closeModalOverlay(event)">
+    <div class="modal" style="position:relative;">
+        <button class="modal-close" onclick="closeSubmitModal()">&times;</button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
 <script>
-// Animated network background — matches the banner aesthetic
+/* ═══════════════════════════════════════════════
+   PUBLIC GOODS TECH — Single Page Application
+   ═══════════════════════════════════════════════ */
+
+const API_BASE = '/api/publicgoods';
+let currentTab = 'home';
+let currentArticle = null;
+
+// Data caches
+let agentsData = [];
+let goodsData = [];
+let buildersData = [];
+let articlesData = [];
+let upvoted = JSON.parse(localStorage.getItem('pgt_upvoted') || '{}');
+
+// ── Tab Navigation ──
+function switchTab(tab) {
+    if (currentTab === tab && !document.getElementById('articleView').classList.contains('active')) return;
+    currentTab = tab;
+
+    // Hide article view if open
+    document.getElementById('articleView').classList.remove('active');
+
+    // Toggle panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('tab-' + tab);
+    if (panel) panel.classList.add('active');
+
+    // Toggle nav tabs active state
+    document.querySelectorAll('.nav-tab[data-tab]').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+
+    // Show/hide footer for article view
+    document.querySelector('.footer').style.display = '';
+
+    // Update URL hash
+    if (location.hash !== '#' + tab) {
+        history.pushState(null, '', '#' + tab);
+    }
+
+    // Lazy-load data
+    if (tab === 'agents' && !agentsData.length) loadAgents();
+    if (tab === 'goods' && !goodsData.length) loadGoods();
+    if (tab === 'builders' && !buildersData.length) loadBuilders();
+    if (tab === 'blog' && !articlesData.length) loadArticles();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleMobileMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+// ── URL Hash Routing ──
+function handleHash() {
+    const hash = location.hash.replace('#', '');
+    if (hash.startsWith('article/')) {
+        const slug = hash.replace('article/', '');
+        switchTab('blog');
+        loadArticles().then(() => {
+            const article = articlesData.find(a => a.slug === slug);
+            if (article) openArticle(article);
+        });
+    } else if (['home', 'agents', 'goods', 'builders', 'blog'].includes(hash)) {
+        switchTab(hash);
+    } else {
+        switchTab('home');
+    }
+}
+
+window.addEventListener('popstate', handleHash);
+
+// ── API Helpers ──
+async function apiGet(endpoint) {
+    try {
+        const res = await fetch(API_BASE + endpoint);
+        if (!res.ok) throw new Error('API error');
+        return await res.json();
+    } catch (e) {
+        console.error('API GET error:', e);
+        return [];
+    }
+}
+
+async function apiPost(endpoint, body) {
+    const res = await fetch(API_BASE + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Submission failed');
+    }
+    return await res.json();
+}
+
+// ── Load Data ──
+async function loadAgents() {
+    const data = await apiGet('/agents');
+    agentsData = Array.isArray(data) ? data : (data.agents || data.data || []);
+    renderAgents();
+    return agentsData;
+}
+
+async function loadGoods() {
+    const data = await apiGet('/goods');
+    goodsData = Array.isArray(data) ? data : (data.goods || data.data || []);
+    renderGoods();
+    return goodsData;
+}
+
+async function loadBuilders() {
+    const data = await apiGet('/builders');
+    buildersData = Array.isArray(data) ? data : (data.builders || data.data || []);
+    renderBuilders();
+    return buildersData;
+}
+
+async function loadArticles() {
+    const data = await apiGet('/articles');
+    articlesData = Array.isArray(data) ? data : (data.articles || data.data || []);
+    renderBlog();
+    return articlesData;
+}
+
+async function loadHomeData() {
+    const [agents, goods, builders, articles] = await Promise.all([
+        apiGet('/agents'),
+        apiGet('/goods'),
+        apiGet('/builders'),
+        apiGet('/articles')
+    ]);
+
+    agentsData = Array.isArray(agents) ? agents : (agents.agents || agents.data || []);
+    goodsData = Array.isArray(goods) ? goods : (goods.goods || goods.data || []);
+    buildersData = Array.isArray(builders) ? builders : (builders.builders || builders.data || []);
+    articlesData = Array.isArray(articles) ? articles : (articles.articles || articles.data || []);
+
+    // Stats
+    document.getElementById('statAgents').textContent = agentsData.length || '50+';
+    document.getElementById('statGoods').textContent = goodsData.length || '--';
+    document.getElementById('statBuilders').textContent = buildersData.length || '--';
+    document.getElementById('statArticles').textContent = articlesData.length || '--';
+
+    // Home sections
+    renderHomeArticles();
+    renderHomeAgents();
+    renderHomeGoods();
+}
+
+// ── Render: Home Sections ──
+function renderHomeArticles() {
+    const container = document.getElementById('homeArticles');
+    const items = articlesData.slice(0, 3);
+    if (!items.length) {
+        container.innerHTML = emptyState('No articles yet', 'Be the first to write one!');
+        return;
+    }
+    container.innerHTML = items.map(a => articleCardHTML(a)).join('');
+}
+
+function renderHomeAgents() {
+    const container = document.getElementById('homeAgents');
+    const items = agentsData.slice(0, 6);
+    if (!items.length) {
+        container.innerHTML = emptyState('No agents yet', 'Submit the first agent!');
+        return;
+    }
+    container.innerHTML = items.map(a => agentCardHTML(a)).join('');
+}
+
+function renderHomeGoods() {
+    const container = document.getElementById('homeGoods');
+    const items = goodsData.slice(0, 6);
+    if (!items.length) {
+        container.innerHTML = emptyState('No public goods yet', 'Submit the first one!');
+        return;
+    }
+    container.innerHTML = items.map(g => goodCardHTML(g)).join('');
+}
+
+// ── Render: Agent Cards ──
+function agentCardHTML(agent) {
+    const cat = (agent.category || '').toLowerCase();
+    const catClass = 'tag-' + cat;
+    const statusClass = 'tag-' + (agent.status || 'live').toLowerCase();
+    const isVoted = upvoted['agent_' + agent.id];
+    const votes = agent.upvotes || 0;
+    return `<div class="card">
+        <div class="card-header">
+            <div class="card-name">${esc(agent.name)}</div>
+        </div>
+        <div class="card-desc">${esc(agent.description || '')}</div>
+        <div class="card-tags">
+            ${agent.category ? `<span class="tag ${catClass}">${esc(agent.category)}</span>` : ''}
+            ${agent.chain ? `<span class="tag tag-chain">${esc(agent.chain)}</span>` : ''}
+            ${agent.status ? `<span class="tag ${statusClass}">${esc(agent.status)}</span>` : ''}
+        </div>
+        <div class="card-footer">
+            <div class="card-links">
+                ${agent.website ? `<a class="card-link" href="${esc(agent.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+                ${agent.x_handle ? `<a class="card-link" href="https://x.com/${esc(agent.x_handle)}" target="_blank" rel="noopener">X</a>` : ''}
+                ${agent.github ? `<a class="card-link" href="${esc(agent.github)}" target="_blank" rel="noopener">GitHub</a>` : ''}
+            </div>
+            <button class="upvote-btn ${isVoted ? 'voted' : ''}" onclick="upvote('agent', '${agent.id}', this)">
+                &#9650; <span>${votes}</span>
+            </button>
+        </div>
+    </div>`;
+}
+
+function renderAgents() {
+    const container = document.getElementById('agentsGrid');
+    let filtered = filterList(agentsData, 'agentSearch', 'agentCategory', 'agentChain', 'agentStatus');
+    filtered = sortList(filtered, document.getElementById('agentSort').value);
+    if (!filtered.length) {
+        container.innerHTML = emptyState('No agents found', 'Try different filters or submit one!');
+        return;
+    }
+    container.innerHTML = filtered.map(a => agentCardHTML(a)).join('');
+}
+
+// Agent search debounce
+let agentSearchTimer;
+document.getElementById('agentSearch').addEventListener('input', () => {
+    clearTimeout(agentSearchTimer);
+    agentSearchTimer = setTimeout(filterAgents, 250);
+});
+
+function filterAgents() { renderAgents(); }
+
+// ── Render: Public Goods Cards ──
+function goodCardHTML(good) {
+    const cat = (good.category || '').toLowerCase();
+    const catClass = 'tag-' + cat;
+    const isVoted = upvoted['good_' + good.id];
+    const votes = good.upvotes || 0;
+    return `<div class="card">
+        <div class="card-header">
+            <div class="card-name">${esc(good.name)}</div>
+        </div>
+        <div class="card-desc">${esc(good.description || '')}</div>
+        <div class="card-tags">
+            ${good.category ? `<span class="tag ${catClass}">${esc(good.category)}</span>` : ''}
+            ${good.chain ? `<span class="tag tag-chain">${esc(good.chain)}</span>` : ''}
+        </div>
+        <div class="card-footer">
+            <div class="card-links">
+                ${good.website ? `<a class="card-link" href="${esc(good.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+                ${good.x_handle ? `<a class="card-link" href="https://x.com/${esc(good.x_handle)}" target="_blank" rel="noopener">X</a>` : ''}
+                ${good.github ? `<a class="card-link" href="${esc(good.github)}" target="_blank" rel="noopener">GitHub</a>` : ''}
+            </div>
+            <button class="upvote-btn ${isVoted ? 'voted' : ''}" onclick="upvote('good', '${good.id}', this)">
+                &#9650; <span>${votes}</span>
+            </button>
+        </div>
+    </div>`;
+}
+
+function renderGoods() {
+    const container = document.getElementById('goodsGrid');
+    let filtered = filterList(goodsData, 'goodsSearch', 'goodsCategory', 'goodsChain');
+    filtered = sortList(filtered, document.getElementById('goodsSort').value);
+    if (!filtered.length) {
+        container.innerHTML = emptyState('No public goods found', 'Try different filters or submit one!');
+        return;
+    }
+    container.innerHTML = filtered.map(g => goodCardHTML(g)).join('');
+}
+
+let goodsSearchTimer;
+document.getElementById('goodsSearch').addEventListener('input', () => {
+    clearTimeout(goodsSearchTimer);
+    goodsSearchTimer = setTimeout(filterGoods, 250);
+});
+
+function filterGoods() { renderGoods(); }
+
+// ── Render: Builder Cards ──
+function builderCardHTML(builder) {
+    const initial = (builder.name || '?')[0].toUpperCase();
+    const skills = (builder.skills || []);
+    return `<div class="builder-card">
+        <div class="builder-avatar">${initial}</div>
+        <div class="builder-name">${esc(builder.name)}</div>
+        <div class="builder-bio">${esc(builder.bio || '')}</div>
+        <div class="builder-skills">
+            ${skills.map(s => `<span class="skill-tag ${s}">${esc(s)}</span>`).join('')}
+        </div>
+        ${builder.projects ? `<div class="builder-projects">Projects: ${esc(builder.projects)}</div>` : ''}
+        <div class="builder-links">
+            ${builder.x_handle ? `<a class="card-link" href="https://x.com/${esc(builder.x_handle)}" target="_blank" rel="noopener">X</a>` : ''}
+            ${builder.github ? `<a class="card-link" href="${esc(builder.github)}" target="_blank" rel="noopener">GitHub</a>` : ''}
+            ${builder.website ? `<a class="card-link" href="${esc(builder.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+        </div>
+    </div>`;
+}
+
+function renderBuilders() {
+    const container = document.getElementById('buildersGrid');
+    let filtered = buildersData;
+    const search = document.getElementById('builderSearch').value.toLowerCase().trim();
+    const skill = document.getElementById('builderSkill').value;
+    if (search) {
+        filtered = filtered.filter(b =>
+            (b.name || '').toLowerCase().includes(search) ||
+            (b.bio || '').toLowerCase().includes(search)
+        );
+    }
+    if (skill) {
+        filtered = filtered.filter(b => (b.skills || []).includes(skill));
+    }
+    if (!filtered.length) {
+        container.innerHTML = emptyState('No builders found', 'Submit your profile!');
+        return;
+    }
+    container.innerHTML = filtered.map(b => builderCardHTML(b)).join('');
+}
+
+let builderSearchTimer;
+document.getElementById('builderSearch').addEventListener('input', () => {
+    clearTimeout(builderSearchTimer);
+    builderSearchTimer = setTimeout(filterBuilders, 250);
+});
+
+function filterBuilders() { renderBuilders(); }
+
+// ── Render: Blog ──
+function articleCardHTML(article) {
+    const date = article.created_at ? new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    return `<div class="article-card" onclick="openArticle(articlesData.find(a => a.id === '${article.id}') || articlesData.find(a => a.slug === '${esc(article.slug || '')}'))">
+        <div class="article-meta-top">
+            ${article.category ? `<span class="article-category">${esc(article.category)}</span>` : ''}
+            <span class="article-date">${date}</span>
+        </div>
+        <div class="article-title">${esc(article.title)}</div>
+        <div class="article-excerpt">${esc(article.excerpt || (article.content || '').substring(0, 200))}</div>
+        <div class="article-footer">
+            <span class="article-author">${esc(article.author || 'Anonymous')}</span>
+            <div class="article-stats">
+                <span class="article-stat">${article.tips || 0} tips</span>
+                <span class="article-stat">${article.claws_earned || 0} CLAWS</span>
+                <span class="article-stat">${article.views || 0} views</span>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderBlog() {
+    const container = document.getElementById('blogGrid');
+    if (!articlesData.length) {
+        container.innerHTML = emptyState('No articles yet', 'Write the first one!');
+        return;
+    }
+    container.innerHTML = articlesData.map(a => articleCardHTML(a)).join('');
+}
+
+// ── Article Full View ──
+function openArticle(article) {
+    if (!article) return;
+    currentArticle = article;
+
+    // Hide tab panel, show article view
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    const view = document.getElementById('articleView');
+    view.classList.add('active');
+
+    const date = article.created_at ? new Date(article.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+    document.getElementById('articleViewContent').innerHTML = `
+        <h1>${esc(article.title)}</h1>
+        <div class="article-view-meta">
+            ${article.category ? `<span class="article-category">${esc(article.category)}</span>` : ''}
+            <span>${esc(article.author || 'Anonymous')}</span>
+            <span>${date}</span>
+            <span>${article.views || 0} views</span>
+        </div>
+        <div class="article-body">${renderMarkdown(article.content || '')}</div>
+    `;
+
+    // Update tip stats
+    document.getElementById('tipTotalCount').textContent = (article.tips || 0) + ' tips';
+    document.getElementById('tipTotalClaws').textContent = (article.claws_earned || 0) + ' CLAWS earned';
+    updateTipSplit();
+
+    // Update URL
+    const slug = article.slug || article.id;
+    history.pushState(null, '', '#article/' + slug);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeArticleView() {
+    document.getElementById('articleView').classList.remove('active');
+    document.getElementById('tab-blog').classList.add('active');
+    history.pushState(null, '', '#blog');
+}
+
+// ── Tip Widget ──
+function updateTipSplit() {
+    const val = parseInt(document.getElementById('tipSlider').value);
+    document.getElementById('tipAuthorPct').textContent = val + '%';
+    document.getElementById('tipYouPct').textContent = (100 - val) + '%';
+}
+
+async function tipArticle() {
+    if (!currentArticle) return;
+    const btn = document.getElementById('tipBtn');
+    btn.disabled = true;
+    btn.textContent = 'Tipping...';
+    try {
+        const split = parseInt(document.getElementById('tipSlider').value);
+        await apiPost('/tip', {
+            article_id: currentArticle.id,
+            author_pct: split,
+            tipper_pct: 100 - split
+        });
+        showToast('Tip sent! CLAWS distributed.');
+        // Update local stats
+        currentArticle.tips = (currentArticle.tips || 0) + 1;
+        document.getElementById('tipTotalCount').textContent = currentArticle.tips + ' tips';
+    } catch (e) {
+        showToast('Tip failed: ' + e.message, true);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Tip \u2014 it\'s free!';
+}
+
+// ── Upvote ──
+async function upvote(type, id, btn) {
+    const key = type + '_' + id;
+    if (upvoted[key]) return;
+    upvoted[key] = true;
+    localStorage.setItem('pgt_upvoted', JSON.stringify(upvoted));
+
+    btn.classList.add('voted');
+    const countEl = btn.querySelector('span');
+    countEl.textContent = parseInt(countEl.textContent) + 1;
+
+    try {
+        const endpoint = type === 'agent' ? '/agents' : type === 'good' ? '/goods' : '/builders';
+        await apiPost(endpoint + '/' + id + '/upvote', {});
+    } catch (e) {
+        // Revert on error
+        upvoted[key] = false;
+        localStorage.setItem('pgt_upvoted', JSON.stringify(upvoted));
+        btn.classList.remove('voted');
+        countEl.textContent = parseInt(countEl.textContent) - 1;
+    }
+}
+
+// ── Filter/Sort Helpers ──
+function filterList(data, searchId, categoryId, chainId, statusId) {
+    let result = [...data];
+    const search = document.getElementById(searchId).value.toLowerCase().trim();
+    const category = document.getElementById(categoryId).value;
+    const chain = chainId ? document.getElementById(chainId).value : '';
+    const status = statusId ? document.getElementById(statusId).value : '';
+
+    if (search) {
+        result = result.filter(item =>
+            (item.name || '').toLowerCase().includes(search) ||
+            (item.description || '').toLowerCase().includes(search)
+        );
+    }
+    if (category) result = result.filter(item => item.category === category);
+    if (chain) result = result.filter(item => item.chain === chain);
+    if (status) result = result.filter(item => item.status === status);
+    return result;
+}
+
+function sortList(data, sortBy) {
+    if (sortBy === 'newest') {
+        return data.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    }
+    if (sortBy === 'upvotes') {
+        return data.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    }
+    return data; // featured = default order
+}
+
+// ── Markdown Renderer (regex-based, no library) ──
+function renderMarkdown(md) {
+    if (!md) return '';
+    let html = md;
+
+    // Escape HTML first (but preserve intentional HTML)
+    html = html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // Code blocks (``` ... ```)
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+        return '<pre><code>' + code.trim() + '</code></pre>';
+    });
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Images
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // Bold
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Italic
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Strikethrough
+    html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+    // Horizontal rule
+    html = html.replace(/^\n?---\n?$/gm, '<hr>');
+
+    // Headers
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    // Blockquotes
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+    // Unordered lists
+    html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/s, function(match) {
+        return '<ul>' + match + '</ul>';
+    });
+
+    // Ordered lists
+    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+    // Paragraphs: wrap remaining text blocks
+    html = html.split('\n\n').map(block => {
+        block = block.trim();
+        if (!block) return '';
+        if (block.startsWith('<h') || block.startsWith('<pre') || block.startsWith('<ul') ||
+            block.startsWith('<ol') || block.startsWith('<blockquote') || block.startsWith('<hr') ||
+            block.startsWith('<img')) {
+            return block;
+        }
+        // Replace single newlines with <br> within paragraphs
+        return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+    }).join('\n');
+
+    return html;
+}
+
+// ── Submit Modal ──
+function openSubmitModal(forceType) {
+    const type = forceType || getSubmitType();
+    const modal = document.getElementById('submitModal');
+    const content = document.getElementById('modalContent');
+    content.innerHTML = getFormHTML(type);
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSubmitModal() {
+    document.getElementById('submitModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeModalOverlay(e) {
+    if (e.target === document.getElementById('submitModal')) closeSubmitModal();
+}
+
+function getSubmitType() {
+    switch (currentTab) {
+        case 'agents': return 'agent';
+        case 'goods': return 'good';
+        case 'builders': return 'builder';
+        case 'blog': return 'article';
+        default: return 'agent';
+    }
+}
+
+function getFormHTML(type) {
+    switch (type) {
+        case 'agent': return `
+            <h2>Submit Agent</h2>
+            <form onsubmit="submitForm(event, 'agent')">
+                <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" required></div>
+                <div class="form-group"><label class="form-label">Description *</label><textarea class="form-textarea" name="description" required></textarea></div>
+                <div class="form-group"><label class="form-label">Website</label><input class="form-input" name="website" type="url" placeholder="https://"></div>
+                <div class="form-group"><label class="form-label">X Handle</label><input class="form-input" name="x_handle" placeholder="@handle"></div>
+                <div class="form-group"><label class="form-label">Telegram</label><input class="form-input" name="telegram" placeholder="t.me/..."></div>
+                <div class="form-group"><label class="form-label">GitHub</label><input class="form-input" name="github" type="url" placeholder="https://github.com/..."></div>
+                <div class="form-group"><label class="form-label">Chain</label>
+                    <select class="form-select" name="chain"><option value="">Select...</option><option value="Base">Base</option><option value="Ethereum">Ethereum</option><option value="Solana">Solana</option><option value="Multi">Multi</option></select>
+                </div>
+                <div class="form-group"><label class="form-label">Category</label>
+                    <select class="form-select" name="category"><option value="">Select...</option><option value="DeFi">DeFi</option><option value="Social">Social</option><option value="Gaming">Gaming</option><option value="Infra">Infra</option><option value="DevTools">DevTools</option><option value="DAO">DAO</option></select>
+                </div>
+                <div class="form-group"><label class="form-label">Token Address (optional)</label><input class="form-input" name="token_address" placeholder="0x..."></div>
+                <button class="btn-form-submit" type="submit">Submit Agent</button>
+            </form>`;
+        case 'good': return `
+            <h2>Submit Public Good</h2>
+            <form onsubmit="submitForm(event, 'good')">
+                <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" required></div>
+                <div class="form-group"><label class="form-label">Description *</label><textarea class="form-textarea" name="description" required></textarea></div>
+                <div class="form-group"><label class="form-label">Website</label><input class="form-input" name="website" type="url" placeholder="https://"></div>
+                <div class="form-group"><label class="form-label">GitHub</label><input class="form-input" name="github" type="url" placeholder="https://github.com/..."></div>
+                <div class="form-group"><label class="form-label">X Handle</label><input class="form-input" name="x_handle" placeholder="@handle"></div>
+                <div class="form-group"><label class="form-label">Category</label>
+                    <select class="form-select" name="category"><option value="">Select...</option><option value="Tool">Tool</option><option value="Infrastructure">Infrastructure</option><option value="Education">Education</option><option value="Community">Community</option><option value="Protocol">Protocol</option><option value="DAO">DAO</option></select>
+                </div>
+                <div class="form-group"><label class="form-label">Chain (optional)</label>
+                    <select class="form-select" name="chain"><option value="">Select...</option><option value="Base">Base</option><option value="Ethereum">Ethereum</option><option value="Solana">Solana</option><option value="Multi">Multi</option></select>
+                </div>
+                <button class="btn-form-submit" type="submit">Submit Public Good</button>
+            </form>`;
+        case 'builder': return `
+            <h2>Submit Your Profile</h2>
+            <form onsubmit="submitForm(event, 'builder')">
+                <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" required></div>
+                <div class="form-group"><label class="form-label">Bio *</label><textarea class="form-textarea" name="bio" required placeholder="Tell us about yourself..."></textarea></div>
+                <div class="form-group"><label class="form-label">X Handle</label><input class="form-input" name="x_handle" placeholder="@handle"></div>
+                <div class="form-group"><label class="form-label">GitHub</label><input class="form-input" name="github" type="url" placeholder="https://github.com/..."></div>
+                <div class="form-group"><label class="form-label">Website</label><input class="form-input" name="website" type="url" placeholder="https://"></div>
+                <div class="form-group"><label class="form-label">Skills</label>
+                    <div class="form-checkboxes">
+                        <label class="form-checkbox-label"><input type="checkbox" name="skills" value="vibecoder"> Vibecoder</label>
+                        <label class="form-checkbox-label"><input type="checkbox" name="skills" value="smart-contracts"> Smart Contracts</label>
+                        <label class="form-checkbox-label"><input type="checkbox" name="skills" value="ai-ml"> AI / ML</label>
+                        <label class="form-checkbox-label"><input type="checkbox" name="skills" value="frontend"> Frontend</label>
+                        <label class="form-checkbox-label"><input type="checkbox" name="skills" value="design"> Design</label>
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Projects (comma-separated)</label><input class="form-input" name="projects" placeholder="Project A, Project B..."></div>
+                <button class="btn-form-submit" type="submit">Submit Profile</button>
+            </form>`;
+        case 'article': return `
+            <h2>Write Article</h2>
+            <form onsubmit="submitForm(event, 'article')">
+                <div class="form-group"><label class="form-label">Title *</label><input class="form-input" name="title" required></div>
+                <div class="form-group"><label class="form-label">Author Name</label><input class="form-input" name="author" placeholder="Your name"></div>
+                <div class="form-group"><label class="form-label">Category</label>
+                    <select class="form-select" name="category"><option value="">Select...</option><option value="Analysis">Analysis</option><option value="Tutorial">Tutorial</option><option value="News">News</option><option value="Opinion">Opinion</option><option value="Guide">Guide</option></select>
+                </div>
+                <div class="form-group"><label class="form-label">Cover Image URL (optional)</label><input class="form-input" name="cover_image" type="url" placeholder="https://..."></div>
+                <div class="form-group"><label class="form-label">Content (Markdown supported) *</label><textarea class="form-textarea" name="content" required style="min-height:240px" placeholder="# Your Article Title\n\nStart writing..."></textarea></div>
+                <button class="btn-form-submit" type="submit">Publish Article</button>
+            </form>`;
+    }
+}
+
+async function submitForm(e, type) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = form.querySelector('.btn-form-submit');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    try {
+        const data = {};
+        const formData = new FormData(form);
+
+        if (type === 'builder') {
+            // Handle skills checkboxes
+            data.skills = [];
+            form.querySelectorAll('input[name="skills"]:checked').forEach(cb => {
+                data.skills.push(cb.value);
+            });
+        }
+
+        for (const [key, value] of formData.entries()) {
+            if (key === 'skills') continue; // handled above for builder
+            if (value) data[key] = value;
+        }
+
+        // Clean x_handle
+        if (data.x_handle) data.x_handle = data.x_handle.replace('@', '');
+
+        // Generate slug for articles
+        if (type === 'article' && data.title) {
+            data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+
+        const endpoints = {
+            agent: '/agents',
+            good: '/goods',
+            builder: '/builders',
+            article: '/articles'
+        };
+
+        await apiPost(endpoints[type], data);
+        showToast('Submitted successfully!');
+        closeSubmitModal();
+
+        // Refresh data
+        if (type === 'agent') { agentsData = []; loadAgents(); }
+        if (type === 'good') { goodsData = []; loadGoods(); }
+        if (type === 'builder') { buildersData = []; loadBuilders(); }
+        if (type === 'article') { articlesData = []; loadArticles(); }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+
+    btn.disabled = false;
+    btn.textContent = form.querySelector('.btn-form-submit') ? 'Submit' : 'Submit';
+    // Reset button text based on type
+    const labels = { agent: 'Submit Agent', good: 'Submit Public Good', builder: 'Submit Profile', article: 'Publish Article' };
+    btn.textContent = labels[type] || 'Submit';
+}
+
+// ── Utilities ──
+function esc(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function emptyState(title, sub) {
+    return `<div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state-icon">&#128064;</div>
+        <div class="empty-state-text">${title}</div>
+        <div style="color:var(--text-dim); font-size:14px; margin-top:6px;">${sub || ''}</div>
+    </div>`;
+}
+
+function showToast(msg, isError) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast' + (isError ? ' error' : '');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// ── Animated Network Canvas ──
 (function() {
     const canvas = document.getElementById('networkCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const wrap = canvas.parentElement;
-
     let nodes = [];
     const NODE_COUNT = 35;
     const CONNECT_DIST = 180;
     let w, h;
-
-    function resize() {
-        w = canvas.width = wrap.offsetWidth;
-        h = canvas.height = wrap.offsetHeight;
-    }
-
+    function resize() { w = canvas.width = wrap.offsetWidth; h = canvas.height = wrap.offsetHeight; }
     function initNodes() {
         nodes = [];
         for (let i = 0; i < NODE_COUNT; i++) {
-            nodes.push({
-                x: Math.random() * w,
-                y: Math.random() * h,
-                vx: (Math.random() - 0.5) * 0.3,
-                vy: (Math.random() - 0.5) * 0.3,
-                r: Math.random() * 2 + 1.5,
-                glow: Math.random() > 0.7 // 30% of nodes glow brighter
-            });
+            nodes.push({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, r: Math.random() * 2 + 1.5, glow: Math.random() > 0.7 });
         }
     }
-
     function draw() {
         ctx.clearRect(0, 0, w, h);
-
-        // Subtle grid
-        ctx.strokeStyle = 'rgba(52, 211, 153, 0.03)';
-        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.03)'; ctx.lineWidth = 0.5;
         const gridSize = 60;
-        for (let x = 0; x < w; x += gridSize) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-        }
-        for (let y = 0; y < h; y += gridSize) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-        }
-
-        // Connection lines
+        for (let x = 0; x < w; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = 0; y < h; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
-                const dx = nodes[i].x - nodes[j].x;
-                const dy = nodes[i].y - nodes[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < CONNECT_DIST) {
-                    const alpha = (1 - dist / CONNECT_DIST) * 0.15;
-                    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(nodes[i].x, nodes[i].y);
-                    ctx.lineTo(nodes[j].x, nodes[j].y);
-                    ctx.stroke();
-                }
+                const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist < CONNECT_DIST) { ctx.strokeStyle = `rgba(52,211,153,${(1-dist/CONNECT_DIST)*0.15})`; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke(); }
             }
         }
-
-        // Nodes
         for (const n of nodes) {
-            // Glow
-            if (n.glow) {
-                const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 12);
-                grad.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
-                grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, 12, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Dot
-            ctx.fillStyle = n.glow ? '#34d399' : 'rgba(52, 211, 153, 0.5)';
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Move
-            n.x += n.vx;
-            n.y += n.vy;
+            if (n.glow) { const grad = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,12); grad.addColorStop(0,'rgba(52,211,153,0.25)'); grad.addColorStop(1,'rgba(52,211,153,0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(n.x,n.y,12,0,Math.PI*2); ctx.fill(); }
+            ctx.fillStyle = n.glow ? '#34d399' : 'rgba(52,211,153,0.5)'; ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2); ctx.fill();
+            n.x += n.vx; n.y += n.vy;
             if (n.x < 0 || n.x > w) n.vx *= -1;
             if (n.y < 0 || n.y > h) n.vy *= -1;
         }
-
         requestAnimationFrame(draw);
     }
-
-    resize();
-    initNodes();
-    draw();
+    resize(); initNodes(); draw();
     window.addEventListener('resize', () => { resize(); initNodes(); });
 })();
+
+// ── Initialize ──
+loadHomeData();
+handleHash();
+
 </script>
 </body>
 </html>
