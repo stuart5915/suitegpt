@@ -1472,7 +1472,7 @@ function generateDirectReply(tool, resultJson, args) {
 
       case 'swap_tokens':
         if (d.error) return d.error;
-        if (d.success) return `Swap **${d.fromAmount} ${d.fromToken}** → **${d.toAmount} ${d.toToken}**\n\nvia ParaSwap (best route across Base DEXes)\nSlippage: ${d.slippage} | Gas: ~$${d.gasCostUSD}`;
+        if (d.success) return `Swap **${d.fromAmount} ${d.fromToken}** → **${d.toAmount} ${d.toToken}**\n\nRoute: ${d.route || 'ParaSwap best route'}\nSlippage: ${d.slippage} | Gas: ~$${d.gasCostUSD}`;
         return null;
 
       case 'stake_claws':

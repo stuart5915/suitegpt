@@ -1665,10 +1665,26 @@
                 signBtn.textContent = 'Signing...';
                 signBtn.disabled = true;
                 cancelBtn.style.display = 'none';
-                processPendingTx().then(function() {
-                    signBtn.textContent = 'Signed';
-                    signBtn.style.background = 'rgba(74,222,128,0.15)';
-                    signBtn.style.color = '#4ade80';
+                var savedTx = pendingTxData;
+                processPendingTx().then(function(success) {
+                    if (success) {
+                        signBtn.textContent = 'Signed';
+                        signBtn.style.background = 'rgba(74,222,128,0.15)';
+                        signBtn.style.color = '#4ade80';
+                    } else {
+                        signBtn.textContent = 'Cancelled';
+                        signBtn.style.background = 'rgba(255,100,100,0.1)';
+                        signBtn.style.color = '#ff6b6b';
+                        // Restore tx data for retry
+                        pendingTxData = savedTx;
+                        signBtn.disabled = false;
+                        setTimeout(function() {
+                            signBtn.textContent = 'Retry';
+                            signBtn.style.background = 'linear-gradient(135deg,#c0534d,#d4716b)';
+                            signBtn.style.color = '#fff';
+                            cancelBtn.style.display = '';
+                        }, 2000);
+                    }
                 });
             };
             var cancelBtn = document.createElement('button');
@@ -1790,13 +1806,13 @@
 
     // Process pending transactions (single or multi-step)
     async function processPendingTx() {
-        if (!pendingTxData) return;
+        if (!pendingTxData) return false;
         var data = pendingTxData;
         pendingTxData = null;
 
         if (data.tx) {
             // Single transaction
-            await executeTx(data.tx);
+            return await executeTx(data.tx);
         } else if (data.txs && data.txs.length) {
             // Multi-step (e.g. approve + stake)
             for (var i = 0; i < data.txs.length; i++) {

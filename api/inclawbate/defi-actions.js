@@ -117,6 +117,19 @@ export async function getSwapQuote({ fromToken, toToken, amount, wallet }) {
       return { error: txData.error || 'Failed to build swap transaction.' };
     }
 
+    // Extract route info (which DEXes are being used)
+    const bestRoute = priceRoute.bestRoute || [];
+    const routeParts = [];
+    for (const route of bestRoute) {
+      for (const swap of (route.swaps || [])) {
+        for (const se of (swap.swapExchanges || [])) {
+          const pct = Math.round(parseFloat(se.percent || 100));
+          routeParts.push(se.exchange + (pct < 100 ? ` (${pct}%)` : ''));
+        }
+      }
+    }
+    const routeLabel = routeParts.length ? routeParts.join(' + ') : 'Best available route';
+
     return {
       success: true,
       fromToken: src.symbol,
@@ -126,6 +139,7 @@ export async function getSwapQuote({ fromToken, toToken, amount, wallet }) {
       toAmountRaw: destAmount,
       gasCostUSD,
       slippage: '1.5%',
+      route: routeLabel,
       tx: {
         to: txData.to,
         data: txData.data,
