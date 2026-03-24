@@ -1274,6 +1274,7 @@ async function callLLM(messages) {
 }
 
 // Generate human-readable replies directly from tool data — skips the second LLM call
+// Returns { reply, suggestions } or string (backward compat) or null (fall back to LLM)
 function generateDirectReply(tool, resultJson, args) {
   try {
     const d = JSON.parse(resultJson || '{}');
@@ -1282,52 +1283,85 @@ function generateDirectReply(tool, resultJson, args) {
 
     switch (tool) {
       case 'get_ecosystem_info':
-        return `Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.\n\nYou can launch tokens, deploy staking pools, create AI marketing agents, airdrop tokens, hire the Council, and get full incubation — all at inclawbate.app.\n\nThe ecosystem runs on $CLAWS on Base: ${d.token?.address || ''}`;
+        return {
+          reply: `Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.\n\nYou can launch tokens, deploy staking pools, create AI marketing agents, airdrop tokens, hire the Council, and get full incubation — all at inclawbate.app.\n\nThe ecosystem runs on $CLAWS on Base: ${d.token?.address || ''}`,
+          suggestions: ['Launch a token', 'Build me an app', 'How do I earn yield?', 'Stake CLAWS']
+        };
 
       case 'get_incubation_info':
-        return `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`;
+        return {
+          reply: `Full-service incubation — we handle everything: ${(d.services || []).join(', ')}.\n\nCost: ${d.cost}\n\nReach out on Telegram: ${d.contact?.telegram || 't.me/StuartDeFi'}`,
+          suggestions: ['Apply for incubation', 'I want to launch a token myself', 'Hire the Council instead']
+        };
 
       case 'deploy_token':
-        if (d.success) return `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic Uniswap liquidity. Anyone can trade it now.\n\nView your token: https://inclawbate.app/tokens/${d.token_address}`;
+        if (d.success) return {
+          reply: `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic Uniswap liquidity. Anyone can trade it now.\n\nView your token: https://inclawbate.app/tokens/${d.token_address}`,
+          suggestions: ['Deploy staking for this token', 'Set up X marketing agent', 'Airdrop tokens to my community', 'Check token analytics']
+        };
         return d.error || 'Token deployment failed. Try again.';
 
       case 'create_agent_info':
-        return "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\n" + (d.note || 'Agents are free to create.');
+        return {
+          reply: "Here's how to create an AI marketing agent:\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + "\n\n" + (d.note || 'Agents are free to create.'),
+          suggestions: ['Set up an agent for my project', 'Book a promo instead', 'Back to menu']
+        };
 
       case 'get_token_analytics': {
         if (d.message) return d.message;
         const change = d.price_change_24h ? ` (${d.price_change_24h > 0 ? '+' : ''}${d.price_change_24h}% 24h)` : '';
-        return `**${d.token || 'Token'}** (${d.symbol || '?'}) on ${d.chain || 'Base'}:\n• Price: $${d.price_usd}${change}\n• 24h Volume: $${Number(d.volume_24h || 0).toLocaleString()}\n• Liquidity: $${Number(d.liquidity_usd || 0).toLocaleString()}\n• FDV: $${Number(d.fdv || 0).toLocaleString()}`;
+        return {
+          reply: `**${d.token || 'Token'}** (${d.symbol || '?'}) on ${d.chain || 'Base'}:\n• Price: $${d.price_usd}${change}\n• 24h Volume: $${Number(d.volume_24h || 0).toLocaleString()}\n• Liquidity: $${Number(d.liquidity_usd || 0).toLocaleString()}\n• FDV: $${Number(d.fdv || 0).toLocaleString()}`,
+          suggestions: ['Run a health check', 'Deploy staking for this token', 'Buy this token']
+        };
       }
 
       case 'get_staking_stats':
-        return `Staking stats:\n• Total stakers: ${d.total_stakers}\n• TVL: ${d.tvl_usd}\n• APY: ${d.estimated_apy || 'N/A'}\n• Total distributed: ${d.total_distributed_usd || d.total_distributed}\n\nStake at: ${d.staking_url || 'inclawbate.app/stake'}` + (d.wallet_position ? `\n\nYour position: ${d.wallet_position.staked} staked (${d.wallet_position.share} share)` : '');
+        return {
+          reply: `Staking stats:\n• Total stakers: ${d.total_stakers}\n• TVL: ${d.tvl_usd}\n• APY: ${d.estimated_apy || 'N/A'}\n• Total distributed: ${d.total_distributed_usd || d.total_distributed}\n\nStake at: ${d.staking_url || 'inclawbate.app/stake'}` + (d.wallet_position ? `\n\nYour position: ${d.wallet_position.staked} staked (${d.wallet_position.share} share)` : ''),
+          suggestions: d.wallet_position ? ['Stake more CLAWS', 'Claim my rewards', 'Unstake CLAWS'] : ['Stake CLAWS', 'Buy CLAWS first', 'How does staking work?']
+        };
 
       case 'book_promo':
-        return `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`;
+        return {
+          reply: `Promote on @inclawbate X:\n\n` + (d.tiers || []).map(t => `• **${t.name}** — ${t.posts} post${t.posts === 1 ? '' : 's'}, ${t.price}`).join('\n') + `\n\nSend CLAWS to ${d.payment_wallet}, share the tx hash here, and posts go live within 24 hours.`,
+          suggestions: ['Book a shoutout', 'Book a campaign', 'Set up an AI agent instead']
+        };
 
       case 'disperse_tokens':
-        if (d.method === 'self_execute') return d.message + "\n\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + (d.recipients_csv ? "\n\nRecipient list:\n```\n" + d.recipients_csv + "\n```" : '');
-        if (d.success) return `Airdrop complete!\n\n• Recipients: ${d.recipients_count}\n• Total distributed: ${d.total_distributed}\n• Tx: ${d.basescan_url}`;
+        if (d.method === 'self_execute') return {
+          reply: d.message + "\n\n" + (d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n') + (d.recipients_csv ? "\n\nRecipient list:\n```\n" + d.recipients_csv + "\n```" : ''),
+          suggestions: ['Check token analytics', 'Deploy staking', 'Launch another token']
+        };
+        if (d.success) return {
+          reply: `Airdrop complete!\n\n• Recipients: ${d.recipients_count}\n• Total distributed: ${d.total_distributed}\n• Tx: ${d.basescan_url}`,
+          suggestions: ['Airdrop more tokens', 'Check token analytics', 'Set up marketing']
+        };
         return d.error || 'Airdrop failed. Try again.';
 
       case 'deploy_staking':
         if (d.error) return "Staking pool deployment failed: " + d.error + (d.hint ? "\n\n" + d.hint : '');
-        return "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nView your pool: https://inclawbate.app/stake\nDeposit rewards: https://inclawbate.app/dashboard (connect wallet → deposit CLAWS)";
+        return {
+          reply: "Staking pool deployed!\n\nPool: " + d.pool_address + "\nStake: " + d.staking_token + "\nEarn: CLAWS\nAdmin: " + d.admin + "\n\nTx: " + d.basescan_url + "\n\nView your pool: https://inclawbate.app/stake\nDeposit rewards: https://inclawbate.app/dashboard (connect wallet → deposit CLAWS)",
+          suggestions: ['Deposit CLAWS rewards into the pool', 'Set up X marketing agent', 'Airdrop tokens']
+        };
 
       case 'hire_inclawbator':
         if (d.posted) {
           let reply = d.message + "\n\n" + d.what_happens_next;
           if (d.request_id) reply += "\n\nRequest ID: " + d.request_id;
           if (d.contact_methods) reply += "\n\nNeed faster response? " + d.contact_methods.note;
-          return reply;
+          return { reply, suggestions: ['Check request status', 'Build an app myself', 'Launch a token'] };
         }
         return d.message || d.error || 'Request submitted!';
 
       case 'build_app':
         if (d.error) return "App build failed: " + d.error;
         if (d.needs_info) return d.message;
-        return (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\n(May take a moment to appear — hard refresh if needed.)\n\nWant me to make any changes? Just describe what you'd like updated.\n\nNeed higher quality or a custom build? DM @inclawbate on X or visit inclawbate.app/build for premium builds.";
+        return {
+          reply: (d.updated ? "App updated!" : "App built!") + "\n\nLive at: " + d.url + "\n\n(May take a moment to appear — hard refresh if needed.)",
+          suggestions: ['Make changes to this app', 'Build another app', 'Show me my apps']
+        };
 
       case 'get_yield_options': {
         const tiers = d.tiers || {};
@@ -1347,13 +1381,16 @@ function generateDirectReply(tool, resultJson, args) {
           tiers.advanced.strategies.forEach(s => { reply += `• **${s.name}** — ${s.apy_label} APY | ${s.protocol}\n`; });
           reply += '\n';
         }
-        reply += 'Yield can be received as **CLAWS (0% fee)** or **USDC (2% fee)**.\n\nWhich strategy interests you? Tell me which one and how much you want to deposit.';
-        return reply;
+        reply += 'Yield can be received as **CLAWS (0% fee)** or **USDC (2% fee)**.';
+        return { reply, suggestions: ['Deposit into Moonwell (safest)', 'Deposit into Lido wstETH', 'Check my positions', 'How risky is Aerodrome?'] };
       }
 
       case 'deposit_to_strategy':
         if (d.needs_wallet_action) {
-          return `Ready to deposit **${d.amount} ${d.asset}** into **${d.strategy}** (${d.apy} APY).\n\nSteps:\n${(d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nRisk: ${d.risk}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to proceed. You can also go directly to ${d.url}`;
+          return {
+            reply: `Ready to deposit **${d.amount} ${d.asset}** into **${d.strategy}** (${d.apy} APY).\n\nSteps:\n${(d.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nRisk: ${d.risk}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to proceed.`,
+            suggestions: ['Check my positions', 'See other yield options', 'Change reward preference']
+          };
         }
         return d.error || d.message || 'Deposit prepared.';
 
@@ -1363,18 +1400,24 @@ function generateDirectReply(tool, resultJson, args) {
           d.positions.forEach(p => {
             reply += `• **${p.strategy}** — ${p.amount} ${p.asset} | APY: ${p.apy} | Earned: ${p.earned}\n`;
           });
-          return reply;
+          return { reply, suggestions: ['Withdraw from a position', 'Deposit more', 'Change reward preference'] };
         }
-        return d.message || 'No active yield positions found. Say "earn yield" to see available strategies!';
+        return { reply: d.message || 'No active yield positions found.', suggestions: ['Show me yield options', 'Stake CLAWS instead', 'What can I earn?'] };
 
       case 'withdraw_from_strategy':
         if (d.needs_wallet_action) {
-          return `Ready to withdraw from **${d.strategy}**.\n\nStep: ${(d.steps || []).join(', ')}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to withdraw your funds.`;
+          return {
+            reply: `Ready to withdraw from **${d.strategy}**.\n\nStep: ${(d.steps || []).join(', ')}\nContract: \`${d.contract}\`\n\nConnect your wallet and confirm the transaction to withdraw your funds.`,
+            suggestions: ['Check my positions', 'Deposit into something else']
+          };
         }
         return d.error || d.message || 'Withdrawal prepared.';
 
       case 'set_reward_preference':
-        if (d.saved) return `Reward preference set to **${d.preference === 'claws' ? 'CLAWS 🦞' : 'USDC 💵'}** (${d.fee} fee).\n\n${d.description}`;
+        if (d.saved) return {
+          reply: `Reward preference set to **${d.preference === 'claws' ? 'CLAWS 🦞' : 'USDC 💵'}** (${d.fee} fee).\n\n${d.description}`,
+          suggestions: ['Check my positions', 'See yield options', 'Stake CLAWS']
+        };
         return d.message || 'Preference updated!';
 
       case 'swap_tokens':
@@ -1398,15 +1441,17 @@ function generateDirectReply(tool, resultJson, args) {
         return null;
 
       case 'health_check':
-        // Let LLM interpret health checks — they need nuanced advice
         return null;
 
       case 'list_my_apps':
         if (d.error) return d.error;
-        if (!d.apps || !d.apps.length) return d.message || "You haven't built any apps yet. Want me to build one for you?";
-        return '**Your apps** (' + d.total + '):\n\n' + d.apps.map(function(a, i) {
-          return (i + 1) + '. **' + a.name + '** — ' + a.url + (a.description ? '\n   ' + a.description : '');
-        }).join('\n') + '\n\nWant to update one of these, or build something new?';
+        if (!d.apps || !d.apps.length) return { reply: d.message || "You haven't built any apps yet.", suggestions: ['Build me an app', 'What can you build?'] };
+        return {
+          reply: '**Your apps** (' + d.total + '):\n\n' + d.apps.map(function(a, i) {
+            return (i + 1) + '. **' + a.name + '** — ' + a.url + (a.description ? '\n   ' + a.description : '');
+          }).join('\n'),
+          suggestions: ['Build something new', 'Update ' + (d.apps[0]?.name || 'an app')]
+        };
 
       default:
         return null;
@@ -1707,10 +1752,11 @@ export default async function handler(req, res) {
       if (fallback) {
         if (fallback.execute && fallback.args) {
           const result = await executeTool(fallback.tool, fallback.args);
-          const directReply = generateDirectReply(fallback.tool, result, fallback.args);
-          const reply = directReply || 'Here are the results. Ask me anything else!';
+          const directResult = generateDirectReply(fallback.tool, result, fallback.args);
+          const reply = typeof directResult === 'object' && directResult?.reply ? directResult.reply : (directResult || 'Here are the results. Ask me anything else!');
+          const suggestions = typeof directResult === 'object' ? directResult?.suggestions : undefined;
           history.push({ role: 'assistant', content: reply });
-          return sendReply({ reply, function_called: fallback.tool, session_id: sid });
+          return sendReply({ reply, function_called: fallback.tool, session_id: sid, ...(suggestions && { suggestions }) });
         }
         history.push({ role: 'assistant', content: fallback.reply });
         return sendReply({ reply: fallback.reply, session_id: sid });
@@ -1743,7 +1789,9 @@ export default async function handler(req, res) {
 
       // For most tools, generate response directly (saves a Groq call = 2x throughput)
       const lastToolResult = history.filter(m => m.role === 'tool').pop();
-      let directReply = generateDirectReply(functionCalled, lastToolResult?.content, toolArgs);
+      let directResult = generateDirectReply(functionCalled, lastToolResult?.content, toolArgs);
+      let directReply = typeof directResult === 'object' && directResult?.reply ? directResult.reply : directResult;
+      let directSuggestions = typeof directResult === 'object' ? directResult?.suggestions : undefined;
 
       if (directReply) {
         // Direct response — no second LLM call needed
@@ -1761,7 +1809,7 @@ export default async function handler(req, res) {
             if (tr.txs) txData = { txs: tr.txs };
           } catch (_) {}
         }
-        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }) });
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }) });
       }
 
       // Complex tools (health_check) — use LLM to interpret

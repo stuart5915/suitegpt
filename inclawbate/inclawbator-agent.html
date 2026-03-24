@@ -406,6 +406,22 @@
             .chat-app-expanded .chat-app-iframe { height: 450px; }
         }
 
+        /* ── Suggestion Pills ── */
+        .chat-suggestions {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            padding: 8px 0 0 48px; /* align with chat bubble (past avatar) */
+        }
+        .chat-suggestion-pill {
+            font-family: var(--font-display); font-size: 0.72rem; font-weight: 600;
+            padding: 6px 14px; border-radius: 999px; cursor: pointer;
+            background: rgba(232,121,85,0.08); border: 1px solid rgba(232,121,85,0.25);
+            color: var(--lobster-300); transition: all 0.15s; white-space: nowrap;
+        }
+        .chat-suggestion-pill:hover {
+            background: rgba(232,121,85,0.18); border-color: var(--lobster-400);
+            transform: translateY(-1px);
+        }
+
         /* ── Transaction Card (in chat) ── */
         .tx-card {
             background: rgba(255,255,255,0.03); border: 1px solid rgba(192,83,77,0.2);
@@ -1229,7 +1245,7 @@
         scrollBottom();
     }
 
-    function addMessage(text, isUser, functionCalled, appUrl, txData) {
+    function addMessage(text, isUser, functionCalled, appUrl, txData, suggestions) {
         var wrapper = document.createElement('div');
         wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
         var avatar = document.createElement('div');
@@ -1276,6 +1292,22 @@
                 actions.appendChild(btn);
             });
             bubble.appendChild(actions);
+        }
+        // Contextual suggestion pills
+        if (!isUser && suggestions && suggestions.length) {
+            var pills = document.createElement('div');
+            pills.className = 'chat-suggestions';
+            suggestions.forEach(function(s) {
+                var pill = document.createElement('button');
+                pill.className = 'chat-suggestion-pill';
+                pill.textContent = s;
+                pill.onclick = function() {
+                    pills.remove();
+                    sendMessage(s);
+                };
+                pills.appendChild(pill);
+            });
+            wrapper.appendChild(pills);
         }
         messages.appendChild(wrapper);
         scrollBottom();
@@ -1407,7 +1439,7 @@
             if (data.reply) {
                 // Check for transaction data (DeFi actions)
                 var txData = data.tx_data || null;
-                addMessage(data.reply, false, data.function_called, data.app_url, txData);
+                addMessage(data.reply, false, data.function_called, data.app_url, txData, data.suggestions);
                 chatHistory.push({ role: 'assistant', content: data.reply });
                 if (data.app_url && _lastAppPreview && _lastAppPreview.src) {
                     _lastAppPreview.src = data.app_url + '?t=' + Date.now();
