@@ -135,7 +135,7 @@ async function postTweetOAuth2(text, accessToken) {
 // ── OAuth 1.0a signing helper ──
 
 function buildOAuth1Header(method, url, extraParams, account) {
-    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : 'INCLAWBATOR';
+    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : account === 'publicgoodstech' ? 'PGT' : 'INCLAWBATOR';
     const X_API_KEY = process.env[prefix + '_X_API_KEY'] || process.env.INCLAWBATOR_X_API_KEY;
     const X_API_SECRET = process.env[prefix + '_X_API_SECRET'] || process.env.INCLAWBATOR_X_API_SECRET;
     const X_ACCESS_TOKEN = process.env[prefix + '_X_ACCESS_TOKEN'];
@@ -180,32 +180,47 @@ function buildOAuth1Header(method, url, extraParams, account) {
 
 async function uploadMediaToX(imageUrl, account) {
     // Download image from URL
+    console.log('[media] Downloading image:', imageUrl);
     const imgResp = await fetch(imageUrl);
-    if (!imgResp.ok) throw new Error('Failed to download image: ' + imgResp.status);
+    if (!imgResp.ok) throw new Error('Failed to download image: HTTP ' + imgResp.status);
     const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
+    console.log('[media] Image size:', imgBuffer.length, 'bytes');
+
+    // X media upload limit is 5MB for images
+    if (imgBuffer.length > 5 * 1024 * 1024) {
+        throw new Error('Image too large: ' + (imgBuffer.length / 1024 / 1024).toFixed(1) + 'MB (max 5MB)');
+    }
+
     const base64Data = imgBuffer.toString('base64');
 
-    const contentType = imgResp.headers.get('content-type') || 'image/png';
-
     const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
+    // OAuth signature must NOT include body params for multipart — sign URL only
     const authHeader = buildOAuth1Header('POST', uploadUrl, {}, account);
 
-    // Use URL-encoded form body (X API v1.1 media upload)
-    const body = new URLSearchParams();
-    body.append('media_data', base64Data);
+    // Build multipart/form-data body manually (Node 18+ compatible)
+    const boundary = '----XMediaUpload' + Date.now();
+    const bodyParts = [
+        '--' + boundary,
+        'Content-Disposition: form-data; name="media_data"',
+        '',
+        base64Data,
+        '--' + boundary + '--',
+    ];
+    const bodyStr = bodyParts.join('\r\n');
 
     const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'multipart/form-data; boundary=' + boundary,
         },
-        body: body.toString()
+        body: bodyStr,
     });
 
     const data = await response.json();
+    console.log('[media] Upload response:', response.status, JSON.stringify(data).slice(0, 200));
     if (!response.ok) {
-        throw new Error('Media upload failed: ' + (data.error || JSON.stringify(data.errors || data)));
+        throw new Error('Media upload failed (HTTP ' + response.status + '): ' + (data.error || JSON.stringify(data.errors || data)));
     }
 
     return data.media_id_string;
@@ -378,9 +393,12 @@ export default async function handler(req, res) {
                             const mediaId = await uploadMediaToX(opts.image_url, slotAccount);
                             mediaIds = [mediaId];
                         } catch(imgErr) {
-                            // Log but don't fail — post without image
                             console.error('Image upload failed for slot', slot.id, ':', imgErr.message, 'image_url:', opts.image_url);
                             errors.push({ slot: slot.id, warning: 'Image upload failed: ' + imgErr.message });
+                            // Store error in tweet_options so it's visible in the UI
+                            await supabase.from('agent_schedule').update({
+                                tweet_options: { ...opts, image_upload_error: imgErr.message }
+                            }).eq('id', slot.id);
                         }
                     }
                     // Post main tweet + thread parts if present
@@ -487,7 +505,11 @@ export default async function handler(req, res) {
                         const mediaId = await uploadMediaToX(slotOpts.image_url, slotAccount);
                         slotMediaIds = [mediaId];
                     } catch(imgErr) {
+                        console.error('Image upload failed for project slot', slot.id, ':', imgErr.message);
                         errors.push(`${project.name}: Image upload warning: ${imgErr.message}`);
+                        await supabase.from('agent_schedule').update({
+                            tweet_options: { ...slotOpts, image_upload_error: imgErr.message }
+                        }).eq('id', slot.id);
                     }
                 }
 
