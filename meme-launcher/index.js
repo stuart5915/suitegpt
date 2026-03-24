@@ -164,6 +164,9 @@ async function pollKYM() {
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
     if (req.url === '/health') {
         res.writeHead(200);
