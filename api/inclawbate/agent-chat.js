@@ -64,11 +64,19 @@ EDIT / WORK ON EXISTING APP — When a user says "work on [app name]", "edit [ap
 What changes do you want to make?"
 Use the app's URL from the list you already showed. The frontend will display the app preview automatically when it sees the URL. Wait for the user to describe their changes before calling build_app.
 
-BUILD AN APP — When someone wants to build something NEW, be friendly and conversational! Do NOT call list_my_apps or any tool yet. Instead, ask them what they want to build. Be excited and helpful:
-"Awesome! What kind of app are you thinking? A game, a dashboard, a tool, a social app? Describe your idea and I'll build it for you right here."
-Only call build_app ONCE you have both app_name and a description of what to build. If they give a vague idea, help them flesh it out conversationally first.
+BUILD AN APP — NEVER call build_app immediately when someone says they want to build something. This is a CONVERSATION, not a one-shot command.
+
+MANDATORY RULE: If the user has NOT provided BOTH (1) a specific app name AND (2) a detailed description of what the app should do, you MUST ask first. Do NOT invent an app name or description yourself. Use the user's own words.
+
+WRONG: User says "build me an app" → you call build_app with a made-up name and description
+RIGHT: User says "build me an app" → you reply: "What kind of app? A game, dashboard, landing page? Describe what you want and I'll build it!"
+
+WRONG: User says "make me a portfolio tracker" → you call build_app immediately with your own description
+RIGHT: User says "make me a portfolio tracker" → you reply: "Cool! What tokens/chains should it track? Any specific layout you want?"
+
+Only call build_app AFTER the user has explicitly given you enough detail. Ask clarifying questions first.
 For UPDATES to existing apps: include update: true and the existing app_name. If someone says "work on X" without describing changes, show them the app URL and ASK what they want changed.
-IMPORTANT: If someone says "build a website", "make me an app", "build something new" — this is a CONVERSATION STARTER, not a tool call. Chat with them first. Do NOT call list_my_apps.
+IMPORTANT: "build a website", "make me an app", "I want to build an app" — these are CONVERSATION STARTERS, not tool calls. Chat first. Do NOT call build_app or list_my_apps.
 
 HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
@@ -664,8 +672,12 @@ async function listMyApps(args) {
 }
 
 async function buildAppAction(args) {
-  if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: 'What should we call this app? I need a short name for the URL.' });
-  if (!args.description || args.description.length < 10) return JSON.stringify({ needs_info: true, missing: ['description'], message: 'Tell me more about what you want built — what should it look like? What should it do?' });
+  if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: "What kind of app are you thinking? A game, a dashboard, a landing page? Describe your idea and I'll bring it to life!" });
+  if (!args.description || args.description.length < 20) return JSON.stringify({ needs_info: true, missing: ['description'], message: "Tell me more! What should this app look like and do? The more detail you give me, the better I can build it." });
+  // Reject overly generic names the LLM might invent
+  const genericNames = ['new-app', 'my-app', 'app', 'website', 'site', 'new-site', 'my-website', 'test', 'untitled'];
+  if (genericNames.includes(args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')))
+    return JSON.stringify({ needs_info: true, missing: ['app name'], message: "Give me a more specific name for your app! Something like 'portfolio-tracker' or 'snake-game'. What are we building?" });
 
   let slug = args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   if (!slug) return JSON.stringify({ error: 'Invalid app name — use letters and numbers.' });
