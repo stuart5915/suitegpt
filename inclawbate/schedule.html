@@ -1706,6 +1706,7 @@
                     '<button class="rb-btn" onclick="_editResearchEntry(\'' + item.id + '\')" title="Edit">✏️</button>' +
                     '<button class="rb-btn" onclick="_toggleApprove(\'' + item.id + '\')" title="Toggle approve">✅</button>' +
                     '<button class="rb-btn" onclick="_toggleFeature(\'' + item.id + '\')" title="Toggle featured">⭐</button>' +
+                    '<button class="rb-btn" onclick="_deleteResearchEntry(\'' + item.id + '\',\'' + _esc(item.name).replace(/'/g,'\\\'') + '\')" title="Delete" style="color:#f87171">🗑</button>' +
                 '</div>' +
             '</div>';
         }).join('');
@@ -1746,6 +1747,16 @@
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: id, action: 'feature', type: _researchType, wallet: _userWallet })
+        });
+        _loadResearch();
+    };
+
+    window._deleteResearchEntry = async function(id, name) {
+        if (!confirm('Delete "' + name + '" from the database?')) return;
+        await fetch('/api/publicgoods/research', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, type: _researchType })
         });
         _loadResearch();
     };
@@ -3410,6 +3421,9 @@
     ];
 
     window._openPgtTemplate = function(slotId) {
+        var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+        var autoTpl = slot && slot.tweet_options ? slot.tweet_options.pgt_template : null;
+
         var modal = document.createElement('div');
         modal.className = 'overlay-modal-bg';
         modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
@@ -3434,7 +3448,7 @@
         '</div>';
         document.body.appendChild(modal);
 
-        // Template card selection
+        // Template card selection — auto-select if pgt_template is set
         modal.querySelectorAll('.tpl-card').forEach(function(card) {
             card.addEventListener('click', async function() {
                 modal.querySelectorAll('.tpl-card').forEach(function(c) { c.classList.remove('selected'); });
@@ -3490,6 +3504,12 @@
                 };
             });
         });
+
+        // Auto-select template if slot has pgt_template
+        if (autoTpl) {
+            var matchCard = modal.querySelector('.tpl-card[data-tpl="' + autoTpl + '"]');
+            if (matchCard) setTimeout(function() { matchCard.click(); }, 100);
+        }
     };
 
     // ── PGT Template Renderers ──
