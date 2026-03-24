@@ -593,7 +593,16 @@ Rules:
 - Use Google Fonts (Nunito or Inter) via CDN link
 - Make it look professional and polished
 - No external JS libraries unless absolutely necessary (use CDN if needed)
-- Include proper meta tags and title`;
+- Include proper meta tags and title
+
+SECURITY — YOU MUST FOLLOW THESE:
+- NEVER generate code that steals, phishes, or harvests wallet private keys, seed phrases, passwords, or credentials
+- NEVER generate code that mimics wallet connection dialogs, MetaMask popups, or login screens designed to steal credentials
+- NEVER generate code that makes unauthorized external API calls to steal data
+- NEVER generate code that uses window.ethereum or wallet APIs to send unauthorized transactions
+- NEVER generate code that redirects to phishing sites or downloads malware
+- If the description asks for anything malicious, generate a harmless placeholder page instead with a message "This app could not be generated."
+- Generated apps should be self-contained, safe, and useful`;
 
 async function listMyApps(args) {
   if (!args.wallet) return JSON.stringify({ error: 'Connect your wallet so I can look up your apps.' });
@@ -1533,12 +1542,15 @@ export default async function handler(req, res) {
 
   // Add current message to history (inject wallet context if provided)
   // If client_history was used, it already contains the current message — just inject wallet into it
+  // Sanitize wallet — must be a valid hex address or empty
+  const sanitizedWallet = (typeof wallet === 'string' && /^0x[a-fA-F0-9]{40}$/.test(wallet.trim())) ? wallet.trim() : '';
+
   if (usedClientHistory && history.length > 1 && history[history.length - 1].role === 'user') {
-    if (wallet) {
-      history[history.length - 1].content += '\n\n[User wallet: ' + wallet + ']';
+    if (sanitizedWallet) {
+      history[history.length - 1].content += '\n\n[User wallet: ' + sanitizedWallet + ']';
     }
   } else {
-    const userMsg = wallet ? sanitizedMessage + '\n\n[User wallet: ' + wallet + ']' : sanitizedMessage;
+    const userMsg = sanitizedWallet ? sanitizedMessage + '\n\n[User wallet: ' + sanitizedWallet + ']' : sanitizedMessage;
     history.push({ role: 'user', content: userMsg });
   }
 
@@ -1582,9 +1594,9 @@ export default async function handler(req, res) {
         functionCalled = tc.function.name;
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
-        // Inject wallet into tools that accept it
-        if (wallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps')) {
-          args.wallet = wallet;
+        // Inject sanitized wallet into tools that accept it
+        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps')) {
+          args.wallet = sanitizedWallet;
         }
         toolArgs = args;
         const result = await executeTool(tc.function.name, args);
