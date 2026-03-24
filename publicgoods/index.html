@@ -467,76 +467,65 @@
 
         /* ── News Link Cards ── */
         .news-link-card {
-            display: block;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 14px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            transition: all 0.2s;
+            border-radius: 10px;
             text-decoration: none;
             color: inherit;
+            transition: all 0.15s;
         }
         .news-link-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border-color: rgba(52, 211, 153, 0.25);
+            background: var(--bg-elevated);
             color: inherit;
         }
-        .news-link-top {
-            display: flex; align-items: center; gap: 10px;
-            margin-bottom: 8px;
+        .news-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            margin-top: 7px; flex-shrink: 0;
         }
-        .news-category {
-            padding: 3px 10px;
-            font-size: 11px; font-weight: 700;
-            border-radius: var(--radius-full);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .news-category-launch { background: var(--accent-dim); color: var(--accent); }
-        .news-category-news { background: var(--accent-2-dim); color: var(--accent-2); }
-        .news-category-tutorial { background: var(--purple-dim); color: var(--purple); }
-        .news-category-funding { background: var(--gold-dim); color: var(--gold); }
-        .news-category-opinion { background: var(--coral-dim); color: var(--coral); }
+        .news-dot-launch { background: var(--accent); }
+        .news-dot-news { background: var(--accent-2); }
+        .news-dot-tutorial { background: var(--purple); }
+        .news-dot-funding { background: var(--gold); }
+        .news-dot-opinion { background: var(--coral); }
+        .news-link-body { flex: 1; min-width: 0; }
         .news-link-title {
-            font-size: 17px; font-weight: 700; color: var(--text);
-            line-height: 1.3;
-            margin-bottom: 6px;
+            font-size: 0.92rem; font-weight: 700; color: var(--text);
+            line-height: 1.35; margin-bottom: 3px;
         }
         .news-link-summary {
-            font-size: 14px; color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            font-size: 0.78rem; color: var(--text-dim);
+            line-height: 1.45;
+            display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
         }
         .news-link-meta {
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 13px; color: var(--text-dim);
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 5px;
+            font-size: 0.68rem; color: var(--text-dim);
         }
         .news-link-source {
-            display: flex; align-items: center; gap: 6px;
+            font-weight: 600; color: var(--text-secondary);
         }
-        .news-link-source a {
-            color: var(--text-secondary); font-weight: 600;
+        .news-link-source:hover { color: var(--accent); }
+        .news-read-arrow {
+            margin-left: auto; color: var(--accent);
+            font-size: 0.82rem; font-weight: 700; flex-shrink: 0;
+            opacity: 0; transition: opacity 0.15s;
         }
-        .news-link-source a:hover { color: var(--accent); }
-        .news-read-link {
-            font-size: 13px; font-weight: 600;
-            color: var(--accent);
-        }
-        .news-read-link:hover { color: #6ee7b7; }
+        .news-link-card:hover .news-read-arrow { opacity: 1; }
         .news-list {
-            display: flex; flex-direction: column; gap: 12px;
+            display: flex; flex-direction: column; gap: 6px;
         }
         .news-section-divider {
             display: flex; align-items: center; gap: 16px;
-            margin: 40px 0 24px;
+            margin: 32px 0 20px;
         }
         .news-section-divider span {
-            font-size: 20px; font-weight: 800; white-space: nowrap;
+            font-size: 18px; font-weight: 800; white-space: nowrap;
         }
         .news-section-divider::after {
             content: '';
@@ -1406,18 +1395,18 @@ function newsCardHTML(item) {
     const catClass = 'news-category-' + cat;
     const timeAgo = item.created_at ? getTimeAgo(new Date(item.created_at)) : '';
     return `<a class="news-link-card" href="${esc(item.url || '#')}" target="_blank" rel="noopener">
-        <div class="news-link-top">
-            <span class="news-category ${catClass}">${esc(item.category || 'news')}</span>
-        </div>
-        <div class="news-link-title">${esc(item.title)}</div>
-        <div class="news-link-summary">"${esc(item.summary || '')}"</div>
-        <div class="news-link-meta">
-            <div class="news-link-source">
-                via ${item.source_handle ? `<a href="https://x.com/${esc(item.source_handle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(item.source || item.source_handle)}</a>` : `<span>${esc(item.source || 'Unknown')}</span>`}
+        <div class="news-dot news-dot-${cat}"></div>
+        <div class="news-link-body">
+            <div class="news-link-title">${esc(item.title)}</div>
+            ${item.summary ? `<div class="news-link-summary">${esc(item.summary)}</div>` : ''}
+            <div class="news-link-meta">
+                <span style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:${cat === 'launch' ? 'var(--accent)' : cat === 'funding' ? 'var(--gold)' : cat === 'tutorial' ? 'var(--purple)' : 'var(--accent-2)'}">${esc(cat)}</span>
+                <span>&middot;</span>
+                <span class="news-link-source">${esc(item.source || item.source_handle || 'Unknown')}</span>
                 ${timeAgo ? `<span>&middot; ${timeAgo}</span>` : ''}
             </div>
-            <span class="news-read-link">Read &rarr;</span>
         </div>
+        <span class="news-read-arrow">&rarr;</span>
     </a>`;
 }
 
