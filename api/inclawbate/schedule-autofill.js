@@ -1297,13 +1297,112 @@ CRITICAL: Every tweet MUST have multiple \\n line breaks. No single-line tweets.
 
 // ── PGT Database-Driven Generation ──
 // Picks least-mentioned projects from each tab, generates tweets ABOUT those specific projects
+// Two template modes: 'spotlight' (one project) and 'overview' (multi-project / ecosystem-wide)
 
-const PGT_SLOT_TYPES = [
-    { type: 'agents', table: 'pgt_agents', label: 'AI Agent Spotlight', logoField: 'logo_url', template: 'agent_spotlight' },
-    { type: 'builders', table: 'pgt_builders', label: 'Builder Spotlight', logoField: 'avatar_url', template: 'builder_spotlight' },
-    { type: 'goods', table: 'pgt_public_goods', label: 'Public Good Highlight', logoField: 'logo_url', template: 'public_good' },
-    { type: 'agents', table: 'pgt_agents', label: 'Ecosystem / Hot Take', logoField: 'logo_url', template: 'top_agents' },
+const ALL_PGT_TEMPLATES = [
+    // Spotlight templates — pick ONE least-mentioned project
+    { type: 'agents',   table: 'pgt_agents',       label: 'AI Agent Spotlight',    logoField: 'logo_url',   template: 'agent_spotlight',   mode: 'spotlight' },
+    { type: 'builders', table: 'pgt_builders',      label: 'Builder Spotlight',     logoField: 'avatar_url', template: 'builder_spotlight', mode: 'spotlight' },
+    { type: 'goods',    table: 'pgt_public_goods',  label: 'Public Good Highlight', logoField: 'logo_url',   template: 'public_good',       mode: 'spotlight' },
+    // Overview templates — reference multiple projects or ecosystem stats
+    { type: 'agents',   table: 'pgt_agents',       label: 'Ecosystem Map',         logoField: 'logo_url',   template: 'ecosystem_map',     mode: 'overview', overviewType: 'map' },
+    { type: 'agents',   table: 'pgt_agents',       label: 'Top Agents Ranked',     logoField: 'logo_url',   template: 'top_agents',        mode: 'overview', overviewType: 'ranked' },
+    { type: 'agents',   table: 'pgt_agents',       label: 'New on the Radar',      logoField: 'logo_url',   template: 'new_radar',         mode: 'overview', overviewType: 'recent' },
+    { type: 'agents',   table: 'pgt_agents',       label: 'Category Deep Dive',    logoField: 'logo_url',   template: 'category_focus',    mode: 'overview', overviewType: 'category' },
+    { type: 'agents',   table: 'pgt_agents',       label: 'Weekly Recap',          logoField: 'logo_url',   template: 'weekly_recap',      mode: 'overview', overviewType: 'recap' },
 ];
+
+// Rotate templates: 2 groups of 4, alternate by day-of-year
+const PGT_GROUP_A = [
+    ALL_PGT_TEMPLATES[0], // agent_spotlight
+    ALL_PGT_TEMPLATES[1], // builder_spotlight
+    ALL_PGT_TEMPLATES[3], // ecosystem_map
+    ALL_PGT_TEMPLATES[6], // category_focus
+];
+const PGT_GROUP_B = [
+    ALL_PGT_TEMPLATES[2], // public_good
+    ALL_PGT_TEMPLATES[4], // top_agents
+    ALL_PGT_TEMPLATES[5], // new_radar
+    ALL_PGT_TEMPLATES[7], // weekly_recap
+];
+
+// Fetch overview data for multi-project templates
+async function fetchOverviewData(overviewType) {
+    if (overviewType === 'ranked') {
+        const { data } = await supabase.from('pgt_agents').select('name, x_handle, category, mentions_count')
+            .eq('approved', true).order('mentions_count', { ascending: false }).limit(10);
+        return data || [];
+    }
+    if (overviewType === 'recent') {
+        const { data } = await supabase.from('pgt_agents').select('name, x_handle, category, created_at')
+            .eq('approved', true).order('created_at', { ascending: false }).limit(8);
+        return data || [];
+    }
+    if (overviewType === 'category') {
+        // Get all agents, pick largest category
+        const { data } = await supabase.from('pgt_agents').select('name, x_handle, category')
+            .eq('approved', true).limit(100);
+        const cats = {};
+        (data || []).forEach(a => { const c = a.category || 'Other'; if (!cats[c]) cats[c] = []; cats[c].push(a); });
+        const sorted = Object.entries(cats).sort((a, b) => b[1].length - a[1].length);
+        // Pick a category that isn't the very top to add variety
+        const pick = sorted[Math.floor(Math.random() * Math.min(3, sorted.length))];
+        return pick ? { category: pick[0], agents: pick[1].slice(0, 8) } : { category: 'AI Agents', agents: [] };
+    }
+    if (overviewType === 'map') {
+        const { data } = await supabase.from('pgt_agents').select('name, x_handle, category')
+            .eq('approved', true).limit(50);
+        const cats = {};
+        (data || []).forEach(a => { const c = a.category || 'Other'; if (!cats[c]) cats[c] = []; cats[c].push(a); });
+        return { categories: Object.entries(cats).sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([c, items]) => ({ name: c, count: items.length, handles: items.slice(0, 3).map(i => i.x_handle).filter(Boolean) })) };
+    }
+    if (overviewType === 'recap') {
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const [agents, builders, goods, newAgents] = await Promise.all([
+            supabase.from('pgt_agents').select('id', { count: 'exact', head: true }).eq('approved', true),
+            supabase.from('pgt_builders').select('id', { count: 'exact', head: true }).eq('approved', true),
+            supabase.from('pgt_public_goods').select('id', { count: 'exact', head: true }).eq('approved', true),
+            supabase.from('pgt_agents').select('name, x_handle').eq('approved', true).gte('created_at', weekAgo).order('created_at', { ascending: false }).limit(5),
+        ]);
+        const topMentioned = await supabase.from('pgt_agents').select('name, x_handle, mentions_count')
+            .eq('approved', true).order('mentions_count', { ascending: false }).limit(5);
+        return {
+            totalAgents: agents.count || 0,
+            totalBuilders: builders.count || 0,
+            totalGoods: goods.count || 0,
+            newThisWeek: newAgents.data || [],
+            topMentioned: topMentioned.data || [],
+        };
+    }
+    return [];
+}
+
+// Build prompt block for overview templates
+function buildOverviewPromptBlock(slotType, overviewData, slotNum, timeStr) {
+    const { overviewType, label } = slotType;
+    let block = `${slotNum}. SLOT TYPE: ${label} (OVERVIEW) | POST TIME: ${timeStr}\n`;
+
+    if (overviewType === 'ranked') {
+        const list = overviewData.map((a, i) => `   ${i+1}. ${a.name} ${a.x_handle ? '(@' + a.x_handle.replace('@','') + ')' : ''} — ${a.mentions_count || 0} mentions`).join('\n');
+        block += `   Write a tweet ranking or highlighting the top AI agents being tracked.\n   Reference these projects:\n${list}\n   Tag 3-5 @handles. Frame as "the most talked-about agents right now". Include publicgoods.tech`;
+    } else if (overviewType === 'recent') {
+        const list = overviewData.map(a => `   - ${a.name} ${a.x_handle ? '(@' + a.x_handle.replace('@','') + ')' : ''} [${a.category || 'AI'}]`).join('\n');
+        block += `   Write a tweet about newly discovered AI agents worth watching.\n   New arrivals:\n${list}\n   Tag 3-4 @handles. Frame as "just hit our radar" or "new agents to watch". Include publicgoods.tech`;
+    } else if (overviewType === 'category') {
+        const cat = overviewData.category;
+        const list = overviewData.agents.map(a => `   - ${a.name} ${a.x_handle ? '(@' + a.x_handle.replace('@','') + ')' : ''}`).join('\n');
+        block += `   Write a tweet deep-diving into the "${cat}" category of AI agents.\n   Agents in this category:\n${list}\n   Tag 2-4 @handles. Frame as a category analysis or trend piece. Include publicgoods.tech`;
+    } else if (overviewType === 'map') {
+        const catLines = overviewData.categories.map(c => `   - ${c.name}: ${c.count} agents (${c.handles.map(h => '@' + h.replace('@','')).join(', ') || 'various'})`).join('\n');
+        block += `   Write a tweet mapping out the AI agent ecosystem by category.\n   Categories:\n${catLines}\n   Tag 3-5 @handles across categories. Frame as "here's the landscape" overview. Include publicgoods.tech`;
+    } else if (overviewType === 'recap') {
+        const d = overviewData;
+        const newList = d.newThisWeek.map(a => a.x_handle ? '@' + a.x_handle.replace('@','') : a.name).join(', ');
+        const topList = d.topMentioned.map(a => a.x_handle ? '@' + a.x_handle.replace('@','') : a.name).join(', ');
+        block += `   Write a weekly recap tweet for the AI agent ecosystem.\n   Stats: ${d.totalAgents} agents tracked, ${d.totalBuilders} builders, ${d.totalGoods} public goods\n   New this week: ${newList || 'none'}\n   Most mentioned: ${topList || 'n/a'}\n   Frame as a weekly roundup. Tag top handles. Include publicgoods.tech`;
+    }
+    return block;
+}
 
 async function generatePgtDrafts(req, res, targetDate, style) {
     const account = 'publicgoodstech';
@@ -1327,65 +1426,82 @@ async function generatePgtDrafts(req, res, targetDate, style) {
         return res.json({ message: 'All slots filled', date });
     }
 
-    // Pick one project per slot type, least-mentioned first
+    // Rotate template groups by day-of-year (Group A on even days, Group B on odd)
+    const dayOfYear = Math.floor((new Date(date + 'T12:00:00Z') - new Date(date.split('-')[0] + '-01-01T00:00:00Z')) / 86400000);
+    const todaysTemplates = (dayOfYear % 2 === 0) ? PGT_GROUP_A : PGT_GROUP_B;
+    console.log('[PGT Generate] date:', date, 'dayOfYear:', dayOfYear, 'group:', dayOfYear % 2 === 0 ? 'A' : 'B', 'emptyHours:', emptyHours);
+
+    // Build picks for each empty slot
     const picks = [];
     const usedIds = new Set();
-    for (let i = 0; i < emptyHours.length && i < PGT_SLOT_TYPES.length; i++) {
-        const slotType = PGT_SLOT_TYPES[i];
-        const { data: candidates } = await supabase
-            .from(slotType.table)
-            .select('*')
-            .eq('approved', true)
-            .order('mentions_count', { ascending: true, nullsFirst: true })
-            .order('last_mentioned', { ascending: true, nullsFirst: true })
-            .limit(10);
+    for (let i = 0; i < emptyHours.length && i < todaysTemplates.length; i++) {
+        const slotType = todaysTemplates[i];
+        const hour = emptyHours[i];
+        const etHour = ((hour - 4 + 24) % 24);
+        const ampm = etHour >= 12 ? 'PM' : 'AM';
+        const h12 = etHour === 0 ? 12 : etHour > 12 ? etHour - 12 : etHour;
+        const timeStr = `${h12} ${ampm} ET`;
 
-        // Pick first candidate not already used today
-        const pick = (candidates || []).find(c => !usedIds.has(c.id));
-        if (pick) {
-            usedIds.add(pick.id);
-            picks.push({ ...slotType, project: pick, hour: emptyHours[i] });
+        if (slotType.mode === 'spotlight') {
+            // Pick one least-mentioned project
+            const { data: candidates } = await supabase
+                .from(slotType.table)
+                .select('*')
+                .eq('approved', true)
+                .order('mentions_count', { ascending: true, nullsFirst: true })
+                .order('last_mentioned', { ascending: true, nullsFirst: true })
+                .limit(10);
+
+            const pick = (candidates || []).find(c => !usedIds.has(c.id));
+            if (pick) {
+                usedIds.add(pick.id);
+                picks.push({ ...slotType, project: pick, hour, timeStr, overviewData: null });
+            }
+        } else {
+            // Overview template — fetch multi-project data
+            const overviewData = await fetchOverviewData(slotType.overviewType);
+            picks.push({ ...slotType, project: null, hour, timeStr, overviewData });
         }
     }
 
-    console.log('[PGT Generate] date:', date, 'emptyHours:', emptyHours, 'picks:', picks.length, 'bookedHours:', [...bookedHours]);
     if (!picks.length) {
         return res.json({ message: 'No projects in database to generate from', date, generated: 0 });
     }
 
-    // Build one batch prompt with all projects
-    const projectBlocks = picks.map((p, i) => {
-        const proj = p.project;
-        const handle = proj.x_handle ? '@' + proj.x_handle.replace('@', '') : proj.name;
-        const desc = proj.description || proj.bio || 'No description available';
-        const cat = proj.category || proj.skills?.join(', ') || '';
-        const chain = proj.chain || '';
-        const website = proj.website || '';
-        const utcHour = p.hour;
-        const etHour = ((utcHour - 4 + 24) % 24);
-        const ampm = etHour >= 12 ? 'PM' : 'AM';
-        const h12 = etHour === 0 ? 12 : etHour > 12 ? etHour - 12 : etHour;
-        return `${i + 1}. SLOT TYPE: ${p.label} | POST TIME: ${h12} ${ampm} ET
+    // Build batch prompt — different blocks for spotlight vs overview
+    const promptBlocks = picks.map((p, i) => {
+        if (p.mode === 'spotlight' && p.project) {
+            const proj = p.project;
+            const handle = proj.x_handle ? '@' + proj.x_handle.replace('@', '') : proj.name;
+            const desc = proj.description || proj.bio || 'No description available';
+            const cat = proj.category || proj.skills?.join(', ') || '';
+            const chain = proj.chain || '';
+            const website = proj.website || '';
+            return `${i + 1}. SLOT TYPE: ${p.label} (SPOTLIGHT) | POST TIME: ${p.timeStr}
    PROJECT: ${proj.name} (${handle})
    CATEGORY: ${cat} | CHAIN: ${chain}
    DESCRIPTION: ${desc}
    WEBSITE: ${website}
    Write a tweet spotlighting this project. Tag ${handle}. Be specific about what they do.`;
+        } else {
+            return buildOverviewPromptBlock(p, p.overviewData, i + 1, p.timeStr);
+        }
     }).join('\n\n');
 
     const batchPrompt = `You are @publicgoodstech, an AI agent ecosystem tracker and news source. Your voice is informed, concise, neutral but excited about the space. You're a crypto-native tech journalist — not a shill. Your site: publicgoods.tech
 
-Generate ${picks.length} tweets, each spotlighting a SPECIFIC project listed below. For each tweet:
-- MUST @mention the project's handle
-- Be specific about what the project does (use the description provided)
-- Keep under 280 chars for maximum engagement
+Generate ${picks.length} tweets. There are TWO types of slots below:
+- SPOTLIGHT slots: write about the ONE specific project listed. Tag their @handle. Be specific about what they do.
+- OVERVIEW slots: write about the ECOSYSTEM or MULTIPLE projects. Tag 3-5 @handles. Big-picture perspective.
+
+Rules for ALL tweets:
+- Keep under 280 chars
 - No hashtags, no corporate speak, no "excited to announce"
-- No em dashes (—)
+- No em dashes
 - Vary tone: some analytical, some casual, some "hot take"
-- Include the project's website link when relevant
 - Lowercase is fine
 
-${projectBlocks}
+${promptBlocks}
 
 Format each response EXACTLY like:
 1. TWEET: [tweet text]
@@ -1410,7 +1526,6 @@ Do NOT include IMAGE prompts — images are handled separately.`;
 
         const rawText = data.choices?.[0]?.message?.content || '';
         console.log('[PGT Generate] Raw AI response:', rawText.substring(0, 500));
-        // Strip markdown bold from AI response before parsing
         const cleanText = rawText.replace(/\*\*/g, '');
         const tweetBlocks = cleanText.split(/\n*\d+[\.\)]\s*/);
         const tweets = [];
@@ -1421,7 +1536,6 @@ Do NOT include IMAGE prompts — images are handled separately.`;
                 if (text.length > 0 && text.length <= 4000) tweets.push(text);
             }
         }
-        // Fallback: if TWEET: prefix parsing failed, try extracting any quoted or standalone lines
         if (tweets.length === 0 && cleanText.length > 20) {
             console.log('[PGT Generate] TWEET: parsing failed, trying fallback');
             const lines = cleanText.split(/\n/).filter(l => l.trim().length > 20);
@@ -1434,36 +1548,46 @@ Do NOT include IMAGE prompts — images are handled separately.`;
         }
         console.log('[PGT Generate] Parsed', tweets.length, 'tweets from', picks.length, 'picks');
 
-        // Insert drafts + update mentions
+        // Insert drafts
         const drafts = [];
         for (let i = 0; i < picks.length && i < tweets.length; i++) {
             const p = picks[i];
-            const proj = p.project;
             const hour = p.hour;
             const slotTime = new Date(date + 'T00:00:00Z');
             if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
             slotTime.setUTCHours(hour, 0, 0, 0);
+
+            // Build tweet_options based on mode
+            const tweetOpts = {
+                pillar: 'Daily Coverage',
+                angle: p.label,
+                style: style || 'mixed',
+                pgt_template: p.template,
+            };
+
+            let contentAngle = p.label;
+            if (p.mode === 'spotlight' && p.project) {
+                const proj = p.project;
+                tweetOpts.pgt_project_id = proj.id;
+                tweetOpts.pgt_project_name = proj.name;
+                tweetOpts.pgt_project_handle = proj.x_handle;
+                tweetOpts.pgt_project_logo = proj[p.logoField];
+                tweetOpts.pgt_project_type = p.type;
+                contentAngle = `${p.label}: ${proj.name}`;
+            } else {
+                tweetOpts.pgt_overview = true;
+            }
 
             const { data: inserted, error } = await supabase
                 .from('agent_schedule')
                 .insert({
                     scheduled_at: slotTime.toISOString(),
                     booked_by_wallet: 'system-autofill',
-                    content_angle: `${p.label}: ${proj.name}`,
+                    content_angle: contentAngle,
                     tone: 'default',
                     status: 'needs_review',
                     tweet_text: tweets[i],
-                    tweet_options: {
-                        pillar: 'Daily Coverage',
-                        angle: p.label,
-                        style: style || 'mixed',
-                        pgt_project_id: proj.id,
-                        pgt_project_name: proj.name,
-                        pgt_project_handle: proj.x_handle,
-                        pgt_project_logo: proj[p.logoField],
-                        pgt_project_type: p.type,
-                        pgt_template: p.template,
-                    },
+                    tweet_options: tweetOpts,
                     account,
                 })
                 .select()
@@ -1471,17 +1595,19 @@ Do NOT include IMAGE prompts — images are handled separately.`;
 
             if (!error && inserted) {
                 drafts.push(inserted);
-                // Increment mentions_count
-                await supabase.from(p.table)
-                    .update({
-                        mentions_count: (proj.mentions_count || 0) + 1,
-                        last_mentioned: new Date().toISOString(),
-                    })
-                    .eq('id', proj.id);
+                // Increment mentions_count for spotlight picks
+                if (p.mode === 'spotlight' && p.project) {
+                    await supabase.from(p.table)
+                        .update({
+                            mentions_count: (p.project.mentions_count || 0) + 1,
+                            last_mentioned: new Date().toISOString(),
+                        })
+                        .eq('id', p.project.id);
+                }
             }
         }
 
-        return res.json({ date, generated: drafts.length, empty_slots: emptyHours.length, drafts, mode: 'pgt_database' });
+        return res.json({ date, generated: drafts.length, empty_slots: emptyHours.length, drafts, mode: 'pgt_database', group: dayOfYear % 2 === 0 ? 'A' : 'B' });
     } catch(e) {
         return res.status(500).json({ error: 'PGT generation failed: ' + e.message });
     }
