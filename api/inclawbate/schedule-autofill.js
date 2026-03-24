@@ -1348,8 +1348,9 @@ async function generatePgtDrafts(req, res, targetDate, style) {
         }
     }
 
+    console.log('[PGT Generate] date:', date, 'emptyHours:', emptyHours, 'picks:', picks.length, 'bookedHours:', [...bookedHours]);
     if (!picks.length) {
-        return res.json({ message: 'No projects in database to generate from', date });
+        return res.json({ message: 'No projects in database to generate from', date, generated: 0 });
     }
 
     // Build one batch prompt with all projects
@@ -1408,6 +1409,7 @@ Do NOT include IMAGE prompts — images are handled separately.`;
         if (data.error) return res.status(500).json({ error: 'AI generation failed: ' + (data.error.message || data.error) });
 
         const rawText = data.choices?.[0]?.message?.content || '';
+        console.log('[PGT Generate] Raw AI response:', rawText.substring(0, 500));
         const tweetBlocks = rawText.split(/\n*\d+[\.\)]\s*/);
         const tweets = [];
         for (const block of tweetBlocks) {
@@ -1417,6 +1419,18 @@ Do NOT include IMAGE prompts — images are handled separately.`;
                 if (text.length > 0 && text.length <= 4000) tweets.push(text);
             }
         }
+        // Fallback: if TWEET: prefix parsing failed, try extracting any quoted or standalone lines
+        if (tweets.length === 0 && rawText.length > 20) {
+            console.log('[PGT Generate] TWEET: parsing failed, trying fallback');
+            const lines = rawText.split(/\n/).filter(l => l.trim().length > 20);
+            for (const line of lines) {
+                let text = line.replace(/^\d+[\.\)]\s*/, '').replace(/^TWEET:\s*/i, '').replace(/^["']|["']$/g, '').trim();
+                if (text.length > 20 && text.length <= 4000 && tweets.length < picks.length) {
+                    tweets.push(text);
+                }
+            }
+        }
+        console.log('[PGT Generate] Parsed', tweets.length, 'tweets from', picks.length, 'picks');
 
         // Insert drafts + update mentions
         const drafts = [];
