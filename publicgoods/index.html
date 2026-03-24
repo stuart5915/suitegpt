@@ -282,7 +282,7 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
         .card-header {
-            display: flex; align-items: flex-start; justify-content: space-between;
+            display: flex; align-items: center; gap: 10px;
             margin-bottom: 10px;
         }
         .card-name {
@@ -1450,9 +1450,12 @@ function agentCardHTML(agent) {
     const statusClass = 'tag-' + (agent.status || 'live').toLowerCase();
     const isVoted = upvoted['agent_' + agent.id];
     const votes = agent.upvotes || 0;
+    const logoSrc = agent.logo_url || (agent.x_handle ? `https://unavatar.io/x/${agent.x_handle}` : '');
     return `<div class="card">
         <div class="card-header">
+            ${logoSrc ? `<img src="${esc(logoSrc)}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">` : ''}
             <div class="card-name">${esc(agent.name)}</div>
+            ${agent.x_handle ? `<span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent);margin-left:auto">@${esc(agent.x_handle)}</span>` : ''}
         </div>
         <div class="card-desc">${esc(agent.description || '')}</div>
         <div class="card-tags">
@@ -1499,9 +1502,12 @@ function goodCardHTML(good) {
     const catClass = 'tag-' + cat;
     const isVoted = upvoted['good_' + good.id];
     const votes = good.upvotes || 0;
+    const logoSrc = good.logo_url || (good.x_handle ? `https://unavatar.io/x/${good.x_handle}` : '');
     return `<div class="card">
         <div class="card-header">
+            ${logoSrc ? `<img src="${esc(logoSrc)}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">` : ''}
             <div class="card-name">${esc(good.name)}</div>
+            ${good.x_handle ? `<span style="font-family:var(--mono);font-size:0.68rem;color:var(--accent);margin-left:auto">@${esc(good.x_handle)}</span>` : ''}
         </div>
         <div class="card-desc">${esc(good.description || '')}</div>
         <div class="card-tags">
@@ -1543,9 +1549,10 @@ function filterGoods() { renderGoods(); }
 // ── Render: Builder Cards ──
 function builderCardHTML(builder) {
     const initial = (builder.name || '?')[0].toUpperCase();
+    const avatarSrc = builder.avatar_url || (builder.x_handle ? `https://unavatar.io/x/${builder.x_handle}` : '');
     const skills = (builder.skills || []);
     return `<div class="builder-card">
-        <div class="builder-avatar">${initial}</div>
+        ${avatarSrc ? `<img src="${esc(avatarSrc)}" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border)" onerror="this.outerHTML='<div class=builder-avatar>${initial}</div>'">` : `<div class="builder-avatar">${initial}</div>`}
         <div class="builder-name">${esc(builder.name)}</div>
         <div class="builder-bio">${esc(builder.bio || '')}</div>
         <div class="builder-skills">
