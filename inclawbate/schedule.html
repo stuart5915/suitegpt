@@ -518,6 +518,22 @@
         .draft-modal-pillar-name { font-weight:700;color:var(--lobster-400); }
         .draft-modal-pillar-desc { color:var(--text-dim);margin-left:4px; }
 
+        /* PGT project card in edit modal */
+        .pgt-project-card {
+            display:flex;align-items:center;gap:12px;padding:10px 14px;
+            background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);
+            border-radius:var(--radius-md);margin-bottom:var(--space-md);
+        }
+        .pgt-project-card img { width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid rgba(52,211,153,0.3); }
+        .pgt-project-card-letter { width:40px;height:40px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);font-size:1rem;flex-shrink:0; }
+        .pgt-project-card-info { flex:1;min-width:0; }
+        .pgt-project-card-name { font-weight:700;font-size:0.85rem;color:var(--text-primary); }
+        .pgt-project-card-handle { font-size:0.72rem;color:#34d399;font-family:var(--font-mono); }
+        .pgt-project-card-type { font-size:0.65rem;color:var(--text-dim);margin-top:1px; }
+        .pgt-project-card-swap { background:none;border:1px solid rgba(52,211,153,0.3);color:#34d399;font-size:0.7rem;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap; }
+        .pgt-project-card-swap:hover { background:rgba(52,211,153,0.1); }
+        .pgt-project-card-mentions { font-size:0.65rem;color:var(--text-dim);text-align:center; }
+
         .draft-modal textarea {
             width:100%;min-height:110px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);
             border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-body);font-size:0.88rem;
@@ -2197,7 +2213,15 @@
             if (booked && isAutofill) {
                 // Auto-generated slot (draft, scheduled, or posted)
                 html += '<div class="sched-content" style="flex:1;min-width:0">';
-                if (booked.content_angle) {
+                var sopts = booked.tweet_options || {};
+                if (sopts.pgt_project_name) {
+                    var pLogo = sopts.pgt_project_logo;
+                    html += '<div class="sched-content-angle" style="display:flex;align-items:center;gap:6px">';
+                    if (pLogo) html += '<img src="' + escHtml(pLogo) + '" style="width:18px;height:18px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">';
+                    html += escHtml(sopts.pgt_project_name);
+                    if (sopts.pgt_project_handle) html += ' <span style="color:#34d399;font-size:0.68rem">@' + escHtml(sopts.pgt_project_handle) + '</span>';
+                    html += '</div>';
+                } else if (booked.content_angle) {
                     html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
                 }
                 if (booked.tweet_text) {
@@ -4144,12 +4168,37 @@
         _newDraftSlotTime = null;
         var ta = document.getElementById('draftModalText');
         ta.value = slot.tweet_text || '';
+        var isPgt = _activeAccount === 'publicgoodstech';
+        var opts = slot.tweet_options || {};
+
+        // PGT project card
+        var pgtEl = document.getElementById('draftPgtProject');
+        if (isPgt && opts.pgt_project_name) {
+            var logo = opts.pgt_project_logo;
+            var logoHtml = logo
+                ? '<img src="' + _esc(logo) + '" onerror="this.style.display=\'none\'">'
+                : '<div class="pgt-project-card-letter">' + (opts.pgt_project_name || '?').charAt(0) + '</div>';
+            var handle = opts.pgt_project_handle ? '@' + opts.pgt_project_handle.replace('@','') : '';
+            pgtEl.innerHTML = '<div class="pgt-project-card">' +
+                logoHtml +
+                '<div class="pgt-project-card-info">' +
+                    '<div class="pgt-project-card-name">' + _esc(opts.pgt_project_name) + '</div>' +
+                    (handle ? '<div class="pgt-project-card-handle">' + _esc(handle) + '</div>' : '') +
+                    '<div class="pgt-project-card-type">' + _esc(opts.angle || opts.pgt_project_type || '') + '</div>' +
+                '</div>' +
+                '<button class="pgt-project-card-swap" onclick="window._swapPgtProject(\'' + slotId + '\')">swap project</button>' +
+            '</div>';
+            pgtEl.style.display = '';
+        } else {
+            pgtEl.innerHTML = '';
+            pgtEl.style.display = 'none';
+        }
 
         // Populate pillar context
         if (_selectedDay) {
             var dow = _selectedDay.getUTCDay();
             var pillar = activePillars()[dow];
-            if (pillar) {
+            if (pillar && !isPgt) {
                 document.getElementById('draftModalPillar').style.display = 'flex';
                 document.getElementById('draftModalPillarEmoji').textContent = pillar.emoji;
                 document.getElementById('draftModalPillarName').textContent = pillar.name;
@@ -4162,7 +4211,8 @@
         // Populate emoji row
         var emojiRow = document.getElementById('draftModalEmojis');
         emojiRow.innerHTML = '';
-        QUICK_EMOJIS.forEach(function(em) {
+        var emojis = isPgt ? ['\u{1F916}', '\u{1F30D}', '\u{1F477}', '\u{26D3}\uFE0F', '\u{1F525}', '\u{1F4CA}', '\u{1F680}', '\u{2728}', '\u{1F4E1}', '\u{1F3C6}', '\u{2705}', '\u{1F50D}'] : QUICK_EMOJIS;
+        emojis.forEach(function(em) {
             var btn = document.createElement('button');
             btn.className = 'draft-modal-emoji';
             btn.textContent = em;
@@ -4177,10 +4227,16 @@
             emojiRow.appendChild(btn);
         });
 
-        // Populate quick inserts
+        // Populate quick inserts — PGT-specific links
         var insertsRow = document.getElementById('draftModalInserts');
         insertsRow.innerHTML = '';
-        QUICK_INSERTS.forEach(function(item) {
+        var inserts = isPgt ? [
+            { label: 'publicgoods.tech', text: 'publicgoods.tech' },
+            { label: 'agents', text: 'publicgoods.tech/agents' },
+            { label: 'builders', text: 'publicgoods.tech/builders' },
+            { label: 'public goods', text: 'publicgoods.tech/goods' },
+        ] : QUICK_INSERTS;
+        inserts.forEach(function(item) {
             var chip = document.createElement('span');
             chip.className = 'draft-modal-insert';
             chip.textContent = item.label;
@@ -4196,8 +4252,10 @@
             insertsRow.appendChild(chip);
         });
 
-        // Render incubation project chips
-        renderProjectChips(ta);
+        // Hide incubation projects section for PGT
+        var projSection = document.getElementById('draftModalProjectsSection');
+        if (projSection) projSection.style.display = isPgt ? 'none' : '';
+        if (!isPgt) renderProjectChips(ta);
 
         // Show existing image prompt if slot has one, otherwise reset
         var existingImgPrompt = slot.tweet_options && slot.tweet_options.image_prompt;
@@ -4219,6 +4277,85 @@
         updateDraftCount();
         document.getElementById('draftModal').classList.add('open');
         setTimeout(function() { ta.focus(); }, 100);
+    };
+
+    // Swap which PGT project a slot covers
+    window._swapPgtProject = async function(slotId) {
+        var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+        if (!slot) return;
+        var opts = slot.tweet_options || {};
+        var type = opts.pgt_project_type || 'agents';
+
+        // Fetch candidates from research database
+        var items = await _fetchPgtData(type);
+        if (!items.length) { alert('No ' + type + ' in database'); return; }
+
+        // Sort by mentions_count ascending (least covered first)
+        items.sort(function(a, b) { return (a.mentions_count || 0) - (b.mentions_count || 0); });
+
+        // Build picker
+        var currentId = opts.pgt_project_id;
+        var html = '<div style="max-height:300px;overflow-y:auto;margin:10px 0">';
+        items.forEach(function(item) {
+            var isCurrent = item.id === currentId;
+            var logo = item.logo_url || item.avatar_url || '';
+            var logoHtml = logo
+                ? '<img src="' + _esc(logo) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">'
+                : '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--text-dim);flex-shrink:0">' + (item.name||'?').charAt(0) + '</div>';
+            var mc = item.mentions_count || 0;
+            html += '<div data-pid="' + item.id + '" style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:8px;border:1px solid ' + (isCurrent ? 'rgba(52,211,153,0.4)' : 'transparent') + ';margin-bottom:4px;transition:all 0.1s" onmouseover="this.style.background=\'rgba(52,211,153,0.05)\'" onmouseout="this.style.background=\'\'">' +
+                logoHtml +
+                '<div style="flex:1;min-width:0">' +
+                    '<div style="font-weight:700;font-size:0.8rem;color:var(--text-primary)">' + _esc(item.name) + (isCurrent ? ' <span style="color:#34d399;font-size:0.65rem">current</span>' : '') + '</div>' +
+                    (item.x_handle ? '<div style="font-size:0.68rem;color:#34d399;font-family:var(--font-mono)">@' + _esc(item.x_handle) + '</div>' : '') +
+                '</div>' +
+                '<div style="font-size:0.65rem;color:var(--text-dim);text-align:center">' + mc + 'x<br>mentioned</div>' +
+            '</div>';
+        });
+        html += '</div>';
+
+        // Show in a simple modal
+        var modal = document.createElement('div');
+        modal.className = 'overlay-modal-bg';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        modal.innerHTML = '<div class="overlay-modal" style="max-width:400px">' +
+            '<h3>Swap Project (' + type + ')</h3>' +
+            '<p style="font-size:0.72rem;color:var(--text-dim);margin:4px 0 8px">Pick a project. Least-mentioned shown first.</p>' +
+            html +
+        '</div>';
+        document.body.appendChild(modal);
+
+        // Click handler
+        modal.querySelectorAll('[data-pid]').forEach(function(el) {
+            el.addEventListener('click', async function() {
+                var newId = this.getAttribute('data-pid');
+                if (newId === currentId) { modal.remove(); return; }
+                var newItem = items.find(function(i) { return i.id === newId; });
+                if (!newItem) return;
+
+                // Update slot's tweet_options with new project
+                var newOpts = Object.assign({}, opts, {
+                    pgt_project_id: newItem.id,
+                    pgt_project_name: newItem.name,
+                    pgt_project_handle: newItem.x_handle,
+                    pgt_project_logo: newItem.logo_url || newItem.avatar_url,
+                });
+
+                var auth = getAuth();
+                await fetch('/api/inclawbate/schedule-autofill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+                    body: JSON.stringify({ action: 'update_draft', slot_id: slotId, tweet_options: newOpts })
+                });
+
+                // Update local state
+                slot.tweet_options = newOpts;
+                modal.remove();
+                // Re-open edit modal with new project
+                closeDraftModal();
+                window._editDraft(slotId);
+            });
+        });
     };
 
     window._copyImgPrompt = function(btnEl, slotId) {
@@ -4735,6 +4872,9 @@
             <span class="draft-modal-pillar-name" id="draftModalPillarName"></span>
             <span class="draft-modal-pillar-desc" id="draftModalPillarDesc"></span>
         </div>
+
+        <!-- PGT project card (only shown for publicgoodstech slots) -->
+        <div id="draftPgtProject" style="display:none"></div>
 
         <div class="thread-label" id="draftThreadLabel" style="display:none">Tweet 1</div>
         <textarea id="draftModalText" maxlength="4000" placeholder="Write tweet..."></textarea>

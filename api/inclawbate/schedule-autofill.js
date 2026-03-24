@@ -428,22 +428,7 @@ function getAccountConfig(account) {
 CRITICAL — TAGGING PROJECTS:
 Every single post MUST @mention at least one project. This is the #1 rule. Tag the project's X handle in the tweet. When you mention a project by name, ALWAYS include their @handle.
 
-KNOWN PROJECTS TO COVER (use their real @handles):
-- @inclawbate / @inclawbator — AI incubator, app builder, token launcher on Base
-- @virtaboreal (Virtuals Protocol) — co-owned AI agents platform
-- @ai16zdao (ElizaOS) — open source multi-agent framework
-- @autonolas (Olas) — decentralized agent network
-- @Fetch_ai — decentralized ML and AI agents
-- @bankaboreal (BankrBot) — AI agent for DeFi
-- @ClankerBase (Clanker) — token launcher on Base
-- @SaladorNetwork (Salad) — distributed GPU cloud
-- @ionaboreal (io.net) — decentralized GPU network
-- @grass_io (Grass) — bandwidth sharing network
-- @HoneygainApp — bandwidth monetization
-- @rendertoken (Render) — GPU rendering network
-- @akaboreal (Akash) — decentralized cloud compute
-
-Always research and use the CORRECT @handle. If unsure of a handle, mention the project name without @ rather than guessing wrong. Rotate which projects you cover — don't repeat the same one two days in a row.`,
+The projects to cover are provided dynamically from the database in each generate request. Use the exact @handles provided — do NOT guess or make up handles.`,
         };
     }
     if (account === 'inclawbate') {
@@ -710,6 +695,10 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         if (action === 'generate') {
             const account = req.body.account || 'inclawbator';
             const style = req.body.style || 'mixed';
+            // PGT uses database-driven generation
+            if (account === 'publicgoodstech') {
+                return await generatePgtDrafts(req, res, date, style);
+            }
             return await generateDrafts(req, res, date, account, style);
         }
 
@@ -736,13 +725,17 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         }
 
         if (action === 'update_draft') {
-            const { slot_id, tweet_text, status, image_prompt, thread_parts } = req.body;
+            const { slot_id, tweet_text, status, image_prompt, thread_parts, tweet_options: directOpts } = req.body;
             const updates = {};
             if (tweet_text !== undefined) updates.tweet_text = tweet_text;
             if (status) updates.status = status;
 
+            // Direct tweet_options replacement (used by PGT swap project)
+            if (directOpts && typeof directOpts === 'object') {
+                updates.tweet_options = directOpts;
+            }
             // If image_prompt or thread_parts provided, merge into tweet_options
-            if (image_prompt || thread_parts !== undefined) {
+            else if (image_prompt || thread_parts !== undefined) {
                 const { data: existing } = await supabase
                     .from('agent_schedule')
                     .select('tweet_options')
@@ -1301,6 +1294,182 @@ CRITICAL: Every tweet MUST have multiple \\n line breaks. No single-line tweets.
 - Can be short OR formatted — vary it
 - Examples: "hot take: 90% of crypto projects would ship faster if they used AI to build instead of hiring devs. agree or disagree?" / "what's the one app you wish existed in crypto?\\n\\nwe'll build the best one live.\\n\\nseriously — drop it below."`,
 };
+
+// ── PGT Database-Driven Generation ──
+// Picks least-mentioned projects from each tab, generates tweets ABOUT those specific projects
+
+const PGT_SLOT_TYPES = [
+    { type: 'agents', table: 'pgt_agents', label: 'AI Agent Spotlight', logoField: 'logo_url', template: 'agent_spotlight' },
+    { type: 'builders', table: 'pgt_builders', label: 'Builder Spotlight', logoField: 'avatar_url', template: 'builder_spotlight' },
+    { type: 'goods', table: 'pgt_public_goods', label: 'Public Good Highlight', logoField: 'logo_url', template: 'public_good' },
+    { type: 'agents', table: 'pgt_agents', label: 'Ecosystem / Hot Take', logoField: 'logo_url', template: 'top_agents' },
+];
+
+async function generatePgtDrafts(req, res, targetDate, style) {
+    const account = 'publicgoodstech';
+    const date = targetDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+    // Check which slots are already booked
+    const dayStart = date + 'T06:00:00Z';
+    const rangeEnd = new Date(new Date(date + 'T00:00:00Z').getTime() + 86400000 + 6 * 3600000).toISOString();
+    const { data: existing } = await supabase
+        .from('agent_schedule')
+        .select('scheduled_at, status')
+        .gte('scheduled_at', dayStart)
+        .lt('scheduled_at', rangeEnd)
+        .eq('account', account)
+        .in('status', ['scheduled', 'posted', 'needs_review', 'needs_image']);
+
+    const bookedHours = new Set((existing || []).map(s => new Date(s.scheduled_at).getUTCHours()));
+    const accountHours = ACCOUNT_HOURS[account] || VALID_HOURS;
+    const emptyHours = accountHours.filter(h => !bookedHours.has(h));
+    if (!emptyHours.length) {
+        return res.json({ message: 'All slots filled', date });
+    }
+
+    // Pick one project per slot type, least-mentioned first
+    const picks = [];
+    const usedIds = new Set();
+    for (let i = 0; i < emptyHours.length && i < PGT_SLOT_TYPES.length; i++) {
+        const slotType = PGT_SLOT_TYPES[i];
+        const { data: candidates } = await supabase
+            .from(slotType.table)
+            .select('*')
+            .eq('approved', true)
+            .order('mentions_count', { ascending: true, nullsFirst: true })
+            .order('last_mentioned', { ascending: true, nullsFirst: true })
+            .limit(10);
+
+        // Pick first candidate not already used today
+        const pick = (candidates || []).find(c => !usedIds.has(c.id));
+        if (pick) {
+            usedIds.add(pick.id);
+            picks.push({ ...slotType, project: pick, hour: emptyHours[i] });
+        }
+    }
+
+    if (!picks.length) {
+        return res.json({ message: 'No projects in database to generate from', date });
+    }
+
+    // Build one batch prompt with all projects
+    const projectBlocks = picks.map((p, i) => {
+        const proj = p.project;
+        const handle = proj.x_handle ? '@' + proj.x_handle.replace('@', '') : proj.name;
+        const desc = proj.description || proj.bio || 'No description available';
+        const cat = proj.category || proj.skills?.join(', ') || '';
+        const chain = proj.chain || '';
+        const website = proj.website || '';
+        const utcHour = p.hour;
+        const etHour = ((utcHour - 4 + 24) % 24);
+        const ampm = etHour >= 12 ? 'PM' : 'AM';
+        const h12 = etHour === 0 ? 12 : etHour > 12 ? etHour - 12 : etHour;
+        return `${i + 1}. SLOT TYPE: ${p.label} | POST TIME: ${h12} ${ampm} ET
+   PROJECT: ${proj.name} (${handle})
+   CATEGORY: ${cat} | CHAIN: ${chain}
+   DESCRIPTION: ${desc}
+   WEBSITE: ${website}
+   Write a tweet spotlighting this project. Tag ${handle}. Be specific about what they do.`;
+    }).join('\n\n');
+
+    const batchPrompt = `You are @publicgoodstech, an AI agent ecosystem tracker and news source. Your voice is informed, concise, neutral but excited about the space. You're a crypto-native tech journalist — not a shill. Your site: publicgoods.tech
+
+Generate ${picks.length} tweets, each spotlighting a SPECIFIC project listed below. For each tweet:
+- MUST @mention the project's handle
+- Be specific about what the project does (use the description provided)
+- Keep under 280 chars for maximum engagement
+- No hashtags, no corporate speak, no "excited to announce"
+- No em dashes (—)
+- Vary tone: some analytical, some casual, some "hot take"
+- Include the project's website link when relevant
+- Lowercase is fine
+
+${projectBlocks}
+
+Format each response EXACTLY like:
+1. TWEET: [tweet text]
+2. TWEET: [tweet text]
+...
+
+Do NOT include IMAGE prompts — images are handled separately.`;
+
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getGroqKey() },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                max_tokens: 2000,
+                temperature: 0.9,
+                messages: [{ role: 'user', content: batchPrompt }]
+            })
+        });
+        const data = await resp.json();
+        if (data.error) return res.status(500).json({ error: 'AI generation failed: ' + (data.error.message || data.error) });
+
+        const rawText = data.choices?.[0]?.message?.content || '';
+        const tweetBlocks = rawText.split(/\n*\d+[\.\)]\s*/);
+        const tweets = [];
+        for (const block of tweetBlocks) {
+            const m = block.match(/TWEET:\s*([\s\S]*?)$/i);
+            if (m) {
+                let text = m[1].replace(/^["']|["']$/g, '').replace(/\\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+                if (text.length > 0 && text.length <= 4000) tweets.push(text);
+            }
+        }
+
+        // Insert drafts + update mentions
+        const drafts = [];
+        for (let i = 0; i < picks.length && i < tweets.length; i++) {
+            const p = picks[i];
+            const proj = p.project;
+            const hour = p.hour;
+            const slotTime = new Date(date + 'T00:00:00Z');
+            if (hour < 6) slotTime.setDate(slotTime.getDate() + 1);
+            slotTime.setUTCHours(hour, 0, 0, 0);
+
+            const { data: inserted, error } = await supabase
+                .from('agent_schedule')
+                .insert({
+                    scheduled_at: slotTime.toISOString(),
+                    booked_by_wallet: 'system-autofill',
+                    content_angle: `${p.label}: ${proj.name}`,
+                    tone: 'default',
+                    status: 'needs_review',
+                    tweet_text: tweets[i],
+                    tweet_options: {
+                        pillar: 'Daily Coverage',
+                        angle: p.label,
+                        style: style || 'mixed',
+                        pgt_project_id: proj.id,
+                        pgt_project_name: proj.name,
+                        pgt_project_handle: proj.x_handle,
+                        pgt_project_logo: proj[p.logoField],
+                        pgt_project_type: p.type,
+                        pgt_template: p.template,
+                    },
+                    account,
+                })
+                .select()
+                .single();
+
+            if (!error && inserted) {
+                drafts.push(inserted);
+                // Increment mentions_count
+                await supabase.from(p.table)
+                    .update({
+                        mentions_count: (proj.mentions_count || 0) + 1,
+                        last_mentioned: new Date().toISOString(),
+                    })
+                    .eq('id', proj.id);
+            }
+        }
+
+        return res.json({ date, generated: drafts.length, empty_slots: emptyHours.length, drafts, mode: 'pgt_database' });
+    } catch(e) {
+        return res.status(500).json({ error: 'PGT generation failed: ' + e.message });
+    }
+}
 
 async function generateDrafts(req, res, targetDate, account, style) {
     account = account || 'inclawbator';
