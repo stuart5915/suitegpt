@@ -1201,10 +1201,19 @@
             connectedWallet = WalletKit.getAddress();
             updateWalletUI();
         }
-        WalletKit.onConnect(function(addr) { connectedWallet = addr; updateWalletUI(); });
-        WalletKit.onDisconnect(function() { connectedWallet = null; updateWalletUI(); });
+        WalletKit.onConnect(function(addr) { connectedWallet = addr; updateWalletUI(); updateDashboardWallet(); });
+        WalletKit.onDisconnect(function() { connectedWallet = null; updateWalletUI(); updateDashboardWallet(); });
+    }
+    function updateDashboardWallet() {
+        var frame = document.getElementById('buildDashFrame');
+        if (frame) {
+            var base = '/inclawbate/build-dashboard.html';
+            frame.src = connectedWallet ? base + '?wallet=' + connectedWallet : base;
+        }
     }
     initWalletListeners();
+    // Also update dashboard on page load if wallet already connected
+    setTimeout(updateDashboardWallet, 1500);
 
     // ── Protocol ABIs (minimal) ──
     var ERC20_ABI = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
