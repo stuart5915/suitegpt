@@ -1568,9 +1568,21 @@ function matchIntent(msg) {
   }
   if (/what.*inclawbat|who.*you|what.*can.*do|help/i.test(m))
     return { tool: null, reply: "I'm the Inclawbator — the Inclawbate ecosystem AI agent. I can:\n\n• **Launch tokens** on Base via Clanker\n• **Deploy staking pools** for any token\n• **Airdrop tokens** to multiple wallets\n• **Check token analytics** (price, volume, liquidity)\n• **Run health checks** on your project\n• **Hire the Council** (real builders)\n• **Set up AI marketing agents**\n• **Build web apps** — I'll generate and publish them live\n• **Manage your yield** — earn on USDC, ETH, or LP strategies\n• **Track positions** — see what you're earning across DeFi\n\nWhat would you like to do?" };
-  // Swap tokens
-  if (/\b(buy|swap|sell|convert|trade)\b/i.test(m) && /\b(eth|usdc|claws|weth|pokerai|0x[a-f0-9]{40})\b/i.test(m)) {
-    return { tool: 'swap_tokens', reply: "I can swap tokens for you! I need:\n\n1. **Token to sell** (e.g. ETH, USDC, CLAWS)\n2. **Token to buy**\n3. **Amount**\n\nConnect your wallet and tell me what you want to swap." };
+  // Swap tokens — parse details or ask for them
+  if (/\b(buy|swap|sell|convert|trade)\b/i.test(m) && /\b(eth|usdc|claws|weth|pokerai)\b/i.test(m)) {
+    const buyMatch = msg.match(/buy\s+(\w+)\s+(?:with\s+)?([\d.]+)\s+(\w+)/i);
+    const swapMatch = msg.match(/swap\s+([\d.]+)\s*(\w+)\s+(?:for|to|into)\s+(\w+)/i);
+    const swapNoAmt = msg.match(/swap\s+(\w+)\s+(?:for|to|into)\s+(\w+)/i);
+    if (buyMatch) {
+      return { tool: 'swap_tokens', reply: `I'll swap ${buyMatch[2]} ${buyMatch[3].toUpperCase()} for ${buyMatch[1].toUpperCase()}. Connect your wallet and I'll get you a quote!`, suggestions: ['Sounds good', 'Change the amount', 'Do something else'] };
+    }
+    if (swapMatch) {
+      return { tool: 'swap_tokens', reply: `I'll swap ${swapMatch[1]} ${swapMatch[2].toUpperCase()} for ${swapMatch[3].toUpperCase()}. Connect your wallet and I'll get you a quote!`, suggestions: ['Sounds good', 'Change the amount', 'Do something else'] };
+    }
+    if (swapNoAmt) {
+      return { tool: 'swap_tokens', reply: `Swap ${swapNoAmt[1].toUpperCase()} for ${swapNoAmt[2].toUpperCase()} — how much do you want to swap?`, suggestions: ['0.1 ' + swapNoAmt[1].toUpperCase(), '0.5 ' + swapNoAmt[1].toUpperCase(), '1 ' + swapNoAmt[1].toUpperCase()] };
+    }
+    return { tool: 'swap_tokens', reply: "I can swap tokens for you! What do you want to swap and how much?", suggestions: ['Swap 0.1 ETH for CLAWS', 'Swap 100 USDC for ETH', 'Swap CLAWS for USDC'] };
   }
 
   // Stake CLAWS (not deploy staking pool)
@@ -1692,6 +1704,37 @@ export default async function handler(req, res) {
   if (!sanitizedMessage.trim()) return res.status(400).json({ error: 'message is required' });
 
   const sid = session_id || 'anon_' + crypto.randomUUID();
+
+  // ── Server-side intercept: "work on [app]" / "edit [app]" / "I want to work on [app]" ──
+  // Handles this directly without LLM to avoid it calling list_my_apps again
+  const workOnMatch = sanitizedMessage.match(/(?:work on|edit|update|open|load)\s+(.+)/i);
+  if (workOnMatch && sanitizedWallet) {
+    const appQuery = workOnMatch[1].replace(/['"]/g, '').trim().toLowerCase();
+    if (appQuery.length > 1 && appQuery.length < 100) {
+      try {
+        const appsRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(sanitizedWallet) + '&limit=50');
+        const appsData = await appsRes.json();
+        const apps = appsData.apps || [];
+        const match = apps.find(a => {
+          const name = (a.name || '').toLowerCase();
+          const slug = (a.slug || '').toLowerCase();
+          return name === appQuery || slug === appQuery ||
+            name.includes(appQuery) || appQuery.includes(name) ||
+            slug.includes(appQuery.replace(/\s+/g, '-')) || appQuery.replace(/\s+/g, '-').includes(slug);
+        });
+        if (match) {
+          const appUrl = 'https://inclawbate.app/s/' + match.slug;
+          const reply = "Here's **" + (match.name || match.slug) + "**:\n\n" + appUrl + "\n\nWhat changes do you want to make?";
+          return res.status(200).json({
+            reply,
+            app_url: appUrl,
+            session_id: sid,
+            suggestions: ['Change the design', 'Add new features', 'Update the content', 'Start something new']
+          });
+        }
+      } catch (_) { /* lookup failed, fall through to LLM */ }
+    }
+  }
 
   // Prefer client-side history (Vercel serverless functions are stateless across cold starts)
   // NOTE: client_history already includes the current user message (frontend pushes before fetch),
