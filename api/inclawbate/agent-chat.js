@@ -679,41 +679,63 @@ async function buildAppAction(args) {
       html = '<!DOCTYPE html>\n' + html;
     }
 
-    // Publish via publish-site API
+    // SECURITY: Scan generated HTML for malicious patterns before publishing
+    const htmlLower = html.toLowerCase();
+    const MALICIOUS_PATTERNS = [
+      // Credential harvesting
+      /seed\s*phrase/i, /mnemonic/i, /private\s*key/i, /recovery\s*phrase/i,
+      /secret\s*phrase/i, /12\s*words/i, /24\s*words/i,
+      // Wallet draining
+      /eth_sendTransaction/i, /eth_signTypedData/i, /eth_sign\b/i,
+      /personal_sign/i, /wallet_requestPermissions/i,
+      // Phishing — external form submissions
+      /action\s*=\s*["']https?:\/\/(?!inclawbate\.app)/i,
+      // Data exfiltration
+      /fetch\s*\(\s*["']https?:\/\/(?!inclawbate\.app|api\.coingecko|api\.dexscreener|fonts\.googleapis)/i,
+      /new\s+XMLHttpRequest/i,
+      /navigator\.sendBeacon/i,
+      // Crypto stealing patterns
+      /window\.ethereum(?!.*disabled)/i,
+      /connectWallet|walletConnect|web3Modal/i,
+      // Redirect to external phishing
+      /window\.location\s*=\s*["']https?:\/\/(?!inclawbate\.app)/i,
+      /location\.href\s*=\s*["']https?:\/\/(?!inclawbate\.app)/i,
+      /location\.replace\s*\(\s*["']https?:\/\/(?!inclawbate\.app)/i,
+    ];
+    const isMalicious = MALICIOUS_PATTERNS.some(p => p.test(html));
+    if (isMalicious) {
+      console.error('BLOCKED malicious app generation. Slug:', slug, 'Description:', args.description.slice(0, 100));
+      return JSON.stringify({ error: 'The generated app was blocked for safety reasons. Try a different description.' });
+    }
+
+    // Publish via publish-site API — include creator wallet for ownership
+    const creatorWallet = args.wallet || args.creator_wallet || '';
+    const publishBody = {
+      name: args.app_name,
+      slug,
+      code: html,
+      email: 'inclawbator@inclawbate.app',
+      description: args.description.slice(0, 200),
+      source: 'inclawbator-chat',
+      category: 'other',
+      is_listed: true,
+      update: !!args.update,
+      ...(creatorWallet && { creator_wallet: creatorWallet })
+    };
     const publishRes = await fetch('https://www.inclawbate.app/api/publish-site', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: args.app_name,
-        slug,
-        code: html,
-        email: 'inclawbator@inclawbate.app',
-        description: args.description.slice(0, 200),
-        source: 'inclawbator-chat',
-        category: 'other',
-        is_listed: true,
-        update: !!args.update
-      })
+      body: JSON.stringify(publishBody)
     });
     const publishData = await publishRes.json();
 
     if (publishData.error) {
-      // If slug taken and not updating, retry as an update (same creator)
+      // If slug taken and not updating, retry as update ONLY if same creator
       if (publishData.error.includes('already taken') && !args.update) {
         const retryRes = await fetch('https://www.inclawbate.app/api/publish-site', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: args.app_name,
-            slug,
-            code: html,
-            email: 'inclawbator@inclawbate.app',
-            description: args.description.slice(0, 200),
-            source: 'inclawbator-chat',
-            category: 'other',
-            is_listed: true,
-            update: true
-          })
+          body: JSON.stringify({ ...publishBody, update: true })
         });
         const retryData = await retryRes.json();
         if (retryData.error) return JSON.stringify({ error: retryData.error });
@@ -1615,7 +1637,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject sanitized wallet into tools that accept it
-        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps')) {
+        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app')) {
           args.wallet = sanitizedWallet;
         }
         toolArgs = args;

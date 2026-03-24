@@ -127,15 +127,20 @@ export default async function handler(req, res) {
         if (update) {
             const { data: existing } = await supabase
                 .from('user_apps')
-                .select('id, publisher_email')
+                .select('id, publisher_email, creator_wallet')
                 .eq('slug', cleanSlug)
                 .maybeSingle();
 
             if (!existing) {
                 return res.status(404).json({ error: 'Site not found.' });
             }
-            // Allow updates from the original publisher or the inclawbator agent
-            if (existing.publisher_email !== publishEmail && publishEmail !== 'inclawbator@inclawbate.app') {
+            // Allow updates from the original publisher
+            // For inclawbator agent: only allow if same creator_wallet or app has no wallet set
+            if (publishEmail === 'inclawbator@inclawbate.app') {
+                if (existing.creator_wallet && creator_wallet && existing.creator_wallet.toLowerCase() !== creator_wallet.toLowerCase()) {
+                    return res.status(403).json({ error: 'You can only update your own apps.' });
+                }
+            } else if (existing.publisher_email !== publishEmail) {
                 return res.status(403).json({ error: 'You can only update your own site.' });
             }
 
