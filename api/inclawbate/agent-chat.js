@@ -1639,10 +1639,34 @@ export default async function handler(req, res) {
   // Helper: log to @inclawbator feed then return response (skip X — logged from x-responder with tweet link)
   // Must await logToFeed before res.json() — Vercel kills the function immediately after response
   const sendReply = async (body) => {
-    // Auto-extract app_url from ANY reply that mentions an app URL — triggers inline preview
+    // Auto-extract app_url from ANY reply — validate against real apps, fix LLM hallucinated slugs
     if (!body.app_url && body.reply) {
-      const urlMatch = body.reply.match(/inclawbate\.app\/s\/[\w-]+/);
-      if (urlMatch) body.app_url = 'https://' + urlMatch[0];
+      const urlMatch = body.reply.match(/inclawbate\.app\/s\/([\w-]+)/);
+      if (urlMatch) {
+        const claimedSlug = urlMatch[1];
+        let validatedUrl = 'https://inclawbate.app/s/' + claimedSlug;
+        // Check if this slug actually exists — if not, try to fuzzy match from user's apps in history
+        try {
+          const checkRes = await fetch('https://www.inclawbate.app/api/serve-site?slug=' + encodeURIComponent(claimedSlug), { method: 'HEAD' });
+          if (!checkRes.ok && sanitizedWallet) {
+            // Slug doesn't exist — look up user's apps and fuzzy match
+            const appsRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(sanitizedWallet) + '&limit=50');
+            const appsData = await appsRes.json();
+            const apps = appsData.apps || [];
+            const fuzzy = apps.find(a =>
+              a.slug.includes(claimedSlug) || claimedSlug.includes(a.slug) ||
+              (a.name && a.name.toLowerCase().includes(claimedSlug.replace(/-/g, ' '))) ||
+              (a.name && claimedSlug.includes(a.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')))
+            );
+            if (fuzzy) {
+              validatedUrl = 'https://inclawbate.app/s/' + fuzzy.slug;
+              // Also fix the URL in the reply text so user sees the correct link
+              body.reply = body.reply.replace(/inclawbate\.app\/s\/[\w-]+/, 'inclawbate.app/s/' + fuzzy.slug);
+            }
+          }
+        } catch (_) { /* validation failed, use original */ }
+        body.app_url = validatedUrl;
+      }
     }
     if (feedSource !== 'x') {
       // Map technical tool names to human-friendly labels for public feed (never leak function names)
