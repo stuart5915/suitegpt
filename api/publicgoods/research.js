@@ -25,11 +25,28 @@ export default async function handler(req, res) {
     const wallet = (req.query.wallet || req.body?.wallet || '').toLowerCase();
     if (!isAdmin(wallet)) return res.status(403).json({ error: 'Admin only' });
 
-    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols'
+    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols', 'pending'
     const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : type === 'protocols' ? 'pgt_protocols' : 'pgt_agents';
 
     // GET — list all (including unapproved, for admin)
     if (req.method === 'GET') {
+        // Pending: fetch unapproved from ALL tables
+        if (type === 'pending') {
+            const tables = [
+                { table: 'pgt_agents', type: 'agents' },
+                { table: 'pgt_public_goods', type: 'goods' },
+                { table: 'pgt_builders', type: 'builders' },
+                { table: 'pgt_protocols', type: 'protocols' },
+            ];
+            const all = [];
+            for (const t of tables) {
+                const { data } = await supabase.from(t.table).select('*').eq('approved', false).order('created_at', { ascending: false }).limit(50);
+                if (data) all.push(...data.map(d => ({ ...d, _table: t.table, _type: t.type })));
+            }
+            all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            return res.json({ items: all, type: 'pending', count: all.length });
+        }
+
         let query = supabase.from(table).select('*').order('last_mentioned', { ascending: true, nullsFirst: true }).order('mentions_count', { ascending: true });
         if (req.query.search) query = query.ilike('name', `%${req.query.search}%`);
         const { data, error } = await query.limit(200);
@@ -62,13 +79,15 @@ export default async function handler(req, res) {
 
     // PUT — update entry or record mention
     if (req.method === 'PUT') {
-        const { id, action } = req.body;
+        const { id, action, _table: overrideTable } = req.body;
         if (!id) return res.status(400).json({ error: 'id required' });
+        // Allow override table for pending items (which come from mixed tables)
+        const targetTable = overrideTable || table;
 
         // Record a mention
         if (action === 'mention') {
-            const { data: current } = await supabase.from(table).select('mentions_count').eq('id', id).single();
-            const { error } = await supabase.from(table).update({
+            const { data: current } = await supabase.from(targetTable).select('mentions_count').eq('id', id).single();
+            const { error } = await supabase.from(targetTable).update({
                 mentions_count: (current?.mentions_count || 0) + 1,
                 last_mentioned: new Date().toISOString()
             }).eq('id', id);
@@ -78,16 +97,16 @@ export default async function handler(req, res) {
 
         // Toggle approved
         if (action === 'approve') {
-            const { data: current } = await supabase.from(table).select('approved').eq('id', id).single();
-            const { error } = await supabase.from(table).update({ approved: !current?.approved }).eq('id', id);
+            const { data: current } = await supabase.from(targetTable).select('approved').eq('id', id).single();
+            const { error } = await supabase.from(targetTable).update({ approved: !current?.approved }).eq('id', id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true, approved: !current?.approved });
         }
 
         // Toggle featured
         if (action === 'feature') {
-            const { data: current } = await supabase.from(table).select('featured').eq('id', id).single();
-            const { error } = await supabase.from(table).update({ featured: !current?.featured }).eq('id', id);
+            const { data: current } = await supabase.from(targetTable).select('featured').eq('id', id).single();
+            const { error } = await supabase.from(targetTable).update({ featured: !current?.featured }).eq('id', id);
             if (error) return res.status(500).json({ error: error.message });
             return res.json({ ok: true, featured: !current?.featured });
         }
@@ -98,16 +117,16 @@ export default async function handler(req, res) {
             if (req.body[key] !== undefined) updates[key] = req.body[key];
         }
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Nothing to update' });
-        const { error } = await supabase.from(table).update(updates).eq('id', id);
+        const { error } = await supabase.from(targetTable).update(updates).eq('id', id);
         if (error) return res.status(500).json({ error: error.message });
         return res.json({ ok: true });
     }
 
     // DELETE
     if (req.method === 'DELETE') {
-        const { id } = req.body;
+        const { id, _table: delTable } = req.body;
         if (!id) return res.status(400).json({ error: 'id required' });
-        const { error } = await supabase.from(table).delete().eq('id', id);
+        const { error } = await supabase.from(delTable || table).delete().eq('id', id);
         if (error) return res.status(500).json({ error: error.message });
         return res.json({ ok: true });
     }

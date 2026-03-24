@@ -1622,12 +1622,14 @@
             { type: 'goods', emoji: '🌍', label: 'Public Goods' },
             { type: 'builders', emoji: '👷', label: 'Builders' },
             { type: 'protocols', emoji: '⛓', label: 'Protocols' },
+            { type: 'pending', emoji: '📥', label: 'Pending' },
         ],
         'inclawbate': [
             { type: 'builders', emoji: '🤝', label: 'Project Founders / Builders' },
             { type: 'protocols', emoji: '📢', label: 'Crypto/DeFi Influencers' },
             { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
             { type: 'goods', emoji: '🎨', label: 'Content Creators' },
+            { type: 'pending', emoji: '📥', label: 'Pending' },
         ],
         'inclawbator': null, // No research database for inclawbator
     };
@@ -1701,10 +1703,13 @@
                 ? '<img src="' + _esc(logoSrc) + '" class="rb-entry-logo" onerror="this.style.display=\'none\'">'
                 : '<div class="rb-entry-logo rb-entry-logo--empty">' + (item.name || '?').charAt(0).toUpperCase() + '</div>';
 
+            var itemTable = item._table || '';
+            var typeLabel = item._type ? '<span style="font-size:0.58rem;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.15);margin-left:4px">' + item._type + '</span>' : '';
+
             return '<div class="rb-entry">' +
                 logoHtml +
                 '<div class="rb-entry-info">' +
-                    '<div class="rb-entry-name">' + featured + _esc(item.name) + ' ' + approved + '</div>' +
+                    '<div class="rb-entry-name">' + featured + _esc(item.name) + ' ' + approved + typeLabel + '</div>' +
                     (handle ? '<div class="rb-entry-handle">' + _esc(handle) + '</div>' : '') +
                     '<div class="rb-entry-desc">' + _esc(item.description || item.bio || 'No description') + '</div>' +
                     (item.notes ? '<div style="font-size:0.65rem;color:#60a5fa;margin-top:2px">📝 ' + _esc(item.notes) + '</div>' : '') +
@@ -1714,11 +1719,11 @@
                         '<div class="rb-mention-count ' + (mc === 0 ? 'zero' : '') + '">' + mc + 'x</div>' +
                         '<div class="rb-last-mentioned">' + lastM + '</div>' +
                     '</div>' +
-                    '<button class="rb-btn rb-btn-mention" onclick="_recordMention(\'' + item.id + '\')" title="Record mention">📢</button>' +
+                    '<button class="rb-btn rb-btn-mention" onclick="_recordMention(\'' + item.id + '\',\'' + itemTable + '\')" title="Record mention">📢</button>' +
                     '<button class="rb-btn" onclick="_editResearchEntry(\'' + item.id + '\')" title="Edit">✏️</button>' +
-                    '<button class="rb-btn" onclick="_toggleApprove(\'' + item.id + '\')" title="Toggle approve">✅</button>' +
-                    '<button class="rb-btn" onclick="_toggleFeature(\'' + item.id + '\')" title="Toggle featured">⭐</button>' +
-                    '<button class="rb-btn" onclick="_deleteResearchEntry(\'' + item.id + '\',\'' + _esc(item.name).replace(/'/g,'\\\'') + '\')" title="Delete" style="color:#f87171">🗑</button>' +
+                    '<button class="rb-btn" onclick="_toggleApprove(\'' + item.id + '\',\'' + itemTable + '\')" title="Approve">✅</button>' +
+                    '<button class="rb-btn" onclick="_toggleFeature(\'' + item.id + '\',\'' + itemTable + '\')" title="Toggle featured">⭐</button>' +
+                    '<button class="rb-btn" onclick="_deleteResearchEntry(\'' + item.id + '\',\'' + _esc(item.name).replace(/'/g,'\\\'') + '\',\'' + itemTable + '\')" title="Delete" style="color:#f87171">🗑</button>' +
                 '</div>' +
             '</div>';
         }).join('');
@@ -1736,39 +1741,39 @@
 
     function _esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-    window._recordMention = async function(id) {
+    window._recordMention = async function(id, tableOverride) {
         await fetch('/api/publicgoods/research', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, action: 'mention', type: _researchType, wallet: _userWallet })
+            body: JSON.stringify({ id: id, action: 'mention', type: _researchType, wallet: _userWallet, _table: tableOverride || undefined })
         });
         _loadResearch();
     };
 
-    window._toggleApprove = async function(id) {
+    window._toggleApprove = async function(id, tableOverride) {
         await fetch('/api/publicgoods/research', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, action: 'approve', type: _researchType, wallet: _userWallet })
+            body: JSON.stringify({ id: id, action: 'approve', type: _researchType, wallet: _userWallet, _table: tableOverride || undefined })
         });
         _loadResearch();
     };
 
-    window._toggleFeature = async function(id) {
+    window._toggleFeature = async function(id, tableOverride) {
         await fetch('/api/publicgoods/research', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, action: 'feature', type: _researchType, wallet: _userWallet })
+            body: JSON.stringify({ id: id, action: 'feature', type: _researchType, wallet: _userWallet, _table: tableOverride || undefined })
         });
         _loadResearch();
     };
 
-    window._deleteResearchEntry = async function(id, name) {
+    window._deleteResearchEntry = async function(id, name, tableOverride) {
         if (!confirm('Delete "' + name + '" from the database?')) return;
         await fetch('/api/publicgoods/research', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, type: _researchType, wallet: _userWallet })
+            body: JSON.stringify({ id: id, type: _researchType, wallet: _userWallet, _table: tableOverride || undefined })
         });
         _loadResearch();
     };
