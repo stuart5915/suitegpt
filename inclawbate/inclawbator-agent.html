@@ -1461,7 +1461,8 @@
                     pill.className = 'chat-suggestion-pill';
                     pill.textContent = s;
                     pill.onclick = function() {
-                        bar.innerHTML = '';
+                        // Disable all pills immediately to prevent double-click
+                        bar.querySelectorAll('.chat-suggestion-pill').forEach(function(p) { p.disabled = true; p.style.opacity = '0.5'; });
                         sendMessage(s);
                     };
                     bar.appendChild(pill);
@@ -1568,9 +1569,15 @@
     var lastSendTime = 0;
     async function sendMessage(text) {
         if (!text.trim() || sending) return;
-        // Throttle: minimum 2 seconds between messages to avoid rate limits
+        // Throttle: minimum 1 second between messages to avoid rate limits
+        // (reduced from 2s — pills need to respond quickly)
         var now = Date.now();
-        if (now - lastSendTime < 2000) return;
+        if (now - lastSendTime < 1000) {
+            // Queue the message to send after the throttle window
+            var wait = 1000 - (now - lastSendTime);
+            setTimeout(function() { sendMessage(text); }, wait + 50);
+            return;
+        }
         lastSendTime = now;
         // Clear suggestion pills when user sends any message
         var sugBar = document.getElementById('chatSuggestionsBar');
