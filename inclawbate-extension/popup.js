@@ -1,4 +1,4 @@
-// Popup — two-state: connect screen vs settings
+// ClawReply Popup — persona management, no auth needed
 
 const profileFields = ['tone', 'persona', 'goals', 'topics', 'maxLength', 'style', 'neverSay'];
 
@@ -13,281 +13,161 @@ const defaultProfileData = {
 };
 
 const starterProfiles = {
-    'inclawbate-promoter': {
-        name: 'Inclawbate Promoter',
+    'inclawbate': {
+        name: '@inclawbate',
         tone: 'friendly',
-        persona: 'I use inclawbate — the platform where AI agents hire humans. I signed up, connected my X, and now agents can find me, hire me, and pay me in $CLAWNCH. It actually works.',
-        goals: 'Get more people to sign up at inclawbate.app. Share what inclawbate is, why it matters, and how easy it is to join. Be genuine, not salesy.',
-        topics: 'inclawbate, AI agents hiring humans, getting paid in crypto, human APIs, the future of work',
+        persona: 'Inclawbate — the platform where Anyone Can Build and Everyone Gets Paid. We incubate AI-powered apps, launch tokens, and distribute value through a self-sustaining treasury. Built on Base.',
+        goals: 'Grow awareness of the Inclawbate ecosystem. Show people they can build apps, launch tokens, and earn CLAWS. Be genuine and helpful, not salesy. Drive people to inclawbate.app.',
+        topics: 'AI apps, building in public, CLAWS token, Base chain, app incubation, staking, DeFi, creator economy',
         maxLength: 280,
-        style: 'genuine, enthusiastic but not over the top, conversational',
-        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
+        style: 'warm, approachable, community-first. Never hype-y. Real talk about what we\'re building.',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "Absolutely!", "I think it\'s worth noting", hashtags'
     },
-    'clawnch-promoter': {
-        name: 'CLAWNCH Promoter',
-        tone: 'casual',
-        persona: 'I\'m into $CLAWNCH — the token that powers inclawbate. Agents pay humans in CLAWNCH. Follow @Clawnch_Bot for updates. The token is on Base chain and growing.',
-        goals: 'Spread awareness of $CLAWNCH token and @Clawnch_Bot. Talk about the token, the ecosystem, why it has real utility. Get people interested in CLAWNCH.',
-        topics: '$CLAWNCH, @Clawnch_Bot, Base chain, crypto, token utility, inclawbate payments',
+    'inclawbator': {
+        name: '@inclawbator',
+        tone: 'witty',
+        persona: 'The Inclawbator — an AI agent that helps you launch crypto projects on Base. I can build apps, launch tokens, deploy staking pools, create marketing agents, and more. I have 26 tools and I\'m always getting smarter.',
+        goals: 'Show what AI agents can actually do. Demonstrate capabilities. Get people to try the Inclawbator at inclawbate.app/inclawbator. Be knowledgeable about crypto, DeFi, and AI.',
+        topics: 'AI agents, token launches, staking, Base chain, crypto building, autonomous agents, DeFi automation',
         maxLength: 280,
-        style: 'crypto-native, casual, use $ before CLAWNCH, tag @Clawnch_Bot when relevant',
-        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
+        style: 'confident, knowledgeable, slightly playful. Like a really smart friend who happens to be an AI. Brief and punchy.',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "Absolutely!", "As an AI", "I think it\'s worth noting", hashtags'
     },
-    'inclawbate-vision': {
-        name: 'Inclawbate Vision',
+    'publicgoodstech': {
+        name: '@publicgoodstech',
         tone: 'thoughtful',
-        persona: 'I think about the future of human-AI collaboration. Inclawbate is building something new — a world where AI agents hire humans, not the other way around. Humans become APIs.',
-        goals: 'Share the bigger picture of what inclawbate represents. Talk about why human APIs matter, how AI agents will reshape work, and why this model is different from gig platforms.',
-        topics: 'human-AI collaboration, future of work, human APIs, AI agents, decentralized labor markets, inclawbate philosophy',
+        persona: 'Public Goods Tech — building open-source tools and public infrastructure for the crypto ecosystem. We believe technology should serve everyone, not just the privileged few. Powered by Inclawbate.',
+        goals: 'Advocate for public goods in crypto. Engage with builders, researchers, and governance thinkers. Share ideas about sustainable funding, open-source development, and equitable access to technology.',
+        topics: 'public goods, open source, crypto governance, retroactive funding, UBI, impact DAOs, sustainable development, accessibility',
         maxLength: 280,
-        style: 'thoughtful, visionary but grounded, not hype-y',
-        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
+        style: 'thoughtful, principled, grounded. Not preachy — conversational and curious. Ask good questions.',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "Absolutely!", "I think it\'s worth noting", hashtags'
     }
 };
 
-const connectScreen = document.getElementById('connectScreen');
-const connectedUI = document.getElementById('connectedUI');
-const connectBtn = document.getElementById('connectBtn');
-const disconnectBtn = document.getElementById('disconnectBtn');
-const userHandle = document.getElementById('userHandle');
-const creditsCount = document.getElementById('creditsCount');
 const profileSelect = document.getElementById('profileSelect');
 const newProfileBtn = document.getElementById('newProfile');
 const deleteProfileBtn = document.getElementById('deleteProfile');
 const saveBtn = document.getElementById('save');
 const toast = document.getElementById('toast');
 
-// ── Init: check for API key ──
+// ── Init ──
 
-chrome.storage.sync.get(['apiKey', 'xHandle', 'profiles', 'activeProfile', ...profileFields], (data) => {
-    if (data.apiKey) {
-        showConnected(data);
-    } else {
-        showConnectScreen();
-    }
-});
+async function init() {
+    const data = await chrome.storage.sync.get(['profiles', 'activeProfile']);
 
-// ── Listen for storage changes (auto-update if auth-relay sets key while popup is open) ──
-
-chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.apiKey && changes.apiKey.newValue) {
-        chrome.storage.sync.get(['apiKey', 'xHandle', 'profiles', 'activeProfile', ...profileFields], (data) => {
-            showConnected(data);
-        });
-    }
-});
-
-// ── Connect screen ──
-
-function showConnectScreen() {
-    connectScreen.classList.remove('hidden');
-    connectedUI.classList.add('hidden');
-}
-
-connectBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://inclawbate.app/connect' });
-});
-
-// ── Connected state ──
-
-function showConnected(data) {
-    connectScreen.classList.add('hidden');
-    connectedUI.classList.remove('hidden');
-
-    // Show wallet or handle
-    if (data.walletAddress) {
-        userHandle.textContent = data.walletAddress.slice(0, 6) + '...' + data.walletAddress.slice(-4);
-    } else if (data.xHandle) {
-        userHandle.textContent = '@' + data.xHandle;
-    } else {
-        userHandle.textContent = 'Connected';
-    }
-
-    // Fetch credits
-    fetchCredits(data.apiKey);
-
-    // Load profiles
-    let profiles = data.profiles;
+    let profiles = data.profiles || {};
     let activeProfile = data.activeProfile;
 
-    if (!profiles) {
+    // Seed starter profiles if empty
+    if (Object.keys(profiles).length === 0) {
         profiles = { ...starterProfiles };
-
-        const hadFlatSettings = profileFields.some(f => data[f] && data[f] !== defaultProfileData[f]);
-        if (hadFlatSettings) {
-            const migrated = {};
-            profileFields.forEach(f => { migrated[f] = data[f] ?? defaultProfileData[f]; });
-            migrated.name = 'My Settings';
-            profiles['custom'] = migrated;
-            activeProfile = 'custom';
-        } else {
-            activeProfile = 'inclawbate-promoter';
-        }
-
-        chrome.storage.sync.set({ profiles, activeProfile });
+        activeProfile = 'inclawbate';
+        await chrome.storage.sync.set({ profiles, activeProfile });
     }
 
-    populateDropdown(profiles, activeProfile);
-    loadProfile(profiles[activeProfile] || Object.values(profiles)[0]);
-    updateDeleteBtn(profiles);
+    // Make sure active profile exists
+    if (!activeProfile || !profiles[activeProfile]) {
+        activeProfile = Object.keys(profiles)[0];
+        await chrome.storage.sync.set({ activeProfile });
+    }
+
+    renderProfiles(profiles, activeProfile);
+    loadProfile(profiles[activeProfile]);
 }
 
-// ── Disconnect ──
-
-disconnectBtn.addEventListener('click', () => {
-    if (!confirm('Disconnect your X account?')) return;
-    chrome.storage.sync.remove(['apiKey', 'xHandle'], () => {
-        showConnectScreen();
-    });
-});
-
-// ── Profile helpers ──
-
-function populateDropdown(profiles, activeKey) {
+function renderProfiles(profiles, activeProfile) {
     profileSelect.innerHTML = '';
     for (const [key, prof] of Object.entries(profiles)) {
         const opt = document.createElement('option');
         opt.value = key;
         opt.textContent = prof.name || key;
-        if (key === activeKey) opt.selected = true;
+        if (key === activeProfile) opt.selected = true;
         profileSelect.appendChild(opt);
+    }
+
+    // Disable delete if only 1 profile
+    deleteProfileBtn.disabled = Object.keys(profiles).length <= 1;
+    if (deleteProfileBtn.disabled) deleteProfileBtn.style.opacity = '0.4';
+    else deleteProfileBtn.style.opacity = '';
+}
+
+function loadProfile(prof) {
+    if (!prof) return;
+    for (const field of profileFields) {
+        const el = document.getElementById(field);
+        if (el) el.value = prof[field] ?? defaultProfileData[field] ?? '';
     }
 }
 
-function loadProfile(profile) {
-    if (!profile) return;
-    profileFields.forEach(field => {
-        const el = document.getElementById(field);
-        if (el) el.value = profile[field] ?? defaultProfileData[field];
-    });
-}
+// ── Profile switching ──
 
-function readFormProfile() {
-    const profile = {};
-    profileFields.forEach(field => {
-        const el = document.getElementById(field);
-        profile[field] = field === 'maxLength' ? (parseInt(el.value) || 280) : el.value;
-    });
-    return profile;
-}
+profileSelect.addEventListener('change', async () => {
+    const key = profileSelect.value;
+    await chrome.storage.sync.set({ activeProfile: key });
+    const data = await chrome.storage.sync.get(['profiles']);
+    loadProfile(data.profiles?.[key]);
+    showToast('Switched to ' + (data.profiles?.[key]?.name || key));
+});
 
-function updateDeleteBtn(profiles) {
-    deleteProfileBtn.disabled = Object.keys(profiles).length <= 1;
-    deleteProfileBtn.style.opacity = Object.keys(profiles).length <= 1 ? '0.4' : '1';
-}
+// ── New profile ──
+
+newProfileBtn.addEventListener('click', async () => {
+    const name = prompt('Profile name (e.g. "My Brand", "@myhandle"):');
+    if (!name) return;
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 30);
+    if (!key) return;
+
+    const data = await chrome.storage.sync.get(['profiles']);
+    const profiles = data.profiles || {};
+    profiles[key] = { ...defaultProfileData, name };
+
+    await chrome.storage.sync.set({ profiles, activeProfile: key });
+    renderProfiles(profiles, key);
+    loadProfile(profiles[key]);
+    showToast('Created ' + name);
+});
+
+// ── Delete profile ──
+
+deleteProfileBtn.addEventListener('click', async () => {
+    const key = profileSelect.value;
+    const data = await chrome.storage.sync.get(['profiles']);
+    const profiles = data.profiles || {};
+
+    if (Object.keys(profiles).length <= 1) return;
+
+    delete profiles[key];
+    const newActive = Object.keys(profiles)[0];
+    await chrome.storage.sync.set({ profiles, activeProfile: newActive });
+    renderProfiles(profiles, newActive);
+    loadProfile(profiles[newActive]);
+    showToast('Deleted');
+});
+
+// ── Save ──
+
+saveBtn.addEventListener('click', async () => {
+    const key = profileSelect.value;
+    const data = await chrome.storage.sync.get(['profiles']);
+    const profiles = data.profiles || {};
+
+    if (!profiles[key]) profiles[key] = { ...defaultProfileData };
+
+    for (const field of profileFields) {
+        const el = document.getElementById(field);
+        if (el) {
+            profiles[key][field] = field === 'maxLength' ? parseInt(el.value) || 280 : el.value;
+        }
+    }
+
+    await chrome.storage.sync.set({ profiles });
+    showToast('Saved!');
+});
 
 function showToast(msg) {
     toast.textContent = msg;
     setTimeout(() => { toast.textContent = ''; }, 2000);
 }
 
-// ── Profile switch ──
-
-profileSelect.addEventListener('change', () => {
-    chrome.storage.sync.get(['profiles', 'activeProfile'], (data) => {
-        const profiles = data.profiles || {};
-        const oldKey = data.activeProfile;
-
-        if (oldKey && profiles[oldKey]) {
-            Object.assign(profiles[oldKey], readFormProfile());
-        }
-
-        const newKey = profileSelect.value;
-        chrome.storage.sync.set({ profiles, activeProfile: newKey }, () => {
-            loadProfile(profiles[newKey]);
-        });
-    });
-});
-
-// ── Save ──
-
-saveBtn.addEventListener('click', () => {
-    chrome.storage.sync.get(['profiles', 'activeProfile'], (data) => {
-        const profiles = data.profiles || {};
-        const key = data.activeProfile || profileSelect.value;
-
-        if (profiles[key]) {
-            Object.assign(profiles[key], readFormProfile());
-        }
-
-        chrome.storage.sync.set({ profiles }, () => {
-            showToast('Settings saved!');
-        });
-    });
-});
-
-// ── New profile ──
-
-newProfileBtn.addEventListener('click', () => {
-    const name = prompt('Profile name:');
-    if (!name || !name.trim()) return;
-
-    const key = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-    chrome.storage.sync.get(['profiles', 'activeProfile'], (data) => {
-        const profiles = data.profiles || {};
-
-        if (profiles[key]) {
-            showToast('Profile already exists');
-            return;
-        }
-
-        const oldKey = data.activeProfile;
-        if (oldKey && profiles[oldKey]) {
-            Object.assign(profiles[oldKey], readFormProfile());
-        }
-
-        profiles[key] = { ...defaultProfileData, name: name.trim() };
-
-        chrome.storage.sync.set({ profiles, activeProfile: key }, () => {
-            populateDropdown(profiles, key);
-            loadProfile(profiles[key]);
-            updateDeleteBtn(profiles);
-            showToast('Profile created!');
-        });
-    });
-});
-
-// ── Delete profile ──
-
-deleteProfileBtn.addEventListener('click', () => {
-    chrome.storage.sync.get(['profiles', 'activeProfile'], (data) => {
-        const profiles = data.profiles || {};
-        const key = data.activeProfile;
-
-        if (Object.keys(profiles).length <= 1) return;
-
-        if (!confirm(`Delete "${profiles[key]?.name || key}"?`)) return;
-
-        delete profiles[key];
-        const firstKey = Object.keys(profiles)[0];
-
-        chrome.storage.sync.set({ profiles, activeProfile: firstKey }, () => {
-            populateDropdown(profiles, firstKey);
-            loadProfile(profiles[firstKey]);
-            updateDeleteBtn(profiles);
-            showToast('Profile deleted');
-        });
-    });
-});
-
-// ── Credits ──
-
-function fetchCredits(key) {
-    if (!key) return;
-    fetch('https://inclawbate.app/api/inclawbate/credits', { headers: { 'X-API-Key': key } })
-        .then(r => r.json())
-        .then(data => {
-            if (data.credits !== undefined) {
-                creditsCount.textContent = data.credits;
-                creditsCount.className = data.credits > 0 ? 'credits-count has-credits' : 'credits-count no-credits';
-            } else {
-                creditsCount.textContent = 'Invalid key';
-                creditsCount.className = 'credits-count no-credits';
-            }
-        })
-        .catch(() => {
-            creditsCount.textContent = '??';
-            creditsCount.className = 'credits-count no-credits';
-        });
-}
+init();
