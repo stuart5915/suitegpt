@@ -1933,6 +1933,35 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions });
     }
 
+    // Intercept swap/buy/sell without amount — ask how much instead of letting LLM guess
+    const swapIntercept = message.match(/^(?:swap|buy|sell|convert|trade)\s+(\w+)\s+(?:for|to|into|with)\s+(\w+)$/i);
+    if (swapIntercept) {
+      const token1 = swapIntercept[1].toUpperCase();
+      const token2 = swapIntercept[2].toUpperCase();
+      const isBuy = /^buy$/i.test(message.split(' ')[0]);
+      const from = isBuy ? token2 : token1;
+      const to = isBuy ? token1 : token2;
+      const reply = `Swap ${from} for ${to} — how much ${from} do you want to swap?`;
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: [`Swap 0.05 ${from} for ${to}`, `Swap 0.1 ${from} for ${to}`, `Swap 0.5 ${from} for ${to}`] });
+    }
+
+    // Intercept "I want to buy/swap/stake" without specifics
+    if (/^i want to (buy|swap|sell|trade) (\w+)$/i.test(msgLower)) {
+      const action = msgLower.match(/^i want to (\w+) (\w+)$/i);
+      const token = action[2].toUpperCase();
+      const reply = `How much ${token} do you want to ${action[1]}? And what token are you swapping from?`;
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: [`Buy ${token} with 0.1 ETH`, `Buy ${token} with 100 USDC`, `Swap 0.1 ETH for ${token}`] });
+    }
+
+    // Intercept "Stake my CLAWS" without amount
+    if (/^stake\s+(my\s+)?claws$/i.test(msgLower)) {
+      const reply = 'How much CLAWS do you want to stake?';
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Stake 1000 CLAWS', 'Stake 10000 CLAWS', 'Stake all my CLAWS'] });
+    }
+
     let functionCalled = null;
     let toolArgs = null;
     let data = await callLLM(history);
