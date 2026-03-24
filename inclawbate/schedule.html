@@ -1589,6 +1589,16 @@
         { name: 'Ecosystem Update',      emoji: '\u{1F680}', needsImage: true,  desc: 'CLAWS numbers, growth metrics, treasury, TVL, new milestones', angles: ['CLAWS numbers update', 'Growth milestone hit', 'New integration shipped', 'Ecosystem health check'] },
     ];
 
+    var PGT_PILLARS = [
+        { name: 'Agent Spotlight',       emoji: '\u{1F916}', needsImage: true,  desc: 'Deep dive on one AI agent \u2014 what it does, who built it, why it matters', angles: ['What this agent does', 'Team behind it', 'Key differentiator', 'How to try it'] },
+        { name: 'Builder Spotlight',     emoji: '\u{1F477}', needsImage: true,  desc: 'Highlight a public goods builder \u2014 their work, contributions, projects', angles: ['What they built', 'Open-source contributions', 'Why their work matters', 'How to support them'] },
+        { name: 'Public Good Highlight', emoji: '\u{1F30D}', needsImage: true,  desc: 'Feature an open-source tool, protocol, or resource that serves everyone', angles: ['What it does', 'Who benefits', 'How it\'s funded', 'How to contribute'] },
+        { name: 'Protocol Deep Dive',   emoji: '\u{26D3}',  needsImage: true,  desc: 'Breakdown of an onchain protocol \u2014 how it works, impact, stats', angles: ['Protocol mechanics', 'TVL and usage stats', 'Public goods funding', 'Integration opportunities'] },
+        { name: 'Ecosystem Map',         emoji: '\u{1F5FA}', needsImage: true,  desc: 'Overview of AI agents by category \u2014 DeFi, social, infra, governance', angles: ['Category breakdown', 'New entries this week', 'Fastest growing category', 'Underrepresented areas'] },
+        { name: 'New on the Radar',      emoji: '\u{1F4E1}', needsImage: true,  desc: 'Recently discovered agents, tools, and builders worth watching', angles: ['Just launched', 'Under the radar gem', 'Early-stage project', 'Worth following'] },
+        { name: 'Weekly Recap',          emoji: '\u{1F4CA}', needsImage: true,  desc: 'Stats roundup \u2014 new agents tracked, top mentioned, category trends', angles: ['New agents this week', 'Top mentioned projects', 'Category growth', 'Notable launches'] },
+    ];
+
     var _activeAccount = 'inclawbator';
     var _schedSlots = [];
     var _schedProjects = [];
@@ -1596,7 +1606,9 @@
     var _userWallet = '';
 
     function activePillars() {
-        return _activeAccount === 'inclawbate' ? INCLAWBATE_PILLARS : INCLAWBATOR_PILLARS;
+        if (_activeAccount === 'inclawbate') return INCLAWBATE_PILLARS;
+        if (_activeAccount === 'publicgoodstech') return PGT_PILLARS;
+        return INCLAWBATOR_PILLARS;
     }
 
     // ═══ Research Database ═══
@@ -2436,7 +2448,7 @@
 
                 // Status badges + actions (same pattern as autofill)
                 if (isPosted) {
-                    var xHandle2 = _activeAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                    var xHandle2 = _activeAccount === 'inclawbate' ? 'inclawbate' : (_activeAccount === 'publicgoodstech' ? 'publicgoodstech' : 'inclawbator');
                     if (booked.tweet_id) {
                         html += '<a href="https://x.com/' + xHandle2 + '/status/' + booked.tweet_id + '" target="_blank" rel="noopener" class="sched-posted-link" onclick="event.stopPropagation()" title="View on X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> posted</a>';
                     } else {
