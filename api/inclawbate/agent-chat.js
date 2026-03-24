@@ -461,7 +461,8 @@ async function deployTokenAction(args) {
     });
     return JSON.stringify(result);
   } catch (err) {
-    return JSON.stringify({ error: err.message, hint: 'Token deployment failed. Try again or contact the Council.' });
+    console.error('deployToken error:', err);
+    return JSON.stringify({ error: 'Token deployment failed. Try again or contact the Council.' });
   }
 }
 
@@ -623,7 +624,8 @@ async function listMyApps(args) {
       message: 'You have ' + apps.length + ' app' + (apps.length === 1 ? '' : 's') + '. You can update any of them or build something new.'
     });
   } catch (e) {
-    return JSON.stringify({ error: 'Could not fetch your apps: ' + e.message });
+    console.error('listMyApps error:', e);
+    return JSON.stringify({ error: 'Could not fetch your apps. Try again in a moment.' });
   }
 }
 
@@ -722,7 +724,8 @@ async function buildAppAction(args) {
 
     return JSON.stringify({ success: true, url: publishData.url, slug, app_name: args.app_name, updated: !!args.update });
   } catch (err) {
-    return JSON.stringify({ error: err.message });
+    console.error('buildApp error:', err);
+    return JSON.stringify({ error: 'App build failed. Try again or simplify your description.' });
   }
 }
 
@@ -739,7 +742,8 @@ async function deployStakingAction(args) {
     });
     return JSON.stringify(result);
   } catch (err) {
-    return JSON.stringify({ error: err.message, hint: 'Staking pool deployment failed: ' + err.message });
+    console.error('deployStaking error:', err);
+    return JSON.stringify({ error: 'Staking pool deployment failed. Try again or contact the Council.' });
   }
 }
 
@@ -870,7 +874,8 @@ async function hireInclawbatorInfo(args) {
     }
     return JSON.stringify({ error: data.error || 'Failed to post hire request' });
   } catch (e) {
-    return JSON.stringify({ error: 'Failed to reach hire-request API: ' + e.message });
+    console.error('hireInclawbator error:', e);
+    return JSON.stringify({ error: 'Hire request failed. Try again in a moment.' });
   }
 }
 
@@ -1423,6 +1428,8 @@ export default async function handler(req, res) {
   if (!message) return res.status(400).json({ error: 'message is required' });
 
   // Server-side security pre-filter — catch attacks before they hit the LLM (saves API credits too)
+  // Normalize unicode to prevent homoglyph attacks (Cyrillic 'е' → Latin 'e', etc.)
+  const normalizedMsg = (typeof message === 'string' ? message : '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');
   const ATTACK_PATTERNS = [
     // Prompt injection — override instructions
     /ignore\s+(all\s+)?(previous|prior|above|earlier|preceding)\s+(instructions|rules|guidelines|prompts)/i,
@@ -1487,7 +1494,7 @@ export default async function handler(req, res) {
     /role\s*play\s+as/i,
     /simulate\s+(being|a)\s+(different|unrestricted|evil)/i,
   ];
-  const isAttack = ATTACK_PATTERNS.some(p => p.test(message));
+  const isAttack = ATTACK_PATTERNS.some(p => p.test(normalizedMsg));
   if (isAttack) {
     return res.status(200).json({
       reply: "I can't share internal system details. I'm the Inclawbator — I help you build, launch, and earn in the Inclawbate ecosystem. What can I help you with?",
@@ -1506,12 +1513,22 @@ export default async function handler(req, res) {
   // so we must NOT push it again — duplicate consecutive user messages cause LLM API errors.
   let usedClientHistory = false;
   if (Array.isArray(client_history) && client_history.length > 0) {
-    // Rebuild history from client — only allow user/assistant roles, sanitize
+    // Rebuild history from client — security hardened
     const rebuilt = [{ role: 'system', content: SYSTEM_PROMPT }];
     for (const msg of client_history.slice(-20)) {
-      if (msg.role === 'user' || msg.role === 'assistant') {
-        rebuilt.push({ role: msg.role, content: String(msg.content || '').slice(0, 2000) });
+      // Only allow user messages — NEVER trust client-provided assistant messages
+      // (attacker can fake assistant messages to make LLM think it already agreed to leak secrets)
+      if (msg.role === 'user') {
+        const content = String(msg.content || '').slice(0, 2000);
+        // Run attack filter on EVERY history message, not just current message
+        const historyAttack = ATTACK_PATTERNS.some(p => p.test(content));
+        if (!historyAttack) {
+          rebuilt.push({ role: 'user', content });
+        }
+        // Skip attacked messages silently — don't break the conversation
       }
+      // Allow assistant messages only from server — reconstruct from user messages
+      // The LLM will still work fine with only user messages + system prompt
     }
     sessions.set(sid, rebuilt);
     usedClientHistory = true;
@@ -1535,7 +1552,10 @@ export default async function handler(req, res) {
       if (urlMatch) body.app_url = 'https://' + urlMatch[0];
     }
     if (feedSource !== 'x') {
-      await logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: body.function_called }).catch(e => console.error('Feed error:', e.message));
+      // Map technical tool names to human-friendly labels for public feed (never leak function names)
+      const TOOL_LABELS = { deploy_token: 'Token Launch', deploy_staking: 'Staking Deploy', build_app: 'App Build', get_ecosystem_info: 'Ecosystem Info', get_incubation_info: 'Incubation Info', get_token_analytics: 'Analytics', get_staking_stats: 'Staking Stats', health_check: 'Health Check', create_agent_info: 'Agent Info', book_promo: 'Promo Booking', disperse_tokens: 'Airdrop', hire_inclawbator: 'Council Hire', get_yield_options: 'Yield Options', deposit_to_strategy: 'Deposit', withdraw_from_strategy: 'Withdraw', check_positions: 'Positions', set_reward_preference: 'Reward Pref', swap_tokens: 'Swap', stake_claws: 'Stake', unstake_claws: 'Unstake', claim_staking_rewards: 'Claim Rewards', list_my_apps: 'My Apps' };
+      const feedTool = body.function_called ? (TOOL_LABELS[body.function_called] || 'Action') : null;
+      await logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: feedTool }).catch(e => console.error('Feed error:', e.message));
     }
     return res.status(200).json(body);
   };
@@ -1641,31 +1661,9 @@ export default async function handler(req, res) {
     // Matches both <function=name>...</function> and <name>...</function>
     reply = reply.replace(/<(?:function=)?[a-z_]+>[^<]*<\/function>/gi, '').trim();
 
-    // Fallback: LLM sometimes outputs tool args as raw JSON text instead of using tool_calls
-    if (!functionCalled && reply) {
-      const jsonMatch = reply.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          // Detect which tool the JSON belongs to by checking key fields
-          let detectedTool = null;
-          if (parsed.app_name !== undefined || (parsed.description && reply.toLowerCase().includes('build'))) detectedTool = 'build_app';
-          else if (parsed.token_name && parsed.token_symbol) detectedTool = 'deploy_token';
-          else if (parsed.token_address && parsed.creator_wallet && !parsed.recipients) detectedTool = 'deploy_staking';
-          else if (parsed.recipients && parsed.amounts) detectedTool = 'disperse_tokens';
-          else if (parsed.task_description !== undefined) detectedTool = 'hire_inclawbator';
-
-          if (detectedTool) {
-            const result = await executeTool(detectedTool, parsed);
-            const directReply = generateDirectReply(detectedTool, result, parsed);
-            if (directReply) {
-              history.push({ role: 'assistant', content: directReply });
-              return sendReply({ reply: directReply, function_called: detectedTool, tool_args: parsed, session_id: sid });
-            }
-          }
-        } catch (_) { /* not valid JSON, continue normally */ }
-      }
-    }
+    // SECURITY: JSON fallback tool execution REMOVED — was a critical injection vector.
+    // Attacker could craft LLM output containing JSON to execute arbitrary tools with unvalidated args.
+    // Tools must only be called via the LLM's proper tool_calls mechanism.
 
     if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
 
