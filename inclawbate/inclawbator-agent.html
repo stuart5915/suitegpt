@@ -713,11 +713,7 @@
         <!-- RIGHT: Context Panel -->
         <div class="inclaw-context-col" id="inclawContext">
             <div class="inclaw-context-panel active" data-context="build">
-                <div class="inclaw-context-empty">
-                    <div style="font-size:2.5rem;margin-bottom:12px;">&#128296;</div>
-                    <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:6px;">Build something</div>
-                    <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Describe what you want in the chat. Your app will preview here live as it's being built.</div>
-                </div>
+                <iframe src="/inclawbate/build-dashboard.html" class="inclaw-context-iframe" id="buildDashFrame" title="Build Dashboard"></iframe>
             </div>
             <div class="inclaw-context-panel" data-context="defi" id="defiPanel" style="overflow-y:auto;padding:20px;">
                 <!-- Portfolio Overview -->
@@ -1674,6 +1670,14 @@
             }
         } catch (_) {}
     }
+
+    // Expose sendMessage globally for iframes (build dashboard, etc.)
+    window.sendMessage = sendMessage;
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'inclawbator-chat' && e.data.message) {
+            sendMessage(e.data.message);
+        }
+    });
 
     form.addEventListener('submit', function(e) { e.preventDefault(); sendMessage(input.value); });
 
