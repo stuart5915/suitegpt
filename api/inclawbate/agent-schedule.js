@@ -22,7 +22,12 @@ const supabase = createClient(
 
 const MAX_DAYS_AHEAD = 7;
 const MAX_ACTIVE_BOOKINGS = 3;
-const VALID_HOURS = [1, 13, 16, 19, 22]; // Peak X engagement: 9AM, 12PM, 3PM, 6PM, 9PM ET
+const VALID_HOURS = [13, 18, 23]; // Default: 3 posts/day: 9 AM ET, 2 PM ET, 7 PM ET
+const ACCOUNT_HOURS = {
+    'inclawbate': [13, 18, 23],
+    'inclawbator': [13, 18, 23],
+    'publicgoodstech': [13, 16, 20, 23],
+};
 
 const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 // Editors can edit/cancel slots but NOT approve/reject
@@ -118,7 +123,7 @@ export default async function handler(req, res) {
         // ── Book a slot ──
         if (action === 'book') {
             const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options, tweet_text, account: reqAccount } = req.body;
-            const bookAccount = ['inclawbator', 'inclawbate'].includes(reqAccount) ? reqAccount : 'inclawbator';
+            const bookAccount = ['inclawbator', 'inclawbate', 'publicgoodstech'].includes(reqAccount) ? reqAccount : 'inclawbator';
             const isAdmin = FREE_WALLETS.includes(wallet);
 
             if (!scheduled_at) {
@@ -148,7 +153,8 @@ export default async function handler(req, res) {
             // Validate time
             const slotDate = new Date(scheduled_at);
             if (isNaN(slotDate.getTime())) return res.status(400).json({ error: 'Invalid date' });
-            if (!VALID_HOURS.includes(slotDate.getUTCHours()) || slotDate.getUTCMinutes() !== 0) {
+            const allowedHours = ACCOUNT_HOURS[bookAccount] || VALID_HOURS;
+            if (!allowedHours.includes(slotDate.getUTCHours()) || slotDate.getUTCMinutes() !== 0) {
                 return res.status(400).json({ error: 'Invalid slot time. Slots are at peak hours only.' });
             }
             if (slotDate.getTime() <= Date.now()) {

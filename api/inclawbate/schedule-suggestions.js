@@ -21,7 +21,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const VALID_HOURS = [1, 13, 16, 19, 22];
+const VALID_HOURS = [13, 16, 18, 20, 23]; // Union of all account hours
 const MAX_SUGGESTIONS_PER_SLOT = 20;
 const MAX_SUGGESTION_LENGTH = 300;
 

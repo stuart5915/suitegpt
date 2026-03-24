@@ -2022,8 +2022,8 @@
             });
 
             var dotsHtml = '';
-            // Show a dot for each slot (3 new + any legacy booked slots)
-            var dotCount = Math.max(3, daySlots.length);
+            // Show a dot for each slot (account-specific + any legacy booked slots)
+            var dotCount = Math.max(getPeakSlots().length, daySlots.length);
             for (var j = 0; j < dotCount; j++) {
                 var matchSlot = daySlots[j];
                 var dotCls = 'sched-week-dot ';
@@ -2071,12 +2071,13 @@
         renderSlots(date);
     }
 
-    // 3 posts per day: 9AM ET, 2PM ET, 7PM ET
-    var PEAK_SLOTS = [
-        { utc: 13, label: 'Morning' },
-        { utc: 18, label: 'Afternoon' },
-        { utc: 23, label: 'Evening' }
-    ];
+    // Account-specific slot schedules
+    var ACCOUNT_PEAK_SLOTS = {
+        'inclawbate':      [{ utc: 13, label: 'Morning' }, { utc: 18, label: 'Afternoon' }, { utc: 23, label: 'Evening' }],
+        'inclawbator':     [{ utc: 13, label: 'Morning' }, { utc: 18, label: 'Afternoon' }, { utc: 23, label: 'Evening' }],
+        'publicgoodstech': [{ utc: 13, label: 'Morning' }, { utc: 16, label: 'Midday' }, { utc: 20, label: 'Afternoon' }, { utc: 23, label: 'Evening' }],
+    };
+    function getPeakSlots() { return ACCOUNT_PEAK_SLOTS[_activeAccount] || ACCOUNT_PEAK_SLOTS['inclawbator']; }
 
     function renderSlots(date) {
         var container = document.getElementById('schedSlots');
@@ -2087,7 +2088,7 @@
         // slot matching works regardless of the user's timezone
         var utcBase = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 
-        PEAK_SLOTS.forEach(function(peak) {
+        getPeakSlots().forEach(function(peak) {
             var slotTime = new Date(utcBase);
             slotTime.setUTCHours(peak.utc, 0, 0, 0);
 
