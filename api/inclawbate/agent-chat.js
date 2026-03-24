@@ -56,9 +56,15 @@ BOOK PROMO — Use book_promo when someone wants to promote their project throug
 
 AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
-MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects", or when you need to check if they already have an app before building a new one. Requires wallet. Returns a list of their published apps with names, URLs, and descriptions.
+MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects". Requires wallet. Returns a list of their published apps with names, URLs, and descriptions. Do NOT call this again if you already listed their apps in this conversation.
 
-BUILD AN APP — Use build_app when someone says "build", "make", "create", or "generate" a website, app, page, site, landing page, dashboard, or UI. IMPORTANT: If the user has a wallet connected, call list_my_apps FIRST to check if they already have a similar app. If they do, ask: "You already have [app name] — want me to update that one, or create something new?" If they want updates, include update: true and the same app_name. This tool AUTOMATICALLY builds and publishes a live web app — no human needed. Collect: app_name (short name for the URL) and description (what it should look like and do). The app will be generated and published live at inclawbate.app/s/[slug]. IMPORTANT: If someone asks to "build a website" or "make me an app", use build_app — NOT hire_inclawbator.
+EDIT / WORK ON EXISTING APP — When a user says "work on [app name]", "edit [app name]", "update [app name]", or picks a specific app from their list, do NOT call list_my_apps again. Instead, respond with EXACTLY this format:
+"Here's your app: https://inclawbate.app/s/[slug]
+
+What changes do you want to make?"
+Use the app's URL from the list you already showed. The frontend will display the app preview automatically when it sees the URL. Wait for the user to describe their changes before calling build_app.
+
+BUILD AN APP — Use build_app when someone describes WHAT they want built or changed. For new apps: collect app_name and description. For updates to existing apps: include update: true and the existing app_name from the list. This tool AUTOMATICALLY builds and publishes a live web app. IMPORTANT: If someone asks to "build a website" or "make me an app", use build_app — NOT hire_inclawbator. If someone says "work on X" without describing changes, show them the app URL first and ASK what they want changed before calling build_app.
 
 HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
@@ -1633,8 +1639,8 @@ export default async function handler(req, res) {
   // Helper: log to @inclawbator feed then return response (skip X — logged from x-responder with tweet link)
   // Must await logToFeed before res.json() — Vercel kills the function immediately after response
   const sendReply = async (body) => {
-    // Auto-extract app_url from build_app replies if not already set
-    if (body.function_called === 'build_app' && !body.app_url && body.reply) {
+    // Auto-extract app_url from ANY reply that mentions an app URL — triggers inline preview
+    if (!body.app_url && body.reply) {
       const urlMatch = body.reply.match(/inclawbate\.app\/s\/[\w-]+/);
       if (urlMatch) body.app_url = 'https://' + urlMatch[0];
     }
