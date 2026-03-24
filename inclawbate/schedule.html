@@ -73,6 +73,8 @@
         .rb-tab.active { background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);color:#34d399; }
         .rb-entry { display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:10px;transition:all 0.15s; }
         .rb-entry:hover { border-color:var(--border-bright); }
+        .rb-entry-logo { width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg-elevated);border:1px solid var(--border-subtle); }
+        .rb-entry-logo--empty { display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:var(--text-dim); }
         .rb-entry-info { flex:1;min-width:0; }
         .rb-entry-name { font-weight:700;font-size:0.88rem;color:var(--text-primary);display:flex;align-items:center;gap:6px; }
         .rb-entry-handle { font-family:var(--font-mono);font-size:0.7rem;color:#34d399; }
@@ -1632,7 +1634,13 @@
             var featured = item.featured ? '<span class="rb-featured" title="Featured">★</span>' : '';
             var approved = item.approved ? '' : '<span style="font-size:0.6rem;padding:2px 6px;border-radius:4px;background:rgba(250,204,21,0.1);color:#facc15;border:1px solid rgba(250,204,21,0.15)">pending</span>';
 
+            var logoSrc = item.logo_url || item.avatar_url || '';
+            var logoHtml = logoSrc
+                ? '<img src="' + _esc(logoSrc) + '" class="rb-entry-logo" onerror="this.style.display=\'none\'">'
+                : '<div class="rb-entry-logo rb-entry-logo--empty">' + (item.name || '?').charAt(0).toUpperCase() + '</div>';
+
             return '<div class="rb-entry">' +
+                logoHtml +
                 '<div class="rb-entry-info">' +
                     '<div class="rb-entry-name">' + featured + _esc(item.name) + ' ' + approved + '</div>' +
                     (handle ? '<div class="rb-entry-handle">' + _esc(handle) + '</div>' : '') +
