@@ -1706,33 +1706,34 @@ export default async function handler(req, res) {
   const sid = session_id || 'anon_' + crypto.randomUUID();
 
   // ── Server-side intercept: "work on [app]" / "edit [app]" / "I want to work on [app]" ──
-  // Handles this directly without LLM to avoid it calling list_my_apps again
   const workOnMatch = sanitizedMessage.match(/(?:(?:i\s+want\s+to\s+|i\s+wanna\s+|let'?s\s+|can\s+(?:you|we)\s+|please\s+)?(?:work on|edit|update|open|load|modify|change|fix|improve))\s+(.+)/i);
   if (workOnMatch && sanitizedWallet) {
     const appQuery = workOnMatch[1].replace(/['"]/g, '').trim().toLowerCase();
     if (appQuery.length > 1 && appQuery.length < 100) {
       try {
         const appsRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(sanitizedWallet) + '&limit=50');
-        const appsData = await appsRes.json();
-        const apps = appsData.apps || [];
-        const match = apps.find(a => {
-          const name = (a.name || '').toLowerCase();
-          const slug = (a.slug || '').toLowerCase();
-          return name === appQuery || slug === appQuery ||
-            name.includes(appQuery) || appQuery.includes(name) ||
-            slug.includes(appQuery.replace(/\s+/g, '-')) || appQuery.replace(/\s+/g, '-').includes(slug);
-        });
-        if (match) {
-          const appUrl = 'https://inclawbate.app/s/' + match.slug;
-          const reply = "Here's **" + (match.name || match.slug) + "**:\n\n" + appUrl + "\n\nWhat changes do you want to make?";
-          return res.status(200).json({
-            reply,
-            app_url: appUrl,
-            session_id: sid,
-            suggestions: ['Change the design', 'Add new features', 'Update the content', 'Start something new']
+        if (appsRes.ok) {
+          const appsData = await appsRes.json();
+          const apps = appsData.apps || [];
+          const match = apps.find(a => {
+            const name = (a.name || '').toLowerCase();
+            const slug = (a.slug || '').toLowerCase();
+            return name === appQuery || slug === appQuery ||
+              name.includes(appQuery) || appQuery.includes(name) ||
+              slug.includes(appQuery.replace(/\s+/g, '-')) || appQuery.replace(/\s+/g, '-').includes(slug);
           });
+          if (match) {
+            const appUrl = 'https://inclawbate.app/s/' + match.slug;
+            const reply = "Here's **" + (match.name || match.slug) + "**:\n\n" + appUrl + "\n\nWhat changes do you want to make?";
+            return res.status(200).json({
+              reply,
+              app_url: appUrl,
+              session_id: sid,
+              suggestions: ['Change the design', 'Add new features', 'Update the content', 'Start something new']
+            });
+          }
         }
-      } catch (_) { /* lookup failed, fall through to LLM */ }
+      } catch (e) { console.error('workOn intercept error:', e.message); /* fall through to LLM */ }
     }
   }
 
@@ -1988,6 +1989,27 @@ export default async function handler(req, res) {
 
     let choice = data.choices?.[0];
 
+    // Empty choices = treat as LLM failure, fall back to keyword matching
+    if (!choice || !choice.message) {
+      console.error('LLM returned empty choices:', JSON.stringify(data).slice(0, 200));
+      const fallback = matchIntent(message);
+      if (fallback) {
+        if (fallback.execute && fallback.args) {
+          const result = await executeTool(fallback.tool, fallback.args);
+          const directResult = generateDirectReply(fallback.tool, result, fallback.args);
+          const reply = typeof directResult === 'object' && directResult?.reply ? directResult.reply : (directResult || 'Here are the results. Ask me anything else!');
+          const suggestions = typeof directResult === 'object' ? directResult?.suggestions : undefined;
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, function_called: fallback.tool, session_id: sid, ...(suggestions && { suggestions }) });
+        }
+        history.push({ role: 'assistant', content: fallback.reply });
+        return sendReply({ reply: fallback.reply, session_id: sid });
+      }
+      const defaultReply = "I'm the Inclawbator! I can launch tokens, deploy staking pools, build apps, check analytics, manage DeFi positions, and more. What would you like to do?";
+      history.push({ role: 'assistant', content: defaultReply });
+      return sendReply({ reply: defaultReply, session_id: sid, suggestions: ['Build an app', 'Launch a token', 'Check CLAWS price', 'Explore DeFi options'] });
+    }
+
     // Handle tool calls
     if (choice?.finish_reason === 'tool_calls' || choice?.message?.tool_calls) {
       const toolCalls = choice.message.tool_calls || [];
@@ -2053,10 +2075,16 @@ export default async function handler(req, res) {
     // Attacker could craft LLM output containing JSON to execute arbitrary tools with unvalidated args.
     // Tools must only be called via the LLM's proper tool_calls mechanism.
 
-    if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
+    if (!reply) {
+      // LLM returned empty text (possibly after a tool call with null content)
+      // Give a useful response instead of a dead-end
+      reply = functionCalled
+        ? 'Done! Is there anything else you\'d like me to help with?'
+        : 'I\'m here to help! I can build apps, launch tokens, manage DeFi, and answer questions about the ecosystem. What would you like to do?';
+    }
 
     history.push({ role: 'assistant', content: reply });
-    return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
+    return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(!functionCalled && !reply.includes('Done!') && { suggestions: ['Build an app', 'Launch a token', 'Explore DeFi', 'Learn about Inclawbate'] }) });
   } catch (e) {
     console.error('Agent chat error:', e);
     const errHint = e?.message?.includes('fetch') ? 'network' : e?.message?.includes('JSON') ? 'parse' : e?.message?.includes('Cannot read') ? 'null_ref' : e?.message?.slice(0, 50) || 'unknown';
