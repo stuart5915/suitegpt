@@ -1860,11 +1860,14 @@
             if (data.reply) {
                 // Check for transaction data (DeFi actions)
                 var txData = data.tx_data || null;
-                addMessage(data.reply, false, data.function_called, data.app_url, txData, data.suggestions);
-                chatHistory.push({ role: 'assistant', content: data.reply });
-                if (data.app_url && _lastAppPreview && _lastAppPreview.src) {
-                    _lastAppPreview.src = data.app_url + '?t=' + Date.now();
+                // If app_url returned, load it in the right panel instead of inline
+                if (data.app_url) {
+                    loadAppInBuildPanel(data.app_url);
+                    addMessage(data.reply, false, data.function_called, null, txData, data.suggestions);
+                } else {
+                    addMessage(data.reply, false, data.function_called, null, txData, data.suggestions);
                 }
+                chatHistory.push({ role: 'assistant', content: data.reply });
                 // Store pending tx for user to confirm
                 if (txData && (txData.tx || txData.txs)) {
                     pendingTxData = txData;
@@ -1918,6 +1921,35 @@
             }
         } catch (_) {}
     }
+
+    // Load an app URL into the Build right panel
+    function loadAppInBuildPanel(url) {
+        // Switch to Build tab
+        switchTab('build');
+        // Replace the build dashboard iframe with the app preview
+        var buildPanel = document.querySelector('[data-context="build"]');
+        if (buildPanel) {
+            buildPanel.innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:hsla(240,10%,6%,0.95);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
+                    '<span style="font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:#e87955;text-transform:uppercase;letter-spacing:0.05em;">Live Preview</span>' +
+                    '<div style="display:flex;gap:4px;">' +
+                        '<button onclick="loadBuildDashboard()" style="font-size:0.65rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;">&#128218; Dashboard</button>' +
+                        '<a href="' + url + '" target="_blank" style="font-size:0.65rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;text-decoration:none;">&#x2197; New Tab</a>' +
+                    '</div>' +
+                '</div>' +
+                '<iframe src="' + url + '" style="flex:1;width:100%;border:none;background:#0a0a0f;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
+        }
+    }
+
+    // Restore the build dashboard
+    window.loadBuildDashboard = function() {
+        var buildPanel = document.querySelector('[data-context="build"]');
+        if (buildPanel) {
+            var base = '/inclawbate/build-dashboard.html';
+            var src = connectedWallet ? base + '?wallet=' + connectedWallet : base;
+            buildPanel.innerHTML = '<iframe src="' + src + '" class="inclaw-context-iframe" id="buildDashFrame" title="Build Dashboard"></iframe>';
+        }
+    };
 
     // Expose sendMessage globally for iframes (build dashboard, etc.)
     window.sendMessage = sendMessage;
