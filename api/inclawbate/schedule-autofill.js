@@ -457,6 +457,35 @@ function randomNarrativeScene(pillarName) {
     return scenes[Math.floor(Math.random() * scenes.length)];
 }
 
+// Extract core concept from tweet text — strips @mentions, URLs, slang, formatting
+// Returns a clean 1-2 sentence concept + emotion for image prompt generation
+async function extractTweetConcept(tweetText) {
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                max_tokens: 100,
+                temperature: 0.3,
+                messages: [{ role: 'user', content: `Extract the core visual concept from this tweet. Ignore @mentions, URLs, $token symbols, hashtags, slang ("gm", "ser", "fren"), and formatting. Focus on: What is the SUBJECT? What EMOTION or ENERGY should a matching image convey?
+
+Tweet: "${tweetText}"
+
+Reply in exactly this format (1-2 sentences max):
+SUBJECT: [the core topic in plain english]
+MOOD: [the emotion/energy in 2-3 words]` }]
+            })
+        });
+        const data = await resp.json();
+        const raw = (data.choices?.[0]?.message?.content || '').trim();
+        return raw || null;
+    } catch(e) {
+        console.error('extractTweetConcept error:', e.message);
+        return null;
+    }
+}
+
 const ALLOWED_ORIGINS = [
     'https://inclawbate.app', 'https://www.inclawbate.app',
     'https://inclawbate.app', 'https://www.inclawbate.app',
@@ -514,18 +543,21 @@ export default async function handler(req, res) {
             const scenes = cfg.narrativeScenes[pillarName] || [];
             const narrativeScene = scenes.length ? scenes[Math.floor(Math.random() * scenes.length)] : '';
 
+            // Step 1: Extract clean concept from raw tweet
+            const concept = await extractTweetConcept(tweet_text.trim());
+
             const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
-This image accompanies this tweet from @${acct}:
-"${tweet_text.trim()}"
+${concept ? 'CORE CONCEPT (extracted from the tweet — this is what the image should be ABOUT):\n' + concept + '\n' : ''}
+Original tweet for reference: "${tweet_text.trim()}"
 
 ${cfg.imageContext}
 
-${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet above): ' + sceneHint : ''}
+${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the concept above): ' + sceneHint : ''}
 
 ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements — locations, characters, props, mood — to make the image vivid and unique):\n' + narrativeScene : ''}
 
-IMPORTANT: The image must visually represent what THIS tweet says — not just a generic brand image. Follow the style guide above precisely.
+IMPORTANT: The image must visually represent the CORE CONCEPT — not the raw tweet text. Follow the style guide above precisely.
 
 Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY the prompt.`;
 
@@ -755,7 +787,7 @@ ${cfg.imageContext}
 
 Output format:
 TWEET: [the tweet]
-IMAGE: [2-3 sentences following the style guide above. Be specific and visual. 1:1]`;
+IMAGE: [First identify the core subject and mood of your tweet in your head. Then write 2-3 sentences describing a visual scene that captures that subject and mood using the style guide above. Never depict text, URLs, or token symbols literally. 1:1]`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -816,25 +848,24 @@ IMAGE: [2-3 sentences following the style guide above. Be specific and visual. 1
             const pillarName = opts.pillar || '';
             const sceneHint = cfg.sceneHints[pillarName] || '';
             const narrativeScene = (cfg.narrativeScenes[pillarName] || [])[Math.floor(Math.random() * (cfg.narrativeScenes[pillarName] || ['']).length)] || '';
+
+            // Step 1: Extract clean concept from raw tweet
+            const concept = await extractTweetConcept(tweetText);
+
             const imgPrompt = `Generate an image prompt for an AI image generator (Midjourney, DALL-E, Flux).
 
-This image MUST visually illustrate this specific tweet from @${slotAccount}:
-"${tweetText}"
+${concept ? 'CORE CONCEPT (extracted from the tweet — this is what the image should be ABOUT):\n' + concept + '\n' : ''}
+Original tweet for reference: "${tweetText}"
 
 ${cfg.imageContext}
 
-${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the tweet): ' + sceneHint : ''}
+${sceneHint ? 'BASE SCENE for ' + pillarName + ' (adapt to the concept above): ' + sceneHint : ''}
 
 ${narrativeScene ? 'NARRATIVE INSPIRATION (borrow elements):\n' + narrativeScene : ''}
 
-STEP BY STEP:
-1. Read the tweet above. What is the KEY SUBJECT? (staking? building? a specific app? community? treasury? philanthropy?)
-2. What visual scene matches the style guide AND illustrates this subject?
-3. What SPECIFIC VISUAL DETAILS from the tweet should appear in the scene?
+Create an image that captures the CORE CONCEPT and MOOD above using the style guide. The image should feel like it belongs with the tweet without literally depicting text, URLs, or token symbols.
 
-Write ONE image prompt (2-3 sentences) that follows the style guide above precisely. The prompt must SPECIFICALLY relate to what the tweet says.
-
-Output ONLY the prompt, nothing else.`;
+Write ONE image prompt (2-3 sentences) that follows the style guide above precisely. Output ONLY the prompt, nothing else.`;
 
             try {
                 const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -1304,7 +1335,7 @@ ${emptyHours.map((h, i) => `${i + 1}. Angle: "${angles[i % angles.length]}" — 
 
 Format each entry as:
 TWEET: [the tweet text]
-IMAGE: [2-3 sentences following the style guide above. Be specific and visual. 1:1]
+IMAGE: [First identify the core SUBJECT and MOOD of your tweet — ignore @mentions, URLs, $symbols. Then write 2-3 sentences describing a visual scene that captures that subject and mood using the style guide above. Never depict text, URLs, or token symbols literally. 1:1]
 
 Output ONLY the numbered entries. Nothing else.`;
 
