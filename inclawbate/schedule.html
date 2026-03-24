@@ -3533,61 +3533,133 @@
 
     // ── PGT Template Renderers ──
 
-    var PGT_BG = '#0b0f14';
+    var PGT_BG = '#080c12';
     var PGT_GREEN = '#34d399';
     var PGT_BLUE = '#60a5fa';
     var PGT_GOLD = '#fbbf24';
+    var PGT_CYAN = '#22d3ee';
+    var PGT_PURPLE = '#a78bfa';
 
     function _pgtDrawBg(ctx, size) {
-        ctx.fillStyle = PGT_BG;
+        // Rich dark gradient base
+        var bg = ctx.createRadialGradient(size * 0.5, size * 0.35, 0, size * 0.5, size * 0.35, size * 0.9);
+        bg.addColorStop(0, '#0f1923');
+        bg.addColorStop(0.5, '#0a0f16');
+        bg.addColorStop(1, '#060a10');
+        ctx.fillStyle = bg;
         ctx.fillRect(0, 0, size, size);
-        // Subtle grid
-        ctx.strokeStyle = 'rgba(52,211,153,0.06)';
-        ctx.lineWidth = 1;
-        var step = size / 20;
-        for (var i = step; i < size; i += step) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, size); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(size, i); ctx.stroke();
+
+        // Ambient glow orbs
+        var orbs = [
+            { x: 0.15, y: 0.2, r: 0.35, color: 'rgba(52,211,153,0.04)' },
+            { x: 0.85, y: 0.7, r: 0.3, color: 'rgba(96,165,250,0.03)' },
+            { x: 0.5, y: 0.1, r: 0.25, color: 'rgba(34,211,238,0.025)' },
+        ];
+        orbs.forEach(function(o) {
+            var g = ctx.createRadialGradient(size * o.x, size * o.y, 0, size * o.x, size * o.y, size * o.r);
+            g.addColorStop(0, o.color);
+            g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, size, size);
+        });
+
+        // Fine dot grid
+        ctx.fillStyle = 'rgba(52,211,153,0.08)';
+        var step = size / 28;
+        for (var gy = step; gy < size; gy += step) {
+            for (var gx = step; gx < size; gx += step) {
+                ctx.beginPath(); ctx.arc(gx, gy, 1, 0, Math.PI * 2); ctx.fill();
+            }
         }
+
+        // Top edge accent line
+        var topLine = ctx.createLinearGradient(0, 0, size, 0);
+        topLine.addColorStop(0, 'transparent');
+        topLine.addColorStop(0.3, 'rgba(52,211,153,0.4)');
+        topLine.addColorStop(0.5, 'rgba(34,211,238,0.5)');
+        topLine.addColorStop(0.7, 'rgba(96,165,250,0.4)');
+        topLine.addColorStop(1, 'transparent');
+        ctx.fillStyle = topLine;
+        ctx.fillRect(0, 0, size, 2);
     }
 
     function _pgtDrawHeader(ctx, size, title) {
-        var y = size * 0.06;
-        ctx.font = '800 ' + (size * 0.038) + 'px "Nunito", sans-serif';
+        var y = size * 0.055;
+        // Subtle accent glow behind title
+        var hg = ctx.createRadialGradient(size / 2, y + size * 0.02, 0, size / 2, y + size * 0.02, size * 0.2);
+        hg.addColorStop(0, 'rgba(52,211,153,0.06)');
+        hg.addColorStop(1, 'transparent');
+        ctx.fillStyle = hg;
+        ctx.fillRect(0, 0, size, size * 0.12);
+
+        ctx.font = '800 ' + (size * 0.032) + 'px "Nunito", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
+        ctx.letterSpacing = (size * 0.004) + 'px';
         ctx.fillText(title, size / 2, y);
-        // Green underline
+        ctx.letterSpacing = '0px';
+
+        // Gradient accent bar
         var tw = ctx.measureText(title).width;
-        ctx.fillStyle = PGT_GREEN;
-        ctx.fillRect(size / 2 - tw / 2, y + size * 0.048, tw, 3);
+        var bar = ctx.createLinearGradient(size / 2 - tw / 2, 0, size / 2 + tw / 2, 0);
+        bar.addColorStop(0, 'transparent');
+        bar.addColorStop(0.2, PGT_GREEN);
+        bar.addColorStop(0.5, PGT_CYAN);
+        bar.addColorStop(0.8, PGT_GREEN);
+        bar.addColorStop(1, 'transparent');
+        ctx.fillStyle = bar;
+        ctx.fillRect(size / 2 - tw * 0.6, y + size * 0.042, tw * 1.2, 2);
     }
 
     function _pgtDrawFooter(ctx, size) {
         var footY = size * 0.93;
+        // Subtle separator
+        var sep = ctx.createLinearGradient(size * 0.1, 0, size * 0.9, 0);
+        sep.addColorStop(0, 'transparent');
+        sep.addColorStop(0.5, 'rgba(52,211,153,0.15)');
+        sep.addColorStop(1, 'transparent');
+        ctx.fillStyle = sep;
+        ctx.fillRect(size * 0.1, footY - size * 0.015, size * 0.8, 1);
+
         // PGT logo
         if (_pgtLogo.complete && _pgtLogo.naturalWidth > 0) {
-            var lh = size * 0.04;
+            var lh = size * 0.035;
             var lw = lh * (_pgtLogo.naturalWidth / _pgtLogo.naturalHeight);
+            ctx.globalAlpha = 0.7;
             ctx.drawImage(_pgtLogo, size * 0.04, footY, lw, lh);
+            ctx.globalAlpha = 1;
         }
-        // Date
+        // Date + handle
         var today = new Date();
         var dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(dateStr, size / 2, footY + size * 0.02);
-        // Handle
+        ctx.font = '500 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(dateStr, size / 2, footY + size * 0.018);
+        ctx.fillStyle = 'rgba(52,211,153,0.5)';
         ctx.textAlign = 'right';
-        ctx.fillText('@publicgoodstech', size * 0.96, footY + size * 0.02);
+        ctx.fillText('@publicgoodstech', size * 0.96, footY + size * 0.018);
         ctx.textAlign = 'left';
     }
 
     function _pgtDrawLogoCircle(ctx, img, x, y, r) {
+        // Outer glow ring
         ctx.save();
+        ctx.shadowColor = PGT_GREEN;
+        ctx.shadowBlur = r * 0.4;
+        ctx.strokeStyle = 'rgba(52,211,153,0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x + r, y + r, r + 3, 0, Math.PI * 2); ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // Dark ring background
+        ctx.save();
+        ctx.fillStyle = '#0a0f16';
+        ctx.beginPath(); ctx.arc(x + r, y + r, r + 2, 0, Math.PI * 2); ctx.fill();
+
+        // Clip and draw image
         ctx.beginPath();
         ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
         ctx.closePath();
@@ -3595,7 +3667,7 @@
         if (img) {
             ctx.drawImage(img, x, y, r * 2, r * 2);
         } else {
-            ctx.fillStyle = 'rgba(52,211,153,0.15)';
+            ctx.fillStyle = 'rgba(52,211,153,0.12)';
             ctx.fillRect(x, y, r * 2, r * 2);
             ctx.fillStyle = PGT_GREEN;
             ctx.font = '700 ' + r + 'px "Nunito", sans-serif';
@@ -3606,6 +3678,17 @@
     }
 
     function _pgtDrawLogoRounded(ctx, img, x, y, w, h, radius) {
+        // Subtle shadow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = '#0a0f16';
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.restore();
+
         ctx.save();
         ctx.beginPath();
         ctx.roundRect(x, y, w, h, radius);
@@ -3614,14 +3697,48 @@
         if (img) {
             ctx.drawImage(img, x, y, w, h);
         } else {
-            ctx.fillStyle = 'rgba(52,211,153,0.1)';
+            ctx.fillStyle = 'rgba(52,211,153,0.08)';
             ctx.fillRect(x, y, w, h);
         }
         ctx.restore();
         // Border
-        ctx.strokeStyle = 'rgba(52,211,153,0.2)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(52,211,153,0.15)';
+        ctx.lineWidth = 1;
         ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.stroke();
+    }
+
+    // Glass-morphism card background
+    function _pgtDrawCard(ctx, x, y, w, h, radius, accent) {
+        accent = accent || PGT_GREEN;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, radius || 12); ctx.fill();
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        ctx.restore();
+        // Glass border
+        var borderGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+        borderGrad.addColorStop(0, 'rgba(255,255,255,0.08)');
+        borderGrad.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+        borderGrad.addColorStop(1, 'rgba(255,255,255,0.06)');
+        ctx.strokeStyle = borderGrad;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, radius || 12); ctx.stroke();
+    }
+
+    // Word-wrap helper
+    function _pgtWrapText(ctx, text, x, y, maxW, lineH) {
+        var words = text.split(' '); var line = ''; var lines = 0;
+        words.forEach(function(w) {
+            var test = line + w + ' ';
+            if (ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line.trim(), x, y); y += lineH; line = w + ' '; lines++;
+            } else { line = test; }
+        });
+        if (line.trim()) { ctx.fillText(line.trim(), x, y); lines++; }
+        return lines;
     }
 
     async function _renderPgtTemplate(tplId, items, slotProject) {
@@ -3645,59 +3762,101 @@
                 cats[c].push(a);
             });
             var catNames = Object.keys(cats).sort(function(a, b) { return cats[b].length - cats[a].length; });
-            if (catNames.length > 8) catNames = catNames.slice(0, 8);
+            if (catNames.length > 6) catNames = catNames.slice(0, 6);
+
+            // Color palette for categories
+            var catColors = [PGT_GREEN, PGT_CYAN, PGT_BLUE, PGT_PURPLE, PGT_GOLD, '#f472b6'];
 
             // Load logos
             var allItems = [];
-            catNames.forEach(function(c) { allItems = allItems.concat(cats[c].slice(0, 5)); });
+            catNames.forEach(function(c) { allItems = allItems.concat(cats[c].slice(0, 4)); });
             var logos = await _loadLogos(allItems);
             var logoMap = {};
             var idx = 0;
             catNames.forEach(function(c) {
-                cats[c].slice(0, 5).forEach(function(a) { logoMap[a.id] = logos[idx++]; });
+                cats[c].slice(0, 4).forEach(function(a) { logoMap[a.id] = logos[idx++]; });
             });
 
-            // Layout: 2-column grid of category boxes
-            var startY = size * 0.13;
-            var boxW = size * 0.44;
-            var gap = size * 0.04;
-            var boxH = size * 0.09;
+            // Draw connecting network lines from center
+            var centerX = size * 0.5, centerY = size * 0.52;
+            ctx.strokeStyle = 'rgba(52,211,153,0.06)';
+            ctx.lineWidth = 1;
+            catNames.forEach(function(_, ci) {
+                var col = ci % 2; var row = Math.floor(ci / 2);
+                var bx = col === 0 ? size * 0.07 : size * 0.52;
+                var by = size * 0.15 + row * size * 0.27;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(bx + size * 0.22, by + size * 0.1);
+                ctx.stroke();
+            });
+
+            // Central orb
+            var orbG = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size * 0.04);
+            orbG.addColorStop(0, 'rgba(52,211,153,0.15)');
+            orbG.addColorStop(1, 'transparent');
+            ctx.fillStyle = orbG;
+            ctx.fillRect(centerX - size * 0.05, centerY - size * 0.05, size * 0.1, size * 0.1);
+
+            // Layout: 2-column, 3-row grid
             var cols = 2;
-            var leftX = size * 0.04;
+            var cardW = size * 0.42;
+            var cardH = size * 0.22;
+            var gapX = size * 0.04;
+            var gapY = size * 0.05;
+            var startY = size * 0.13;
+            var leftX = size * 0.06;
             var rightX = size * 0.52;
 
             catNames.forEach(function(catName, ci) {
                 var col = ci % cols;
                 var row = Math.floor(ci / cols);
                 var bx = col === 0 ? leftX : rightX;
-                var by = startY + row * (boxH + size * 0.008 + gap);
-                var catItems = cats[catName].slice(0, 5);
+                var by = startY + row * (cardH + gapY);
+                var catItems = cats[catName].slice(0, 4);
+                var accent = catColors[ci % catColors.length];
 
-                // Category box background
-                ctx.fillStyle = 'rgba(52,211,153,0.04)';
-                ctx.strokeStyle = 'rgba(52,211,153,0.15)';
-                ctx.lineWidth = 1;
-                var catBoxH = boxH + size * 0.06;
-                ctx.beginPath(); ctx.roundRect(bx, by, boxW, catBoxH, 8); ctx.fill(); ctx.stroke();
+                // Glass card
+                _pgtDrawCard(ctx, bx, by, cardW, cardH, 14, accent);
 
-                // Category label
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(bx + size * 0.04, by - size * 0.008, ctx.measureText(catName).width + size * 0.03, size * 0.03);
-                ctx.font = '700 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-                var labelW = ctx.measureText(catName).width + size * 0.02;
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(bx + size * 0.03, by - size * 0.006, labelW, size * 0.026);
-                ctx.fillStyle = PGT_BG;
-                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-                ctx.fillText(catName, bx + size * 0.04, by + size * 0.007);
+                // Accent line at top of card
+                var accentLine = ctx.createLinearGradient(bx, 0, bx + cardW, 0);
+                accentLine.addColorStop(0, 'transparent');
+                accentLine.addColorStop(0.2, accent);
+                accentLine.addColorStop(0.8, accent);
+                accentLine.addColorStop(1, 'transparent');
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = accentLine;
+                ctx.fillRect(bx + size * 0.02, by, cardW - size * 0.04, 2);
+                ctx.globalAlpha = 1;
 
-                // Logo row
-                var logoSize = size * 0.055;
+                // Category label with count
+                ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = accent;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                ctx.fillText(catName, bx + size * 0.02, by + size * 0.018);
+
+                ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.textAlign = 'right';
+                ctx.fillText(cats[catName].length + ' agents', bx + cardW - size * 0.02, by + size * 0.022);
+                ctx.textAlign = 'left';
+
+                // Logos row with names beneath
+                var logoSize = size * 0.065;
                 var logoGap = size * 0.015;
-                var lx = bx + size * 0.02;
-                var ly = by + size * 0.035;
+                var totalW = catItems.length * logoSize + (catItems.length - 1) * logoGap;
+                var lx = bx + (cardW - totalW) / 2;
+                var ly = by + size * 0.06;
                 catItems.forEach(function(item) {
-                    _pgtDrawLogoRounded(ctx, logoMap[item.id], lx, ly, logoSize, logoSize, 8);
+                    _pgtDrawLogoCircle(ctx, logoMap[item.id], lx, ly, logoSize / 2);
+                    // Name below logo
+                    ctx.font = '500 ' + (size * 0.011) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                    var n = item.name.length > 10 ? item.name.substring(0, 9) + '..' : item.name;
+                    ctx.fillText(n, lx + logoSize / 2, ly + logoSize + size * 0.008);
+                    ctx.textAlign = 'left';
                     lx += logoSize + logoGap;
                 });
             });
@@ -3708,71 +3867,93 @@
 
             var agentLogos = await _loadLogos([agent]);
             _pgtDrawBg(ctx, size);
+
+            // Large cinematic glow behind the logo area
+            var heroG = ctx.createRadialGradient(size / 2, size * 0.3, 0, size / 2, size * 0.3, size * 0.3);
+            heroG.addColorStop(0, 'rgba(52,211,153,0.08)');
+            heroG.addColorStop(0.6, 'rgba(34,211,238,0.03)');
+            heroG.addColorStop(1, 'transparent');
+            ctx.fillStyle = heroG;
+            ctx.fillRect(0, 0, size, size * 0.6);
+
             _pgtDrawHeader(ctx, size, 'AGENT SPOTLIGHT');
             _pgtDrawFooter(ctx, size);
 
-            // Center logo large
-            var logoR = size * 0.12;
-            var cx = size / 2 - logoR;
-            var cy = size * 0.22;
-            _pgtDrawLogoCircle(ctx, agentLogos[0], cx, cy, logoR);
-
-            // Glow ring
-            ctx.strokeStyle = PGT_GREEN;
-            ctx.lineWidth = 3;
-            ctx.shadowColor = PGT_GREEN;
-            ctx.shadowBlur = 20;
-            ctx.beginPath(); ctx.arc(size / 2, cy + logoR, logoR + 6, 0, Math.PI * 2); ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            // Name
-            ctx.font = '800 ' + (size * 0.045) + 'px "Nunito", sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.fillText(agent.name, size / 2, cy + logoR * 2 + size * 0.06);
-
-            // Category + chain badges
-            var badgeY = cy + logoR * 2 + size * 0.1;
-            [agent.category, agent.chain].filter(Boolean).forEach(function(badge, bi) {
-                var bw = ctx.measureText(badge).width + size * 0.03;
-                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-                bw = ctx.measureText(badge).width + size * 0.03;
-                var bx = size / 2 + (bi === 0 ? -bw - 4 : 4);
-                ctx.fillStyle = bi === 0 ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)';
-                ctx.beginPath(); ctx.roundRect(bx, badgeY, bw, size * 0.032, 20); ctx.fill();
-                ctx.fillStyle = bi === 0 ? PGT_GREEN : PGT_BLUE;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(badge, bx + bw / 2, badgeY + size * 0.016);
-            });
-
-            // Description
-            if (agent.description) {
-                var desc = agent.description.length > 160 ? agent.description.substring(0, 157) + '...' : agent.description;
-                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.textAlign = 'center';
-                // Word wrap
-                var words = desc.split(' ');
-                var line = '';
-                var descY = badgeY + size * 0.07;
-                var maxW = size * 0.7;
-                words.forEach(function(word) {
-                    var test = line + word + ' ';
-                    if (ctx.measureText(test).width > maxW && line) {
-                        ctx.fillText(line.trim(), size / 2, descY);
-                        descY += size * 0.032;
-                        line = word + ' ';
-                    } else { line = test; }
-                });
-                if (line.trim()) ctx.fillText(line.trim(), size / 2, descY);
+            // Decorative orbiting dots around logo
+            var logoCX = size / 2, logoCY = size * 0.3;
+            for (var di = 0; di < 12; di++) {
+                var angle = (di / 12) * Math.PI * 2;
+                var orbitR = size * 0.17;
+                var dx = logoCX + Math.cos(angle) * orbitR;
+                var dy = logoCY + Math.sin(angle) * orbitR;
+                ctx.fillStyle = 'rgba(52,211,153,' + (0.08 + (di % 3) * 0.04) + ')';
+                ctx.beginPath(); ctx.arc(dx, dy, 2 + (di % 3), 0, Math.PI * 2); ctx.fill();
             }
 
-            // X handle
+            // Center logo with multiple glow rings
+            var logoR = size * 0.1;
+            _pgtDrawLogoCircle(ctx, agentLogos[0], logoCX - logoR, logoCY - logoR, logoR);
+
+            // Outer pulse ring
+            ctx.save();
+            ctx.strokeStyle = PGT_GREEN; ctx.lineWidth = 2; ctx.globalAlpha = 0.4;
+            ctx.shadowColor = PGT_GREEN; ctx.shadowBlur = 25;
+            ctx.beginPath(); ctx.arc(logoCX, logoCY, logoR + 12, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 0.15; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(logoCX, logoCY, logoR + 24, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+
+            // Name — large and bold
+            ctx.font = '800 ' + (size * 0.05) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(agent.name, size / 2, logoCY + logoR + size * 0.04);
+
+            // X handle right under name
+            var handleY = logoCY + logoR + size * 0.1;
             if (agent.x_handle) {
-                ctx.font = '600 ' + (size * 0.02) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = PGT_GREEN;
-                ctx.textAlign = 'center';
-                ctx.fillText('@' + agent.x_handle, size / 2, size * 0.85);
+                ctx.font = '600 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_CYAN;
+                ctx.fillText('@' + agent.x_handle, size / 2, handleY);
+                handleY += size * 0.04;
+            }
+
+            // Badges row
+            var badges = [agent.category, agent.chain, agent.status].filter(Boolean);
+            var badgeColors = [PGT_GREEN, PGT_BLUE, PGT_PURPLE];
+            if (badges.length) {
+                ctx.font = '600 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                var totalBW = 0;
+                badges.forEach(function(b) { totalBW += ctx.measureText(b).width + size * 0.035; });
+                var bx = size / 2 - totalBW / 2;
+                var badgeY = handleY + size * 0.01;
+                badges.forEach(function(badge, bi) {
+                    var bw = ctx.measureText(badge).width + size * 0.03;
+                    var bc = badgeColors[bi % badgeColors.length];
+                    // Badge bg (hex + alpha)
+                    ctx.fillStyle = bc + '1f';
+                    ctx.beginPath(); ctx.roundRect(bx, badgeY, bw, size * 0.032, 20); ctx.fill();
+                    ctx.strokeStyle = bc + '4d';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(bx, badgeY, bw, size * 0.032, 20); ctx.stroke();
+                    ctx.fillStyle = bc;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(badge, bx + bw / 2, badgeY + size * 0.016);
+                    bx += bw + size * 0.01;
+                });
+                ctx.textAlign = 'left';
+            }
+
+            // Description in a glass card
+            if (agent.description) {
+                var desc = agent.description.length > 200 ? agent.description.substring(0, 197) + '...' : agent.description;
+                var cardX = size * 0.1, cardY = size * 0.63, cardW = size * 0.8, cardH = size * 0.2;
+                _pgtDrawCard(ctx, cardX, cardY, cardW, cardH, 16, PGT_GREEN);
+
+                ctx.font = '400 ' + (size * 0.021) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                _pgtWrapText(ctx, desc, size / 2, cardY + size * 0.025, size * 0.7, size * 0.032);
             }
 
         } else if (tplId === 'top_agents') {
@@ -3781,47 +3962,81 @@
             _pgtDrawFooter(ctx, size);
 
             var sorted = items.slice().sort(function(a, b) { return (b.mentions_count || 0) - (a.mentions_count || 0); });
-            var top = sorted.slice(0, 8);
+            var top = sorted.slice(0, 7);
             var topLogos = await _loadLogos(top);
+            var maxMentions = Math.max.apply(null, top.map(function(a) { return a.mentions_count || 1; }));
 
-            var startY = size * 0.14;
-            var rowH = size * 0.09;
+            // Medal colors for top 3
+            var medalColors = ['#fbbf24', '#c0c0c0', '#cd7f32'];
+
+            var startY = size * 0.135;
+            var rowH = size * 0.105;
             top.forEach(function(agent, i) {
                 var y = startY + i * rowH;
-                // Rank number
-                ctx.font = '800 ' + (size * 0.032) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = i < 3 ? PGT_GOLD : 'rgba(255,255,255,0.4)';
-                ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-                ctx.fillText('#' + (i + 1), size * 0.08, y + rowH / 2);
+
+                // Row card background — top 3 get subtle accent
+                var rowCardX = size * 0.05, rowCardW = size * 0.9;
+                if (i < 3) {
+                    _pgtDrawCard(ctx, rowCardX, y + size * 0.005, rowCardW, rowH - size * 0.01, 12, medalColors[i]);
+                } else {
+                    _pgtDrawCard(ctx, rowCardX, y + size * 0.005, rowCardW, rowH - size * 0.01, 12, PGT_GREEN);
+                }
+
+                // Rank indicator
+                if (i < 3) {
+                    // Medal circle
+                    ctx.save();
+                    ctx.fillStyle = medalColors[i];
+                    ctx.globalAlpha = 0.15;
+                    ctx.beginPath(); ctx.arc(size * 0.1, y + rowH / 2, size * 0.025, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.font = '800 ' + (size * 0.028) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = medalColors[i];
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i + 1), size * 0.1, y + rowH / 2);
+                    ctx.restore();
+                } else {
+                    ctx.font = '700 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i + 1), size * 0.1, y + rowH / 2);
+                }
 
                 // Logo
-                var lr = size * 0.025;
-                _pgtDrawLogoCircle(ctx, topLogos[i], size * 0.1, y + rowH / 2 - lr, lr);
+                var lr = size * 0.03;
+                _pgtDrawLogoCircle(ctx, topLogos[i], size * 0.145, y + rowH / 2 - lr, lr);
 
                 // Name
                 ctx.font = '700 ' + (size * 0.024) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'left';
-                ctx.fillText(agent.name, size * 0.17, y + rowH / 2 - size * 0.008);
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(agent.name, size * 0.22, y + rowH / 2 - size * 0.014);
 
                 // Category
-                ctx.font = '400 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                ctx.font = '400 ' + (size * 0.014) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                ctx.fillText(agent.category || '', size * 0.17, y + rowH / 2 + size * 0.02);
+                ctx.fillText(agent.category || '', size * 0.22, y + rowH / 2 + size * 0.016);
 
-                // Mentions
-                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = PGT_GREEN;
+                // Mentions bar
+                var barX = size * 0.62, barW = size * 0.24, barH = size * 0.012;
+                var barY = y + rowH / 2 - barH / 2;
+                var fillW = barW * ((agent.mentions_count || 0) / maxMentions);
+                // Bar track
+                ctx.fillStyle = 'rgba(255,255,255,0.04)';
+                ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, barH / 2); ctx.fill();
+                // Bar fill
+                var barGrad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
+                barGrad.addColorStop(0, i < 3 ? medalColors[i] : PGT_GREEN);
+                barGrad.addColorStop(1, PGT_CYAN);
+                ctx.fillStyle = barGrad;
+                ctx.beginPath(); ctx.roundRect(barX, barY, Math.max(fillW, barH), barH, barH / 2); ctx.fill();
+
+                // Mention count
+                ctx.font = '700 ' + (size * 0.017) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = i < 3 ? medalColors[i] : PGT_GREEN;
                 ctx.textAlign = 'right';
-                ctx.fillText((agent.mentions_count || 0) + ' mentions', size * 0.92, y + rowH / 2);
+                ctx.fillText(String(agent.mentions_count || 0), size * 0.92, y + rowH / 2);
                 ctx.textAlign = 'left';
-
-                // Separator
-                if (i < top.length - 1) {
-                    ctx.strokeStyle = 'rgba(52,211,153,0.08)';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath(); ctx.moveTo(size * 0.08, y + rowH); ctx.lineTo(size * 0.92, y + rowH); ctx.stroke();
-                }
             });
 
         } else if (tplId === 'new_radar') {
@@ -3829,63 +4044,84 @@
             _pgtDrawHeader(ctx, size, 'NEW ON THE RADAR');
             _pgtDrawFooter(ctx, size);
 
+            // Radar-like concentric rings in background
+            ctx.save();
+            var rCX = size * 0.5, rCY = size * 0.5;
+            for (var ri = 3; ri > 0; ri--) {
+                ctx.strokeStyle = 'rgba(34,211,238,' + (0.03 + ri * 0.01) + ')';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(rCX, rCY, size * 0.1 * ri + size * 0.05, 0, Math.PI * 2); ctx.stroke();
+            }
+            // Sweep line
+            ctx.strokeStyle = 'rgba(34,211,238,0.06)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(rCX, rCY - size * 0.35); ctx.lineTo(rCX, rCY + size * 0.35); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(rCX - size * 0.35, rCY); ctx.lineTo(rCX + size * 0.35, rCY); ctx.stroke();
+            ctx.restore();
+
             var recent = items.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 6);
             var recentLogos = await _loadLogos(recent);
 
             var cols = 3;
             var cardW = size * 0.27;
-            var cardH = size * 0.32;
-            var gapX = size * 0.045;
+            var cardH = size * 0.34;
+            var gapX = size * 0.04;
             var startX = (size - cols * cardW - (cols - 1) * gapX) / 2;
-            var startY = size * 0.14;
+            var startY = size * 0.13;
+            var cardAccents = [PGT_GREEN, PGT_CYAN, PGT_PURPLE, PGT_BLUE, PGT_GOLD, '#f472b6'];
 
             recent.forEach(function(agent, i) {
                 var col = i % cols;
                 var row = Math.floor(i / cols);
                 var x = startX + col * (cardW + gapX);
                 var y = startY + row * (cardH + size * 0.04);
+                var accent = cardAccents[i % cardAccents.length];
 
-                // Card bg
-                ctx.fillStyle = 'rgba(52,211,153,0.04)';
-                ctx.strokeStyle = 'rgba(52,211,153,0.12)';
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.roundRect(x, y, cardW, cardH, 10); ctx.fill(); ctx.stroke();
+                // Glass card
+                _pgtDrawCard(ctx, x, y, cardW, cardH, 14, accent);
+
+                // "NEW" chip at top-right
+                ctx.save();
+                ctx.font = '700 ' + (size * 0.01) + 'px "Nunito", sans-serif';
+                var chipW = size * 0.045, chipH = size * 0.02;
+                ctx.fillStyle = accent + '22';
+                ctx.beginPath(); ctx.roundRect(x + cardW - chipW - size * 0.01, y + size * 0.01, chipW, chipH, 10); ctx.fill();
+                ctx.fillStyle = accent;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('NEW', x + cardW - chipW / 2 - size * 0.01, y + size * 0.01 + chipH / 2);
+                ctx.restore();
 
                 // Logo centered
                 var lr = size * 0.04;
-                _pgtDrawLogoRounded(ctx, recentLogos[i], x + cardW / 2 - lr, y + size * 0.03, lr * 2, lr * 2, 10);
+                _pgtDrawLogoCircle(ctx, recentLogos[i], x + cardW / 2 - lr, y + size * 0.035, lr);
 
                 // Name
-                ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.font = '700 ' + (size * 0.019) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = '#ffffff';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'top';
                 var name = agent.name.length > 16 ? agent.name.substring(0, 14) + '..' : agent.name;
-                ctx.fillText(name, x + cardW / 2, y + size * 0.12);
+                ctx.fillText(name, x + cardW / 2, y + size * 0.125);
 
                 // Category badge
                 if (agent.category) {
-                    ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
-                    ctx.fillStyle = PGT_GREEN;
-                    ctx.fillText(agent.category, x + cardW / 2, y + size * 0.15);
+                    ctx.font = '600 ' + (size * 0.012) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = accent;
+                    ctx.fillText(agent.category, x + cardW / 2, y + size * 0.155);
                 }
 
-                // Description snippet
+                // Description snippet in card
                 if (agent.description) {
-                    var snippet = agent.description.length > 60 ? agent.description.substring(0, 57) + '...' : agent.description;
-                    ctx.font = '400 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+                    var snippet = agent.description.length > 70 ? agent.description.substring(0, 67) + '...' : agent.description;
+                    ctx.font = '400 ' + (size * 0.013) + 'px "Nunito", sans-serif';
                     ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                    // Simple 2-line wrap
-                    var sw = cardW - size * 0.03;
-                    var swords = snippet.split(' ');
-                    var sline = ''; var sy = y + size * 0.19; var slines = 0;
-                    swords.forEach(function(w) {
-                        if (ctx.measureText(sline + w + ' ').width > sw && sline && slines < 2) {
-                            ctx.fillText(sline.trim(), x + cardW / 2, sy);
-                            sy += size * 0.02;
-                            sline = w + ' '; slines++;
-                        } else { sline += w + ' '; }
-                    });
-                    if (sline.trim() && slines < 3) ctx.fillText(sline.trim(), x + cardW / 2, sy);
+                    _pgtWrapText(ctx, snippet, x + cardW / 2, y + size * 0.19, cardW - size * 0.03, size * 0.02);
+                }
+
+                // X handle at bottom
+                if (agent.x_handle) {
+                    ctx.font = '500 ' + (size * 0.012) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillText('@' + agent.x_handle, x + cardW / 2, y + cardH - size * 0.025);
                 }
             });
 
@@ -3895,52 +4131,101 @@
 
             var bLogos = await _loadLogos([builder]);
             _pgtDrawBg(ctx, size);
+
+            // Blue-tinted hero glow
+            var bHero = ctx.createRadialGradient(size / 2, size * 0.28, 0, size / 2, size * 0.28, size * 0.3);
+            bHero.addColorStop(0, 'rgba(96,165,250,0.07)');
+            bHero.addColorStop(0.6, 'rgba(167,139,250,0.03)');
+            bHero.addColorStop(1, 'transparent');
+            ctx.fillStyle = bHero;
+            ctx.fillRect(0, 0, size, size * 0.55);
+
             _pgtDrawHeader(ctx, size, 'BUILDER SPOTLIGHT');
             _pgtDrawFooter(ctx, size);
 
-            var lr = size * 0.12;
-            _pgtDrawLogoCircle(ctx, bLogos[0], size / 2 - lr, size * 0.22, lr);
+            // Decorative hex grid pattern behind avatar
+            ctx.save();
+            ctx.globalAlpha = 0.03;
             ctx.strokeStyle = PGT_BLUE;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 1;
+            var hexR = size * 0.04;
+            for (var hy = size * 0.12; hy < size * 0.48; hy += hexR * 1.8) {
+                for (var hx = size * 0.2; hx < size * 0.8; hx += hexR * 2.1) {
+                    var off = (Math.floor((hy - size * 0.12) / (hexR * 1.8)) % 2) * hexR;
+                    ctx.beginPath();
+                    for (var s = 0; s < 6; s++) {
+                        var a = Math.PI / 3 * s - Math.PI / 6;
+                        var px = hx + off + hexR * Math.cos(a);
+                        var py = hy + hexR * Math.sin(a);
+                        s === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                    }
+                    ctx.closePath(); ctx.stroke();
+                }
+            }
+            ctx.restore();
+
+            // Avatar with double glow ring
+            var lr = size * 0.1;
+            var avatarCX = size / 2, avatarCY = size * 0.27;
+            _pgtDrawLogoCircle(ctx, bLogos[0], avatarCX - lr, avatarCY - lr, lr);
+            ctx.save();
+            ctx.strokeStyle = PGT_BLUE; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
             ctx.shadowColor = PGT_BLUE; ctx.shadowBlur = 20;
-            ctx.beginPath(); ctx.arc(size / 2, size * 0.22 + lr, lr + 6, 0, Math.PI * 2); ctx.stroke();
-            ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.arc(avatarCX, avatarCY, lr + 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 0.2; ctx.lineWidth = 1; ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.arc(avatarCX, avatarCY, lr + 20, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
 
-            ctx.font = '800 ' + (size * 0.042) + 'px "Nunito", sans-serif';
-            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-            ctx.fillText(builder.name, size / 2, size * 0.52);
+            // Name
+            ctx.font = '800 ' + (size * 0.046) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(builder.name, size / 2, avatarCY + lr + size * 0.03);
 
+            // X handle
+            var infoY = avatarCY + lr + size * 0.09;
             if (builder.x_handle) {
-                ctx.font = '600 ' + (size * 0.02) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = PGT_BLUE;
-                ctx.fillText('@' + builder.x_handle, size / 2, size * 0.56);
+                ctx.font = '600 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_CYAN;
+                ctx.fillText('@' + builder.x_handle, size / 2, infoY);
+                infoY += size * 0.04;
             }
 
+            // Bio in a glass card
             if (builder.bio) {
                 var bio = builder.bio.length > 200 ? builder.bio.substring(0, 197) + '...' : builder.bio;
-                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                var bioCardX = size * 0.08, bioCardW = size * 0.84;
+                var bioCardY = infoY + size * 0.02;
+                var bioCardH = size * 0.18;
+                _pgtDrawCard(ctx, bioCardX, bioCardY, bioCardW, bioCardH, 16, PGT_BLUE);
+
+                ctx.font = '400 ' + (size * 0.02) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                var bwords = bio.split(' '); var bline = ''; var by = size * 0.63; var bmax = size * 0.7;
-                bwords.forEach(function(w) {
-                    if (ctx.measureText(bline + w + ' ').width > bmax && bline) {
-                        ctx.fillText(bline.trim(), size / 2, by); by += size * 0.032; bline = w + ' ';
-                    } else { bline += w + ' '; }
-                });
-                if (bline.trim()) ctx.fillText(bline.trim(), size / 2, by);
+                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                _pgtWrapText(ctx, bio, size / 2, bioCardY + size * 0.022, bioCardW - size * 0.06, size * 0.03);
             }
 
+            // Skills as polished pills
             if (builder.skills && builder.skills.length) {
                 var sy = size * 0.82;
-                ctx.font = '600 ' + (size * 0.015) + 'px "Nunito", sans-serif';
-                var sx = size / 2 - builder.skills.slice(0, 4).reduce(function(acc, s) { return acc + ctx.measureText(s).width + size * 0.04; }, 0) / 2;
-                builder.skills.slice(0, 4).forEach(function(skill) {
+                ctx.font = '600 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+                var skillColors = [PGT_BLUE, PGT_CYAN, PGT_PURPLE, PGT_GREEN];
+                var totalSkillW = 0;
+                builder.skills.slice(0, 5).forEach(function(s) { totalSkillW += ctx.measureText(s).width + size * 0.035; });
+                var sx = size / 2 - totalSkillW / 2;
+                builder.skills.slice(0, 5).forEach(function(skill, si) {
+                    var sc = skillColors[si % skillColors.length];
                     var sw = ctx.measureText(skill).width + size * 0.025;
-                    ctx.fillStyle = 'rgba(96,165,250,0.12)';
-                    ctx.beginPath(); ctx.roundRect(sx, sy, sw, size * 0.028, 20); ctx.fill();
-                    ctx.fillStyle = PGT_BLUE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(skill, sx + sw / 2, sy + size * 0.014);
-                    sx += sw + size * 0.01;
+                    // Pill bg
+                    ctx.fillStyle = sc + '1a';
+                    ctx.beginPath(); ctx.roundRect(sx, sy, sw, size * 0.03, 20); ctx.fill();
+                    ctx.strokeStyle = sc + '40';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(sx, sy, sw, size * 0.03, 20); ctx.stroke();
+                    ctx.fillStyle = sc; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(skill, sx + sw / 2, sy + size * 0.015);
+                    sx += sw + size * 0.008;
                 });
+                ctx.textAlign = 'left';
             }
 
         } else if (tplId === 'public_good') {
@@ -3949,153 +4234,306 @@
 
             var gLogos = await _loadLogos([good]);
             _pgtDrawBg(ctx, size);
+
+            // Green-tinted atmosphere
+            var pgGlow = ctx.createRadialGradient(size / 2, size * 0.35, 0, size / 2, size * 0.35, size * 0.4);
+            pgGlow.addColorStop(0, 'rgba(52,211,153,0.06)');
+            pgGlow.addColorStop(0.5, 'rgba(34,211,238,0.03)');
+            pgGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = pgGlow;
+            ctx.fillRect(0, size * 0.05, size, size * 0.6);
+
             _pgtDrawHeader(ctx, size, 'PUBLIC GOOD HIGHLIGHT');
             _pgtDrawFooter(ctx, size);
 
+            // Radiating lines from center
+            ctx.save();
+            var radCX = size / 2, radCY = size * 0.32;
+            for (var ri = 0; ri < 24; ri++) {
+                var rAngle = (ri / 24) * Math.PI * 2;
+                var r1 = size * 0.14, r2 = size * 0.22;
+                ctx.strokeStyle = 'rgba(52,211,153,' + (0.02 + (ri % 3) * 0.01) + ')';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(radCX + Math.cos(rAngle) * r1, radCY + Math.sin(rAngle) * r1);
+                ctx.lineTo(radCX + Math.cos(rAngle) * r2, radCY + Math.sin(rAngle) * r2);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Logo with triple ring glow
             var lr = size * 0.1;
-            _pgtDrawLogoCircle(ctx, gLogos[0], size / 2 - lr, size * 0.24, lr);
-            // Green glow
-            ctx.strokeStyle = PGT_GREEN; ctx.lineWidth = 3; ctx.shadowColor = PGT_GREEN; ctx.shadowBlur = 25;
-            ctx.beginPath(); ctx.arc(size / 2, size * 0.24 + lr, lr + 6, 0, Math.PI * 2); ctx.stroke();
-            ctx.shadowBlur = 0;
+            _pgtDrawLogoCircle(ctx, gLogos[0], size / 2 - lr, size * 0.22, lr);
+            ctx.save();
+            ctx.shadowColor = PGT_GREEN; ctx.shadowBlur = 30;
+            ctx.strokeStyle = PGT_GREEN; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
+            ctx.beginPath(); ctx.arc(size / 2, size * 0.22 + lr, lr + 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 0.25; ctx.lineWidth = 1; ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.arc(size / 2, size * 0.22 + lr, lr + 22, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 0.1;
+            ctx.beginPath(); ctx.arc(size / 2, size * 0.22 + lr, lr + 34, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
 
-            ctx.font = '800 ' + (size * 0.04) + 'px "Nunito", sans-serif';
-            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-            ctx.fillText(good.name, size / 2, size * 0.5);
+            // Name
+            ctx.font = '800 ' + (size * 0.046) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(good.name, size / 2, size * 0.48);
 
-            if (good.category) {
-                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = PGT_GREEN;
-                ctx.fillText(good.category, size / 2, size * 0.54);
+            // Category + chain row
+            var metaY = size * 0.545;
+            var metas = [good.category, good.chain].filter(Boolean);
+            if (metas.length) {
+                ctx.font = '600 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                var totalMW = 0;
+                metas.forEach(function(m) { totalMW += ctx.measureText(m).width + size * 0.035; });
+                var mx = size / 2 - totalMW / 2;
+                metas.forEach(function(m, mi) {
+                    var mw = ctx.measureText(m).width + size * 0.025;
+                    var mc = mi === 0 ? PGT_GREEN : PGT_CYAN;
+                    ctx.fillStyle = mc + '18';
+                    ctx.beginPath(); ctx.roundRect(mx, metaY, mw, size * 0.03, 20); ctx.fill();
+                    ctx.strokeStyle = mc + '40';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(mx, metaY, mw, size * 0.03, 20); ctx.stroke();
+                    ctx.fillStyle = mc;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(m, mx + mw / 2, metaY + size * 0.015);
+                    mx += mw + size * 0.01;
+                });
+                ctx.textAlign = 'left';
             }
 
+            // Description in glass card
             if (good.description) {
-                var gd = good.description.length > 200 ? good.description.substring(0, 197) + '...' : good.description;
-                ctx.font = '400 ' + (size * 0.022) + 'px "Nunito", sans-serif';
+                var gd = good.description.length > 220 ? good.description.substring(0, 217) + '...' : good.description;
+                var gdCardX = size * 0.08, gdCardY = size * 0.61, gdCardW = size * 0.84, gdCardH = size * 0.2;
+                _pgtDrawCard(ctx, gdCardX, gdCardY, gdCardW, gdCardH, 16, PGT_GREEN);
+
+                ctx.font = '400 ' + (size * 0.021) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                var gwords = gd.split(' '); var gline = ''; var gy = size * 0.6; var gmax = size * 0.7;
-                gwords.forEach(function(w) {
-                    if (ctx.measureText(gline + w + ' ').width > gmax && gline) {
-                        ctx.fillText(gline.trim(), size / 2, gy); gy += size * 0.032; gline = w + ' ';
-                    } else { gline += w + ' '; }
-                });
-                if (gline.trim()) ctx.fillText(gline.trim(), size / 2, gy);
+                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                _pgtWrapText(ctx, gd, size / 2, gdCardY + size * 0.025, gdCardW - size * 0.06, size * 0.032);
+            }
+
+            // X handle + website at bottom
+            var bottomY = size * 0.86;
+            if (good.x_handle) {
+                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_CYAN; ctx.textAlign = 'center';
+                ctx.fillText('@' + good.x_handle, size / 2, bottomY);
             }
 
         } else if (tplId === 'category_focus') {
             var cats = {};
             items.forEach(function(a) { var c = a.category || 'Other'; if (!cats[c]) cats[c] = []; cats[c].push(a); });
             var catNames = Object.keys(cats).sort(function(a, b) { return cats[b].length - cats[a].length; });
-            // Pick a random substantial category
             var bigCats = catNames.filter(function(c) { return cats[c].length >= 2; });
             var catName = bigCats.length > 0 ? bigCats[Math.floor(Math.random() * bigCats.length)] : catNames[0];
             var catItems = (cats[catName] || []).slice(0, 9);
 
             var catLogos = await _loadLogos(catItems);
             _pgtDrawBg(ctx, size);
+
+            // Category-themed atmosphere
+            var catGlow = ctx.createRadialGradient(size * 0.5, size * 0.12, 0, size * 0.5, size * 0.12, size * 0.5);
+            catGlow.addColorStop(0, 'rgba(167,139,250,0.05)');
+            catGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = catGlow;
+            ctx.fillRect(0, 0, size, size * 0.5);
+
             _pgtDrawHeader(ctx, size, catName.toUpperCase() + ' AGENTS');
             _pgtDrawFooter(ctx, size);
 
-            // 3x3 grid
+            // Stats bar under header
+            var statsY = size * 0.105;
+            ctx.font = '500 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.textAlign = 'center';
+            ctx.fillText(cats[catName].length + ' agents in this category', size / 2, statsY);
+
+            // 3x3 grid with glass cards
             var cols = 3;
-            var cardW = size * 0.26;
-            var cardH = size * 0.22;
-            var gapX = size * 0.04;
+            var cardW = size * 0.27;
+            var cardH = size * 0.24;
+            var gapX = size * 0.035;
+            var gapY = size * 0.03;
             var startX = (size - cols * cardW - (cols - 1) * gapX) / 2;
-            var startY = size * 0.15;
+            var startY = size * 0.14;
+            var cardColors = [PGT_PURPLE, PGT_CYAN, PGT_GREEN, PGT_BLUE, PGT_GOLD, '#f472b6', PGT_GREEN, PGT_CYAN, PGT_PURPLE];
 
             catItems.forEach(function(agent, i) {
                 var col = i % cols;
                 var row = Math.floor(i / cols);
                 var x = startX + col * (cardW + gapX);
-                var y = startY + row * (cardH + size * 0.03);
+                var y = startY + row * (cardH + gapY);
+                var accent = cardColors[i % cardColors.length];
 
-                ctx.fillStyle = 'rgba(52,211,153,0.04)';
-                ctx.strokeStyle = 'rgba(52,211,153,0.1)';
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.roundRect(x, y, cardW, cardH, 10); ctx.fill(); ctx.stroke();
+                _pgtDrawCard(ctx, x, y, cardW, cardH, 14, accent);
 
+                // Accent dot
+                ctx.fillStyle = accent;
+                ctx.beginPath(); ctx.arc(x + size * 0.015, y + size * 0.015, 3, 0, Math.PI * 2); ctx.fill();
+
+                // Logo
                 var lr = size * 0.035;
-                _pgtDrawLogoRounded(ctx, catLogos[i], x + cardW / 2 - lr, y + size * 0.02, lr * 2, lr * 2, 8);
+                _pgtDrawLogoCircle(ctx, catLogos[i], x + cardW / 2 - lr, y + size * 0.025, lr);
 
+                // Name
                 ctx.font = '700 ' + (size * 0.018) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                var n = agent.name.length > 14 ? agent.name.substring(0, 12) + '..' : agent.name;
-                ctx.fillText(n, x + cardW / 2, y + size * 0.1);
+                var n = agent.name.length > 15 ? agent.name.substring(0, 13) + '..' : agent.name;
+                ctx.fillText(n, x + cardW / 2, y + size * 0.105);
 
+                // X handle
                 if (agent.x_handle) {
-                    ctx.font = '400 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+                    ctx.font = '500 ' + (size * 0.012) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = accent;
+                    ctx.fillText('@' + agent.x_handle, x + cardW / 2, y + size * 0.135);
+                }
+
+                // Brief description
+                if (agent.description) {
+                    var sn = agent.description.length > 45 ? agent.description.substring(0, 42) + '...' : agent.description;
+                    ctx.font = '400 ' + (size * 0.011) + 'px "Nunito", sans-serif';
                     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                    ctx.fillText('@' + agent.x_handle, x + cardW / 2, y + size * 0.13);
+                    _pgtWrapText(ctx, sn, x + cardW / 2, y + size * 0.165, cardW - size * 0.025, size * 0.016);
                 }
             });
 
         } else if (tplId === 'weekly_recap') {
             _pgtDrawBg(ctx, size);
+
+            // Multi-color glow for recap
+            var recGlow = ctx.createRadialGradient(size * 0.3, size * 0.2, 0, size * 0.3, size * 0.2, size * 0.35);
+            recGlow.addColorStop(0, 'rgba(52,211,153,0.04)');
+            recGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = recGlow;
+            ctx.fillRect(0, 0, size, size);
+            var recGlow2 = ctx.createRadialGradient(size * 0.7, size * 0.7, 0, size * 0.7, size * 0.7, size * 0.3);
+            recGlow2.addColorStop(0, 'rgba(96,165,250,0.03)');
+            recGlow2.addColorStop(1, 'transparent');
+            ctx.fillStyle = recGlow2;
+            ctx.fillRect(0, 0, size, size);
+
             _pgtDrawHeader(ctx, size, 'WEEKLY RECAP');
             _pgtDrawFooter(ctx, size);
 
-            // Stats row
+            // Stats cards
+            var catCount = Object.keys(items.reduce(function(acc, a) { acc[a.category || 'Other'] = 1; return acc; }, {})).length;
             var stats = [
-                { label: 'Total Agents', value: items.length.toString() },
-                { label: 'Featured', value: items.filter(function(a) { return a.featured; }).length.toString() },
-                { label: 'Categories', value: Object.keys(items.reduce(function(acc, a) { acc[a.category || 'Other'] = 1; return acc; }, {})).length.toString() },
+                { label: 'Total Agents', value: String(items.length), color: PGT_GREEN, icon: '🤖' },
+                { label: 'Featured', value: String(items.filter(function(a) { return a.featured; }).length), color: PGT_GOLD, icon: '⭐' },
+                { label: 'Categories', value: String(catCount), color: PGT_PURPLE, icon: '📊' },
             ];
-            var statW = size * 0.25;
-            var statStartX = (size - stats.length * statW - (stats.length - 1) * size * 0.04) / 2;
+            var statW = size * 0.26;
+            var statGap = size * 0.04;
+            var statStartX = (size - stats.length * statW - (stats.length - 1) * statGap) / 2;
             stats.forEach(function(stat, i) {
-                var sx = statStartX + i * (statW + size * 0.04);
-                var sy = size * 0.15;
-                ctx.fillStyle = 'rgba(52,211,153,0.06)';
-                ctx.strokeStyle = 'rgba(52,211,153,0.12)';
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.roundRect(sx, sy, statW, size * 0.1, 10); ctx.fill(); ctx.stroke();
+                var sx = statStartX + i * (statW + statGap);
+                var sy = size * 0.125;
+                _pgtDrawCard(ctx, sx, sy, statW, size * 0.12, 14, stat.color);
 
-                ctx.font = '800 ' + (size * 0.04) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = PGT_GREEN; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(stat.value, sx + statW / 2, sy + size * 0.04);
-                ctx.font = '500 ' + (size * 0.015) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.fillText(stat.label, sx + statW / 2, sy + size * 0.075);
+                // Big number
+                ctx.font = '800 ' + (size * 0.045) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = stat.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(stat.value, sx + statW / 2, sy + size * 0.045);
+
+                // Label
+                ctx.font = '500 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                ctx.fillText(stat.label, sx + statW / 2, sy + size * 0.09);
             });
 
-            // Top mentioned
-            ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+            // Section: Top Mentioned — left column
+            var leftColX = size * 0.05, leftColW = size * 0.52;
+            var sectionY = size * 0.28;
+            // Section header
+            ctx.font = '700 ' + (size * 0.016) + 'px "Nunito", sans-serif';
             ctx.fillStyle = PGT_GREEN; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-            ctx.fillText('TOP MENTIONED', size * 0.06, size * 0.3);
+            ctx.letterSpacing = (size * 0.003) + 'px';
+            ctx.fillText('TOP MENTIONED', leftColX + size * 0.01, sectionY);
+            ctx.letterSpacing = '0px';
+
+            // Separator under header
+            var sepGrad = ctx.createLinearGradient(leftColX, 0, leftColX + leftColW, 0);
+            sepGrad.addColorStop(0, PGT_GREEN + '40');
+            sepGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = sepGrad;
+            ctx.fillRect(leftColX, sectionY + size * 0.025, leftColW, 1);
 
             var sorted = items.slice().sort(function(a, b) { return (b.mentions_count || 0) - (a.mentions_count || 0); });
             var topM = sorted.slice(0, 5);
             var tmLogos = await _loadLogos(topM);
+            var maxM = Math.max.apply(null, topM.map(function(a) { return a.mentions_count || 1; }));
             topM.forEach(function(agent, i) {
-                var y = size * 0.34 + i * size * 0.065;
+                var y = sectionY + size * 0.04 + i * size * 0.085;
+                _pgtDrawCard(ctx, leftColX, y, leftColW, size * 0.075, 10, PGT_GREEN);
+
+                // Rank
+                ctx.font = '800 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = i < 3 ? PGT_GOLD : 'rgba(255,255,255,0.3)';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(i + 1), leftColX + size * 0.025, y + size * 0.0375);
+
+                // Logo
                 var lr = size * 0.02;
-                _pgtDrawLogoCircle(ctx, tmLogos[i], size * 0.06, y, lr);
-                ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-                ctx.fillText(agent.name, size * 0.12, y + lr);
-                ctx.font = '400 ' + (size * 0.014) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.textAlign = 'right';
-                ctx.fillText((agent.mentions_count || 0) + ' mentions', size * 0.94, y + lr);
+                _pgtDrawLogoCircle(ctx, tmLogos[i], leftColX + size * 0.048, y + size * 0.0375 - lr, lr);
+
+                // Name
+                ctx.font = '600 ' + (size * 0.017) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left';
+                ctx.fillText(agent.name, leftColX + size * 0.1, y + size * 0.025);
+
+                // Mini bar
+                var barX = leftColX + size * 0.1, barY = y + size * 0.05, barW = size * 0.28, barH = size * 0.008;
+                var fillW = barW * ((agent.mentions_count || 0) / maxM);
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, barH / 2); ctx.fill();
+                var bGrad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
+                bGrad.addColorStop(0, PGT_GREEN);
+                bGrad.addColorStop(1, PGT_CYAN);
+                ctx.fillStyle = bGrad;
+                ctx.beginPath(); ctx.roundRect(barX, barY, Math.max(fillW, barH), barH, barH / 2); ctx.fill();
+
+                // Count
+                ctx.font = '700 ' + (size * 0.015) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = PGT_GREEN; ctx.textAlign = 'right';
+                ctx.fillText(String(agent.mentions_count || 0), leftColX + leftColW - size * 0.015, y + size * 0.0375);
                 ctx.textAlign = 'left';
             });
 
-            // Recently added
-            ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
-            ctx.fillStyle = PGT_BLUE; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-            ctx.fillText('RECENTLY ADDED', size * 0.06, size * 0.7);
+            // Section: Recently Added — right column
+            var rightColX = size * 0.6, rightColW = size * 0.35;
+            ctx.font = '700 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = PGT_CYAN; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.letterSpacing = (size * 0.003) + 'px';
+            ctx.fillText('RECENTLY ADDED', rightColX + size * 0.01, sectionY);
+            ctx.letterSpacing = '0px';
 
-            var recent = items.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 4);
+            var sepGrad2 = ctx.createLinearGradient(rightColX, 0, rightColX + rightColW, 0);
+            sepGrad2.addColorStop(0, PGT_CYAN + '40');
+            sepGrad2.addColorStop(1, 'transparent');
+            ctx.fillStyle = sepGrad2;
+            ctx.fillRect(rightColX, sectionY + size * 0.025, rightColW, 1);
+
+            var recent = items.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 5);
             var rrLogos = await _loadLogos(recent);
-            var rlx = size * 0.06;
             recent.forEach(function(agent, i) {
-                var lr = size * 0.03;
-                _pgtDrawLogoRounded(ctx, rrLogos[i], rlx, size * 0.74, lr * 2, lr * 2, 8);
-                ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                var rn = agent.name.length > 10 ? agent.name.substring(0, 8) + '..' : agent.name;
-                ctx.fillText(rn, rlx + lr, size * 0.81);
-                rlx += size * 0.22;
+                var y = sectionY + size * 0.04 + i * size * 0.085;
+                _pgtDrawCard(ctx, rightColX, y, rightColW, size * 0.075, 10, PGT_CYAN);
+
+                var lr = size * 0.02;
+                _pgtDrawLogoCircle(ctx, rrLogos[i], rightColX + size * 0.015, y + size * 0.0375 - lr, lr);
+
+                ctx.font = '600 ' + (size * 0.015) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                var rn = agent.name.length > 14 ? agent.name.substring(0, 12) + '..' : agent.name;
+                ctx.fillText(rn, rightColX + size * 0.065, y + size * 0.028);
+
+                if (agent.category) {
+                    ctx.font = '400 ' + (size * 0.011) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = PGT_CYAN;
+                    ctx.fillText(agent.category, rightColX + size * 0.065, y + size * 0.052);
+                }
             });
         }
     }
