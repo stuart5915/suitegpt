@@ -175,6 +175,7 @@
         .sched-pipe-step[data-color="blue"] { border-color:rgba(99,102,241,0.25); }
         .sched-pipe-step[data-color="green"] { border-color:rgba(34,197,94,0.25); }
         .sched-pipe-step[data-color="teal"] { border-color:rgba(45,212,191,0.25); }
+        .sched-pipe-step[data-color="emerald"] { border-color:rgba(52,211,153,0.25); }
         .sched-pipe-icon { font-size:1.1rem; }
         .sched-pipe-arrow { color:var(--text-dim);font-size:0.75rem; }
         @media (max-width: 600px) {
@@ -1171,7 +1172,7 @@
 
     <section class="schedule-hero">
         <h1 id="schedHeroTitle">X Schedules</h1>
-        <p id="schedHeroDesc">Manage content for <a href="https://x.com/inclawbate" target="_blank" rel="noopener" style="color:var(--seafoam-400,#2dd4bf);text-decoration:none;font-weight:700">@inclawbate</a>, <a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a>, and <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" style="color:#34d399;text-decoration:none;font-weight:700">@publicgoodstech</a>. 5x/day at peak hours.</p>
+        <p id="schedHeroDesc">Manage content for <a href="https://x.com/inclawbate" target="_blank" rel="noopener" style="color:var(--seafoam-400,#2dd4bf);text-decoration:none;font-weight:700">@inclawbate</a>, <a href="https://x.com/inclawbator" target="_blank" rel="noopener" style="color:var(--lobster-400);text-decoration:none;font-weight:700">@inclawbator</a>, and <a href="https://x.com/publicgoodstech" target="_blank" rel="noopener" style="color:#34d399;text-decoration:none;font-weight:700">@publicgoodstech</a>. Auto-scheduled at peak hours.</p>
         <div class="sched-how-it-works">
             <div class="sched-how-step"><span class="sched-how-num">1</span><span>Pick an open slot</span></div>
             <div class="sched-how-arrow">&rarr;</div>
@@ -1285,7 +1286,8 @@
     <!-- Admin pipeline banner -->
     <section class="sched-admin-banner" id="adminBanner" style="display:none">
         <div class="sched-admin-banner-title">Admin Pipeline</div>
-        <div class="sched-admin-pipeline">
+        <!-- Default pipeline (inclawbate / inclawbator) -->
+        <div class="sched-admin-pipeline" id="pipelineDefault">
             <div class="sched-pipe-step" data-color="coral">
                 <div class="sched-pipe-icon">&#x2728;</div>
                 <div><strong>Generate</strong><br><span>Auto-fill creates drafts</span></div>
@@ -1299,6 +1301,33 @@
             <div class="sched-pipe-step" data-color="blue">
                 <div class="sched-pipe-icon">&#x1F5BC;</div>
                 <div><strong>Add Image</strong><br><span>Use the image prompt, upload</span></div>
+            </div>
+            <div class="sched-pipe-arrow">&rarr;</div>
+            <div class="sched-pipe-step" data-color="green">
+                <div class="sched-pipe-icon">&#x2713;</div>
+                <div><strong>Approve</strong><br><span>Click &#x2713; to schedule</span></div>
+            </div>
+            <div class="sched-pipe-arrow">&rarr;</div>
+            <div class="sched-pipe-step" data-color="teal">
+                <div class="sched-pipe-icon">&#x1F680;</div>
+                <div><strong>Auto-Post</strong><br><span>Heartbeat posts it on time</span></div>
+            </div>
+        </div>
+        <!-- PGT pipeline (publicgoodstech) — database-driven -->
+        <div class="sched-admin-pipeline" id="pipelinePgt" style="display:none">
+            <div class="sched-pipe-step" data-color="emerald">
+                <div class="sched-pipe-icon">&#x1F4CA;</div>
+                <div><strong>Generate</strong><br><span>Pulls projects from database</span></div>
+            </div>
+            <div class="sched-pipe-arrow">&rarr;</div>
+            <div class="sched-pipe-step" data-color="amber">
+                <div class="sched-pipe-icon">&#x1F504;</div>
+                <div><strong>Review &amp; Swap</strong><br><span>Edit text or swap project</span></div>
+            </div>
+            <div class="sched-pipe-arrow">&rarr;</div>
+            <div class="sched-pipe-step" data-color="blue">
+                <div class="sched-pipe-icon">&#x1F3A8;</div>
+                <div><strong>Template Image</strong><br><span>Auto-generated from DB</span></div>
             </div>
             <div class="sched-pipe-arrow">&rarr;</div>
             <div class="sched-pipe-step" data-color="green">
@@ -1976,6 +2005,29 @@
         if (followLink) {
             followLink.href = 'https://x.com/' + handle;
             followLink.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Follow @' + handle;
+        }
+
+        // Toggle pipeline views
+        var isPgt = account === 'publicgoodstech';
+        var pipeDefault = document.getElementById('pipelineDefault');
+        var pipePgt = document.getElementById('pipelinePgt');
+        if (pipeDefault) pipeDefault.style.display = isPgt ? 'none' : '';
+        if (pipePgt) pipePgt.style.display = isPgt ? '' : 'none';
+
+        // Update how-it-works steps for PGT vs default
+        var howSteps = document.querySelectorAll('.sched-how-step span:last-child');
+        if (howSteps.length >= 4) {
+            if (isPgt) {
+                howSteps[0].textContent = 'Generate from database';
+                howSteps[1].textContent = 'Review & swap projects';
+                howSteps[2].textContent = 'Admin approves drafts';
+                howSteps[3].textContent = 'Auto-posted at scheduled time';
+            } else {
+                howSteps[0].textContent = 'Pick an open slot';
+                howSteps[1].textContent = 'Write your tweet';
+                howSteps[2].textContent = 'Admin reviews & approves';
+                howSteps[3].textContent = 'Auto-posted at scheduled time';
+            }
         }
 
         // Re-fetch everything for the new account
