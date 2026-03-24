@@ -1251,7 +1251,10 @@ const CEREBRAS_MODELS = [
   'llama-3.3-70b'
 ];
 
-async function callLLM(messages) {
+async function callLLM(messages, { skipTools = false, maxTokens = 512 } = {}) {
+  const payload = skipTools
+    ? { messages, max_tokens: maxTokens }
+    : { messages, tools: TOOLS, tool_choice: 'auto', max_tokens: maxTokens };
   // 1. Try Groq first (all keys × models)
   const groqAttempts = GROQ_KEYS.length * GROQ_MODELS.length;
   for (let attempt = 0; attempt < groqAttempts; attempt++) {
@@ -1261,7 +1264,7 @@ async function callLLM(messages) {
       const res = await fetch(GROQ_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
+        body: JSON.stringify({ model, ...payload })
       });
       const data = await res.json();
       if (data.error) {
@@ -1285,7 +1288,7 @@ async function callLLM(messages) {
         const res = await fetch(BANKR_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + BANKR_KEY },
-          body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
+          body: JSON.stringify({ model, ...payload })
         });
         const data = await res.json();
         if (!data.error) return data;
@@ -1303,7 +1306,7 @@ async function callLLM(messages) {
         const res = await fetch(CEREBRAS_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CEREBRAS_KEY },
-          body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: 'auto', max_tokens: 512 })
+          body: JSON.stringify({ model, ...payload })
         });
         const data = await res.json();
         if (!data.error) return data;
@@ -1936,6 +1939,41 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions });
     }
 
+    // Intercept bare number follow-ups — check conversation history for context
+    if (/^[\d.]+\s*(?:eth|usdc|claws)?$/i.test(msgLower)) {
+      const lastBot = [...history].reverse().find(m => m.role === 'assistant');
+      if (lastBot && lastBot.content) {
+        const ctx = lastBot.content;
+        // Previous message was "Swap ETH for USDC — how much?"
+        const swapCtx = ctx.match(/Swap\s+(\w+)\s+for\s+(\w+)/i);
+        if (swapCtx) {
+          const from = swapCtx[1].toUpperCase();
+          const to = swapCtx[2].toUpperCase();
+          const amt = message.match(/^([\d.]+)/)[1];
+          const result = await executeTool('swap_tokens', { from_token: from, to_token: to, amount: amt, wallet: sanitizedWallet || undefined });
+          const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+          const reply = generateDirectReply('swap_tokens', result, { from_token: from, to_token: to, amount: amt });
+          if (reply) {
+            history.push({ role: 'assistant', content: reply });
+            const txData = parsed.tx ? { tx: parsed.tx } : null;
+            return sendReply({ reply, function_called: 'swap_tokens', session_id: sid, ...(txData && { tx_data: txData }) });
+          }
+        }
+        // Previous message was "How much CLAWS to stake?"
+        if (/how much.*claws.*stake|stake.*how much/i.test(ctx)) {
+          const amt = message.match(/^([\d.]+)/)[1];
+          const result = await executeTool('stake_claws', { amount: amt, wallet: sanitizedWallet || undefined });
+          const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+          const reply = generateDirectReply('stake_claws', result, { amount: amt });
+          if (reply) {
+            history.push({ role: 'assistant', content: reply });
+            const txData = parsed.txs ? { txs: parsed.txs } : null;
+            return sendReply({ reply, function_called: 'stake_claws', session_id: sid, ...(txData && { tx_data: txData }) });
+          }
+        }
+      }
+    }
+
     // Intercept swap/buy/sell without amount — ask how much instead of letting LLM guess
     const swapIntercept = message.match(/^(?:swap|buy|sell|convert|trade)\s+(\w+)\s+(?:for|to|into|with)\s+(\w+)$/i);
     if (swapIntercept) {
@@ -1965,9 +2003,15 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions: ['Stake 1000 CLAWS', 'Stake 10000 CLAWS', 'Stake all my CLAWS'] });
     }
 
+    // Educational/explanatory prompts — skip tools, just answer the question
+    // These are Learn-tab prompts and general knowledge questions that don't need any tool execution
+    const isEducational = /^(explain|walk me through|what (is|are|does|do)|how (does|do|is|are)|give me a (glossary|overview|summary|breakdown|guide|list)|teach me|tell me about|describe|compare|why (is|are|does|do))\b/i.test(message)
+      && message.length > 30
+      && !/\b(0x[a-f0-9]{10,}|my wallet|my token|deploy|launch|build me|create me|stake \d|swap \d|buy \d|airdrop)\b/i.test(message);
+
     let functionCalled = null;
     let toolArgs = null;
-    let data = await callLLM(history);
+    let data = await callLLM(history, isEducational ? { skipTools: true, maxTokens: 1024 } : {});
 
     if (data.error) {
       // Groq unavailable — fall back to keyword intent matching
