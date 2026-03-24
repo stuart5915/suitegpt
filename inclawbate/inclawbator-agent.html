@@ -1444,6 +1444,8 @@
             }
             else if (data.error) { addMessage('Sorry, something went wrong. Try again!', false); }
             if (data.session_id) sessionId = data.session_id;
+            // Start polling for council replies if a request was created
+            if (data.council_request_id) startCouncilPolling(data.council_request_id);
         } catch (e) {
             hideTyping();
             addMessage('Connection error — please try again in a moment.', false);
@@ -1451,6 +1453,42 @@
         sending = false;
         sendBtn.disabled = false;
         input.focus();
+    }
+
+    // ── Council reply polling ──
+    var _councilPollTimer = null;
+    var _councilRequestId = null;
+    var _councilMsgCount = 0;
+
+    function startCouncilPolling(requestId) {
+        if (_councilPollTimer) clearInterval(_councilPollTimer);
+        _councilRequestId = requestId;
+        _councilMsgCount = 1; // the initial user message
+        _councilPollTimer = setInterval(pollCouncilReplies, 5000);
+    }
+
+    async function pollCouncilReplies() {
+        if (!_councilRequestId) return;
+        try {
+            var resp = await fetch('/api/inclawbate/council-request?id=' + _councilRequestId);
+            var data = await resp.json();
+            if (!data.request || !data.request.messages) return;
+            var msgs = data.request.messages;
+            // Show any new council messages we haven't seen
+            while (_councilMsgCount < msgs.length) {
+                var msg = msgs[_councilMsgCount];
+                if (msg.role === 'council') {
+                    var councilName = msg.name || 'Council';
+                    addMessage('**' + councilName + ':** ' + msg.text, false, null, null, null, ['Send a follow-up', 'Thank you!', 'Do something else']);
+                }
+                _councilMsgCount++;
+            }
+            // Stop polling if request is closed/resolved
+            if (data.request.status === 'closed' || data.request.status === 'resolved') {
+                clearInterval(_councilPollTimer);
+                _councilPollTimer = null;
+            }
+        } catch (_) {}
     }
 
     form.addEventListener('submit', function(e) { e.preventDefault(); sendMessage(input.value); });

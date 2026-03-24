@@ -947,22 +947,31 @@ async function hireInclawbatorInfo(args) {
     });
   }
   try {
-    const res = await fetch(APP_API + '/hire-request', {
+    // Create council request (persisted, supports live replies)
+    const sessionId = args._sessionId || 'unknown';
+    const res = await fetch(APP_API + '/council-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: desc, contact: contact, budget_claws: args.budget_claws || 0 })
+      body: JSON.stringify({
+        action: 'create',
+        session_id: sessionId,
+        contact,
+        description: desc,
+        wallet: args.wallet || null
+      })
     });
     const data = await res.json();
-    if (data.success) {
+    if (data.request_id) {
       return JSON.stringify({
         posted: true,
-        message: 'Request posted to the Inclawbate Council Telegram group. A council member will reach out via: ' + contact,
-        request_id: data.id,
-        what_happens_next: 'A Council member will claim your request and contact you within 24 hours. Payment in CLAWS when work is delivered.',
+        message: 'Request sent to the Council! They can reach you at ' + contact + '.',
+        request_id: data.request_id,
+        existing: data.existing || false,
+        what_happens_next: 'A Council member will see this and respond — you can stay here for live replies or check back anytime. They\'ll also reach out via ' + contact + '.',
         contact_methods: {
           telegram_group: 'https://t.me/inclawbate',
           x_dm: 'https://x.com/inclawbate',
-          note: 'If you need faster response, drop a message in the Telegram group or DM @inclawbate on X.'
+          note: 'For faster response, drop a message in the Telegram group or DM @inclawbate on X.'
         }
       });
     }
@@ -1369,9 +1378,12 @@ function generateDirectReply(tool, resultJson, args) {
       case 'hire_inclawbator':
         if (d.posted) {
           let reply = d.message + "\n\n" + d.what_happens_next;
-          if (d.request_id) reply += "\n\nRequest ID: " + d.request_id;
           if (d.contact_methods) reply += "\n\nNeed faster response? " + d.contact_methods.note;
-          return { reply, suggestions: ['Check request status', 'Build an app myself', 'Launch a token'] };
+          return {
+            reply,
+            suggestions: ['Send a follow-up message', 'Do something else'],
+            council_request_id: d.request_id
+          };
         }
         return d.message || d.error || 'Request submitted!';
 
@@ -1856,6 +1868,7 @@ export default async function handler(req, res) {
           args.wallet = sanitizedWallet;
         }
         args._clientIp = clientIp; // for per-tool rate limiting (not sent to LLM)
+        args._sessionId = sid; // for council request session tracking
         toolArgs = args;
         const result = await executeTool(tc.function.name, args);
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
@@ -1866,6 +1879,7 @@ export default async function handler(req, res) {
       let directResult = generateDirectReply(functionCalled, lastToolResult?.content, toolArgs);
       let directReply = typeof directResult === 'object' && directResult?.reply ? directResult.reply : directResult;
       let directSuggestions = typeof directResult === 'object' ? directResult?.suggestions : undefined;
+      let councilRequestId = typeof directResult === 'object' ? directResult?.council_request_id : undefined;
 
       if (directReply) {
         // Direct response — no second LLM call needed
@@ -1883,7 +1897,7 @@ export default async function handler(req, res) {
             if (tr.txs) txData = { txs: tr.txs };
           } catch (_) {}
         }
-        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }) });
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }), ...(councilRequestId && { council_request_id: councilRequestId }) });
       }
 
       // Complex tools (health_check) — use LLM to interpret
