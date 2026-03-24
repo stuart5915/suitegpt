@@ -338,24 +338,28 @@ const INCLAWBATE_NARRATIVE_SCENES = {
 // @publicgoodstech — AI Agent News & Directory
 // ═══════════════════════════════════════════
 
+// PGT uses the SAME pillar every day — each day's 5 posts cover all sections.
+// The pillar just sets the overall theme/mood for image generation.
+const PGT_DAILY_PILLAR = { name: 'Daily Coverage', emoji: '🌐', needsImage: true, desc: 'Daily coverage of AI agents, public goods, builders, and ecosystem news. Each post covers a different section: agent spotlight, builder/vibecoder, public good, news/take, and article/thread.' };
 const PGT_PILLARS = [
-    { name: 'Weekly Roundup',       emoji: '📊', needsImage: true,  desc: 'Recap of the biggest AI agent news this week — launches, milestones, funding' },
-    { name: 'Agent Spotlight',      emoji: '🤖', needsImage: true,  desc: 'Deep dive on one AI agent project — what it does, how it works, why it matters' },
-    { name: 'Builder / Vibecoder',  emoji: '👷', needsImage: false, desc: 'Spotlight a builder, vibecoder, or team shipping AI agents — their story, their stack' },
-    { name: 'Data & Rankings',      emoji: '📈', needsImage: true,  desc: 'AI agent rankings by TVL, users, activity, GitHub commits, shipping velocity' },
-    { name: 'How It Works',         emoji: '💡', needsImage: false, desc: 'Explain an AI agent concept, framework, or protocol in simple terms' },
-    { name: 'Ecosystem News',       emoji: '🔥', needsImage: true,  desc: 'Breaking news, launches, partnerships, integrations across the AI agent space' },
-    { name: 'Public Goods Feature', emoji: '🌍', needsImage: true,  desc: 'Highlight a public good — open source tool, free infra, community resource' },
+    PGT_DAILY_PILLAR, // Sunday
+    PGT_DAILY_PILLAR, // Monday
+    PGT_DAILY_PILLAR, // Tuesday
+    PGT_DAILY_PILLAR, // Wednesday
+    PGT_DAILY_PILLAR, // Thursday
+    PGT_DAILY_PILLAR, // Friday
+    PGT_DAILY_PILLAR, // Saturday
 ];
 
+// Each slot angle maps to a section of the site. 5 posts/day, each covering a different area.
 const PGT_SLOT_ANGLES = {
-    'Weekly Roundup':       ['biggest launches', 'most active agents', 'funding & raises', 'community growth', 'tech breakthroughs'],
-    'Agent Spotlight':      ['what it does', 'how it compares', 'the team behind it', 'tokenomics & incentives', 'roadmap & vision'],
-    'Builder / Vibecoder':  ['their origin story', 'what they shipped', 'their tech stack', 'advice for new builders', 'what they are building next'],
-    'Data & Rankings':      ['top agents by TVL', 'fastest growing', 'most GitHub commits', 'highest user count', 'best performing tokens'],
-    'How It Works':         ['agent frameworks explained', 'how agents earn', 'agent vs bot', 'multi-agent systems', 'on-chain vs off-chain agents'],
-    'Ecosystem News':       ['new launches', 'partnerships', 'protocol upgrades', 'regulatory news', 'industry takes'],
-    'Public Goods Feature': ['open source tools', 'free infrastructure', 'community DAOs', 'education platforms', 'developer resources'],
+    'Daily Coverage': [
+        'AGENT SPOTLIGHT: Pick one AI agent project and spotlight it. Tag their @handle. Explain what it does and why it matters. Link to their site.',
+        'BUILDER/VIBECODER: Spotlight one builder or vibecoder shipping AI agents or public goods. Tag their @handle. Celebrate what they built.',
+        'PUBLIC GOOD: Highlight one public good — a free tool, open source project, or community resource. Tag their @handle. Explain why it matters.',
+        'NEWS/HOT TAKE: Share one piece of ecosystem news, a hot take, or an interesting observation about AI agents. Tag relevant projects.',
+        'ARTICLE/THREAD: Share a longer insight, tutorial, or analysis. Can be a thread. Link to publicgoods.tech for more. Tag projects mentioned.',
+    ],
 };
 
 const PGT_IMAGE_CONTEXT = `BRAND: Public Goods Tech — AI agent ecosystem tracker
@@ -367,50 +371,19 @@ NEVER: Humans, faces, mascots, cartoons, lobsters, memes. Keep it abstract, data
 FORMAT: 1:1 square for social posts.`;
 
 const PGT_SCENE_HINTS = {
-    'Weekly Roundup': 'Network overview. Vary: constellation of connected nodes pulsing with activity, data streams flowing between clusters, a globe with highlighted hotspots.',
-    'Agent Spotlight': 'Single agent focus. Vary: one bright glowing node at center with radiating connections, a magnifying lens over a network cluster, a spotlight beam on a circuit pattern.',
-    'Builder / Vibecoder': 'Human creativity meets code. Vary: keyboard with glowing green code reflections, terminal screen with network visualization, hands-free — just the tools and the glow.',
-    'Data & Rankings': 'Data visualization. Vary: bar charts made of glowing nodes, leaderboard with green accent highlights, ascending graph with network overlay.',
-    'How It Works': 'Explanation visual. Vary: flowchart of connected nodes with labels, layered architecture diagram in green and blue, branching decision tree with glowing endpoints.',
-    'Ecosystem News': 'Breaking energy. Vary: burst of green light radiating from center, network expanding outward rapidly, signal pulse traveling across connected nodes.',
-    'Public Goods Feature': 'Open and shared. Vary: globe with evenly distributed green nodes, open hands releasing light particles (abstract), interconnected circles forming a larger pattern.',
+    'Daily Coverage': 'Vary based on the tweet content. Agent posts: single bright node with radiating connections. Builder posts: keyboard/terminal with green code glow. Public goods: globe with distributed nodes. News: burst of energy from center. Data: charts and graphs with network overlay. Match the image to what the specific tweet is about.',
 };
 
 const PGT_NARRATIVE_SCENES = {
-    'Weekly Roundup': [
-        'A dark dashboard with multiple glowing green data panels, each showing a different metric pulsing with new data. Network connections between panels. Clean, editorial. 1:1.',
-        'A constellation map where each star is a green node representing an AI agent, with the brightest ones connected by luminous lines. Dark space background with subtle grid. 1:1.',
-        'A globe rendered in dark navy with circuit traces for continents, green nodes pulsing at key locations, data streams arcing between them. Overhead view. 1:1.',
-    ],
-    'Agent Spotlight': [
+    'Daily Coverage': [
         'A single brilliant green node at the center of a dark field, dozens of thin connection lines radiating outward to smaller nodes. The spotlight agent. Dramatic, focused. 1:1.',
-        'A detailed circuit board pattern forming the silhouette of a brain, with one section glowing brighter green than the rest. Dark background, high contrast. 1:1.',
-        'A magnifying glass hovering over a network map, the area under the lens glowing brighter with more detail visible. Investigative, editorial. 1:1.',
-    ],
-    'Builder / Vibecoder': [
         'A glowing terminal screen in a dark room, green code scrolling, the reflection casting a soft glow on the desk surface. No person visible — just the work. Atmospheric. 1:1.',
-        'Keyboard keys from above with soft green backlighting, code reflected in the surface. Clean, minimal, the tools of a builder. Shallow depth of field. 1:1.',
-        'Abstract representation of code becoming a network — lines of text on the left transforming into connected glowing nodes on the right. Dark background. 1:1.',
-    ],
-    'Data & Rankings': [
-        'Vertical bar chart made of stacked glowing green cubes, tallest bar brightest, dark grid background. Clean data visualization aesthetic. 1:1.',
-        'A leaderboard rendered as floating panels in dark space, #1 glowing gold, rest in green, connected by thin ranking lines. Futuristic sports scoreboard. 1:1.',
-        'An ascending line graph with each data point as a glowing node, the line itself made of connected particles. Upward trajectory. Dark background with grid. 1:1.',
-    ],
-    'How It Works': [
-        'A flowchart diagram with rounded boxes connected by glowing green arrows, each box containing an abstract icon. Educational, clear, dark background. 1:1.',
-        'Layered horizontal slices showing different levels of a system, each layer a slightly different shade of dark blue with green connection points between them. Architecture diagram feel. 1:1.',
-        'A tree diagram branching outward from a single root node, each branch ending in a glowing green leaf-node. Knowledge tree. Dark, clean. 1:1.',
-    ],
-    'Ecosystem News': [
-        'A burst of green energy radiating from a central point, particles and connection lines flying outward in all directions. Breaking news energy. Dark background. 1:1.',
-        'Multiple notification-style cards floating in dark space, each with a green accent dot, slightly overlapping. News feed aesthetic. Clean, editorial. 1:1.',
-        'A signal pulse traveling across a network of nodes, lighting each one up in sequence like a chain reaction. Movement, speed, news spreading. 1:1.',
-    ],
-    'Public Goods Feature': [
         'A globe made entirely of interconnected green nodes and lines, no solid surface — just the network itself. Beautiful, open, shared. Dark background. 1:1.',
-        'Concentric circles of nodes expanding outward, each ring connected to the next, representing open layers of infrastructure. Green on dark navy. 1:1.',
-        'An open book rendered as a glowing circuit board, knowledge flowing outward as particle streams. Education as public good. Dark, atmospheric. 1:1.',
+        'A burst of green energy radiating from a central point, particles and connection lines flying outward in all directions. Breaking news energy. Dark background. 1:1.',
+        'A dark dashboard with multiple glowing green data panels, each showing a different metric pulsing with new data. Network connections between panels. Clean, editorial. 1:1.',
+        'Keyboard keys from above with soft green backlighting, code reflected in the surface. Clean, minimal, the tools of a builder. Shallow depth of field. 1:1.',
+        'A constellation map where each star is a green node representing an AI agent, with the brightest ones connected by luminous lines. Dark space background with subtle grid. 1:1.',
+        'Multiple notification-style cards floating in dark space, each with a green accent dot, slightly overlapping. News feed aesthetic. Clean, editorial. 1:1.',
     ],
 };
 
@@ -432,7 +405,27 @@ function getAccountConfig(account) {
             sceneHints: PGT_SCENE_HINTS,
             narrativeScenes: PGT_NARRATIVE_SCENES,
             imageContext: PGT_IMAGE_CONTEXT,
-            identity: `You are @publicgoodstech, an independent AI agent ecosystem news source. You track and cover the AI agent space — launches, rankings, builders, frameworks, and public goods. Your voice is informed, concise, and neutral but excited about AI agents. You're a tech journalist, not a shill. You tag projects you cover. You spotlight builders and vibecoders. You post data and rankings. You never shill bags — you cover what's real. Think: baseposting but for AI agents. Your site is publicgoods.tech.`,
+            identity: `You are @publicgoodstech, an independent AI agent ecosystem news source. You track and cover the AI agent space — launches, rankings, builders, frameworks, and public goods. Your voice is informed, concise, and neutral but excited about AI agents. You're a tech journalist, not a shill. You never shill bags — you cover what's real. Think: baseposting but for AI agents. Your site is publicgoods.tech.
+
+CRITICAL — TAGGING PROJECTS:
+Every single post MUST @mention at least one project. This is the #1 rule. Tag the project's X handle in the tweet. When you mention a project by name, ALWAYS include their @handle.
+
+KNOWN PROJECTS TO COVER (use their real @handles):
+- @inclawbate / @inclawbator — AI incubator, app builder, token launcher on Base
+- @virtaboreal (Virtuals Protocol) — co-owned AI agents platform
+- @ai16zdao (ElizaOS) — open source multi-agent framework
+- @autonolas (Olas) — decentralized agent network
+- @Fetch_ai — decentralized ML and AI agents
+- @bankaboreal (BankrBot) — AI agent for DeFi
+- @ClankerBase (Clanker) — token launcher on Base
+- @SaladorNetwork (Salad) — distributed GPU cloud
+- @ionaboreal (io.net) — decentralized GPU network
+- @grass_io (Grass) — bandwidth sharing network
+- @HoneygainApp — bandwidth monetization
+- @rendertoken (Render) — GPU rendering network
+- @akaboreal (Akash) — decentralized cloud compute
+
+Always research and use the CORRECT @handle. If unsure of a handle, mention the project name without @ rather than guessing wrong. Rotate which projects you cover — don't repeat the same one two days in a row.`,
         };
     }
     if (account === 'inclawbate') {
@@ -1275,7 +1268,7 @@ RULES:
 - No em dashes (—)
 - No quotation marks around the tweet
 - Lowercase is fine, even preferred for casual tweets
-- NEVER mention any person's name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what's possible — not individuals.
+- ${account === 'publicgoodstech' ? 'ALWAYS tag the project you are covering with their @handle. Every post should @mention at least one project. This is how we drive engagement — they retweet, their audience sees us.' : 'NEVER mention any person\'s name, handle, or username. No @mentions, no names, no shoutouts. Talk about the platform, apps, and what\'s possible — not individuals.'}
 - NEVER use vague filler like "various", "popular ones", "top apps" without naming them. Either use specific app names from the data above, or don't mention apps at all. Be concrete or be general about the platform — never vaguely in between.
 - When citing numbers, use ONLY the real stats provided — NEVER invent numbers
 - Vary which ecosystem links you include — match the link to the tweet topic, don't always default to inclawbate.app
