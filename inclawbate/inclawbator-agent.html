@@ -1817,16 +1817,19 @@ async function loadDefiDashboard() {
     document.getElementById('defiDashboard').style.display = 'block';
 
     // Fetch all data in parallel
-    var [ethBal, usdcBal, clawsBal, staking, priceData] = await Promise.all([
+    var [ethBal, usdcBal, clawsBal, staking, clawsDex, ethDex] = await Promise.all([
         getEthBalance(wallet),
         getErc20Balance(USDC_ADDR, wallet, 6),
         getErc20Balance(CLAWS_ADDR, wallet, 18),
         getStakingData(wallet),
-        fetch('/api/inclawbate/analytics').then(r => r.json()).catch(() => ({}))
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDR).then(r => r.json()).catch(() => ({})),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006').then(r => r.json()).catch(() => ({}))
     ]);
 
-    var ethPrice = priceData.eth_price || 2500;
-    var clawsPrice = priceData.price_usd || 0;
+    var clawsPair = (clawsDex.pairs || [])[0] || {};
+    var ethPair = (ethDex.pairs || []).find(function(p) { return p.quoteToken && p.quoteToken.symbol === 'USDbC' || p.quoteToken && p.quoteToken.symbol === 'USDC'; }) || (ethDex.pairs || [])[0] || {};
+    var clawsPrice = parseFloat(clawsPair.priceUsd || '0');
+    var ethPrice = parseFloat(ethPair.priceUsd || '2500');
 
     // Update balances
     document.getElementById('defiEthBal').textContent = fmtNum(ethBal, 4);
@@ -1853,12 +1856,10 @@ async function loadDefiDashboard() {
 }
 
 // Load dashboard when DeFi tab is clicked or wallet connects
-var _defiLoaded = false;
-var origContextSwitch = document.querySelectorAll('.inclaw-tab');
-origContextSwitch.forEach(function(tab) {
+document.querySelectorAll('.inclaw-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
-        if (tab.dataset.context === 'defi' || tab.dataset.tab === 'defi') {
-            setTimeout(loadDefiDashboard, 100);
+        if (tab.dataset.tab === 'defi') {
+            setTimeout(loadDefiDashboard, 200);
         }
     });
 });
