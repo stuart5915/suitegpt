@@ -1762,6 +1762,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Pre-LLM intercept: catch common phrases the LLM keeps mishandling
+    const msgLower = message.toLowerCase().trim();
+    if (/^(build something new|start something new|build a new app|make something new|create something new|i want to build|build me an app|make me an app|i want to build an app)$/i.test(msgLower)) {
+      const reply = "What kind of app are you thinking? A game, a dashboard, a tool, a landing page? Describe what you want and I'll build it for you right here!";
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid });
+    }
+
     let functionCalled = null;
     let toolArgs = null;
     let data = await callLLM(history);
