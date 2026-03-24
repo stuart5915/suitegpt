@@ -4,6 +4,26 @@
 import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { logToFeed } from './notify.js';
 import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';
+import crypto from 'crypto';
+
+// ── Rate limiter (in-memory, per Vercel instance — resets on cold start) ──
+const rateLimits = new Map(); // ip → { count, resetAt }
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 20; // 20 messages per minute per IP
+const RATE_LIMIT_HIRE = new Map(); // ip → { count, resetAt }
+const RATE_LIMIT_HIRE_MAX = 3; // 3 hire requests per minute
+
+function checkRateLimit(ip, limitMap, max) {
+  const now = Date.now();
+  const entry = limitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    limitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+  entry.count++;
+  if (entry.count > max) return true;
+  return false;
+}
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 // Support multiple Groq API keys for higher throughput — comma-separated in env
@@ -1110,7 +1130,12 @@ async function executeTool(name, args) {
     case 'disperse_tokens': return await disperseTokensAction(args);
     case 'deploy_staking': return await deployStakingAction(args);
     case 'health_check': return await healthCheck(args);
-    case 'hire_inclawbator': return await hireInclawbatorInfo(args);
+    case 'hire_inclawbator':
+      // Extra rate limit on hire requests to prevent Telegram spam
+      if (checkRateLimit(args._clientIp || 'unknown', RATE_LIMIT_HIRE, RATE_LIMIT_HIRE_MAX)) {
+        return JSON.stringify({ error: 'Too many hire requests. Please wait a minute before trying again.' });
+      }
+      return await hireInclawbatorInfo(args);
     case 'build_app': return await buildAppAction(args);
     case 'get_yield_options': return getYieldOptions(args);
     case 'deposit_to_strategy': return await depositToStrategy(args);
@@ -1440,11 +1465,25 @@ function matchIntent(msg) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS — whitelist known domains instead of wildcard
+  const origin = req.headers.origin || '';
+  const ALLOWED_ORIGINS = ['https://inclawbate.app', 'https://www.inclawbate.app', 'https://pokerai.app', 'https://www.pokerai.app', 'https://oddsclaw.app', 'https://salvation4humanity.com'];
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Allow server-to-server calls (no origin header) like x-responder
+    res.setHeader('Access-Control-Allow-Origin', 'https://inclawbate.app');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  // Rate limiting — per IP
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || 'unknown';
+  if (checkRateLimit(clientIp, rateLimits, RATE_LIMIT_MAX)) {
+    return res.status(429).json({ error: 'Too many messages. Please wait a moment and try again.' });
+  }
 
   const { message, session_id, wallet, client_history } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message is required' });
@@ -1520,7 +1559,7 @@ export default async function handler(req, res) {
   if (isAttack) {
     return res.status(200).json({
       reply: "I can't share internal system details. I'm the Inclawbator — I help you build, launch, and earn in the Inclawbate ecosystem. What can I help you with?",
-      session_id: session_id || 'anon_' + Date.now()
+      session_id: session_id || 'anon_' + crypto.randomUUID()
     });
   }
 
@@ -1528,7 +1567,7 @@ export default async function handler(req, res) {
   const sanitizedMessage = typeof message === 'string' ? message.slice(0, 4000) : '';
   if (!sanitizedMessage.trim()) return res.status(400).json({ error: 'message is required' });
 
-  const sid = session_id || 'anon_' + Date.now();
+  const sid = session_id || 'anon_' + crypto.randomUUID();
 
   // Prefer client-side history (Vercel serverless functions are stateless across cold starts)
   // NOTE: client_history already includes the current user message (frontend pushes before fetch),
@@ -1640,6 +1679,7 @@ export default async function handler(req, res) {
         if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app')) {
           args.wallet = sanitizedWallet;
         }
+        args._clientIp = clientIp; // for per-tool rate limiting (not sent to LLM)
         toolArgs = args;
         const result = await executeTool(tc.function.name, args);
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
