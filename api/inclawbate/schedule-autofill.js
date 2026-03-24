@@ -1410,7 +1410,9 @@ Do NOT include IMAGE prompts — images are handled separately.`;
 
         const rawText = data.choices?.[0]?.message?.content || '';
         console.log('[PGT Generate] Raw AI response:', rawText.substring(0, 500));
-        const tweetBlocks = rawText.split(/\n*\d+[\.\)]\s*/);
+        // Strip markdown bold from AI response before parsing
+        const cleanText = rawText.replace(/\*\*/g, '');
+        const tweetBlocks = cleanText.split(/\n*\d+[\.\)]\s*/);
         const tweets = [];
         for (const block of tweetBlocks) {
             const m = block.match(/TWEET:\s*([\s\S]*?)$/i);
@@ -1420,9 +1422,9 @@ Do NOT include IMAGE prompts — images are handled separately.`;
             }
         }
         // Fallback: if TWEET: prefix parsing failed, try extracting any quoted or standalone lines
-        if (tweets.length === 0 && rawText.length > 20) {
+        if (tweets.length === 0 && cleanText.length > 20) {
             console.log('[PGT Generate] TWEET: parsing failed, trying fallback');
-            const lines = rawText.split(/\n/).filter(l => l.trim().length > 20);
+            const lines = cleanText.split(/\n/).filter(l => l.trim().length > 20);
             for (const line of lines) {
                 let text = line.replace(/^\d+[\.\)]\s*/, '').replace(/^TWEET:\s*/i, '').replace(/^["']|["']$/g, '').trim();
                 if (text.length > 20 && text.length <= 4000 && tweets.length < picks.length) {
