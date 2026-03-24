@@ -1346,7 +1346,8 @@
         <div class="sched-header">
             <h2>Content Schedule</h2>
             <div style="display:flex;align-items:center;gap:8px">
-                <div class="sched-header-meta">Free &middot; max 3 active</div>
+                <div class="sched-header-meta" id="schedHeaderMeta">Free &middot; max 3 active</div>
+                <!-- Style dropdown for inclawbate/inclawbator -->
                 <div class="gen-dropdown" id="genDropdown" style="display:none">
                     <button type="button" class="gen-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
                         &#x2728; Generate &#x25BE;
@@ -1382,6 +1383,10 @@
                         </button>
                     </div>
                 </div>
+                <!-- Direct generate button for PGT (database-driven, no style choice) -->
+                <button type="button" class="gen-dropdown-toggle" id="genPgtBtn" style="display:none" onclick="window._autofillDay('mixed')">
+                    &#x1F4CA; Generate from DB
+                </button>
                 <button type="button" class="approve-all-btn" id="approveAllBtn" style="display:none" onclick="window._approveAll()">
                     &#x2713; Approve all
                 </button>
@@ -2007,12 +2012,20 @@
             followLink.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Follow @' + handle;
         }
 
-        // Toggle pipeline views
+        // Toggle pipeline views + generate button
         var isPgt = account === 'publicgoodstech';
         var pipeDefault = document.getElementById('pipelineDefault');
         var pipePgt = document.getElementById('pipelinePgt');
         if (pipeDefault) pipeDefault.style.display = isPgt ? 'none' : '';
         if (pipePgt) pipePgt.style.display = isPgt ? '' : 'none';
+        var genDd = document.getElementById('genDropdown');
+        var genPgt = document.getElementById('genPgtBtn');
+        if (genDd && genPgt && _hasEditAccess()) {
+            genDd.style.display = isPgt ? 'none' : '';
+            genPgt.style.display = isPgt ? '' : 'none';
+        }
+        var headerMeta = document.getElementById('schedHeaderMeta');
+        if (headerMeta) headerMeta.textContent = isPgt ? '4 slots/day \u00b7 database-driven' : 'Free \u00b7 max 3 active';
 
         // Update how-it-works steps for PGT vs default
         var howSteps = document.querySelectorAll('.sched-how-step span:last-child');
@@ -2125,8 +2138,11 @@
 
         // Show editor/admin controls
         var canEdit = _hasEditAccess();
+        var isPgtNow = _activeAccount === 'publicgoodstech';
         var genDd = document.getElementById('genDropdown');
-        genDd.style.display = canEdit ? 'inline-block' : 'none';
+        var genPgtBtn = document.getElementById('genPgtBtn');
+        genDd.style.display = (canEdit && !isPgtNow) ? 'inline-block' : 'none';
+        if (genPgtBtn) genPgtBtn.style.display = (canEdit && isPgtNow) ? 'inline-block' : 'none';
         var adminBanner = document.getElementById('adminBanner');
         if (adminBanner) adminBanner.style.display = canEdit ? '' : 'none';
         var crBanner = document.getElementById('clawreplyBanner');
@@ -2447,7 +2463,11 @@
                 }
 
             } else if (!isPast) {
-                html += '<span class="sched-avail">Available \u2014 click to book</span>';
+                if (_activeAccount === 'publicgoodstech' && !_hasEditAccess()) {
+                    html += '<span style="font-size:0.78rem;color:var(--text-dim)">Open \u2014 auto-filled by admin</span>';
+                } else {
+                    html += '<span class="sched-avail">Available \u2014 click to book</span>';
+                }
             } else {
                 html += '<span style="font-size:0.78rem;color:var(--text-dim)">\u2014</span>';
             }
@@ -2467,7 +2487,7 @@
                 (function(t) {
                     if (_hasEditAccess()) {
                         el.addEventListener('click', function() { _openNewDraft(t); });
-                    } else {
+                    } else if (_activeAccount !== 'publicgoodstech') {
                         el.addEventListener('click', function() { openBookForm(t); });
                     }
                 })(new Date(slotTime));
@@ -2594,7 +2614,7 @@
         document.getElementById('imgPromptText').textContent = '';
 
         // Update placeholder with account handle
-        var handle = _activeAccount === 'inclawbate' ? '@inclawbate' : '@inclawbator';
+        var handle = _activeAccount === 'inclawbate' ? '@inclawbate' : (_activeAccount === 'publicgoodstech' ? '@publicgoodstech' : '@inclawbator');
         document.getElementById('schedBookTweet').placeholder = 'What do you want ' + handle + ' to post? Write the exact tweet...';
 
         // Everyone sees the same simple form — write your tweet
@@ -2853,14 +2873,21 @@
         if (!auth || !auth.token) { alert('Sign in first'); return; }
         if (!_selectedDay) return;
 
-        // Close dropdown
+        var isPgtGen = _activeAccount === 'publicgoodstech';
+
+        // Close dropdown / set loading state
         var dd = document.getElementById('genDropdown');
+        var pgtBtn = document.getElementById('genPgtBtn');
         dd.classList.remove('open');
 
-        var toggle = dd.querySelector('.gen-dropdown-toggle');
+        var toggle = isPgtGen ? pgtBtn : dd.querySelector('.gen-dropdown-toggle');
         toggle.disabled = true;
         var styleLabels = { mixed: 'Mixed', punchy: 'Punchy', formatted: 'Formatted', engagement: 'Engagement' };
-        toggle.innerHTML = '&#x2728; Generating ' + (styleLabels[style] || '') + '...';
+        if (isPgtGen) {
+            toggle.innerHTML = '&#x1F4CA; Generating...';
+        } else {
+            toggle.innerHTML = '&#x2728; Generating ' + (styleLabels[style] || '') + '...';
+        }
 
         var dayStr = _selectedDay.getFullYear() + '-' + String(_selectedDay.getMonth() + 1).padStart(2, '0') + '-' + String(_selectedDay.getDate()).padStart(2, '0');
         try {
@@ -2879,12 +2906,20 @@
                 renderDayStrip();
                 updatePillarBanner(_selectedDay);
             }
-            alert('Generated ' + (data.generated || 0) + ' ' + (styleLabels[style] || '') + ' drafts for ' + (data.pillar || 'today') + '.');
+            if (isPgtGen) {
+                alert('Generated ' + (data.generated || 0) + ' project drafts from database.');
+            } else {
+                alert('Generated ' + (data.generated || 0) + ' ' + (styleLabels[style] || '') + ' drafts for ' + (data.pillar || 'today') + '.');
+            }
         } catch(e) {
             alert('Failed to generate: ' + e.message);
         } finally {
             toggle.disabled = false;
-            toggle.innerHTML = '&#x2728; Generate &#x25BE;';
+            if (isPgtGen) {
+                toggle.innerHTML = '&#x1F4CA; Generate from DB';
+            } else {
+                toggle.innerHTML = '&#x2728; Generate &#x25BE;';
+            }
         }
     };
 
@@ -4148,11 +4183,16 @@
         _newDraftSlotTime = slotTime.toISOString();
         var ta = document.getElementById('draftModalText');
         ta.value = '';
+        var isPgt = _activeAccount === 'publicgoodstech';
 
-        // Populate pillar context
+        // Hide PGT project card (no project yet for new draft)
+        var pgtEl = document.getElementById('draftPgtProject');
+        if (pgtEl) { pgtEl.innerHTML = ''; pgtEl.style.display = 'none'; }
+
+        // Populate pillar context (hide for PGT)
         var dow = slotTime.getUTCDay();
         var pillar = activePillars()[dow];
-        if (pillar) {
+        if (pillar && !isPgt) {
             document.getElementById('draftModalPillar').style.display = 'flex';
             document.getElementById('draftModalPillarEmoji').textContent = pillar.emoji;
             document.getElementById('draftModalPillarName').textContent = pillar.name;
@@ -4161,10 +4201,11 @@
             document.getElementById('draftModalPillar').style.display = 'none';
         }
 
-        // Populate emoji row
+        // Populate emoji row — PGT-specific emojis
         var emojiRow = document.getElementById('draftModalEmojis');
         emojiRow.innerHTML = '';
-        QUICK_EMOJIS.forEach(function(em) {
+        var emojis = isPgt ? ['\u{1F916}', '\u{1F30D}', '\u{1F477}', '\u{26D3}\uFE0F', '\u{1F525}', '\u{1F4CA}', '\u{1F680}', '\u{2728}', '\u{1F4E1}', '\u{1F3C6}', '\u{2705}', '\u{1F50D}'] : QUICK_EMOJIS;
+        emojis.forEach(function(em) {
             var btn = document.createElement('button');
             btn.className = 'draft-modal-emoji';
             btn.textContent = em;
@@ -4179,10 +4220,16 @@
             emojiRow.appendChild(btn);
         });
 
-        // Populate quick inserts
+        // Populate quick inserts — PGT-specific links
         var insertsRow = document.getElementById('draftModalInserts');
         insertsRow.innerHTML = '';
-        QUICK_INSERTS.forEach(function(item) {
+        var inserts = isPgt ? [
+            { label: 'publicgoods.tech', text: 'publicgoods.tech' },
+            { label: 'agents', text: 'publicgoods.tech/agents' },
+            { label: 'builders', text: 'publicgoods.tech/builders' },
+            { label: 'public goods', text: 'publicgoods.tech/goods' },
+        ] : QUICK_INSERTS;
+        inserts.forEach(function(item) {
             var chip = document.createElement('span');
             chip.className = 'draft-modal-insert';
             chip.textContent = item.label;
@@ -4198,8 +4245,10 @@
             insertsRow.appendChild(chip);
         });
 
-        // Render incubation project chips
-        renderProjectChips(ta);
+        // Render incubation project chips (skip for PGT)
+        var projSection = document.getElementById('draftModalProjectsSection');
+        if (projSection) projSection.style.display = isPgt ? 'none' : '';
+        if (!isPgt) renderProjectChips(ta);
 
         // Reset image prompt
         document.getElementById('draftModalImgResult').style.display = 'none';
