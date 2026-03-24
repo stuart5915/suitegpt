@@ -517,6 +517,13 @@
             opacity: 0; transition: opacity 0.15s;
         }
         .news-link-card:hover .news-read-arrow { opacity: 1; }
+        .pgt-chip {
+            padding: 6px 14px; border-radius: var(--radius-full);
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            color: var(--text-secondary); font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: var(--font);
+        }
+        .pgt-chip:hover { border-color: rgba(52,211,153,0.3); color: var(--accent); background: rgba(52,211,153,0.06); }
         .news-list {
             display: flex; flex-direction: column; gap: 6px;
         }
@@ -959,8 +966,25 @@
             <h1>Tracking the Agents<br>Building the Future</h1>
             <p>The open directory of AI agents, public goods, and builders shaping the decentralized web.</p>
             <div class="hero-buttons">
-                <button class="btn-primary" onclick="switchTab('agents')">Explore Agents</button>
-                <a class="btn-secondary" href="https://x.com/inclawbate" target="_blank" rel="noopener">Follow on X</a>
+                <!-- Chat submission input -->
+                <div id="heroChatWrap" style="max-width:520px;margin:0 auto;width:100%">
+                    <div style="display:flex;gap:6px;margin-bottom:10px;justify-content:center;flex-wrap:wrap">
+                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Add my AI agent to the directory';heroInput.focus()">Add my AI agent</button>
+                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='I\\'m a builder, feature me';heroInput.focus()">I'm a builder</button>
+                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Submit a public good';heroInput.focus()">Submit a public good</button>
+                        <button class="pgt-chip" onclick="document.getElementById('heroInput').value='Share a news link';heroInput.focus()">Share news</button>
+                    </div>
+                    <form id="heroChatForm" onsubmit="sendHeroChat(event)" style="display:flex;gap:8px">
+                        <input type="text" id="heroInput" placeholder="Tell us about your project, or just say hi..." style="flex:1;padding:12px 18px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:var(--radius-full);color:var(--text);font-size:0.88rem;outline:none;font-family:var(--font);transition:border-color 0.2s" onfocus="this.style.borderColor='rgba(52,211,153,0.4)'" onblur="this.style.borderColor='var(--border)'">
+                        <button type="submit" id="heroSendBtn" style="padding:12px 20px;background:var(--accent);border:none;border-radius:var(--radius-full);color:#0b0f14;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:var(--font);white-space:nowrap;transition:opacity 0.15s">Send</button>
+                    </form>
+                    <div id="heroChatReply" style="display:none;margin-top:12px;padding:14px 18px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:12px;font-size:0.85rem;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap"></div>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+                    <button class="btn-secondary" onclick="switchTab('agents')" style="font-size:0.78rem;padding:8px 18px">Browse Agents</button>
+                    <a class="btn-secondary" href="https://x.com/publicgoodstech" target="_blank" rel="noopener" style="font-size:0.78rem;padding:8px 18px">Follow on X</a>
+                </div>
             </div>
         </div>
     </section>
@@ -981,8 +1005,8 @@
                 <div class="stat-label">Builders</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="statArticles">--</div>
-                <div class="stat-label">Articles</div>
+                <div class="stat-value" id="statNews">--</div>
+                <div class="stat-label">News Links</div>
             </div>
         </div>
 
@@ -1347,7 +1371,8 @@ async function loadHomeData() {
     document.getElementById('statAgents').textContent = agentsData.length || '50+';
     document.getElementById('statGoods').textContent = goodsData.length || '--';
     document.getElementById('statBuilders').textContent = buildersData.length || '--';
-    document.getElementById('statArticles').textContent = articlesData.length || '--';
+    const newsEl = document.getElementById('statNews');
+    if (newsEl) newsEl.textContent = newsData.length || '--';
 
     // Seed news if empty
     await initSeedNews();
@@ -2084,6 +2109,54 @@ async function initSeedNews() {
     }
     renderHomeNews();
     renderNews();
+}
+
+// ── Hero Chat ──
+let _chatHistory = [];
+let _chatSending = false;
+
+async function sendHeroChat(e) {
+    e.preventDefault();
+    const input = document.getElementById('heroInput');
+    const reply = document.getElementById('heroChatReply');
+    const btn = document.getElementById('heroSendBtn');
+    const msg = input.value.trim();
+    if (!msg || _chatSending) return;
+
+    _chatSending = true;
+    btn.textContent = '...';
+    btn.disabled = true;
+    reply.style.display = 'block';
+    reply.textContent = 'Thinking...';
+    reply.style.color = 'var(--text-dim)';
+
+    _chatHistory.push({ role: 'user', content: msg });
+
+    try {
+        const res = await fetch('/api/publicgoods/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, history: _chatHistory.slice(-10) })
+        });
+        const data = await res.json();
+        const text = data.reply || 'How can I help?';
+        reply.textContent = text;
+        reply.style.color = 'var(--text-secondary)';
+        _chatHistory.push({ role: 'assistant', content: text });
+
+        if (data.submitted) {
+            reply.style.borderColor = 'rgba(52,211,153,0.4)';
+            reply.style.background = 'rgba(52,211,153,0.08)';
+        }
+    } catch (err) {
+        reply.textContent = 'Something went wrong — try again.';
+        reply.style.color = 'var(--coral)';
+    }
+
+    input.value = '';
+    btn.textContent = 'Send';
+    btn.disabled = false;
+    _chatSending = false;
 }
 
 // ── Initialize ──
