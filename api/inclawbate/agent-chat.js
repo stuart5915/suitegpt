@@ -653,8 +653,34 @@ async function buildAppAction(args) {
   if (!args.app_name) return JSON.stringify({ needs_info: true, missing: ['app name'], message: 'What should we call this app? I need a short name for the URL.' });
   if (!args.description || args.description.length < 10) return JSON.stringify({ needs_info: true, missing: ['description'], message: 'Tell me more about what you want built — what should it look like? What should it do?' });
 
-  const slug = args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  let slug = args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   if (!slug) return JSON.stringify({ error: 'Invalid app name — use letters and numbers.' });
+
+  // When updating, try to find the actual slug from user's existing apps
+  // The LLM might pass "tower defense test" but the real slug is "a-tower-defense-test"
+  if (args.update && args.wallet) {
+    try {
+      const lookupRes = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(args.wallet) + '&limit=50');
+      const lookupData = await lookupRes.json();
+      const existingApps = lookupData.apps || [];
+      // Try exact slug match first, then fuzzy name match
+      const exactMatch = existingApps.find(a => a.slug === slug);
+      if (exactMatch) {
+        slug = exactMatch.slug;
+      } else {
+        // Fuzzy match — check if any app name contains the search term or vice versa
+        const searchName = args.app_name.toLowerCase();
+        const fuzzyMatch = existingApps.find(a =>
+          a.slug.includes(slug) || slug.includes(a.slug) ||
+          (a.name && a.name.toLowerCase().includes(searchName)) ||
+          (a.name && searchName.includes(a.name.toLowerCase()))
+        );
+        if (fuzzyMatch) {
+          slug = fuzzyMatch.slug;
+        }
+      }
+    } catch (_) { /* lookup failed, proceed with generated slug */ }
+  }
 
   try {
     // Generate HTML using Groq Llama 70B (free)
