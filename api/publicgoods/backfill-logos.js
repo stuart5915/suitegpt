@@ -72,20 +72,23 @@ export default async function handler(req, res) {
 
     // GET — stats
     if (req.method === 'GET') {
-        const [agents, goods, builders] = await Promise.all([
+        const [agents, goods, builders, protocols] = await Promise.all([
             supabase.from('pgt_agents').select('id, name, logo_url, x_handle, website'),
             supabase.from('pgt_public_goods').select('id, name, logo_url, x_handle, website'),
             supabase.from('pgt_builders').select('id, name, avatar_url, x_handle, website, github'),
+            supabase.from('pgt_protocols').select('id, name, logo_url, x_handle, website, github'),
         ]);
         const stats = {
             agents: { total: (agents.data||[]).length, with_logo: (agents.data||[]).filter(a => a.logo_url).length },
             goods: { total: (goods.data||[]).length, with_logo: (goods.data||[]).filter(g => g.logo_url).length },
             builders: { total: (builders.data||[]).length, with_avatar: (builders.data||[]).filter(b => b.avatar_url).length },
+            protocols: { total: (protocols.data||[]).length, with_logo: (protocols.data||[]).filter(p => p.logo_url).length },
         };
         stats.coverage = {
             agents: stats.agents.total ? Math.round(stats.agents.with_logo / stats.agents.total * 100) + '%' : 'n/a',
             goods: stats.goods.total ? Math.round(stats.goods.with_logo / stats.goods.total * 100) + '%' : 'n/a',
             builders: stats.builders.total ? Math.round(stats.builders.with_avatar / stats.builders.total * 100) + '%' : 'n/a',
+            protocols: stats.protocols.total ? Math.round(stats.protocols.with_logo / stats.protocols.total * 100) + '%' : 'n/a',
         };
         return res.json(stats);
     }
@@ -99,18 +102,20 @@ export default async function handler(req, res) {
         const dryRun = action === 'preview';
         const refreshAll = action === 'refresh';
 
-        const results = { agents: [], goods: [], builders: [], errors: [] };
+        const results = { agents: [], goods: [], builders: [], protocols: [], errors: [] };
 
         // Fetch all entries
-        const [agentsRes, goodsRes, buildersRes] = await Promise.all([
+        const [agentsRes, goodsRes, buildersRes, protocolsRes] = await Promise.all([
             supabase.from('pgt_agents').select('id, name, logo_url, x_handle, website, github'),
             supabase.from('pgt_public_goods').select('id, name, logo_url, x_handle, website, github'),
             supabase.from('pgt_builders').select('id, name, avatar_url, x_handle, website, github'),
+            supabase.from('pgt_protocols').select('id, name, logo_url, x_handle, website, github'),
         ]);
 
         const agents = (agentsRes.data || []).filter(a => refreshAll || !a.logo_url);
         const goods = (goodsRes.data || []).filter(g => refreshAll || !g.logo_url);
         const builders = (buildersRes.data || []).filter(b => refreshAll || !b.avatar_url);
+        const protocols = (protocolsRes.data || []).filter(p => refreshAll || !p.logo_url);
 
         // Process agents
         for (const agent of agents) {
@@ -157,12 +162,28 @@ export default async function handler(req, res) {
             }
         }
 
+        // Process protocols
+        for (const protocol of protocols) {
+            try {
+                const logoUrl = await findLogo(protocol);
+                if (logoUrl) {
+                    if (!dryRun) {
+                        await supabase.from('pgt_protocols').update({ logo_url: logoUrl }).eq('id', protocol.id);
+                    }
+                    results.protocols.push({ name: protocol.name, logo_url: logoUrl });
+                }
+            } catch (e) {
+                results.errors.push({ table: 'protocols', name: protocol.name, error: e.message });
+            }
+        }
+
         return res.json({
             action: dryRun ? 'preview (dry run)' : action,
             updated: {
                 agents: results.agents.length,
                 goods: results.goods.length,
                 builders: results.builders.length,
+                protocols: results.protocols.length,
             },
             details: results,
         });
