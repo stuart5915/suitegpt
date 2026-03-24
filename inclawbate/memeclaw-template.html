@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TOKEN_SYMBOL}} — {{MEME_NAME}} | MemeClaw</title>
+    <meta name="description" content="{{MEME_NAME}} is a certified meme with a real token. Vote on what it becomes next.">
+    <meta property="og:title" content="{{TOKEN_SYMBOL}} — {{MEME_NAME}}">
+    <meta property="og:description" content="Certified meme. Real token. Community decides what it becomes.">
+    <meta property="og:image" content="{{MEME_IMAGE}}">
+    <meta property="og:url" content="https://inclawbate.app/s/{{SLUG}}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent: {{ACCENT_COLOR}};
+            --accent-rgb: 0, 0, 0;
+            --bg-deepest: #06060b;
+            --bg-surface: #0a0a11;
+            --bg-card: #15151e;
+            --bg-card-hover: #1a1a26;
+            --border-subtle: hsl(240, 4%, 16%);
+            --border-accent: hsl(240, 4%, 22%);
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b8;
+            --text-dim: #606078;
+            --font-display: 'Nunito', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 18px;
+            --shadow-glow: 0 0 20px color-mix(in srgb, var(--accent) 25%, transparent);
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            background: var(--bg-deepest);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center;
+            padding: 80px 20px 48px;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+        }
+        .hero-image {
+            width: 140px;
+            height: 140px;
+            border-radius: var(--radius-xl);
+            object-fit: cover;
+            border: 3px solid var(--border-subtle);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-glow);
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-symbol {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .hero-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* ── Section Common ── */
+        .section {
+            padding: 48px 0;
+        }
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        /* ── Token Info ── */
+        .token-info {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .token-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .token-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+        .token-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+            text-align: right;
+        }
+        .token-address-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            justify-content: flex-end;
+            min-width: 0;
+        }
+        .copy-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .buy-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .buy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-glow);
+            text-decoration: none;
+            color: #fff;
+        }
+
+        /* ── Vote Section ── */
+        .vote-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 560px) {
+            .vote-grid { grid-template-columns: 1fr; }
+        }
+        .vote-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.2s, transform 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .vote-card:hover {
+            border-color: var(--border-accent);
+            transform: translateY(-2px);
+        }
+        .vote-card.voted {
+            border-color: var(--accent);
+            background: var(--bg-card-hover);
+        }
+        .vote-card.voted::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent);
+        }
+        .vote-option-num {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .vote-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+        .vote-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex: 1;
+        }
+        .vote-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .vote-count {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        .vote-btn {
+            padding: 8px 18px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .vote-btn:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+        .vote-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .vote-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+        .vote-bar {
+            height: 3px;
+            background: var(--bg-deepest);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .vote-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* ── Milestone ── */
+        .milestone-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            text-align: center;
+        }
+        .milestone-text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .milestone-bar-outer {
+            height: 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .milestone-bar-inner {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fff));
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        .milestone-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            padding: 48px 20px 32px;
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 24px;
+        }
+        .footer-main {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+        .footer-main a {
+            color: var(--text-secondary);
+        }
+        .footer-main a:hover {
+            color: var(--accent);
+        }
+        .ecosystem-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            padding: 6px 14px;
+            transition: border-color 0.2s;
+        }
+        .ecosystem-badge:hover {
+            border-color: var(--border-accent);
+            text-decoration: none;
+        }
+        .ecosystem-badge img {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up {
+            animation: fadeUp 0.5s ease forwards;
+            opacity: 0;
+        }
+        .fade-up:nth-child(2) { animation-delay: 0.08s; }
+        .fade-up:nth-child(3) { animation-delay: 0.16s; }
+        .fade-up:nth-child(4) { animation-delay: 0.24s; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <img class="hero-image fade-up" src="{{MEME_IMAGE}}" alt="{{MEME_NAME}}" onerror="this.style.display='none'">
+    <h1 class="fade-up">{{MEME_NAME}}</h1>
+    <span class="hero-symbol fade-up">{{TOKEN_SYMBOL}}</span>
+    <p class="hero-subtitle fade-up">Certified meme. Real token. Community decides what it becomes.</p>
+</div>
+
+<div class="container">
+
+    <!-- Token Info -->
+    <div class="section fade-up">
+        <h2 class="section-title">Token Info</h2>
+        <div class="token-info">
+            <div class="token-row">
+                <span class="token-label">Chain</span>
+                <span class="token-value">Base</span>
+            </div>
+            <div class="token-row">
+                <span class="token-label">Contract</span>
+                <div class="token-address-row">
+                    <span class="token-value" id="tokenAddr">{{TOKEN_ADDRESS}}</span>
+                    <button class="copy-btn" onclick="copyAddress()">Copy</button>
+                </div>
+            </div>
+            <a class="buy-btn" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">
+                Buy on Uniswap
+            </a>
+        </div>
+    </div>
+
+    <!-- Vote Section -->
+    <div class="section">
+        <h2 class="section-title fade-up">What should this become?</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;" class="fade-up">
+            Vote for the idea you want built. The community decides.
+        </p>
+        <div class="vote-grid" id="voteGrid">
+            <div class="vote-card fade-up" data-option="1">
+                <span class="vote-option-num">Option 1</span>
+                <h3 class="vote-title">{{IDEA_1_TITLE}}</h3>
+                <p class="vote-desc">{{IDEA_1_DESC}}</p>
+                <div class="vote-bar"><div class="vote-bar-fill" id="bar1" style="width:0%"></div></div>
+                <div class="vote-footer">
+                    <span class="vote-count" id="count1">0 votes</span>
+                    <button class="vote-btn" onclick="castVote(1)">Vote</button>
+                </div>
+            </div>
+            <div class="vote-card fade-up" data-option="2">
+                <span class="vote-option-num">Option 2</span>
+                <h3 class="vote-title">{{IDEA_2_TITLE}}</h3>
+                <p class="vote-desc">{{IDEA_2_DESC}}</p>
+                <div class="vote-bar"><div class="vote-bar-fill" id="bar2" style="width:0%"></div></div>
+                <div class="vote-footer">
+                    <span class="vote-count" id="count2">0 votes</span>
+                    <button class="vote-btn" onclick="castVote(2)">Vote</button>
+                </div>
+            </div>
+            <div class="vote-card fade-up" data-option="3">
+                <span class="vote-option-num">Option 3</span>
+                <h3 class="vote-title">{{IDEA_3_TITLE}}</h3>
+                <p class="vote-desc">{{IDEA_3_DESC}}</p>
+                <div class="vote-bar"><div class="vote-bar-fill" id="bar3" style="width:0%"></div></div>
+                <div class="vote-footer">
+                    <span class="vote-count" id="count3">0 votes</span>
+                    <button class="vote-btn" onclick="castVote(3)">Vote</button>
+                </div>
+            </div>
+            <div class="vote-card fade-up" data-option="4">
+                <span class="vote-option-num">Option 4</span>
+                <h3 class="vote-title">{{IDEA_4_TITLE}}</h3>
+                <p class="vote-desc">{{IDEA_4_DESC}}</p>
+                <div class="vote-bar"><div class="vote-bar-fill" id="bar4" style="width:0%"></div></div>
+                <div class="vote-footer">
+                    <span class="vote-count" id="count4">0 votes</span>
+                    <button class="vote-btn" onclick="castVote(4)">Vote</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Milestone -->
+    <div class="section fade-up">
+        <h2 class="section-title">Milestone</h2>
+        <div class="milestone-box">
+            <p class="milestone-text">When trading volume hits the target, the winning idea gets built by the <strong style="color:var(--accent)">Inclawbator</strong>.</p>
+            <div class="milestone-bar-outer">
+                <div class="milestone-bar-inner" id="milestoneBar"></div>
+            </div>
+            <span class="milestone-label">Community-powered development</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <p class="footer-main">Launched by <a href="https://inclawbate.app/memeclaw">MemeClaw</a> &times; <a href="https://inclawbate.app" target="_blank">Inclawbate</a></p>
+    <a class="ecosystem-badge" href="https://inclawbate.app" target="_blank">
+        <img src="https://inclawbate.app/assets/inclawbate-logo.png" alt="" onerror="this.style.display='none'">
+        Part of the Inclawbate ecosystem
+    </a>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+    'use strict';
+
+    var SLUG = '{{SLUG}}';
+    var API = 'https://www.inclawbate.app/api/inclawbate/memeclaw-vote';
+    var STORAGE_KEY = 'memeclaw_vote_' + SLUG;
+
+    // ── State ──
+    var votes = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    var myVote = null;
+
+    // ── Init ──
+    function init() {
+        // Check localStorage for existing vote
+        try {
+            var saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) myVote = parseInt(saved, 10);
+        } catch(e) {}
+
+        loadVotes();
+    }
+
+    // ── Load vote counts ──
+    function loadVotes() {
+        fetch(API + '?slug=' + encodeURIComponent(SLUG))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.votes) {
+                    votes = data.votes;
+                    renderVotes();
+                }
+            })
+            .catch(function() {});
+    }
+
+    // ── Render ──
+    function renderVotes() {
+        var total = votes[1] + votes[2] + votes[3] + votes[4];
+
+        for (var i = 1; i <= 4; i++) {
+            var countEl = document.getElementById('count' + i);
+            var barEl = document.getElementById('bar' + i);
+            var card = document.querySelector('[data-option="' + i + '"]');
+            var btn = card ? card.querySelector('.vote-btn') : null;
+
+            if (countEl) countEl.textContent = votes[i] + (votes[i] === 1 ? ' vote' : ' votes');
+            if (barEl) barEl.style.width = (total > 0 ? Math.round((votes[i] / total) * 100) : 0) + '%';
+
+            if (card) {
+                if (myVote === i) {
+                    card.classList.add('voted');
+                } else {
+                    card.classList.remove('voted');
+                }
+            }
+
+            if (btn) {
+                if (myVote) {
+                    btn.disabled = true;
+                    btn.textContent = (myVote === i) ? 'Voted' : 'Vote';
+                    if (myVote === i) btn.classList.add('active');
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Vote';
+                    btn.classList.remove('active');
+                }
+            }
+        }
+    }
+
+    // ── Cast Vote ──
+    window.castVote = function(option) {
+        if (myVote) {
+            showToast('You already voted!');
+            return;
+        }
+
+        // Optimistic update
+        myVote = option;
+        votes[option]++;
+        renderVotes();
+
+        try {
+            localStorage.setItem(STORAGE_KEY, String(option));
+        } catch(e) {}
+
+        fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: SLUG, option: option })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.votes) {
+                votes = data.votes;
+                renderVotes();
+            }
+            showToast('Vote recorded!');
+        })
+        .catch(function() {
+            showToast('Vote saved locally');
+        });
+    };
+
+    // ── Copy Address ──
+    window.copyAddress = function() {
+        var addr = '{{TOKEN_ADDRESS}}';
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(addr).then(function() {
+                showToast('Address copied');
+            });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = addr;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Address copied');
+        }
+    };
+
+    // ── Toast ──
+    function showToast(msg) {
+        var el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(function() { el.classList.remove('show'); }, 2500);
+    }
+
+    // ── Milestone (placeholder animation) ──
+    setTimeout(function() {
+        var bar = document.getElementById('milestoneBar');
+        if (bar) bar.style.width = '12%';
+    }, 800);
+
+    init();
+})();
+</script>
+
+</body>
+</html>

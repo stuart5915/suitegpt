@@ -1,6 +1,6 @@
 // MemeClaw — Automated meme token launcher
 // Polls Know Your Meme RSS for newly certified memes
-// Launches token + site + staking via Inclawbator API
+// Launches token via agent-chat + publishes template site with voting
 // By 0xGrantE × Inclawbate
 
 import http from 'http';
@@ -9,10 +9,15 @@ import http from 'http';
 
 const KYM_RSS = 'https://knowyourmeme.com/memes.rss';
 const AGENT_CHAT_URL = process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat';
+const PUBLISH_API_URL = process.env.PUBLISH_API_URL || 'https://www.inclawbate.app/api/publish-site';
+const TEMPLATE_URL = process.env.TEMPLATE_URL || 'https://raw.githubusercontent.com/itsEvilDuck/stuart-hollinger-landing/master/inclawbate/memeclaw-template.html';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const CREATOR_WALLET = process.env.CREATOR_WALLET; // Grant's wallet — receives 80% LP fees
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS) || 4 * 60 * 60 * 1000; // 4 hours
 const AUTO_LAUNCH = process.env.AUTO_LAUNCH === 'true'; // false = queue only, true = auto-launch
 const MAX_PER_POLL = parseInt(process.env.MAX_PER_POLL) || 3; // Max memes to process per poll
+
+const ACCENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 // Track what we've already processed
 const processedGuids = new Set();
@@ -64,6 +69,146 @@ function generateSymbol(name) {
     return '$' + symbol;
 }
 
+// ── Template Cache ──
+
+let templateCache = null;
+let templateFetchedAt = 0;
+const TEMPLATE_CACHE_MS = 10 * 60 * 1000; // Re-fetch template every 10 min
+
+async function getTemplate() {
+    if (templateCache && Date.now() - templateFetchedAt < TEMPLATE_CACHE_MS) {
+        return templateCache;
+    }
+    try {
+        const resp = await fetch(TEMPLATE_URL);
+        if (!resp.ok) throw new Error(`Template fetch failed: ${resp.status}`);
+        templateCache = await resp.text();
+        templateFetchedAt = Date.now();
+        console.log(`[MemeClaw] Template loaded (${templateCache.length} bytes)`);
+        return templateCache;
+    } catch (err) {
+        console.error('[MemeClaw] Template fetch error:', err.message);
+        if (templateCache) return templateCache; // Use stale cache
+        throw err;
+    }
+}
+
+// ── Generate Voting Ideas via Groq ──
+
+async function generateVotingIdeas(memeName) {
+    if (!GROQ_API_KEY) {
+        console.warn('[MemeClaw] GROQ_API_KEY not set — using default ideas');
+        return [
+            { title: 'Community Game', desc: `A multiplayer game themed around ${memeName} where players compete for prizes.` },
+            { title: 'Meme Dashboard', desc: `A real-time dashboard tracking ${memeName} memes, virality, and community stats.` },
+            { title: 'Charity Drive', desc: `Donate a portion of trading fees to a cause the ${memeName} community votes on.` },
+            { title: 'NFT Collection', desc: `Launch a generative art collection inspired by ${memeName} with holder rewards.` }
+        ];
+    }
+
+    try {
+        const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Generate 4 short app/feature ideas for a meme token community. Each idea should be 1 sentence. Mix of: fun/game, utility, philanthropic, creative. Output as JSON array of 4 objects with "title" (3-5 words) and "desc" (1 sentence). Output ONLY valid JSON, no markdown.'
+                    },
+                    {
+                        role: 'user',
+                        content: `The meme is: ${memeName}`
+                    }
+                ],
+                temperature: 0.8,
+                max_tokens: 400
+            })
+        });
+
+        if (!resp.ok) throw new Error(`Groq API ${resp.status}`);
+
+        const data = await resp.json();
+        const content = data.choices?.[0]?.message?.content || '';
+
+        // Parse JSON from response (handle potential markdown wrapping)
+        const jsonStr = content.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        const ideas = JSON.parse(jsonStr);
+
+        if (Array.isArray(ideas) && ideas.length >= 4) {
+            return ideas.slice(0, 4);
+        }
+        throw new Error('Invalid ideas format');
+    } catch (err) {
+        console.error('[MemeClaw] Groq ideas error:', err.message, '— using defaults');
+        return [
+            { title: 'Community Game', desc: `A multiplayer game themed around ${memeName} where players compete for prizes.` },
+            { title: 'Meme Dashboard', desc: `A real-time dashboard tracking ${memeName} memes, virality, and community stats.` },
+            { title: 'Charity Drive', desc: `Donate a portion of trading fees to a cause the ${memeName} community votes on.` },
+            { title: 'NFT Collection', desc: `Launch a generative art collection inspired by ${memeName} with holder rewards.` }
+        ];
+    }
+}
+
+// ── Build & Publish Template Site ──
+
+async function publishTemplateSite(meme, symbol, tokenAddress) {
+    const template = await getTemplate();
+    const imageUrl = extractImage(meme.description || '') || '';
+    const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
+    const accent = ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)];
+
+    // Generate voting ideas
+    const ideas = await generateVotingIdeas(meme.title);
+
+    // Escape HTML entities in user-facing strings
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // Replace all template variables
+    let html = template
+        .replace(/\{\{MEME_NAME\}\}/g, esc(meme.title))
+        .replace(/\{\{TOKEN_SYMBOL\}\}/g, esc(symbol))
+        .replace(/\{\{MEME_IMAGE\}\}/g, esc(imageUrl))
+        .replace(/\{\{TOKEN_ADDRESS\}\}/g, esc(tokenAddress || '0x0000000000000000000000000000000000000000'))
+        .replace(/\{\{ACCENT_COLOR\}\}/g, accent)
+        .replace(/\{\{SLUG\}\}/g, esc(slug))
+        .replace(/\{\{IDEA_1_TITLE\}\}/g, esc(ideas[0].title))
+        .replace(/\{\{IDEA_1_DESC\}\}/g, esc(ideas[0].desc))
+        .replace(/\{\{IDEA_2_TITLE\}\}/g, esc(ideas[1].title))
+        .replace(/\{\{IDEA_2_DESC\}\}/g, esc(ideas[1].desc))
+        .replace(/\{\{IDEA_3_TITLE\}\}/g, esc(ideas[2].title))
+        .replace(/\{\{IDEA_3_DESC\}\}/g, esc(ideas[2].desc))
+        .replace(/\{\{IDEA_4_TITLE\}\}/g, esc(ideas[3].title))
+        .replace(/\{\{IDEA_4_DESC\}\}/g, esc(ideas[3].desc));
+
+    // Publish via publish-site API
+    const publishResp = await fetch(PUBLISH_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: `${meme.title} Token`,
+            slug,
+            code: html,
+            email: 'memeclaw@inclawbate.app',
+            description: `Community token for the certified meme: ${meme.title}. Vote on what it becomes.`,
+            source: 'memeclaw',
+            category: 'finance',
+            creator_wallet: CREATOR_WALLET,
+            creator_x_handle: 'inclawbate',
+            tags: ['memeclaw', 'meme-token', 'voting'],
+            is_listed: true
+        })
+    });
+
+    const publishData = await publishResp.json();
+    console.log(`[MemeClaw] Site published:`, publishData.url || publishData.error);
+    return { slug, url: publishData.url, ideas };
+}
+
 // ── Inclawbator Integration ──
 
 async function launchMemeToken(meme) {
@@ -72,26 +217,34 @@ async function launchMemeToken(meme) {
 
     console.log(`[MemeClaw] Launching: ${meme.title} (${symbol})`);
 
-    // Step 1: Launch the token
+    // Step 1: Launch the token via agent-chat
     const launchMsg = `Launch a token called "${meme.title}" with symbol ${symbol.replace('$', '')} to wallet ${CREATOR_WALLET}. Description: "Memecoin for the certified meme: ${meme.title}. Launched automatically by MemeClaw × Inclawbate when certified on Know Your Meme."`;
 
     const launchResp = await callAgent(launchMsg, sessionId);
     console.log(`[MemeClaw] Token launch response:`, launchResp?.reply?.slice(0, 200));
 
-    // Step 2: Build a landing page
-    const imageUrl = extractImage(meme.description || '');
-    const buildMsg = `Build me an app called "${meme.title.toLowerCase().replace(/\s+/g, '-')}-token". It should be a landing page for the ${meme.title} memecoin. Include: the meme name as the hero title, a description saying this is the official memecoin for the "${meme.title}" meme (certified on Know Your Meme), ${imageUrl ? 'display this image: ' + imageUrl + ',' : ''} a link to the token on Base chain, and a section explaining that LP fees fund the Inclawbate ecosystem. Dark theme, fun, memey but not scammy.`;
+    // Try to extract token address from agent response
+    const addrMatch = (launchResp?.reply || '').match(/0x[a-fA-F0-9]{40}/);
+    const tokenAddress = addrMatch ? addrMatch[0] : null;
 
-    const buildResp = await callAgent(buildMsg, sessionId);
-    console.log(`[MemeClaw] Site build response:`, buildResp?.reply?.slice(0, 200));
+    // Step 2: Build & publish template site with voting
+    let siteResult = { slug: null, url: null, ideas: [] };
+    try {
+        siteResult = await publishTemplateSite(meme, symbol, tokenAddress);
+    } catch (err) {
+        console.error(`[MemeClaw] Site publish failed:`, err.message);
+    }
 
     totalLaunched++;
 
     return {
         meme: meme.title,
         symbol,
+        tokenAddress,
+        siteUrl: siteResult.url || null,
+        siteSlug: siteResult.slug || null,
+        ideas: siteResult.ideas || [],
         tokenResponse: launchResp?.reply || 'no response',
-        siteResponse: buildResp?.reply || 'no response',
         timestamp: new Date().toISOString()
     };
 }
