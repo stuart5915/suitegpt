@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{TOKEN_SYMBOL}} — {{MEME_NAME}} | MemeClaw</title>
-    <meta name="description" content="{{MEME_NAME}} is a certified meme with a real token. Vote on what it becomes next.">
+    <meta name="description" content="{{MEME_NAME}} — certified meme, real token on Base. Vote on what it becomes next.">
     <meta property="og:title" content="{{TOKEN_SYMBOL}} — {{MEME_NAME}}">
     <meta property="og:description" content="Certified meme. Real token. Community decides what it becomes.">
     <meta property="og:image" content="{{MEME_IMAGE}}">
     <meta property="og:url" content="https://inclawbate.app/s/{{SLUG}}">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129300;</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,650 +19,563 @@
 
         :root {
             --accent: {{ACCENT_COLOR}};
-            --accent-rgb: 0, 0, 0;
-            --bg-deepest: #06060b;
+            --bg-deep: #06060b;
             --bg-surface: #0a0a11;
-            --bg-card: #15151e;
-            --bg-card-hover: #1a1a26;
-            --border-subtle: hsl(240, 4%, 16%);
-            --border-accent: hsl(240, 4%, 22%);
-            --text-primary: #f0f0f5;
-            --text-secondary: #a0a0b8;
-            --text-dim: #606078;
-            --font-display: 'Nunito', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 18px;
-            --shadow-glow: 0 0 20px color-mix(in srgb, var(--accent) 25%, transparent);
-            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
+            --bg-card: #12121c;
+            --bg-card-hover: #18182a;
+            --border: hsl(240, 4%, 15%);
+            --border-bright: hsl(240, 4%, 22%);
+            --text: #f0f0f5;
+            --text-2: #a0a0b8;
+            --text-3: #606078;
+            --font: 'Nunito', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+            --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
         }
 
-        body {
-            background: var(--bg-deepest);
-            color: var(--text-primary);
-            font-family: var(--font-display);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
-
+        body { background: var(--bg-deep); color: var(--text); font-family: var(--font); line-height: 1.6; -webkit-font-smoothing: antialiased; }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
 
-        /* ── Layout ── */
-        .container {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+        .page { max-width: 720px; margin: 0 auto; padding: 0 20px; }
 
         /* ── Hero ── */
         .hero {
             text-align: center;
-            padding: 80px 20px 48px;
+            padding: 60px 20px 40px;
+            background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--bg-deep)) 0%, var(--bg-deep) 100%);
             position: relative;
+            overflow: hidden;
         }
-        .hero::after {
+        .hero::before {
             content: '';
             position: absolute;
-            bottom: 0;
+            top: -50%;
             left: 50%;
             transform: translateX(-50%);
-            width: 80%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
+            pointer-events: none;
         }
-        .hero-image {
-            width: 140px;
-            height: 140px;
-            border-radius: var(--radius-xl);
+        .hero-img-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .hero-img {
+            width: 160px;
+            height: 160px;
+            border-radius: var(--r-xl);
             object-fit: cover;
-            border: 3px solid var(--border-subtle);
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-glow);
+            border: 3px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+            box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 20%, transparent);
+            position: relative;
+            z-index: 1;
+        }
+        .hero-badge {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            z-index: 2;
+            text-transform: uppercase;
         }
         .hero h1 {
-            font-size: clamp(2rem, 6vw, 3.2rem);
+            font-size: clamp(2rem, 6vw, 3rem);
             font-weight: 900;
             letter-spacing: -0.02em;
             margin-bottom: 4px;
-            background: linear-gradient(135deg, var(--text-primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            position: relative;
         }
         .hero-symbol {
-            font-family: var(--font-mono);
+            font-family: var(--mono);
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--accent);
+            display: block;
             margin-bottom: 12px;
-            display: inline-block;
         }
-        .hero-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            max-width: 480px;
+        .hero-sub {
+            font-size: 0.95rem;
+            color: var(--text-2);
+            max-width: 460px;
             margin: 0 auto;
         }
 
-        /* ── Section Common ── */
-        .section {
-            padding: 48px 0;
+        /* ── Lore Section ── */
+        .lore {
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
         }
-        .section-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: var(--text-primary);
+        .lore-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-3);
+            margin-bottom: 8px;
+        }
+        .lore-text {
+            font-size: 0.92rem;
+            color: var(--text-2);
+            line-height: 1.7;
+        }
+        .lore-source {
+            margin-top: 10px;
+            font-size: 0.75rem;
+        }
+        .lore-date {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--text-3);
+            margin-top: 6px;
         }
 
-        /* ── Token Info ── */
-        .token-info {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+        /* ── Links Bar ── */
+        .links-bar {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .link-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-2);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .link-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+            background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+        }
+        .link-chip-icon { font-size: 0.85rem; }
+
+        /* ── Token Info ── */
+        .token-section { padding: 32px 0; border-bottom: 1px solid var(--border); }
+        .section-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-3);
+            margin-bottom: 14px;
+        }
+        .token-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            overflow: hidden;
         }
         .token-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
             gap: 12px;
         }
-        .token-label {
-            font-size: 0.8rem;
+        .token-row:last-child { border-bottom: none; }
+        .token-key {
+            font-size: 0.75rem;
             font-weight: 700;
+            color: var(--text-3);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-dim);
+            letter-spacing: 0.05em;
             flex-shrink: 0;
         }
-        .token-value {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            word-break: break-all;
+        .token-val {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--text-2);
             text-align: right;
-        }
-        .token-address-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-            justify-content: flex-end;
-            min-width: 0;
+            word-break: break-all;
         }
         .copy-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            padding: 4px 10px;
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            color: var(--text-2);
+            font-size: 0.68rem;
+            padding: 3px 8px;
             cursor: pointer;
-            font-family: var(--font-mono);
-            transition: all 0.2s;
+            font-family: var(--mono);
+            transition: all 0.15s;
             flex-shrink: 0;
         }
-        .copy-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
         .buy-btn {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             width: 100%;
-            padding: 14px 24px;
+            padding: 16px;
             background: var(--accent);
             color: #fff;
-            font-family: var(--font-display);
+            font-family: var(--font);
             font-size: 1rem;
             font-weight: 800;
             border: none;
-            border-radius: var(--radius-md);
+            border-radius: 0 0 var(--r-lg) var(--r-lg);
             cursor: pointer;
             transition: all 0.2s;
             text-decoration: none;
         }
-        .buy-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-glow);
-            text-decoration: none;
-            color: #fff;
-        }
+        .buy-btn:hover { filter: brightness(1.1); text-decoration: none; color: #fff; }
 
         /* ── Vote Section ── */
+        .vote-section { padding: 32px 0; border-bottom: 1px solid var(--border); }
         .vote-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-        @media (max-width: 560px) {
-            .vote-grid { grid-template-columns: 1fr; }
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
         .vote-card {
             background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: border-color 0.2s, transform 0.15s;
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 16px;
+            transition: all 0.2s;
             position: relative;
-            overflow: hidden;
         }
-        .vote-card:hover {
-            border-color: var(--border-accent);
-            transform: translateY(-2px);
-        }
-        .vote-card.voted {
-            border-color: var(--accent);
-            background: var(--bg-card-hover);
-        }
-        .vote-card.voted::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--accent);
-        }
-        .vote-option-num {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-dim);
+        .vote-card:hover { border-color: var(--border-bright); }
+        .vote-card.voted { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent) 4%, var(--bg-card)); }
+        .vote-num {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+            margin-bottom: 6px;
         }
         .vote-title {
-            font-size: 1.05rem;
+            font-size: 0.88rem;
             font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1.3;
+            color: var(--text);
+            margin-bottom: 4px;
         }
         .vote-desc {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            font-size: 0.75rem;
+            color: var(--text-3);
             line-height: 1.5;
-            flex: 1;
-        }
-        .vote-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-top: 4px;
-        }
-        .vote-count {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-dim);
-        }
-        .vote-btn {
-            padding: 8px 18px;
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-family: var(--font-display);
-            font-size: 0.85rem;
-            font-weight: 700;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .vote-btn:hover {
-            background: var(--accent);
-            color: #fff;
-        }
-        .vote-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .vote-btn.active {
-            background: var(--accent);
-            color: #fff;
+            margin-bottom: 10px;
         }
         .vote-bar {
-            height: 3px;
-            background: var(--bg-deepest);
-            border-radius: 2px;
+            height: 4px;
+            background: var(--bg-deep);
+            border-radius: 4px;
             overflow: hidden;
-            margin-top: 2px;
+            margin-bottom: 8px;
         }
         .vote-bar-fill {
             height: 100%;
             background: var(--accent);
-            border-radius: 2px;
+            border-radius: 4px;
             transition: width 0.5s ease;
         }
+        .vote-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .vote-count {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text-3);
+        }
+        .vote-btn {
+            padding: 5px 14px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-2);
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .vote-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .vote-btn:disabled { opacity: 0.4; cursor: default; }
+        .vote-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
         /* ── Milestone ── */
+        .milestone { padding: 32px 0; border-bottom: 1px solid var(--border); }
         .milestone-box {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 20px;
             text-align: center;
         }
-        .milestone-text {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
+        .milestone-text { font-size: 0.85rem; color: var(--text-2); margin-bottom: 14px; }
+        .milestone-bar { height: 6px; background: var(--bg-deep); border-radius: 6px; overflow: hidden; }
+        .milestone-fill { height: 100%; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fbbf24)); border-radius: 6px; transition: width 1s ease; width: 0%; }
+        .milestone-sub { font-family: var(--mono); font-size: 0.68rem; color: var(--text-3); margin-top: 8px; }
+
+        /* ── Staking CTA ── */
+        .staking-cta {
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
         }
-        .milestone-bar-outer {
-            height: 8px;
-            background: var(--bg-card);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 10px;
+        .staking-box {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-card)), var(--bg-card));
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+            border-radius: var(--r-lg);
+            padding: 24px;
         }
-        .milestone-bar-inner {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fff));
-            border-radius: 4px;
-            transition: width 1s ease;
+        .staking-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+        .staking-desc { font-size: 0.82rem; color: var(--text-2); margin-bottom: 14px; }
+        .staking-btn {
+            display: inline-flex;
+            padding: 10px 24px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 800;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.15s;
         }
-        .milestone-label {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-dim);
-        }
+        .staking-btn:hover { filter: brightness(1.1); text-decoration: none; color: #fff; }
 
         /* ── Footer ── */
         .footer {
-            padding: 48px 20px 32px;
             text-align: center;
-            border-top: 1px solid var(--border-subtle);
-            margin-top: 24px;
+            padding: 40px 20px;
+            color: var(--text-3);
+            font-size: 0.78rem;
         }
-        .footer-main {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-bottom: 16px;
-        }
-        .footer-main a {
-            color: var(--text-secondary);
-        }
-        .footer-main a:hover {
-            color: var(--accent);
-        }
-        .ecosystem-badge {
+        .footer a { color: var(--text-2); }
+        .eco-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 100px;
+            margin-top: 12px;
             padding: 6px 14px;
-            transition: border-color 0.2s;
-        }
-        .ecosystem-badge:hover {
-            border-color: var(--border-accent);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            color: var(--text-3);
             text-decoration: none;
         }
-        .ecosystem-badge img {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-        }
-
-        /* ── Animations ── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-up {
-            animation: fadeUp 0.5s ease forwards;
-            opacity: 0;
-        }
-        .fade-up:nth-child(2) { animation-delay: 0.08s; }
-        .fade-up:nth-child(3) { animation-delay: 0.16s; }
-        .fade-up:nth-child(4) { animation-delay: 0.24s; }
+        .eco-badge:hover { border-color: var(--border-bright); text-decoration: none; }
 
         /* ── Toast ── */
         .toast {
             position: fixed;
             bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(80px);
+            transform: translateX(-50%) translateY(60px);
             background: var(--bg-card);
             border: 1px solid var(--accent);
-            color: var(--text-primary);
+            color: var(--text);
             padding: 10px 20px;
-            border-radius: var(--radius-md);
-            font-size: 0.85rem;
+            border-radius: var(--r-md);
+            font-size: 0.82rem;
             font-weight: 600;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             z-index: 100;
-            pointer-events: none;
         }
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 560px) {
+            .hero-img { width: 120px; height: 120px; }
+            .vote-grid { grid-template-columns: 1fr; }
+            .links-bar { gap: 6px; }
+            .link-chip { padding: 6px 10px; font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
 
 <div class="hero">
-    <img class="hero-image fade-up" src="{{MEME_IMAGE}}" alt="{{MEME_NAME}}" onerror="this.style.display='none'">
-    <h1 class="fade-up">{{MEME_NAME}}</h1>
-    <span class="hero-symbol fade-up">{{TOKEN_SYMBOL}}</span>
-    <p class="hero-subtitle fade-up">Certified meme. Real token. Community decides what it becomes.</p>
+    <div class="hero-img-wrap">
+        <img class="hero-img" src="{{MEME_IMAGE}}" alt="{{MEME_NAME}}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%2315151e%22 width=%22100%22 height=%22100%22/><text y=%22.9em%22 x=%2250%25%22 text-anchor=%22middle%22 font-size=%2260%22>🤔</text></svg>'">
+        <span class="hero-badge">Certified Meme</span>
+    </div>
+    <h1>{{MEME_NAME}}</h1>
+    <span class="hero-symbol">{{TOKEN_SYMBOL}}</span>
+    <p class="hero-sub">Certified meme. Real token on Base. Community decides what it becomes.</p>
 </div>
 
-<div class="container">
+<div class="page">
+
+    <!-- Lore -->
+    <div class="lore">
+        <div class="lore-label">The Lore</div>
+        <div class="lore-text">{{MEME_DESCRIPTION}}</div>
+        <div class="lore-source"><a href="{{KYM_LINK}}" target="_blank" rel="noopener">Read full entry on Know Your Meme &rarr;</a></div>
+        <div class="lore-date">Certified: {{PUB_DATE}}</div>
+    </div>
+
+    <!-- Links -->
+    <div class="links-bar">
+        <a class="link-chip" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener"><span class="link-chip-icon">&#127968;</span> Buy on Uniswap</a>
+        <a class="link-chip" href="https://basescan.org/token/{{TOKEN_ADDRESS}}" target="_blank" rel="noopener"><span class="link-chip-icon">&#128270;</span> BaseScan</a>
+        <a class="link-chip" href="{{KYM_LINK}}" target="_blank" rel="noopener"><span class="link-chip-icon">&#129300;</span> Know Your Meme</a>
+        <a class="link-chip" href="https://dexscreener.com/base/{{TOKEN_ADDRESS}}" target="_blank" rel="noopener"><span class="link-chip-icon">&#128200;</span> DexScreener</a>
+        <a class="link-chip" href="https://inclawbate.app/stake" target="_blank" rel="noopener"><span class="link-chip-icon">&#129438;</span> Stake</a>
+    </div>
 
     <!-- Token Info -->
-    <div class="section fade-up">
-        <h2 class="section-title">Token Info</h2>
-        <div class="token-info">
+    <div class="token-section">
+        <div class="section-label">Token</div>
+        <div class="token-card">
             <div class="token-row">
-                <span class="token-label">Chain</span>
-                <span class="token-value">Base</span>
+                <span class="token-key">Name</span>
+                <span class="token-val">{{MEME_NAME}}</span>
             </div>
             <div class="token-row">
-                <span class="token-label">Contract</span>
-                <div class="token-address-row">
-                    <span class="token-value" id="tokenAddr">{{TOKEN_ADDRESS}}</span>
-                    <button class="copy-btn" onclick="copyAddress()">Copy</button>
-                </div>
+                <span class="token-key">Symbol</span>
+                <span class="token-val">{{TOKEN_SYMBOL}}</span>
             </div>
-            <a class="buy-btn" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">
-                Buy on Uniswap
-            </a>
+            <div class="token-row">
+                <span class="token-key">Chain</span>
+                <span class="token-val">Base</span>
+            </div>
+            <div class="token-row">
+                <span class="token-key">Contract</span>
+                <span class="token-val" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><span id="tokenAddr">{{TOKEN_ADDRESS}}</span><button class="copy-btn" onclick="copyAddress()">Copy</button></span>
+            </div>
+            <a class="buy-btn" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">Buy {{TOKEN_SYMBOL}} on Uniswap</a>
         </div>
     </div>
 
-    <!-- Vote Section -->
-    <div class="section">
-        <h2 class="section-title fade-up">What should this become?</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;" class="fade-up">
-            Vote for the idea you want built. The community decides.
-        </p>
+    <!-- Staking CTA -->
+    <div class="staking-cta">
+        <div class="staking-box">
+            <div class="staking-title">Stake {{TOKEN_SYMBOL}}, Earn $CLAWS</div>
+            <div class="staking-desc">Stake your tokens and earn CLAWS rewards from the Inclawbate ecosystem. LP fees auto-fund the rewards pool.</div>
+            <a class="staking-btn" href="https://inclawbate.app/stake" target="_blank" rel="noopener">Stake Now</a>
+        </div>
+    </div>
+
+    <!-- Vote -->
+    <div class="vote-section">
+        <div class="section-label">Community Vote</div>
+        <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:6px">What should this become?</h2>
+        <p style="color:var(--text-2);margin-bottom:16px;font-size:0.85rem">The winning idea gets built by the Inclawbator. Your vote matters.</p>
         <div class="vote-grid" id="voteGrid">
-            <div class="vote-card fade-up" data-option="1">
-                <span class="vote-option-num">Option 1</span>
-                <h3 class="vote-title">{{IDEA_1_TITLE}}</h3>
-                <p class="vote-desc">{{IDEA_1_DESC}}</p>
+            <div class="vote-card" data-option="1">
+                <div class="vote-num">Option 1</div>
+                <div class="vote-title">{{IDEA_1_TITLE}}</div>
+                <div class="vote-desc">{{IDEA_1_DESC}}</div>
                 <div class="vote-bar"><div class="vote-bar-fill" id="bar1" style="width:0%"></div></div>
-                <div class="vote-footer">
-                    <span class="vote-count" id="count1">0 votes</span>
-                    <button class="vote-btn" onclick="castVote(1)">Vote</button>
-                </div>
+                <div class="vote-foot"><span class="vote-count" id="count1">0 votes</span><button class="vote-btn" onclick="castVote(1)">Vote</button></div>
             </div>
-            <div class="vote-card fade-up" data-option="2">
-                <span class="vote-option-num">Option 2</span>
-                <h3 class="vote-title">{{IDEA_2_TITLE}}</h3>
-                <p class="vote-desc">{{IDEA_2_DESC}}</p>
+            <div class="vote-card" data-option="2">
+                <div class="vote-num">Option 2</div>
+                <div class="vote-title">{{IDEA_2_TITLE}}</div>
+                <div class="vote-desc">{{IDEA_2_DESC}}</div>
                 <div class="vote-bar"><div class="vote-bar-fill" id="bar2" style="width:0%"></div></div>
-                <div class="vote-footer">
-                    <span class="vote-count" id="count2">0 votes</span>
-                    <button class="vote-btn" onclick="castVote(2)">Vote</button>
-                </div>
+                <div class="vote-foot"><span class="vote-count" id="count2">0 votes</span><button class="vote-btn" onclick="castVote(2)">Vote</button></div>
             </div>
-            <div class="vote-card fade-up" data-option="3">
-                <span class="vote-option-num">Option 3</span>
-                <h3 class="vote-title">{{IDEA_3_TITLE}}</h3>
-                <p class="vote-desc">{{IDEA_3_DESC}}</p>
+            <div class="vote-card" data-option="3">
+                <div class="vote-num">Option 3</div>
+                <div class="vote-title">{{IDEA_3_TITLE}}</div>
+                <div class="vote-desc">{{IDEA_3_DESC}}</div>
                 <div class="vote-bar"><div class="vote-bar-fill" id="bar3" style="width:0%"></div></div>
-                <div class="vote-footer">
-                    <span class="vote-count" id="count3">0 votes</span>
-                    <button class="vote-btn" onclick="castVote(3)">Vote</button>
-                </div>
+                <div class="vote-foot"><span class="vote-count" id="count3">0 votes</span><button class="vote-btn" onclick="castVote(3)">Vote</button></div>
             </div>
-            <div class="vote-card fade-up" data-option="4">
-                <span class="vote-option-num">Option 4</span>
-                <h3 class="vote-title">{{IDEA_4_TITLE}}</h3>
-                <p class="vote-desc">{{IDEA_4_DESC}}</p>
+            <div class="vote-card" data-option="4">
+                <div class="vote-num">Option 4</div>
+                <div class="vote-title">{{IDEA_4_TITLE}}</div>
+                <div class="vote-desc">{{IDEA_4_DESC}}</div>
                 <div class="vote-bar"><div class="vote-bar-fill" id="bar4" style="width:0%"></div></div>
-                <div class="vote-footer">
-                    <span class="vote-count" id="count4">0 votes</span>
-                    <button class="vote-btn" onclick="castVote(4)">Vote</button>
-                </div>
+                <div class="vote-foot"><span class="vote-count" id="count4">0 votes</span><button class="vote-btn" onclick="castVote(4)">Vote</button></div>
             </div>
         </div>
     </div>
 
     <!-- Milestone -->
-    <div class="section fade-up">
-        <h2 class="section-title">Milestone</h2>
+    <div class="milestone">
+        <div class="section-label">Milestone</div>
         <div class="milestone-box">
-            <p class="milestone-text">When trading volume hits the target, the winning idea gets built by the <strong style="color:var(--accent)">Inclawbator</strong>.</p>
-            <div class="milestone-bar-outer">
-                <div class="milestone-bar-inner" id="milestoneBar"></div>
-            </div>
-            <span class="milestone-label">Community-powered development</span>
+            <div class="milestone-text">When trading volume hits the target, the <strong style="color:var(--accent)">winning idea gets built</strong> by the Inclawbator.</div>
+            <div class="milestone-bar"><div class="milestone-fill" id="milestoneBar"></div></div>
+            <div class="milestone-sub">Community-powered development</div>
         </div>
     </div>
 
 </div>
 
-<!-- Footer -->
 <div class="footer">
-    <p class="footer-main">Launched by <a href="https://inclawbate.app/memeclaw">MemeClaw</a> &times; <a href="https://inclawbate.app" target="_blank">Inclawbate</a></p>
-    <a class="ecosystem-badge" href="https://inclawbate.app" target="_blank">
-        <img src="https://inclawbate.app/assets/inclawbate-logo.png" alt="" onerror="this.style.display='none'">
-        Part of the Inclawbate ecosystem
-    </a>
+    <p>Launched by <a href="https://inclawbate.app/memeclaw">MemeClaw</a> &times; <a href="https://inclawbate.app">Inclawbate</a></p>
+    <a class="eco-badge" href="https://inclawbate.app" target="_blank">&#129438; Part of the Inclawbate ecosystem</a>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
 (function() {
-    'use strict';
-
     var SLUG = '{{SLUG}}';
     var API = 'https://www.inclawbate.app/api/inclawbate/memeclaw-vote';
-    var STORAGE_KEY = 'memeclaw_vote_' + SLUG;
-
-    // ── State ──
-    var votes = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    var KEY = 'memeclaw_vote_' + SLUG;
+    var votes = {1:0,2:0,3:0,4:0};
     var myVote = null;
 
-    // ── Init ──
-    function init() {
-        // Check localStorage for existing vote
-        try {
-            var saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) myVote = parseInt(saved, 10);
-        } catch(e) {}
+    try { var s = localStorage.getItem(KEY); if (s) myVote = parseInt(s); } catch(e){}
+    loadVotes();
 
-        loadVotes();
-    }
-
-    // ── Load vote counts ──
     function loadVotes() {
         fetch(API + '?slug=' + encodeURIComponent(SLUG))
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.votes) {
-                    votes = data.votes;
-                    renderVotes();
-                }
-            })
-            .catch(function() {});
+            .then(function(r){return r.json()})
+            .then(function(d){ if(d.votes){votes=d.votes;render();} })
+            .catch(function(){});
     }
 
-    // ── Render ──
-    function renderVotes() {
-        var total = votes[1] + votes[2] + votes[3] + votes[4];
-
-        for (var i = 1; i <= 4; i++) {
-            var countEl = document.getElementById('count' + i);
-            var barEl = document.getElementById('bar' + i);
-            var card = document.querySelector('[data-option="' + i + '"]');
-            var btn = card ? card.querySelector('.vote-btn') : null;
-
-            if (countEl) countEl.textContent = votes[i] + (votes[i] === 1 ? ' vote' : ' votes');
-            if (barEl) barEl.style.width = (total > 0 ? Math.round((votes[i] / total) * 100) : 0) + '%';
-
-            if (card) {
-                if (myVote === i) {
-                    card.classList.add('voted');
-                } else {
-                    card.classList.remove('voted');
-                }
-            }
-
-            if (btn) {
-                if (myVote) {
-                    btn.disabled = true;
-                    btn.textContent = (myVote === i) ? 'Voted' : 'Vote';
-                    if (myVote === i) btn.classList.add('active');
-                } else {
-                    btn.disabled = false;
-                    btn.textContent = 'Vote';
-                    btn.classList.remove('active');
-                }
-            }
+    function render() {
+        var t = votes[1]+votes[2]+votes[3]+votes[4];
+        for(var i=1;i<=4;i++){
+            var c=document.getElementById('count'+i), b=document.getElementById('bar'+i);
+            var card=document.querySelector('[data-option="'+i+'"]'), btn=card?card.querySelector('.vote-btn'):null;
+            if(c) c.textContent=votes[i]+(votes[i]===1?' vote':' votes');
+            if(b) b.style.width=(t>0?Math.round(votes[i]/t*100):0)+'%';
+            if(card){if(myVote===i)card.classList.add('voted');else card.classList.remove('voted');}
+            if(btn){if(myVote){btn.disabled=true;btn.textContent=myVote===i?'Voted':'Vote';if(myVote===i)btn.classList.add('active');}else{btn.disabled=false;btn.textContent='Vote';btn.classList.remove('active');}}
         }
     }
 
-    // ── Cast Vote ──
-    window.castVote = function(option) {
-        if (myVote) {
-            showToast('You already voted!');
-            return;
-        }
-
-        // Optimistic update
-        myVote = option;
-        votes[option]++;
-        renderVotes();
-
-        try {
-            localStorage.setItem(STORAGE_KEY, String(option));
-        } catch(e) {}
-
-        fetch(API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug: SLUG, option: option })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.votes) {
-                votes = data.votes;
-                renderVotes();
-            }
-            showToast('Vote recorded!');
-        })
-        .catch(function() {
-            showToast('Vote saved locally');
-        });
+    window.castVote = function(opt) {
+        if(myVote){showToast('Already voted!');return;}
+        myVote=opt; votes[opt]++; render();
+        try{localStorage.setItem(KEY,String(opt));}catch(e){}
+        fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:SLUG,option:opt})})
+            .then(function(r){return r.json()}).then(function(d){if(d.votes){votes=d.votes;render();}showToast('Vote recorded!');}).catch(function(){showToast('Saved locally');});
     };
 
-    // ── Copy Address ──
     window.copyAddress = function() {
-        var addr = '{{TOKEN_ADDRESS}}';
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(addr).then(function() {
-                showToast('Address copied');
-            });
-        } else {
-            var ta = document.createElement('textarea');
-            ta.value = addr;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            showToast('Address copied');
-        }
+        navigator.clipboard.writeText('{{TOKEN_ADDRESS}}').then(function(){showToast('Copied!')}).catch(function(){});
     };
 
-    // ── Toast ──
-    function showToast(msg) {
-        var el = document.getElementById('toast');
-        el.textContent = msg;
-        el.classList.add('show');
-        setTimeout(function() { el.classList.remove('show'); }, 2500);
-    }
-
-    // ── Milestone (placeholder animation) ──
-    setTimeout(function() {
-        var bar = document.getElementById('milestoneBar');
-        if (bar) bar.style.width = '12%';
-    }, 800);
-
-    init();
+    function showToast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
+    setTimeout(function(){var b=document.getElementById('milestoneBar');if(b)b.style.width='8%';},600);
 })();
 </script>
 

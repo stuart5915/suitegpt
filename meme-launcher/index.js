@@ -54,6 +54,20 @@ function extractImage(descHtml) {
     return match ? match[1] : null;
 }
 
+// Extract clean description text from RSS HTML
+function extractDescription(descHtml) {
+    if (!descHtml) return 'A certified meme with a real token on Base.';
+    // Strip HTML tags
+    let text = descHtml.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
+    // Clean up whitespace
+    text = text.replace(/\s+/g, ' ').trim();
+    // Remove "Read More" suffix
+    text = text.replace(/\s*Read More\s*$/, '').trim();
+    // Cap at ~300 chars
+    if (text.length > 300) text = text.slice(0, 297) + '...';
+    return text || 'A certified meme with a real token on Base.';
+}
+
 // Generate a ticker symbol from meme name
 function generateSymbol(name) {
     // Take first letters of words, or first 5 chars if single word
@@ -168,6 +182,11 @@ async function publishTemplateSite(meme, symbol, tokenAddress) {
     // Escape HTML entities in user-facing strings
     const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+    // Extract lore/description
+    const description = extractDescription(meme.description || '');
+    const kymLink = meme.link || 'https://knowyourmeme.com';
+    const pubDate = meme.pubDate ? new Date(meme.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently';
+
     // Replace all template variables
     let html = template
         .replace(/\{\{MEME_NAME\}\}/g, esc(meme.title))
@@ -176,6 +195,9 @@ async function publishTemplateSite(meme, symbol, tokenAddress) {
         .replace(/\{\{TOKEN_ADDRESS\}\}/g, esc(tokenAddress || '0x0000000000000000000000000000000000000000'))
         .replace(/\{\{ACCENT_COLOR\}\}/g, accent)
         .replace(/\{\{SLUG\}\}/g, esc(slug))
+        .replace(/\{\{MEME_DESCRIPTION\}\}/g, esc(description))
+        .replace(/\{\{KYM_LINK\}\}/g, esc(kymLink))
+        .replace(/\{\{PUB_DATE\}\}/g, esc(pubDate))
         .replace(/\{\{IDEA_1_TITLE\}\}/g, esc(ideas[0].title))
         .replace(/\{\{IDEA_1_DESC\}\}/g, esc(ideas[0].desc))
         .replace(/\{\{IDEA_2_TITLE\}\}/g, esc(ideas[1].title))
@@ -217,8 +239,20 @@ async function launchMemeToken(meme) {
 
     console.log(`[MemeClaw] Launching: ${meme.title} (${symbol})`);
 
-    // Step 1: Launch the token via agent-chat
-    const launchMsg = `Launch a token called "${meme.title}" with symbol ${symbol.replace('$', '')} to wallet ${CREATOR_WALLET}. Description: "Memecoin for the certified meme: ${meme.title}. Launched automatically by MemeClaw × Inclawbate when certified on Know Your Meme."`;
+    const imageUrl = extractImage(meme.description || '');
+    const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
+    const siteUrl = `https://inclawbate.app/s/${slug}`;
+
+    // Step 1: Build & publish template site FIRST (so we have the URL for token metadata)
+    let siteResult = { slug: null, url: null, ideas: [] };
+    try {
+        siteResult = await publishTemplateSite(meme, symbol, null); // null address for now, updated after launch
+    } catch (err) {
+        console.error(`[MemeClaw] Site publish failed:`, err.message);
+    }
+
+    // Step 2: Launch the token with image + website baked into the token metadata
+    const launchMsg = `Launch a token called "${meme.title}" with symbol ${symbol.replace('$', '')} to wallet ${CREATOR_WALLET}. Description: "Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw × Inclawbate."${imageUrl ? ` Image: ${imageUrl}` : ''}. Website: ${siteResult.url || siteUrl}`;
 
     const launchResp = await callAgent(launchMsg, sessionId);
     console.log(`[MemeClaw] Token launch response:`, launchResp?.reply?.slice(0, 200));
@@ -227,12 +261,13 @@ async function launchMemeToken(meme) {
     const addrMatch = (launchResp?.reply || '').match(/0x[a-fA-F0-9]{40}/);
     const tokenAddress = addrMatch ? addrMatch[0] : null;
 
-    // Step 2: Build & publish template site with voting
-    let siteResult = { slug: null, url: null, ideas: [] };
-    try {
-        siteResult = await publishTemplateSite(meme, symbol, tokenAddress);
-    } catch (err) {
-        console.error(`[MemeClaw] Site publish failed:`, err.message);
+    // Step 3: Re-publish site with the actual token address
+    if (tokenAddress) {
+        try {
+            siteResult = await publishTemplateSite(meme, symbol, tokenAddress);
+        } catch (err) {
+            console.error(`[MemeClaw] Site re-publish failed:`, err.message);
+        }
     }
 
     totalLaunched++;
