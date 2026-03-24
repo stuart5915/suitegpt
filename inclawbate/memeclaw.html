@@ -277,66 +277,76 @@
             color: var(--lobster-300);
         }
 
-        /* Admin action buttons */
-        .mc-item-actions {
-            display: none;
-            gap: 4px;
-            flex-wrap: wrap;
-            margin-top: 6px;
+        /* Toggle switch */
+        .mc-toggle {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
         }
-        .mc-admin .mc-item-actions { display: flex; }
-        .mc-action-btn {
-            padding: 4px 10px;
+        .mc-toggle input { opacity: 0; width: 0; height: 0; }
+        .mc-toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: 22px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mc-toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .mc-toggle input:checked + .mc-toggle-slider {
+            background: rgba(34,197,94,0.15);
+            border-color: rgba(34,197,94,0.4);
+        }
+        .mc-toggle input:checked + .mc-toggle-slider::before {
+            transform: translateX(18px);
+            background: #4ade80;
+        }
+
+        /* Launch button */
+        .mc-launch-btn {
+            display: none;
+            padding: 5px 14px;
             border: 1px solid var(--border-default);
             border-radius: var(--radius-full);
             background: var(--bg-elevated);
             color: var(--text-dim);
             font-family: var(--font-mono);
-            font-size: 0.62rem;
-            font-weight: 600;
+            font-size: 0.65rem;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             cursor: pointer;
             transition: all 0.15s;
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        .mc-action-btn:hover {
+        .mc-admin .mc-launch-btn { display: inline-flex; }
+        .mc-launch-btn:hover {
             border-color: var(--lobster-400);
             color: var(--lobster-300);
             background: rgba(232,121,85,0.08);
         }
-        .mc-action-btn:disabled {
-            opacity: 0.35;
-            cursor: default;
-            pointer-events: none;
-        }
-        .mc-action-btn--done {
+        .mc-launch-btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+        .mc-launch-btn--done {
             border-color: rgba(34,197,94,0.3);
             color: #4ade80;
             background: rgba(34,197,94,0.06);
         }
-        .mc-action-btn--loading {
+        .mc-launch-btn--loading {
             color: var(--text-dim);
-            border-color: var(--border-default);
-        }
-        .mc-action-btn--loading::after {
-            content: '...';
-            animation: mc-dots 1s steps(3, end) infinite;
-        }
-        @keyframes mc-dots {
-            0% { content: '.'; }
-            33% { content: '..'; }
-            66% { content: '...'; }
-        }
-
-        .mc-item-expanded {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .mc-item-expanded .mc-item-top {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
+            pointer-events: none;
         }
 
         /* Status toast */
@@ -362,7 +372,6 @@
             .mc-item { padding: var(--space-sm) var(--space-md); }
             .mc-item-desc { display: none; }
             .mc-item-img { width: 36px; height: 36px; }
-            .mc-action-btn { font-size: 0.58rem; padding: 3px 7px; }
         }
     </style>
 </head>
@@ -440,6 +449,21 @@
         </div>
     </div>
 
+    <!-- Admin Controls -->
+    <div id="mcAdminBar" style="display:none;margin-bottom:var(--space-md);padding:14px 18px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:0.85rem;color:var(--text-primary)">Auto-Launch</div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span id="mcAutoLabel" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim)">Off</span>
+                <label class="mc-toggle">
+                    <input type="checkbox" id="mcAutoToggle">
+                    <span class="mc-toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px">When on, new certified memes auto-launch with token + site + staking. When off, memes queue up for manual launch.</div>
+    </div>
+
     <!-- Feed -->
     <div class="mc-feed-header">
         <div class="mc-feed-title">Meme Token Feed</div>
@@ -482,7 +506,6 @@
 <script>
 (function(){
     var SERVICE_URL = 'https://memeclaw.inclawbate.app';
-    var AGENT_CHAT_URL = '/api/inclawbate/agent-chat';
     var ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 
     var statusEl = document.getElementById('mcStatus');
@@ -490,6 +513,9 @@
     var launchedEl = document.getElementById('mcLaunched');
     var queuedEl = document.getElementById('mcQueued');
     var trackedEl = document.getElementById('mcTracked');
+    var adminBar = document.getElementById('mcAdminBar');
+    var autoToggle = document.getElementById('mcAutoToggle');
+    var autoLabel = document.getElementById('mcAutoLabel');
 
     // ── Auth ──
     function getAuth() {
@@ -501,16 +527,9 @@
     }
     var auth = getAuth();
     var isAdmin = auth && ADMIN_WALLETS.indexOf(auth.wallet) !== -1;
-    if (isAdmin) document.body.classList.add('mc-admin');
-
-    // ── Meme state (persisted per-meme in localStorage) ──
-    function getMemeState(meme) {
-        try { return JSON.parse(localStorage.getItem('mc_' + meme) || '{}'); } catch(e) { return {}; }
-    }
-    function setMemeState(meme, state) {
-        var cur = getMemeState(meme);
-        Object.assign(cur, state);
-        localStorage.setItem('mc_' + meme, JSON.stringify(cur));
+    if (isAdmin) {
+        document.body.classList.add('mc-admin');
+        adminBar.style.display = '';
     }
 
     // ── Toast ──
@@ -522,130 +541,6 @@
         setTimeout(function() { el.remove(); }, 4000);
     }
 
-    // ── Agent Chat helper ──
-    async function agentChat(message) {
-        var resp = await fetch(AGENT_CHAT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: message,
-                session_id: 'memeclaw-admin-' + Date.now().toString(36),
-                wallet: auth ? auth.wallet : undefined
-            })
-        });
-        return await resp.json();
-    }
-
-    // ── Action handlers ──
-    async function launchToken(meme, btn) {
-        btn.textContent = 'Launching';
-        btn.classList.add('mc-action-btn--loading');
-        btn.disabled = true;
-        toast('Launching token for ' + meme + '...');
-        try {
-            var result = await agentChat('Launch a token called "' + meme + '" with symbol ' + generateSymbol(meme).replace('$','') + ' to wallet ' + auth.wallet);
-            var reply = result.reply || '';
-            // Try to extract token address from reply
-            var addrMatch = reply.match(/0x[a-fA-F0-9]{40}/);
-            if (addrMatch) {
-                setMemeState(meme, { tokenAddress: addrMatch[0], tokenLaunched: true });
-                btn.textContent = 'Token \u2713';
-                btn.classList.remove('mc-action-btn--loading');
-                btn.classList.add('mc-action-btn--done');
-                toast('Token launched: ' + addrMatch[0].slice(0,10) + '...');
-            } else {
-                btn.textContent = 'Launch Token';
-                btn.classList.remove('mc-action-btn--loading');
-                btn.disabled = false;
-                toast('Token launch sent — check reply: ' + reply.slice(0, 100));
-            }
-        } catch(err) {
-            btn.textContent = 'Launch Token';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.disabled = false;
-            toast('Error: ' + err.message);
-        }
-    }
-
-    async function deployStaking(meme, btn) {
-        var state = getMemeState(meme);
-        if (!state.tokenAddress) { toast('Launch the token first'); return; }
-        btn.textContent = 'Deploying';
-        btn.classList.add('mc-action-btn--loading');
-        btn.disabled = true;
-        toast('Deploying staking pool...');
-        try {
-            var result = await agentChat('Deploy a staking pool for token address ' + state.tokenAddress + ' with creator wallet ' + auth.wallet);
-            var reply = result.reply || '';
-            setMemeState(meme, { stakingDeployed: true });
-            btn.textContent = 'Staking \u2713';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.classList.add('mc-action-btn--done');
-            toast('Staking pool deploying — ' + reply.slice(0, 100));
-        } catch(err) {
-            btn.textContent = 'Deploy Staking';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.disabled = false;
-            toast('Error: ' + err.message);
-        }
-    }
-
-    async function buildSite(meme, btn) {
-        var state = getMemeState(meme);
-        var slug = meme.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-        btn.textContent = 'Building';
-        btn.classList.add('mc-action-btn--loading');
-        btn.disabled = true;
-        toast('Building site for ' + meme + '...');
-        try {
-            var desc = 'Build me an app called "' + slug + '". It should be a landing page for the ' + meme + ' memecoin on Base. '
-                + 'Dark theme. Include: big meme name as hero, '
-                + (state.tokenAddress ? 'token address ' + state.tokenAddress + ' with a buy button linking to Uniswap, ' : '')
-                + (state.stakingDeployed ? 'a staking section saying users can stake at inclawbate.app/stake, ' : '')
-                + 'a section explaining LP fees go to the Inclawbate ecosystem, '
-                + 'and a community voting section with 4 fun ideas for what this meme token could become. '
-                + 'Make it fun and memey but professional. Footer says "Powered by MemeClaw × Inclawbate".';
-            var result = await agentChat(desc);
-            var reply = result.reply || '';
-            var urlMatch = reply.match(/inclawbate\.app\/s\/[\w-]+/);
-            setMemeState(meme, { siteBuilt: true, siteUrl: urlMatch ? 'https://' + urlMatch[0] : null });
-            btn.textContent = 'Site \u2713';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.classList.add('mc-action-btn--done');
-            toast(urlMatch ? 'Site live: ' + urlMatch[0] : 'Site built — ' + reply.slice(0, 80));
-        } catch(err) {
-            btn.textContent = 'Build Site';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.disabled = false;
-            toast('Error: ' + err.message);
-        }
-    }
-
-    async function promote(meme, btn) {
-        var state = getMemeState(meme);
-        btn.textContent = 'Posting';
-        btn.classList.add('mc-action-btn--loading');
-        btn.disabled = true;
-        toast('Posting to @inclawbator...');
-        try {
-            var msg = 'Book a promo post for right now on the @inclawbator account. The tweet should announce: '
-                + '"' + meme + '" just became a real token on Base. Certified meme, real on-chain token. '
-                + (state.tokenAddress ? 'CA: ' + state.tokenAddress + '. ' : '')
-                + 'Community votes on what it becomes next. Launched by MemeClaw × Inclawbate.';
-            var result = await agentChat(msg);
-            setMemeState(meme, { promoted: true });
-            btn.textContent = 'Promoted \u2713';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.classList.add('mc-action-btn--done');
-            toast('Promo posted!');
-        } catch(err) {
-            btn.textContent = 'Promote';
-            btn.classList.remove('mc-action-btn--loading');
-            btn.disabled = false;
-            toast('Error: ' + err.message);
-        }
-    }
-
     function generateSymbol(name) {
         var words = name.replace(/[^a-zA-Z0-9\s]/g, '').trim().split(/\s+/);
         var sym = words.length >= 2
@@ -655,51 +550,80 @@
         return '$' + sym;
     }
 
+    // ── Auto-launch toggle ──
+    autoToggle.addEventListener('change', function() {
+        fetch(SERVICE_URL + '/toggle-auto', { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                autoLabel.textContent = d.autoLaunch ? 'On' : 'Off';
+                autoLabel.style.color = d.autoLaunch ? '#4ade80' : '';
+                toast('Auto-launch ' + (d.autoLaunch ? 'enabled' : 'disabled'));
+            })
+            .catch(function() { toast('Failed to toggle'); autoToggle.checked = !autoToggle.checked; });
+    });
+
+    // ── Launch single meme (full pipeline on the backend) ──
+    async function launchMeme(meme, btn) {
+        btn.textContent = 'Launching...';
+        btn.classList.add('mc-launch-btn--loading');
+        btn.disabled = true;
+        toast('Launching ' + meme + ' — token + site + staking...');
+        try {
+            var resp = await fetch(SERVICE_URL + '/launch/' + encodeURIComponent(meme), { method: 'POST' });
+            var result = await resp.json();
+            if (result.error) {
+                btn.textContent = 'Launch';
+                btn.classList.remove('mc-launch-btn--loading');
+                btn.disabled = false;
+                toast('Error: ' + result.error);
+            } else {
+                btn.textContent = 'Launched \u2713';
+                btn.classList.add('mc-launch-btn--done');
+                toast(meme + ' launched!' + (result.tokenAddress ? ' CA: ' + result.tokenAddress.slice(0,10) + '...' : ''));
+            }
+        } catch(err) {
+            btn.textContent = 'Launch';
+            btn.classList.remove('mc-launch-btn--loading');
+            btn.disabled = false;
+            toast('Error: ' + err.message);
+        }
+    }
+
     // ── Render meme item ──
     function renderMemeItem(item) {
         var meme = item.meme || 'Unknown';
-        var state = getMemeState(meme);
         var symbol = item.symbol || generateSymbol(meme);
-        var isLaunched = state.tokenLaunched || (!item.error && !item.status);
+        var isLaunched = item.tokenAddress || (item.siteUrl && !item.status);
         var date = item.timestamp ? new Date(item.timestamp).toLocaleDateString() : '';
 
         var row = document.createElement('div');
-        row.className = 'mc-item mc-item-expanded';
+        row.className = 'mc-item';
 
         var badge = isLaunched
             ? '<span class="mc-item-badge mc-item-badge--launched">Launched</span>'
             : '<span class="mc-item-badge mc-item-badge--queued">Queued</span>';
 
-        var actionsHtml = '<div class="mc-item-actions">'
-            + '<button class="mc-action-btn' + (state.tokenLaunched ? ' mc-action-btn--done' : '') + '" data-action="token">' + (state.tokenLaunched ? 'Token \u2713' : 'Launch Token') + '</button>'
-            + '<button class="mc-action-btn' + (state.stakingDeployed ? ' mc-action-btn--done' : '') + '" data-action="staking">' + (state.stakingDeployed ? 'Staking \u2713' : 'Deploy Staking') + '</button>'
-            + '<button class="mc-action-btn' + (state.siteBuilt ? ' mc-action-btn--done' : '') + '" data-action="site">' + (state.siteBuilt ? 'Site \u2713' : 'Build Site') + '</button>'
-            + '<button class="mc-action-btn' + (state.promoted ? ' mc-action-btn--done' : '') + '" data-action="promote">' + (state.promoted ? 'Promoted \u2713' : 'Promote') + '</button>'
-            + '</div>';
+        var launchBtn = isLaunched
+            ? '<button class="mc-launch-btn mc-launch-btn--done" disabled>Launched \u2713</button>'
+            : '<button class="mc-launch-btn">Launch</button>';
 
-        row.innerHTML = '<div class="mc-item-top">'
-            + '<div class="mc-item-img"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--bg-elevated)">&#129300;</div></div>'
+        row.innerHTML = '<div class="mc-item-img"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--bg-elevated)">&#129300;</div></div>'
             + '<div class="mc-item-info"><div class="mc-item-name">' + meme + '</div>'
             + '<div class="mc-item-symbol">' + symbol + '</div>'
-            + (state.tokenAddress ? '<div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)">' + state.tokenAddress.slice(0,10) + '...</div>' : '')
+            + (item.tokenAddress ? '<div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)">' + item.tokenAddress.slice(0,10) + '...</div>' : '')
             + '</div>'
             + badge
-            + '<div class="mc-item-date">' + date + '</div>'
-            + '</div>'
-            + actionsHtml;
+            + launchBtn
+            + '<div class="mc-item-date">' + date + '</div>';
 
-        // Wire up buttons
-        row.querySelectorAll('.mc-action-btn').forEach(function(btn) {
-            if (btn.classList.contains('mc-action-btn--done')) { btn.disabled = true; return; }
+        // Wire launch button
+        var btn = row.querySelector('.mc-launch-btn');
+        if (btn && !isLaunched) {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                var action = btn.getAttribute('data-action');
-                if (action === 'token') launchToken(meme, btn);
-                else if (action === 'staking') deployStaking(meme, btn);
-                else if (action === 'site') buildSite(meme, btn);
-                else if (action === 'promote') promote(meme, btn);
+                launchMeme(meme, btn);
             });
-        });
+        }
 
         return row;
     }
@@ -713,6 +637,12 @@
             launchedEl.textContent = data.totalLaunched || 0;
             queuedEl.textContent = data.queueLength || 0;
             trackedEl.textContent = data.tracked || 0;
+
+            // Set toggle state
+            autoToggle.checked = data.autoLaunch;
+            autoLabel.textContent = data.autoLaunch ? 'On' : 'Off';
+            autoLabel.style.color = data.autoLaunch ? '#4ade80' : '';
+
             return fetch(SERVICE_URL + '/queue');
         })
         .then(function(r) { return r.json(); })

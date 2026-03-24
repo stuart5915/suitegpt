@@ -14,7 +14,7 @@ const TEMPLATE_URL = process.env.TEMPLATE_URL || 'https://raw.githubusercontent.
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const CREATOR_WALLET = process.env.CREATOR_WALLET; // Grant's wallet — receives 80% LP fees
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS) || 4 * 60 * 60 * 1000; // 4 hours
-const AUTO_LAUNCH = process.env.AUTO_LAUNCH === 'true'; // false = queue only, true = auto-launch
+let AUTO_LAUNCH = process.env.AUTO_LAUNCH === 'true'; // mutable — toggled via /toggle-auto endpoint
 const MAX_PER_POLL = parseInt(process.env.MAX_PER_POLL) || 3; // Max memes to process per poll
 
 const ACCENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6'];
@@ -371,9 +371,28 @@ http.createServer((req, res) => {
     } else if (req.url === '/queue') {
         res.writeHead(200);
         res.end(JSON.stringify({ queue: launchQueue.slice(-20) }));
+    } else if (req.url === '/toggle-auto' && req.method === 'POST') {
+        AUTO_LAUNCH = !AUTO_LAUNCH;
+        console.log(`[MemeClaw] Auto-launch toggled to: ${AUTO_LAUNCH}`);
+        res.writeHead(200);
+        res.end(JSON.stringify({ autoLaunch: AUTO_LAUNCH }));
+    } else if (req.url.startsWith('/launch/') && req.method === 'POST') {
+        // Launch a specific meme by name: POST /launch/Chuck%20Norris
+        const memeName = decodeURIComponent(req.url.slice('/launch/'.length));
+        const queued = launchQueue.find(q => q.meme === memeName);
+        if (!CREATOR_WALLET) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'CREATOR_WALLET not set' }));
+        } else {
+            const memeData = queued
+                ? { title: queued.meme, link: queued.link || '', guid: queued.meme, description: queued.description || '' }
+                : { title: memeName, link: '', guid: memeName, description: '' };
+            launchMemeToken(memeData)
+                .then(result => { res.writeHead(200); res.end(JSON.stringify(result)); })
+                .catch(err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
+        }
     } else if (req.url === '/launch-next' && req.method === 'POST') {
-        // Manual trigger: launch the next queued meme
-        const next = launchQueue.find(q => q.status === 'queued (auto-launch off)');
+        const next = launchQueue.find(q => q.status && q.status.includes('queued'));
         if (!next) {
             res.writeHead(404);
             res.end(JSON.stringify({ error: 'No queued memes' }));
@@ -381,7 +400,7 @@ http.createServer((req, res) => {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'CREATOR_WALLET not set' }));
         } else {
-            launchMemeToken({ title: next.meme, link: next.link, guid: next.meme, description: '' })
+            launchMemeToken({ title: next.meme, link: next.link || '', guid: next.meme, description: next.description || '' })
                 .then(result => { res.writeHead(200); res.end(JSON.stringify(result)); })
                 .catch(err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
         }
