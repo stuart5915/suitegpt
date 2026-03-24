@@ -16,24 +16,81 @@
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
     <style>
-        body { opacity: 1; }
+        body { opacity: 1; overflow: hidden; }
 
-        /* ── Faint background logo ── */
-        body::after {
-            content: '';
+        /* ── Full-page split layout ── */
+        .inclaw-app {
             position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90vmin;
-            height: 90vmin;
-            background: url('/inclawbate/assets/inclawbator-logo.png') center / contain no-repeat;
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
+            top: var(--nav-height, 64px);
+            left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column;
+            background: var(--bg-deepest);
+            z-index: 10;
+        }
+        .inclaw-tabs {
+            display: flex; align-items: center; gap: 12px;
+            padding: 8px 16px;
+            background: hsla(240, 10%, 6%, 0.95);
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+        .inclaw-tabs-left {
+            display: flex; align-items: center; gap: 8px; margin-right: auto;
+        }
+        .inclaw-tabs-btns { display: flex; gap: 4px; }
+        .inclaw-tab {
+            font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
+            padding: 6px 14px; border-radius: 999px; cursor: pointer;
+            border: 1px solid transparent; background: none; color: var(--text-dim);
+            transition: all 0.15s; white-space: nowrap;
+        }
+        .inclaw-tab:hover { color: #fff; background: rgba(255,255,255,0.04); }
+        .inclaw-tab.active {
+            background: rgba(232,121,85,0.12); border-color: rgba(232,121,85,0.3);
+            color: #e87955;
+        }
+        .inclaw-docs-link {
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+            color: var(--text-dim); text-decoration: none; white-space: nowrap;
+            transition: color 0.15s;
+        }
+        .inclaw-docs-link:hover { color: #e87955; }
+        .inclaw-split {
+            flex: 1; display: flex; overflow: hidden;
+        }
+        .inclaw-chat-col {
+            width: 50%; display: flex; flex-direction: column; overflow: hidden;
+            border-right: 1px solid var(--border-subtle);
+        }
+        .inclaw-context-col {
+            width: 50%; position: relative; overflow: hidden;
+        }
+        .inclaw-context-panel {
+            display: none; position: absolute; inset: 0;
+        }
+        .inclaw-context-panel.active { display: flex; flex-direction: column; }
+        .inclaw-context-iframe {
+            width: 100%; height: 100%; border: none; background: var(--bg-deepest);
+        }
+        .inclaw-context-empty {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; text-align: center; padding: 40px;
+            background: url('/inclawbate/assets/inclawbator-logo.png') center / 60% no-repeat;
+            background-blend-mode: soft-light;
+        }
+        .inclaw-context-empty > div { position: relative; z-index: 1; }
+
+        /* Mobile: stack vertically, hide context panel */
+        @media (max-width: 768px) {
+            .inclaw-split { flex-direction: column; }
+            .inclaw-chat-col { width: 100%; height: 100%; border-right: none; }
+            .inclaw-context-col { display: none; }
+            .inclaw-tabs-left { display: none; }
+            .inclaw-docs-link { display: none; }
+            .inclaw-tab { font-size: 0.7rem; padding: 5px 10px; }
         }
 
-        /* ── Split View (app preview panel) ── */
+        /* Keep old split panel for app preview override */
         .split-panel {
             display: none;
             position: fixed;
@@ -231,18 +288,13 @@
         .skill-cap-tag { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: rgba(192,83,77,0.1); color: var(--lobster-300); border: 1px solid rgba(192,83,77,0.15); }
 
         /* ── Chat Widget ── */
-        .chat-section { max-width: 640px; margin: 0 auto; padding: 0 var(--space-lg) var(--space-2xl); }
+        .chat-section { display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 0; }
         .chat-container {
-            background: hsla(240, 10%, 6%, 0.75);
-            backdrop-filter: blur(20px) saturate(1.2);
-            -webkit-backdrop-filter: blur(20px) saturate(1.2);
-            border: 1px solid hsla(9, 52%, 54%, 0.2);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            box-shadow: 0 8px 40px hsla(0,0%,0%,0.5), 0 0 60px hsla(9,60%,54%,0.06), inset 0 1px 0 hsla(0,0%,100%,0.04);
+            display: flex; flex-direction: column; flex: 1; overflow: hidden;
+            background: hsla(240, 10%, 6%, 0.95);
         }
         .chat-messages {
-            max-height: 600px; min-height: 60px;
+            flex: 1; min-height: 0;
             overflow-y: auto;
             padding: var(--space-lg) var(--space-lg) var(--space-sm);
             display: flex; flex-direction: column; gap: var(--space-md);
@@ -502,31 +554,28 @@
     </div>
 </nav>
 
-<!-- ═══ SPLIT VIEW PANEL ═══ -->
-<div class="split-panel" id="splitPanel">
-    <div class="split-panel-toolbar">
-        <div style="display:flex;align-items:center;overflow:hidden;">
-            <span class="split-panel-label">Live Preview</span>
-            <span class="split-panel-url" id="splitUrl"></span>
+<!-- ═══ FULL-PAGE SPLIT LAYOUT ═══ -->
+<div class="inclaw-app" id="inclawApp">
+    <!-- Tab bar -->
+    <div class="inclaw-tabs">
+        <div class="inclaw-tabs-left">
+            <img src="/inclawbate/assets/inclawbator-logo.png" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+            <span style="font-family:var(--font-display);font-weight:800;font-size:0.9rem;color:#fff;">Inclawbator</span>
         </div>
-        <div class="split-panel-btns">
-            <button class="split-panel-btn split-back-chat" onclick="closeSplitView()" title="Back to chat">&#128172; Chat</button>
-            <a class="split-panel-btn" id="splitOpenTab" href="#" target="_blank" title="Open in new tab">&#x2197;</a>
-            <button class="split-panel-btn" onclick="closeSplitView()" title="Close preview">&times;</button>
+        <div class="inclaw-tabs-btns">
+            <button class="inclaw-tab active" data-tab="build">&#128296; Build</button>
+            <button class="inclaw-tab" data-tab="defi">&#127974; DeFi</button>
+            <button class="inclaw-tab" data-tab="learn">&#128218; Learn</button>
+            <button class="inclaw-tab" data-tab="council">&#129309; Council</button>
         </div>
+        <a href="/inclawbator/docs" class="inclaw-docs-link" title="Full docs">Docs &rarr;</a>
     </div>
-    <iframe class="split-panel-iframe" id="splitIframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-</div>
 
-<!-- ═══ HERO ═══ -->
-<section class="hero">
-    <div class="hero-icon">&#129438;</div>
-    <h1>Meet the <span>Inclawbator</span></h1>
-    <p>An AI agent that launches tokens, manages your yield, builds apps, hires humans, and runs your project on autopilot. Talk to it anywhere.</p>
-</section>
+    <!-- Split: left = chat, right = context panel -->
+    <div class="inclaw-split">
+        <!-- LEFT: Chat -->
+        <div class="inclaw-chat-col">
 
-<!-- ═══ TALK TO IT ═══ -->
-<section class="chat-section">
     <div class="chat-prompts">
         <div class="chat-categories">
             <button class="chat-cat-btn active" data-cat="build"><span class="cat-icon">&#128296;</span> Build</button>
@@ -658,11 +707,36 @@
             <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
         </form>
     </div>
-    <div style="text-align:center;margin-top:20px;">
-        <a href="/inclawbator/docs" style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:999px;background:rgba(232,121,85,0.1);border:1px solid rgba(232,121,85,0.3);color:#e87955;font-size:0.95rem;font-weight:800;text-decoration:none;transition:all 0.2s;font-family:var(--font-display);" onmouseenter="this.style.background='rgba(232,121,85,0.2)';this.style.borderColor='#e87955';this.style.transform='translateY(-2px)'" onmouseleave="this.style.background='rgba(232,121,85,0.1)';this.style.borderColor='rgba(232,121,85,0.3)';this.style.transform='none'">See everything it can do &rarr;</a>
-    </div>
-</section>
+        </div> <!-- end inclaw-chat-col -->
 
+        <!-- RIGHT: Context Panel -->
+        <div class="inclaw-context-col" id="inclawContext">
+            <div class="inclaw-context-panel active" data-context="build">
+                <div class="inclaw-context-empty">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">&#128296;</div>
+                    <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:6px;">Build something</div>
+                    <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Describe what you want in the chat. Your app will preview here live as it's being built.</div>
+                </div>
+            </div>
+            <div class="inclaw-context-panel" data-context="defi">
+                <iframe src="/stake" class="inclaw-context-iframe" title="DeFi"></iframe>
+            </div>
+            <div class="inclaw-context-panel" data-context="learn">
+                <iframe src="/inclawbator/docs" class="inclaw-context-iframe" title="Docs"></iframe>
+            </div>
+            <div class="inclaw-context-panel" data-context="council">
+                <div class="inclaw-context-empty">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">&#129309;</div>
+                    <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:6px;">Talk to the Council</div>
+                    <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Describe what you need and drop your contact info in the chat. A council member will reply here or reach out directly.</div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- end inclaw-split -->
+</div> <!-- end inclaw-app -->
+
+<!-- ═══ OLD SECTIONS (hidden — content moved to /docs) ═══ -->
+<div style="display:none;">
 <!-- ═══ CAPABILITIES ═══ -->
 <section class="section">
     <h2 class="section-title">What It Can Do</h2>
@@ -972,6 +1046,8 @@
         <a href="/compute" class="compute-cta outline">Learn More &rarr;</a>
     </div>
 </section>
+
+</div> <!-- end hidden old sections -->
 
 <!-- ═══ FOOTER ═══ -->
 <footer class="footer">
@@ -1493,16 +1569,35 @@
 
     form.addEventListener('submit', function(e) { e.preventDefault(); sendMessage(input.value); });
 
-    // Category tab switching
+    // Category tab switching — updates both chat chips AND context panel
+    function switchTab(cat) {
+        // Update old-style chat category chips
+        document.querySelectorAll('.chat-cat-btn').forEach(function(b) { b.classList.remove('active'); });
+        var activeChipBtn = document.querySelector('.chat-cat-btn[data-cat="' + cat + '"]');
+        if (activeChipBtn) activeChipBtn.classList.add('active');
+        document.querySelectorAll('.chat-cat-actions').forEach(function(p) { p.classList.remove('visible'); });
+        var chipPanel = document.querySelector('[data-cat-panel="' + cat + '"]');
+        if (chipPanel) chipPanel.classList.add('visible');
+
+        // Update new top-level tabs
+        document.querySelectorAll('.inclaw-tab').forEach(function(t) { t.classList.remove('active'); });
+        var activeTab = document.querySelector('.inclaw-tab[data-tab="' + cat + '"]');
+        if (activeTab) activeTab.classList.add('active');
+
+        // Update context panel
+        document.querySelectorAll('.inclaw-context-panel').forEach(function(p) { p.classList.remove('active'); });
+        var ctxPanel = document.querySelector('[data-context="' + cat + '"]');
+        if (ctxPanel) ctxPanel.classList.add('active');
+    }
+
+    // Top-level tab clicks
+    document.querySelectorAll('.inclaw-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() { switchTab(btn.getAttribute('data-tab')); });
+    });
+
+    // Old-style chat category clicks (kept for backward compat)
     document.querySelectorAll('.chat-cat-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var cat = btn.getAttribute('data-cat');
-            document.querySelectorAll('.chat-cat-btn').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            document.querySelectorAll('.chat-cat-actions').forEach(function(p) { p.classList.remove('visible'); });
-            var panel = document.querySelector('[data-cat-panel="' + cat + '"]');
-            if (panel) panel.classList.add('visible');
-        });
+        btn.addEventListener('click', function() { switchTab(btn.getAttribute('data-cat')); });
     });
 
     // Action label clicks (left side of row)
