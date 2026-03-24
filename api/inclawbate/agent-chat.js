@@ -1800,10 +1800,20 @@ export default async function handler(req, res) {
 
     // Intercept short app-type follow-ups (e.g. user clicked "A game" pill)
     if (/^a\s+(game|dashboard|landing\s*page|tool|calculator|portfolio|tracker|social|chat|blog|store|shop|website)$/i.test(msgLower) || /^(game|dashboard|landing\s*page|tool|calculator|something else)$/i.test(msgLower)) {
-      const appType = message.replace(/^a\s+/i, '').trim();
-      const reply = `A ${appType.toLowerCase()} — nice! Tell me more:\n\n• What should it be called?\n• What features do you want?\n• Any specific style or theme?\n\nThe more detail you give me, the better I'll build it!`;
+      const appType = message.replace(/^a\s+/i, '').trim().toLowerCase();
+      const gameSuggestions = ['A snake game called SnakePit', 'A trivia quiz with leaderboard', 'A tower defense game', 'A multiplayer card game'];
+      const dashSuggestions = ['A crypto portfolio tracker', 'A project management dashboard', 'A fitness tracking dashboard', 'An analytics dashboard'];
+      const landingSuggestions = ['A landing page for my coffee shop', 'A personal portfolio site', 'A product launch page', 'A restaurant menu page'];
+      const toolSuggestions = ['A tip calculator', 'A unit converter', 'A countdown timer', 'A QR code generator'];
+      const defaultSuggestions = ['Describe your idea in detail', 'Show me examples of apps you built', 'Actually, build something else'];
+      let suggestions = defaultSuggestions;
+      if (/game/i.test(appType)) suggestions = gameSuggestions;
+      else if (/dash/i.test(appType)) suggestions = dashSuggestions;
+      else if (/landing|page|site|website/i.test(appType)) suggestions = landingSuggestions;
+      else if (/tool|calc/i.test(appType)) suggestions = toolSuggestions;
+      const reply = `A ${appType} — nice! Tell me more:\n\n• What should it be called?\n• What features do you want?\n• Any specific style or theme?\n\nThe more detail you give me, the better I'll build it!`;
       history.push({ role: 'assistant', content: reply });
-      return sendReply({ reply, session_id: sid });
+      return sendReply({ reply, session_id: sid, suggestions });
     }
 
     let functionCalled = null;
