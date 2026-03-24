@@ -1,0 +1,109 @@
+// publicgoods.tech — Research Database API (admin only)
+// CRUD for agents, builders, goods + mention tracking
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd', // Stuart
+    '0x47fbb4e2527492ab56b7fba5fde3e7b35719e655', // FreefoRaLLey
+];
+
+function isAdmin(wallet) {
+    return ADMIN_WALLETS.includes((wallet || '').toLowerCase());
+}
+
+export default async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
+    const wallet = (req.query.wallet || req.body?.wallet || '').toLowerCase();
+    if (!isAdmin(wallet)) return res.status(403).json({ error: 'Admin only' });
+
+    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders'
+    const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : 'pgt_agents';
+
+    // GET — list all (including unapproved, for admin)
+    if (req.method === 'GET') {
+        let query = supabase.from(table).select('*').order('last_mentioned', { ascending: true, nullsFirst: true }).order('mentions_count', { ascending: true });
+        if (req.query.search) query = query.ilike('name', `%${req.query.search}%`);
+        const { data, error } = await query.limit(200);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ items: data || [], type });
+    }
+
+    // POST — add new entry
+    if (req.method === 'POST') {
+        const { name, description, website, x_handle, github, telegram, chain, category, status, logo_url, token_address, token_symbol, bio, skills, projects, notes } = req.body;
+        if (!name) return res.status(400).json({ error: 'name required' });
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+        let row = { name, slug, description, website, x_handle, github, category, notes, approved: true };
+        if (type === 'agents') Object.assign(row, { telegram, chain: chain || 'multi', status: status || 'live', logo_url, token_address, token_symbol, submitted_by: wallet });
+        if (type === 'goods') Object.assign(row, { chain, logo_url, submitted_by: wallet });
+        if (type === 'builders') Object.assign(row, { bio, skills: skills || [], projects: projects || [], wallet_address: wallet });
+
+        const { data, error } = await supabase.from(table).insert(row).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ ok: true, item: data });
+    }
+
+    // PUT — update entry or record mention
+    if (req.method === 'PUT') {
+        const { id, action } = req.body;
+        if (!id) return res.status(400).json({ error: 'id required' });
+
+        // Record a mention
+        if (action === 'mention') {
+            const { data: current } = await supabase.from(table).select('mentions_count').eq('id', id).single();
+            const { error } = await supabase.from(table).update({
+                mentions_count: (current?.mentions_count || 0) + 1,
+                last_mentioned: new Date().toISOString()
+            }).eq('id', id);
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true, action: 'mentioned' });
+        }
+
+        // Toggle approved
+        if (action === 'approve') {
+            const { data: current } = await supabase.from(table).select('approved').eq('id', id).single();
+            const { error } = await supabase.from(table).update({ approved: !current?.approved }).eq('id', id);
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true, approved: !current?.approved });
+        }
+
+        // Toggle featured
+        if (action === 'feature') {
+            const { data: current } = await supabase.from(table).select('featured').eq('id', id).single();
+            const { error } = await supabase.from(table).update({ featured: !current?.featured }).eq('id', id);
+            if (error) return res.status(500).json({ error: error.message });
+            return res.json({ ok: true, featured: !current?.featured });
+        }
+
+        // General update
+        const updates = {};
+        for (const key of ['name', 'description', 'website', 'x_handle', 'github', 'telegram', 'chain', 'category', 'status', 'notes', 'bio', 'skills', 'projects', 'logo_url', 'token_address', 'token_symbol']) {
+            if (req.body[key] !== undefined) updates[key] = req.body[key];
+        }
+        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Nothing to update' });
+        const { error } = await supabase.from(table).update(updates).eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ ok: true });
+    }
+
+    // DELETE
+    if (req.method === 'DELETE') {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ error: 'id required' });
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ ok: true });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+}

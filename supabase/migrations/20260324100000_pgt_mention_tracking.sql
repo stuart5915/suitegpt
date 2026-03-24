@@ -1,0 +1,12 @@
+-- Add mention tracking to pgt tables
+ALTER TABLE pgt_agents ADD COLUMN IF NOT EXISTS mentions_count INTEGER DEFAULT 0;
+ALTER TABLE pgt_agents ADD COLUMN IF NOT EXISTS last_mentioned TIMESTAMPTZ;
+ALTER TABLE pgt_agents ADD COLUMN IF NOT EXISTS notes TEXT;
+
+ALTER TABLE pgt_public_goods ADD COLUMN IF NOT EXISTS mentions_count INTEGER DEFAULT 0;
+ALTER TABLE pgt_public_goods ADD COLUMN IF NOT EXISTS last_mentioned TIMESTAMPTZ;
+ALTER TABLE pgt_public_goods ADD COLUMN IF NOT EXISTS notes TEXT;
+
+ALTER TABLE pgt_builders ADD COLUMN IF NOT EXISTS mentions_count INTEGER DEFAULT 0;
+ALTER TABLE pgt_builders ADD COLUMN IF NOT EXISTS last_mentioned TIMESTAMPTZ;
+ALTER TABLE pgt_builders ADD COLUMN IF NOT EXISTS notes TEXT;

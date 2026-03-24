@@ -67,6 +67,36 @@
             .sched-how-step { font-size:0.7rem; }
         }
 
+        /* ── Research Database ── */
+        .rb-tab { padding:6px 14px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-dim);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all 0.15s; }
+        .rb-tab:hover { border-color:var(--border-bright); }
+        .rb-tab.active { background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);color:#34d399; }
+        .rb-entry { display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:10px;transition:all 0.15s; }
+        .rb-entry:hover { border-color:var(--border-bright); }
+        .rb-entry-info { flex:1;min-width:0; }
+        .rb-entry-name { font-weight:700;font-size:0.88rem;color:var(--text-primary);display:flex;align-items:center;gap:6px; }
+        .rb-entry-handle { font-family:var(--font-mono);font-size:0.7rem;color:#34d399; }
+        .rb-entry-desc { font-size:0.72rem;color:var(--text-dim);line-height:1.4;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+        .rb-entry-meta { display:flex;gap:8px;align-items:center;flex-shrink:0; }
+        .rb-mention-count { font-family:var(--font-mono);font-size:0.65rem;padding:3px 8px;border-radius:999px;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.15); }
+        .rb-mention-count.zero { background:rgba(255,255,255,0.03);color:var(--text-dim);border-color:var(--border-default); }
+        .rb-last-mentioned { font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim); }
+        .rb-btn { padding:4px 10px;border-radius:6px;border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--text-secondary);font-size:0.65rem;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:var(--font-display); }
+        .rb-btn:hover { border-color:var(--border-bright);color:var(--text-primary); }
+        .rb-btn-mention { background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.2);color:#34d399; }
+        .rb-btn-mention:hover { background:rgba(52,211,153,0.15); }
+        .rb-featured { color:#fbbf24;font-size:0.7rem; }
+        .rb-modal { position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px; }
+        .rb-modal-inner { background:var(--bg-card);border:1px solid var(--border-default);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto; }
+        .rb-modal-title { font-family:var(--font-display);font-size:1.1rem;font-weight:800;margin-bottom:14px; }
+        .rb-field { margin-bottom:10px; }
+        .rb-field label { display:block;font-size:0.68rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px; }
+        .rb-field input, .rb-field textarea, .rb-field select { width:100%;padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none;font-family:var(--font-body); }
+        .rb-field textarea { min-height:60px;resize:vertical; }
+        .rb-field input:focus, .rb-field textarea:focus { border-color:rgba(52,211,153,0.4); }
+        .rb-submit { padding:10px 24px;background:#34d399;border:none;border-radius:8px;color:#0b0f14;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:var(--font-display); }
+        .rb-submit:hover { opacity:0.88; }
+
         /* ── Account Tabs ── */
         .sched-account-tabs {
             display:flex;gap:8px;margin-bottom:var(--space-lg);animation:fadeUp 0.4s ease 0.05s both;
@@ -1339,6 +1369,31 @@
         </div>
     </section>
 
+    <!-- ═══ Research Database (Admin/Editor Only) ═══ -->
+    <section id="researchPanel" style="display:none;margin-top:var(--space-lg)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);flex-wrap:wrap;gap:10px">
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px">
+                <span style="font-size:1.2rem">📋</span> Research Database
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="rb-tab active" data-rtype="agents" onclick="_switchResearchTab('agents',this)">🤖 Agents</button>
+                <button class="rb-tab" data-rtype="goods" onclick="_switchResearchTab('goods',this)">🌍 Public Goods</button>
+                <button class="rb-tab" data-rtype="builders" onclick="_switchResearchTab('builders',this)">👷 Builders</button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap">
+            <input type="text" id="researchSearch" placeholder="Search..." oninput="_searchResearch()" style="flex:1;min-width:160px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none;font-family:var(--font-body)">
+            <button onclick="_addResearchEntry()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);border-radius:8px;color:#34d399;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">+ Add New</button>
+        </div>
+
+        <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:var(--space-sm);font-family:var(--font-mono)" id="researchStats">Loading...</div>
+
+        <div id="researchGrid" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;padding-right:4px">
+            <div style="color:var(--text-dim);text-align:center;padding:40px;font-size:0.85rem">Loading research database...</div>
+        </div>
+    </section>
+
 </div>
 
 <!-- Footer -->
@@ -1400,6 +1455,239 @@
     function activePillars() {
         return _activeAccount === 'inclawbate' ? INCLAWBATE_PILLARS : INCLAWBATOR_PILLARS;
     }
+
+    // ═══ Research Database ═══
+    var _researchType = 'agents';
+    var _researchData = [];
+
+    function _showResearchPanel() {
+        var panel = document.getElementById('researchPanel');
+        if (panel) panel.style.display = _hasEditAccess() ? '' : 'none';
+        if (_hasEditAccess()) _loadResearch();
+    }
+
+    window._switchResearchTab = function(type, btn) {
+        _researchType = type;
+        document.querySelectorAll('.rb-tab').forEach(function(t) { t.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        _loadResearch();
+    };
+
+    async function _loadResearch() {
+        var search = (document.getElementById('researchSearch') || {}).value || '';
+        try {
+            var url = '/api/publicgoods/research?type=' + _researchType + '&wallet=' + _userWallet;
+            if (search) url += '&search=' + encodeURIComponent(search);
+            var res = await fetch(url);
+            var data = await res.json();
+            _researchData = data.items || [];
+            _renderResearch();
+        } catch (e) {
+            console.error('Research load error:', e);
+        }
+    }
+
+    function _renderResearch() {
+        var grid = document.getElementById('researchGrid');
+        var stats = document.getElementById('researchStats');
+        if (!grid) return;
+
+        var mentioned = _researchData.filter(function(i) { return i.mentions_count > 0; }).length;
+        var never = _researchData.filter(function(i) { return !i.mentions_count; }).length;
+        if (stats) stats.textContent = _researchData.length + ' entries · ' + mentioned + ' mentioned · ' + never + ' never covered';
+
+        if (_researchData.length === 0) {
+            grid.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;font-size:0.85rem">No entries yet. Click "+ Add New" to start building your research database.</div>';
+            return;
+        }
+
+        grid.innerHTML = _researchData.map(function(item) {
+            var mc = item.mentions_count || 0;
+            var lastM = item.last_mentioned ? _timeAgo(new Date(item.last_mentioned)) : 'never';
+            var handle = item.x_handle ? '@' + item.x_handle.replace('@', '') : '';
+            var featured = item.featured ? '<span class="rb-featured" title="Featured">★</span>' : '';
+            var approved = item.approved ? '' : '<span style="font-size:0.6rem;padding:2px 6px;border-radius:4px;background:rgba(250,204,21,0.1);color:#facc15;border:1px solid rgba(250,204,21,0.15)">pending</span>';
+
+            return '<div class="rb-entry">' +
+                '<div class="rb-entry-info">' +
+                    '<div class="rb-entry-name">' + featured + _esc(item.name) + ' ' + approved + '</div>' +
+                    (handle ? '<div class="rb-entry-handle">' + _esc(handle) + '</div>' : '') +
+                    '<div class="rb-entry-desc">' + _esc(item.description || item.bio || 'No description') + '</div>' +
+                    (item.notes ? '<div style="font-size:0.65rem;color:#60a5fa;margin-top:2px">📝 ' + _esc(item.notes) + '</div>' : '') +
+                '</div>' +
+                '<div class="rb-entry-meta">' +
+                    '<div style="text-align:center">' +
+                        '<div class="rb-mention-count ' + (mc === 0 ? 'zero' : '') + '">' + mc + 'x</div>' +
+                        '<div class="rb-last-mentioned">' + lastM + '</div>' +
+                    '</div>' +
+                    '<button class="rb-btn rb-btn-mention" onclick="_recordMention(\'' + item.id + '\')" title="Record mention">📢</button>' +
+                    '<button class="rb-btn" onclick="_editResearchEntry(\'' + item.id + '\')" title="Edit">✏️</button>' +
+                    '<button class="rb-btn" onclick="_toggleApprove(\'' + item.id + '\')" title="Toggle approve">✅</button>' +
+                    '<button class="rb-btn" onclick="_toggleFeature(\'' + item.id + '\')" title="Toggle featured">⭐</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function _timeAgo(date) {
+        var diff = Date.now() - date.getTime();
+        var mins = Math.floor(diff / 60000);
+        if (mins < 60) return mins + 'm ago';
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        var days = Math.floor(hrs / 24);
+        return days + 'd ago';
+    }
+
+    function _esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    window._recordMention = async function(id) {
+        await fetch('/api/publicgoods/research', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, action: 'mention', type: _researchType, wallet: _userWallet })
+        });
+        _loadResearch();
+    };
+
+    window._toggleApprove = async function(id) {
+        await fetch('/api/publicgoods/research', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, action: 'approve', type: _researchType, wallet: _userWallet })
+        });
+        _loadResearch();
+    };
+
+    window._toggleFeature = async function(id) {
+        await fetch('/api/publicgoods/research', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, action: 'feature', type: _researchType, wallet: _userWallet })
+        });
+        _loadResearch();
+    };
+
+    window._searchResearch = function() { _loadResearch(); };
+
+    window._addResearchEntry = function() {
+        var typeLabel = _researchType === 'agents' ? 'Agent' : _researchType === 'goods' ? 'Public Good' : 'Builder';
+        var fields = '<div class="rb-field"><label>Name *</label><input id="rbName"></div>' +
+            '<div class="rb-field"><label>X Handle</label><input id="rbHandle" placeholder="@handle"></div>' +
+            '<div class="rb-field"><label>Description</label><textarea id="rbDesc" placeholder="What does it do?"></textarea></div>' +
+            '<div class="rb-field"><label>Website</label><input id="rbWebsite" placeholder="https://..."></div>' +
+            '<div class="rb-field"><label>GitHub</label><input id="rbGithub" placeholder="https://github.com/..."></div>';
+
+        if (_researchType === 'agents') {
+            fields += '<div class="rb-field"><label>Chain</label><select id="rbChain"><option value="multi">Multi</option><option value="base">Base</option><option value="ethereum">Ethereum</option><option value="solana">Solana</option></select></div>' +
+                '<div class="rb-field"><label>Category</label><select id="rbCategory"><option value="general">General</option><option value="defi">DeFi</option><option value="social">Social</option><option value="gaming">Gaming</option><option value="infra">Infrastructure</option><option value="devtools">Dev Tools</option><option value="dao">DAO</option></select></div>' +
+                '<div class="rb-field"><label>Token Address</label><input id="rbToken" placeholder="0x..."></div>';
+        }
+        if (_researchType === 'goods') {
+            fields += '<div class="rb-field"><label>Category</label><select id="rbCategory"><option value="tool">Tool</option><option value="infra">Infrastructure</option><option value="education">Education</option><option value="community">Community</option><option value="protocol">Protocol</option><option value="dao">DAO</option></select></div>';
+        }
+        if (_researchType === 'builders') {
+            fields += '<div class="rb-field"><label>Bio</label><textarea id="rbBio" placeholder="Who are they?"></textarea></div>' +
+                '<div class="rb-field"><label>Skills (comma-separated)</label><input id="rbSkills" placeholder="vibecoder, smart-contracts, ai-ml"></div>' +
+                '<div class="rb-field"><label>Projects (comma-separated)</label><input id="rbProjects" placeholder="Project1, Project2"></div>';
+        }
+        fields += '<div class="rb-field"><label>Notes (internal)</label><input id="rbNotes" placeholder="Internal notes..."></div>';
+
+        var modal = document.createElement('div');
+        modal.className = 'rb-modal';
+        modal.innerHTML = '<div class="rb-modal-inner">' +
+            '<div class="rb-modal-title">Add ' + typeLabel + '</div>' +
+            fields +
+            '<div style="display:flex;gap:8px;margin-top:14px">' +
+                '<button class="rb-submit" onclick="_submitResearchEntry()">Add</button>' +
+                '<button class="rb-btn" onclick="this.closest(\'.rb-modal\').remove()" style="padding:10px 20px">Cancel</button>' +
+            '</div></div>';
+        document.body.appendChild(modal);
+    };
+
+    window._submitResearchEntry = async function() {
+        var body = {
+            type: _researchType,
+            wallet: _userWallet,
+            name: (document.getElementById('rbName') || {}).value || '',
+            x_handle: ((document.getElementById('rbHandle') || {}).value || '').replace('@', ''),
+            description: (document.getElementById('rbDesc') || {}).value || '',
+            website: (document.getElementById('rbWebsite') || {}).value || '',
+            github: (document.getElementById('rbGithub') || {}).value || '',
+            notes: (document.getElementById('rbNotes') || {}).value || '',
+        };
+        if (!body.name) { alert('Name is required'); return; }
+
+        if (_researchType === 'agents') {
+            body.chain = (document.getElementById('rbChain') || {}).value || 'multi';
+            body.category = (document.getElementById('rbCategory') || {}).value || 'general';
+            body.token_address = (document.getElementById('rbToken') || {}).value || '';
+        }
+        if (_researchType === 'goods') {
+            body.category = (document.getElementById('rbCategory') || {}).value || 'tool';
+        }
+        if (_researchType === 'builders') {
+            body.bio = (document.getElementById('rbBio') || {}).value || '';
+            body.skills = ((document.getElementById('rbSkills') || {}).value || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+            body.projects = ((document.getElementById('rbProjects') || {}).value || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+
+        try {
+            var res = await fetch('/api/publicgoods/research', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            var data = await res.json();
+            if (data.ok) {
+                document.querySelector('.rb-modal')?.remove();
+                _loadResearch();
+            } else {
+                alert(data.error || 'Failed');
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    };
+
+    window._editResearchEntry = function(id) {
+        var item = _researchData.find(function(i) { return i.id === id; });
+        if (!item) return;
+        // For now, open add modal pre-filled (simplified edit)
+        _addResearchEntry();
+        setTimeout(function() {
+            var n = document.getElementById('rbName'); if (n) n.value = item.name || '';
+            var h = document.getElementById('rbHandle'); if (h) h.value = item.x_handle || '';
+            var d = document.getElementById('rbDesc'); if (d) d.value = item.description || item.bio || '';
+            var w = document.getElementById('rbWebsite'); if (w) w.value = item.website || '';
+            var g = document.getElementById('rbGithub'); if (g) g.value = item.github || '';
+            var no = document.getElementById('rbNotes'); if (no) no.value = item.notes || '';
+            // Change submit to update
+            var submitBtn = document.querySelector('.rb-submit');
+            if (submitBtn) {
+                submitBtn.textContent = 'Update';
+                submitBtn.onclick = async function() {
+                    var updates = {
+                        id: id, type: _researchType, wallet: _userWallet,
+                        name: (document.getElementById('rbName') || {}).value,
+                        x_handle: ((document.getElementById('rbHandle') || {}).value || '').replace('@', ''),
+                        description: (document.getElementById('rbDesc') || {}).value,
+                        website: (document.getElementById('rbWebsite') || {}).value,
+                        github: (document.getElementById('rbGithub') || {}).value,
+                        notes: (document.getElementById('rbNotes') || {}).value,
+                    };
+                    await fetch('/api/publicgoods/research', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updates)
+                    });
+                    document.querySelector('.rb-modal')?.remove();
+                    _loadResearch();
+                };
+            }
+        }, 50);
+    };
+
+    // Show research panel after auth
+    setTimeout(function() { _showResearchPanel(); }, 2000);
 
     window._switchAccount = function(account) {
         if (account === _activeAccount) return;
