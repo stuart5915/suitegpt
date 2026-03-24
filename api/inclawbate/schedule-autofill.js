@@ -623,6 +623,83 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
 
         if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required' });
 
+        // One-time migration: move 5-slot schedule to 3-slot schedule
+        // Keeps top 3 posts per day (prioritizing: posted > scheduled > needs_review > needs_image)
+        // Moves them to new hours [13, 18, 23] and deletes the rest
+        if (action === 'migrate_to_3_slots') {
+            if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
+            const account = req.body.account || 'inclawbator';
+            const NEW_HOURS = [13, 18, 23];
+            const STATUS_PRIORITY = { posted: 0, scheduled: 1, needs_review: 2, needs_image: 3 };
+
+            // Get all future non-cancelled slots for this account
+            const now = new Date().toISOString();
+            const { data: allSlots, error: fetchErr } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('account', account)
+                .neq('status', 'cancelled')
+                .gte('scheduled_at', new Date(Date.now() - 86400000).toISOString()) // include today
+                .order('scheduled_at', { ascending: true });
+
+            if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+
+            // Group by calendar date
+            const byDate = {};
+            for (const slot of (allSlots || [])) {
+                const d = slot.scheduled_at.split('T')[0];
+                // Handle next-day slots (hour < 6 belongs to previous calendar day)
+                const h = new Date(slot.scheduled_at).getUTCHours();
+                const dateKey = h < 6
+                    ? new Date(new Date(slot.scheduled_at).getTime() - 86400000).toISOString().split('T')[0]
+                    : d;
+                if (!byDate[dateKey]) byDate[dateKey] = [];
+                byDate[dateKey].push(slot);
+            }
+
+            let moved = 0, deleted = 0, skipped = 0;
+            for (const [dateKey, daySlots] of Object.entries(byDate)) {
+                // Sort by priority (posted first, then scheduled, then drafts)
+                daySlots.sort((a, b) => {
+                    const pa = STATUS_PRIORITY[a.status] ?? 9;
+                    const pb = STATUS_PRIORITY[b.status] ?? 9;
+                    if (pa !== pb) return pa - pb;
+                    return new Date(a.scheduled_at) - new Date(b.scheduled_at);
+                });
+
+                const keep = daySlots.slice(0, 3);
+                const remove = daySlots.slice(3);
+
+                // Move kept slots to new hours
+                for (let i = 0; i < keep.length; i++) {
+                    const slot = keep[i];
+                    const currentHour = new Date(slot.scheduled_at).getUTCHours();
+                    const targetHour = NEW_HOURS[i];
+                    if (currentHour === targetHour) { skipped++; continue; }
+
+                    const newTime = new Date(dateKey + 'T00:00:00Z');
+                    newTime.setUTCHours(targetHour, 0, 0, 0);
+                    await supabase
+                        .from('agent_schedule')
+                        .update({ scheduled_at: newTime.toISOString() })
+                        .eq('id', slot.id);
+                    moved++;
+                }
+
+                // Delete extras
+                for (const slot of remove) {
+                    if (slot.status === 'posted') { skipped++; continue; } // never delete posted
+                    await supabase
+                        .from('agent_schedule')
+                        .delete()
+                        .eq('id', slot.id);
+                    deleted++;
+                }
+            }
+
+            return res.json({ ok: true, days: Object.keys(byDate).length, moved, deleted, skipped });
+        }
+
         if (action === 'generate') {
             const account = req.body.account || 'inclawbator';
             const style = req.body.style || 'mixed';

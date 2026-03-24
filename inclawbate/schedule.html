@@ -1909,34 +1909,6 @@
         { utc: 23, label: 'Evening' }
     ];
 
-    // Build the full list of slots: PEAK_SLOTS + any existing DB slots at legacy hours
-    function buildSlotList(date) {
-        var utcBase = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        var peakUtcSet = {};
-        PEAK_SLOTS.forEach(function(p) { peakUtcSet[p.utc] = true; });
-        var slots = PEAK_SLOTS.map(function(p) { return { utc: p.utc, label: p.label }; });
-
-        // Include any booked DB slots at non-peak hours (legacy 5-slot schedule)
-        var dayStart = new Date(utcBase); dayStart.setUTCHours(6, 0, 0, 0);
-        var dayEnd = new Date(utcBase); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1); dayEnd.setUTCHours(6, 0, 0, 0);
-        (_schedSlots || []).forEach(function(s) {
-            if (s.status === 'cancelled') return;
-            var st = new Date(s.scheduled_at);
-            if (st.getTime() < dayStart.getTime() || st.getTime() >= dayEnd.getTime()) return;
-            var h = st.getUTCHours();
-            if (!peakUtcSet[h] && !slots.find(function(x) { return x.utc === h; })) {
-                var legacyLabels = { 1: 'Night', 16: 'Midday', 19: 'Afternoon', 22: 'Evening' };
-                slots.push({ utc: h, label: legacyLabels[h] || (h + ':00 UTC') });
-            }
-        });
-        slots.sort(function(a, b) {
-            var aE = a.utc < 6 ? a.utc + 24 : a.utc;
-            var bE = b.utc < 6 ? b.utc + 24 : b.utc;
-            return aE - bE;
-        });
-        return slots;
-    }
-
     function renderSlots(date) {
         var container = document.getElementById('schedSlots');
         container.innerHTML = '';
@@ -1945,14 +1917,9 @@
         // Normalize: use the local calendar date as a UTC date so
         // slot matching works regardless of the user's timezone
         var utcBase = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        var allSlots = buildSlotList(date);
 
-        allSlots.forEach(function(peak) {
+        PEAK_SLOTS.forEach(function(peak) {
             var slotTime = new Date(utcBase);
-            // For UTC hours < 6, it's actually the next calendar day
-            if (peak.utc < 6) {
-                slotTime.setUTCDate(slotTime.getUTCDate() + 1);
-            }
             slotTime.setUTCHours(peak.utc, 0, 0, 0);
 
             var slotMs = slotTime.getTime();
