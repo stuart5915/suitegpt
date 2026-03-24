@@ -1322,7 +1322,7 @@ async function callLLM(messages) {
 function generateDirectReply(tool, resultJson, args) {
   try {
     const d = JSON.parse(resultJson || '{}');
-    if (d.needs_info) return d.message;
+    if (d.needs_info) return d.suggestions ? { reply: d.message, suggestions: d.suggestions } : d.message;
     if (d.error) return d.hint || d.error;
 
     switch (tool) {
@@ -1865,6 +1865,27 @@ export default async function handler(req, res) {
       else if (/landing|page|site|website/i.test(appType)) suggestions = landingSuggestions;
       else if (/tool|calc/i.test(appType)) suggestions = toolSuggestions;
       const reply = `A ${appType} — nice! Tell me more:\n\n• What should it be called?\n• What features do you want?\n• Any specific style or theme?\n\nThe more detail you give me, the better I'll build it!`;
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions });
+    }
+
+    // Intercept app idea follow-ups with a name but no full description yet
+    // e.g. "A tower defense game", "A snake game called SnakePit", "A crypto portfolio tracker"
+    const appIdeaMatch = message.match(/^(?:a\s+)?(.+?\s+(?:game|app|dashboard|tracker|tool|calculator|page|site|website|shop|store|quiz|chat|bot|timer|counter|generator|converter|manager|planner|builder|viewer|player|editor|reader|finder|checker))\s*(?:called\s+(.+))?$/i);
+    if (appIdeaMatch && message.length < 80) {
+      const ideaDesc = appIdeaMatch[1].trim();
+      const ideaName = appIdeaMatch[2]?.trim() || ideaDesc;
+      const nameSlug = ideaName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      // Don't build yet — ask for more detail with smart suggestions
+      let suggestions;
+      if (/tower\s*def|td\s*game|strategy.*game/i.test(ideaDesc)) suggestions = ['Waves of enemies with upgradeable towers', 'Pixel art with multiple maps and bosses', 'Sci-fi theme with resource management', 'Co-op multiplayer tower defense'];
+      else if (/snake/i.test(ideaDesc)) suggestions = ['Classic snake with power-ups and levels', 'Neon-themed with leaderboard and speed modes', 'Multiplayer snake battle arena', 'Retro pixel art with high score board'];
+      else if (/trivia|quiz/i.test(ideaDesc)) suggestions = ['Multiple choice with timer and scoring', 'Category-based with difficulty levels', 'Multiplayer quiz competition', 'Flashcard-style with streak tracking'];
+      else if (/card|poker/i.test(ideaDesc)) suggestions = ['Multiplayer card game with chat', 'Solitaire with daily challenges', 'Trading card game with collections', 'Casino-style with chips and betting'];
+      else if (/portfolio|tracker|crypto/i.test(ideaDesc)) suggestions = ['Live charts with multiple token tracking', 'Dark theme with P&L and alerts', 'Simple watchlist with price alerts', 'Full portfolio with transaction history'];
+      else if (/landing|page/i.test(ideaDesc)) suggestions = ['Hero section with CTA and testimonials', 'Animated scroll with feature sections', 'Clean minimal with contact form', 'Dark modern with project gallery'];
+      else suggestions = ['Add a leaderboard and difficulty levels', 'Dark theme with smooth animations', 'Multiplayer or competitive mode', 'Mobile-friendly with clean layout'];
+      const reply = `"${ideaName}" — love it! What should it look like and do? Pick one to get started or describe your vision:`;
       history.push({ role: 'assistant', content: reply });
       return sendReply({ reply, session_id: sid, suggestions });
     }
