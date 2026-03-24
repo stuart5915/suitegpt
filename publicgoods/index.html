@@ -1256,13 +1256,13 @@ function switchTab(tab) {
         history.pushState(null, '', '#' + tab);
     }
 
-    // Lazy-load data
-    if (tab === 'agents' && !agentsData.length) loadAgents();
-    if (tab === 'goods' && !goodsData.length) loadGoods();
-    if (tab === 'builders' && !buildersData.length) loadBuilders();
+    // Load data if needed, always render
+    if (tab === 'agents') { if (!agentsData.length) loadAgents(); else renderAgents(); }
+    if (tab === 'goods') { if (!goodsData.length) loadGoods(); else renderGoods(); }
+    if (tab === 'builders') { if (!buildersData.length) loadBuilders(); else renderBuilders(); }
     if (tab === 'blog') {
+        if (!newsData.length) loadNews(); else renderNews();
         if (!articlesData.length) loadArticles();
-        if (!newsData.length) loadNews();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
