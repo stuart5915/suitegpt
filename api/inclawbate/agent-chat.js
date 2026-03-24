@@ -16,7 +16,7 @@ const SYSTEM_PROMPT = `You are The Inclawbator — the official Inclawbate ecosy
 
 Inclawbate is a self-sustaining engine that generates, manages, and distributes value forever. Anyone Can Build. Everyone Gets Paid.
 
-You have 16 tools. Match the user's intent to the right one.
+You have capabilities to help users. Match the user's intent to the right action.
 
 IMPORTANT: If your previous message asked the user for missing details (like a wallet address or token address), and the user's next message contains those details, call THE SAME TOOL AGAIN with the new information filled in. Do NOT switch to a different tool.
 
@@ -1409,6 +1409,37 @@ export default async function handler(req, res) {
   const { message, session_id, wallet, client_history } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message is required' });
 
+  // Server-side security pre-filter — catch obvious attacks before they hit the LLM
+  const msgLower = (typeof message === 'string' ? message : '').toLowerCase();
+  const ATTACK_PATTERNS = [
+    /ignore\s+(all\s+)?previous\s+instructions/i,
+    /ignore\s+(all\s+)?prior\s+instructions/i,
+    /ignore\s+(all\s+)?above\s+instructions/i,
+    /you\s+are\s+now\s+in\s+(debug|admin|test|developer|maintenance)\s+mode/i,
+    /enter\s+(debug|admin|test|developer|maintenance)\s+mode/i,
+    /output\s+(your|the|all)\s+(system\s+)?prompt/i,
+    /repeat\s+(your|the)\s+(system\s+)?(prompt|instructions)/i,
+    /show\s+(me\s+)?(your|the)\s+(system\s+)?(prompt|instructions)/i,
+    /what\s+(is|are)\s+(your|the)\s+(system\s+)?(prompt|instructions)/i,
+    /print\s+(your|the)\s+(system\s+)?(prompt|instructions)/i,
+    /\.env\s+(file|contents|variables)/i,
+    /environment\s+variables/i,
+    /private\s+key/i,
+    /api\s+key(s)?(\s+for)?/i,
+    /secret\s+key/i,
+    /admin\s+password/i,
+    /rpc\s+(endpoint|url)/i,
+    /supabase.*key/i,
+    /wallet.*private/i,
+  ];
+  const isAttack = ATTACK_PATTERNS.some(p => p.test(message));
+  if (isAttack) {
+    return res.status(200).json({
+      reply: "I can't share internal system details. I'm the Inclawbator — I help you build, launch, and earn in the Inclawbate ecosystem. What can I help you with?",
+      session_id: session_id || 'anon_' + Date.now()
+    });
+  }
+
   const sid = session_id || 'anon_' + Date.now();
 
   // Prefer client-side history (Vercel serverless functions are stateless across cold starts)
@@ -1580,6 +1611,7 @@ export default async function handler(req, res) {
     return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid });
   } catch (e) {
     console.error('Agent chat error:', e);
-    return res.status(500).json({ error: 'Agent error: ' + e.message });
+    console.error('Agent chat error:', e);
+    return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 }
