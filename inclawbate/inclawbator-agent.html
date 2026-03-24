@@ -1652,6 +1652,38 @@
             renderTxCard(bubble, txData);
         }
 
+        // Inline Sign/Cancel buttons for DeFi transactions (swap, stake, claim)
+        if (!isUser && txData && (txData.tx || txData.txs)) {
+            var txBtns = document.createElement('div');
+            txBtns.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+            var signBtn = document.createElement('button');
+            signBtn.textContent = 'Sign Transaction';
+            signBtn.style.cssText = 'padding:10px 20px;background:linear-gradient(135deg,#c0534d,#d4716b);color:#fff;border:none;border-radius:999px;font-weight:800;font-size:0.82rem;cursor:pointer;transition:all 0.15s;';
+            signBtn.onmouseenter = function() { signBtn.style.opacity = '0.85'; };
+            signBtn.onmouseleave = function() { signBtn.style.opacity = '1'; };
+            signBtn.onclick = function() {
+                signBtn.textContent = 'Signing...';
+                signBtn.disabled = true;
+                cancelBtn.style.display = 'none';
+                processPendingTx().then(function() {
+                    signBtn.textContent = 'Signed';
+                    signBtn.style.background = 'rgba(74,222,128,0.15)';
+                    signBtn.style.color = '#4ade80';
+                });
+            };
+            var cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.cssText = 'padding:10px 20px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:999px;color:var(--text-dim);font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.15s;';
+            cancelBtn.onclick = function() {
+                pendingTxData = null;
+                txBtns.remove();
+                addMessage('Transaction cancelled.', false);
+            };
+            txBtns.appendChild(signBtn);
+            txBtns.appendChild(cancelBtn);
+            bubble.appendChild(txBtns);
+        }
+
         if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
             var actions = document.createElement('div');
             actions.className = 'chat-actions';

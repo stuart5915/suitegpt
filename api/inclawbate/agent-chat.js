@@ -101,7 +101,7 @@ SWAP TOKENS — Use swap_tokens when someone wants to buy, sell, or swap tokens.
   You: [NOW call swap_tokens with from_token: ETH, to_token: CLAWS, amount: 0.1]
 Only call the tool once you have from_token, to_token, AND amount. Wallet is auto-injected if connected. Supports symbols (ETH, USDC, CLAWS, WETH, POKERAI) or contract addresses. The response includes a transaction for the user to sign — tell them to type "confirm" to proceed.
 
-STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Do NOT call this tool until you have the amount. If the user says "I want to stake CLAWS" without specifying how much, ask them: "How much CLAWS do you want to stake?" Do NOT guess or assume an amount. Wallet auto-injected. Involves 2 transactions (approve + stake). Tell them to type "confirm" to sign.
+STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Do NOT call this tool until you have the amount. If the user says "I want to stake CLAWS" without specifying how much, ask them: "How much CLAWS do you want to stake?" Do NOT guess or assume an amount. Wallet auto-injected. Involves 2 transactions (approve + stake). A sign button will appear automatically.
 
 UNSTAKE CLAWS — Use unstake_claws when someone wants to unstake/withdraw their staked CLAWS. Do NOT call this tool until you have the amount. If they don't say how much, ask them. Wallet auto-injected.
 
@@ -1469,22 +1469,22 @@ function generateDirectReply(tool, resultJson, args) {
 
       case 'swap_tokens':
         if (d.error) return d.error;
-        if (d.success) return `I'll swap **${d.fromAmount} ${d.fromToken}** for approximately **${d.toAmount} ${d.toToken}** on Base.\n\nSlippage: ${d.slippage} | Gas: ~$${d.gasCostUSD}\n\nType **"confirm"** to sign the transaction.`;
+        if (d.success) return `Swap **${d.fromAmount} ${d.fromToken}** → **${d.toAmount} ${d.toToken}**\n\nvia ParaSwap (best route across Base DEXes)\nSlippage: ${d.slippage} | Gas: ~$${d.gasCostUSD}`;
         return null;
 
       case 'stake_claws':
         if (d.error) return d.error;
-        if (d.success) return `Ready to stake **${d.amount} CLAWS**.\n\nThis requires 2 transactions:\n1. Approve CLAWS spending\n2. Stake CLAWS\n\nType **"confirm"** to sign.`;
+        if (d.success) return `Stake **${d.amount} CLAWS**\n\n2 transactions: Approve + Stake`;
         return null;
 
       case 'unstake_claws':
         if (d.error) return d.error;
-        if (d.success) return `Ready to unstake **${d.amount} CLAWS**.\n\nType **"confirm"** to sign the transaction.`;
+        if (d.success) return `Unstake **${d.amount} CLAWS**`;
         return null;
 
       case 'claim_staking_rewards':
         if (d.error) return d.error;
-        if (d.success) return `Ready to claim your pending CLAWS staking rewards.\n\nType **"confirm"** to sign the transaction.`;
+        if (d.success) return `Claim your pending CLAWS staking rewards`;
         return null;
 
       case 'health_check':
