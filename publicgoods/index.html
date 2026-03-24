@@ -2074,17 +2074,23 @@ const SEED_NEWS = [
 ];
 
 async function initSeedNews() {
-    if (newsData.length > 0) return;
+    // Check API directly — don't rely on newsData which might not be loaded yet
     try {
+        const data = await apiGet('/news');
+        const existing = Array.isArray(data) ? data : (data.news || data.data || []);
+        if (existing.length > 0) {
+            newsData = existing;
+            renderHomeNews();
+            return; // Already seeded, done
+        }
+        // No news yet — seed it
         for (const item of SEED_NEWS) {
             await apiPost('/news', item);
         }
-        // Reload news after seeding
-        const data = await apiGet('/news');
-        newsData = Array.isArray(data) ? data : (data.news || data.data || []);
+        const fresh = await apiGet('/news');
+        newsData = Array.isArray(fresh) ? fresh : (fresh.news || fresh.data || []);
     } catch (e) {
         console.error('Failed to seed news:', e);
-        // Use seed data as fallback for display
         newsData = SEED_NEWS.map((item, i) => ({ ...item, id: 'seed_' + i, created_at: new Date(Date.now() - i * 3600000).toISOString() }));
     }
     renderHomeNews();
