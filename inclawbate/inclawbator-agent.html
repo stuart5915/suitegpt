@@ -406,11 +406,13 @@
             .chat-app-expanded .chat-app-iframe { height: 450px; }
         }
 
-        /* ── Suggestion Pills ── */
-        .chat-suggestions {
+        /* ── Suggestion Pills Bar (sticky above input) ── */
+        .chat-suggestions-bar {
             display: flex; flex-wrap: wrap; gap: 6px;
-            padding: 8px 0 0 48px; /* align with chat bubble (past avatar) */
+            padding: 8px 16px 4px;
+            min-height: 0; /* collapse when empty */
         }
+        .chat-suggestions-bar:empty { display: none; }
         .chat-suggestion-pill {
             font-family: var(--font-display); font-size: 0.72rem; font-weight: 600;
             padding: 6px 14px; border-radius: 999px; cursor: pointer;
@@ -669,6 +671,7 @@
                 <div class="chat-bubble">Hey! I'm the <strong>Inclawbator</strong> &mdash; I can launch tokens, manage your yield, deploy staking, build apps, hire humans, and more. What do you need?</div>
             </div>
         </div>
+        <div class="chat-suggestions-bar" id="chatSuggestionsBar"></div>
         <form class="chat-input-row" id="chatForm" autocomplete="off">
             <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything..." maxlength="500" autocomplete="off">
             <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
@@ -1293,21 +1296,22 @@
             });
             bubble.appendChild(actions);
         }
-        // Contextual suggestion pills
+        // Contextual suggestion pills — render in sticky bar above input
         if (!isUser && suggestions && suggestions.length) {
-            var pills = document.createElement('div');
-            pills.className = 'chat-suggestions';
-            suggestions.forEach(function(s) {
-                var pill = document.createElement('button');
-                pill.className = 'chat-suggestion-pill';
-                pill.textContent = s;
-                pill.onclick = function() {
-                    pills.remove();
-                    sendMessage(s);
-                };
-                pills.appendChild(pill);
-            });
-            wrapper.appendChild(pills);
+            var bar = document.getElementById('chatSuggestionsBar');
+            if (bar) {
+                bar.innerHTML = '';
+                suggestions.forEach(function(s) {
+                    var pill = document.createElement('button');
+                    pill.className = 'chat-suggestion-pill';
+                    pill.textContent = s;
+                    pill.onclick = function() {
+                        bar.innerHTML = '';
+                        sendMessage(s);
+                    };
+                    bar.appendChild(pill);
+                });
+            }
         }
         messages.appendChild(wrapper);
         scrollBottom();
@@ -1408,6 +1412,9 @@
 
     async function sendMessage(text) {
         if (!text.trim() || sending) return;
+        // Clear suggestion pills when user sends any message
+        var sugBar = document.getElementById('chatSuggestionsBar');
+        if (sugBar) sugBar.innerHTML = '';
 
         // Check if this is a confirmation for a pending transaction
         if (pendingTxData && isConfirmation(text)) {
