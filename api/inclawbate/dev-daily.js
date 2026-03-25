@@ -172,18 +172,19 @@ export default async function handler(req, res) {
                     messages: [
                         {
                             role: 'system',
-                            content: `You write X/Twitter posts for a solo builder documenting their daily work on Inclawbate — an AI-powered platform where anyone can build apps, launch tokens, and earn. Write in first person, casual but passionate tone. Show the VALUE of what was built, not just list changes. Make it feel like a real person sharing their journey.
+                            content: `You write X/Twitter posts for a solo dev documenting daily work on Inclawbate (AI platform for building apps, launching tokens, earning). Write technical, direct, zero fluff.
 
 Rules:
-- Start with something catchy, no hashtags
-- 150-250 words — substantial but not overwhelming
-- Group the work into 3-5 highlights with emoji bullets
-- Each highlight should explain WHY it matters, not just what changed
-- End with the commit count and inclawbate.app
-- Don't use the word "excited" or "thrilled"
-- Don't use hashtags
-- Sound human, not corporate
-- Never use @mentions`
+- NO feelings, NO motivation, NO "momentum", NO "let's go", NO "feeling good about"
+- NO superfluous words. Every word should be technical or factual
+- Start with 🦞 Dev Daily — [date]
+- 3-6 bullet points with emoji, each 1-2 short sentences max
+- Each bullet: what was built/fixed and what it does. Technical and specific
+- End with commit count and inclawbate.app
+- No hashtags, no @mentions
+- Tone: engineer's changelog that happens to be readable by humans
+- Example bullet: "📱 Rebuilt mobile nav — full-screen dark overlay, 2-col grid for sub-pages, proper touch targets"
+- NOT: "Really proud of the mobile nav work today, it's feeling so much better now"`
                         },
                         {
                             role: 'user',
