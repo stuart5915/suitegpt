@@ -2358,7 +2358,7 @@
                 if (token) bH['Authorization'] = 'Bearer ' + token;
                 var buildRes = await fetch('/api/studio/chat', {
                     method: 'POST', headers: bH,
-                    body: JSON.stringify({ session_id: _buildSessionId, message: text.trim(), model: model, current_code: _buildCurrentCode || null })
+                    body: JSON.stringify(Object.assign({ message: text.trim(), model: model, current_code: _buildCurrentCode || null }, _buildSessionId ? { session_id: _buildSessionId } : {}))
                 });
                 hideTyping();
                 if (buildRes.ok && (buildRes.headers.get('content-type') || '').includes('text/event-stream')) {
@@ -2491,7 +2491,7 @@
         var slug = slugMatch ? slugMatch[1] : '';
         _buildSlug = slug;
         _buildMode = true;
-        _buildSessionId = 'build_' + Date.now();
+        _buildSessionId = null; // null = API creates a new session on first message
 
         // Show model selector + edit mode bar
         var bar = document.getElementById('buildModeBar');
@@ -2690,51 +2690,33 @@ function loadLearnStats() {
     if (_learnStatsLoaded) return;
     _learnStatsLoaded = true;
 
-    function fmtTvl(n) {
+    function fmt(n) {
         if (n == null) return '—';
-        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
-        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-        if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
-        return '$' + Math.round(n);
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+        return String(Math.round(n));
     }
 
-    function applyStaking(st) {
-        var el;
-        el = document.getElementById('learnStatStakers');
-        if (el && st.total_stakers != null) el.textContent = st.total_stakers;
-        el = document.getElementById('learnStatTvl');
-        if (el) {
-            var tvl = st.tvl_usd != null ? st.tvl_usd : (st.total_staked != null ? st.total_staked : null);
-            el.textContent = tvl != null ? fmtTvl(tvl) : '—';
-        }
-        el = document.getElementById('learnStatApy');
-        if (el && st.estimated_apy != null) el.textContent = st.estimated_apy + '%';
-    }
-
-    // Apps count
-    fetch('/api/inclawbate/apps')
+    // Single call — /api/inclawbate/stats now includes apps_count + claws_staking from chain cache
+    fetch('/api/inclawbate/stats')
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            var count = Array.isArray(d) ? d.length : (d.apps ? d.apps.length : 0);
-            var el = document.getElementById('learnStatApps');
-            if (el) el.textContent = count || '—';
+            var el;
+            // Apps
+            el = document.getElementById('learnStatApps');
+            if (el) el.textContent = d.apps_count || '—';
+            // CLAWS staking (from on-chain cache)
+            var cs = d.claws_staking;
+            if (cs) {
+                el = document.getElementById('learnStatStakers');
+                if (el) el.textContent = cs.staker_count || 0;
+                el = document.getElementById('learnStatTvl');
+                if (el) el.textContent = fmt(cs.total_staked) + ' CLAWS';
+                el = document.getElementById('learnStatApy');
+                if (el) el.textContent = cs.apy + '%';
+            }
         }).catch(function() {});
-
-    // Staking: try dedicated endpoint first (returns treasury.{...}), fall back to analytics (returns staking.{...})
-    fetch('/api/inclawbate/staking')
-        .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(function(d) {
-            var st = d.treasury || d.staking || {};
-            if (st.total_stakers != null) { applyStaking(st); return; }
-            throw new Error('empty');
-        })
-        .catch(function() {
-            // Fallback to analytics
-            fetch('/api/inclawbate/analytics')
-                .then(function(r) { return r.json(); })
-                .then(function(d) { applyStaking(d.staking || {}); })
-                .catch(function() {});
-        });
 }
 
 function learnChat(msg) {
