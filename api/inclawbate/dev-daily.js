@@ -154,20 +154,64 @@ export default async function handler(req, res) {
 
         post += `<code>${commits.length} commits</code> · inclawbate.app`;
 
-        // Build tweet (plain text, for X)
-        let tweet = `🦞 Dev Daily — ${dateStr}\n\n`;
-        if (groups && groups.length > 0) {
-            for (const g of groups) {
-                tweet += `${g.emoji} ${g.name} (${g.count}) — ${g.summary}\n`;
-            }
-        } else {
-            for (const c of commits.slice(0, 8)) {
-                tweet += `• ${c.message}\n`;
-            }
-        }
-        tweet += `\n${commits.length} commits shipped\ninclawbate.app`;
+        // Generate X post — narrative style, shows value not just changelog
+        let tweet = '';
+        try {
+            const groupSummary = groups ? groups.map(g => `${g.name} (${g.count}): ${g.summary}`).join('\n') : commits.slice(0, 15).map(c => c.message).join('\n');
 
-        // No char limit — user pastes manually and can split into thread if needed
+            const xRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getGroqKey()}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    temperature: 0.7,
+                    max_tokens: 600,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `You write X/Twitter posts for a solo builder documenting their daily work on Inclawbate — an AI-powered platform where anyone can build apps, launch tokens, and earn. Write in first person, casual but passionate tone. Show the VALUE of what was built, not just list changes. Make it feel like a real person sharing their journey.
+
+Rules:
+- Start with something catchy, no hashtags
+- 150-250 words — substantial but not overwhelming
+- Group the work into 3-5 highlights with emoji bullets
+- Each highlight should explain WHY it matters, not just what changed
+- End with the commit count and inclawbate.app
+- Don't use the word "excited" or "thrilled"
+- Don't use hashtags
+- Sound human, not corporate
+- Never use @mentions`
+                        },
+                        {
+                            role: 'user',
+                            content: `Write an X post for today's dev work. ${commits.length} commits shipped on ${dateStr}.\n\nGrouped work:\n${groupSummary}`
+                        }
+                    ]
+                })
+            });
+
+            if (xRes.ok) {
+                const xData = await xRes.json();
+                tweet = (xData.choices?.[0]?.message?.content || '').trim();
+                tweet = tweet.replace(/^["']|["']$/g, '').trim();
+            }
+        } catch (e) {
+            console.error('X post generation error:', e);
+        }
+
+        // Fallback if AI fails
+        if (!tweet) {
+            tweet = `🦞 Dev Daily — ${dateStr}\n\n`;
+            if (groups && groups.length > 0) {
+                for (const g of groups) {
+                    tweet += `${g.emoji} ${g.name} (${g.count}) — ${g.summary}\n`;
+                }
+            }
+            tweet += `\n${commits.length} commits shipped\ninclawbate.app`;
+        }
 
         return res.status(200).json({ post, tweet, commitCount: commits.length });
     } catch (e) {
