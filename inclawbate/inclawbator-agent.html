@@ -2584,8 +2584,11 @@
                             } catch(_) {}
                         });
                     }
-                    // Strip markdown code fences if LLM wrapped the output
-                    fullCode = fullCode.replace(/^```html?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+                    // Strip everything before the actual HTML — LLM often adds preamble text
+                    fullCode = fullCode.replace(/```/g, '').trim();
+                    var htmlStart = fullCode.search(/<(!DOCTYPE|html)/i);
+                    if (htmlStart > 0) fullCode = fullCode.slice(htmlStart);
+                    fullCode = fullCode.replace(/\s*```\s*$/i, '').trim();
                     if (fullCode.length > 50) {
                         _buildCurrentCode = fullCode;
                         if (lastBubble) lastBubble.innerHTML = 'Publishing...';
