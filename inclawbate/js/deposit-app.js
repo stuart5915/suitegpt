@@ -37,13 +37,10 @@
         } catch (e) { /* expired or invalid */ }
     }
 
-    if (jwt) {
-        document.getElementById('depositUI').classList.remove('hidden');
-        document.getElementById('loginGate').classList.add('hidden');
-    } else {
-        document.getElementById('loginGate').classList.remove('hidden');
-        document.getElementById('depositUI').classList.add('hidden');
-    }
+    // Always show deposit UI (gate removed — let users browse freely)
+    document.getElementById('depositUI').classList.remove('hidden');
+    document.getElementById('loginGate').classList.add('hidden');
+    document.getElementById('loginGate').style.display = 'none';
 
     // Reveal body
     document.body.style.opacity = '1';

@@ -25,26 +25,24 @@ const buyModal = document.getElementById('buyModal');
 
 // ── Init ──
 (async function init() {
-    if (!isLoggedIn()) {
-        loginGate.classList.remove('hidden');
-        document.body.style.opacity = '1';
-        return;
+    // Show main content to all visitors (gate removed)
+    mainContent.classList.remove('hidden');
+
+    if (isLoggedIn()) {
+        // Logged in — fetch credits
+        const token = localStorage.getItem('inclawbate_token');
+        try {
+            const res = await fetch('/api/inclawbate/credits', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                credits = data.credits || 0;
+            }
+        } catch (e) { /* credits stay 0 */ }
+        creditBadge.textContent = credits;
     }
 
-    // Logged in — fetch credits
-    const token = localStorage.getItem('inclawbate_token');
-    try {
-        const res = await fetch('/api/inclawbate/credits', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            credits = data.credits || 0;
-        }
-    } catch (e) { /* credits stay 0 */ }
-
-    creditBadge.textContent = credits;
-    mainContent.classList.remove('hidden');
     document.body.style.opacity = '1';
 })();
 

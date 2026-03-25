@@ -538,14 +538,14 @@
 <script src="/js/nav-auth.js"></script>
 
     <!-- Gate -->
-    <div id="factoryGate" class="factory-gate">
+    <div id="factoryGate" class="factory-gate" style="display:none;">
         <h2>App Factory</h2>
         <p>Connect your wallet to access the factory.</p>
         <a onclick="connectWallet()">Connect Wallet</a>
     </div>
 
     <!-- Main -->
-    <div id="factoryMain" class="factory-page" style="display:none;">
+    <div id="factoryMain" class="factory-page">
         <div class="factory-hero">
             <h1>App Factory</h1>
             <p class="factory-hero-sub">1 app, 1 token, 1 pool — every day.</p>
@@ -716,15 +716,8 @@
         };
 
         function checkGate() {
+            // Gate removed — show factory content to all visitors
             if (!_wallet) _wallet = (localStorage.getItem('connectedWallet') || '').toLowerCase();
-            if (!_wallet || COUNCIL.indexOf(_wallet) === -1) {
-                document.getElementById('factoryGate').style.display = 'flex';
-                document.getElementById('factoryMain').style.display = 'none';
-                if (_wallet && COUNCIL.indexOf(_wallet) === -1) {
-                    document.getElementById('factoryGate').innerHTML = '<h2>Access Denied</h2><p>Council members only.</p>';
-                }
-                return;
-            }
             document.getElementById('factoryGate').style.display = 'none';
             document.getElementById('factoryMain').style.display = 'block';
             loadAll();

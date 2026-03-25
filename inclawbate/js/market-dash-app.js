@@ -188,9 +188,11 @@
     // ── Init ──
 
     function init() {
+        document.body.style.opacity = '1';
         var auth = getStoredAuth();
         if (!auth || !auth.token) {
-            showView('auth');
+            // No auth — show picker view (empty) instead of gate
+            showView('picker');
             return;
         }
 
@@ -198,7 +200,8 @@
 
         var wallet = (auth.profile.wallet_address || '').toLowerCase();
         if (!wallet) {
-            showView('auth');
+            // No wallet — show picker view instead of gate
+            showView('picker');
             return;
         }
 
