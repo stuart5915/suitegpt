@@ -760,6 +760,24 @@
             transform: translateY(-1px);
         }
 
+        /* ── Model Picker ── */
+        .model-opt {
+            display: flex; align-items: center; justify-content: space-between; width: 100%;
+            padding: 7px 10px; border: none; background: none; color: var(--text-secondary);
+            font-size: 0.75rem; font-weight: 600; font-family: var(--font-display);
+            border-radius: 8px; cursor: pointer; transition: all 0.1s;
+        }
+        .model-opt:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .model-opt.active { background: rgba(232,121,85,0.1); color: #e87955; }
+        .model-badge-free {
+            font-family: var(--font-mono); font-size: 0.55rem; font-weight: 700;
+            padding: 1px 6px; border-radius: 999px; background: rgba(74,222,128,0.12); color: #4ade80;
+        }
+        .model-badge-paid {
+            font-family: var(--font-mono); font-size: 0.55rem; font-weight: 700;
+            padding: 1px 6px; border-radius: 999px; background: rgba(232,121,85,0.12); color: #e87955;
+        }
+
         /* ── Transaction Card (in chat) ── */
         .tx-card {
             background: rgba(255,255,255,0.03); border: 1px solid rgba(192,83,77,0.2);
@@ -2946,6 +2964,37 @@
     }
     window.exitBuildMode = exitBuildMode;
 
+    // Model picker
+    window.toggleModelPicker = function() {
+        var menu = document.getElementById('modelPickerMenu');
+        if (menu) menu.style.display = menu.style.display === 'none' ? '' : 'none';
+    };
+    window.pickModel = function(value, label, cost) {
+        document.getElementById('buildModelSelect').value = value;
+        document.getElementById('modelPickerLabel').textContent = label;
+        var badge = document.getElementById('modelPickerBadge');
+        if (badge) {
+            badge.textContent = cost;
+            badge.className = cost === 'Free' ? 'model-badge-free' : 'model-badge-paid';
+        }
+        // Update active state
+        document.querySelectorAll('.model-opt').forEach(function(o) { o.classList.remove('active'); });
+        var active = document.querySelector('.model-opt[data-model="' + value + '"]');
+        if (active) active.classList.add('active');
+        // Sync mobile select
+        var ms = document.getElementById('mobileModelSelect');
+        if (ms) ms.value = value;
+        // Close menu
+        var menu = document.getElementById('modelPickerMenu');
+        if (menu) menu.style.display = 'none';
+    };
+    // Close picker on outside click
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('modelPickerWrap');
+        var menu = document.getElementById('modelPickerMenu');
+        if (wrap && menu && !wrap.contains(e.target)) menu.style.display = 'none';
+    });
+
     // Switch build right panel between dashboard and launch views
     window.showBuildContext = function(view) {
         if (_buildMode) return; // don't switch while editing an app
@@ -3660,9 +3709,9 @@ var _mobileSyncInterval = setInterval(function() {
                 <option value="gemini">Gemini Flash (Free)</option>
                 <option value="llama">Llama 70B (Free)</option>
                 <option value="kimi">Kimi (Free)</option>
-                <option value="fast">Haiku (10 cr)</option>
-                <option value="standard" selected>Sonnet (50 cr)</option>
-                <option value="pro">Opus (100 cr)</option>
+                <option value="fast">Haiku (~500 CLAWS)</option>
+                <option value="standard">Sonnet (~2,500 CLAWS)</option>
+                <option value="pro">Opus (~5,000 CLAWS)</option>
             </select>
             <button onclick="exitBuildMode()" style="font-size:0.58rem;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);cursor:pointer;margin-left:auto;">Exit editing</button>
         </div>
