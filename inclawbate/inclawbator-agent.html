@@ -2279,6 +2279,70 @@
         addMessage(text, true);
         chatHistory.push({ role: 'user', content: text.trim() });
         showTyping();
+
+        // ── BUILD MODE: use /api/studio/chat with model + streaming ──
+        if (_buildMode && _buildSlug) {
+            try {
+                var model = (document.getElementById('buildModelSelect') || {}).value || 'gemini';
+                var token = null;
+                try { token = localStorage.getItem('inclawbate_token'); } catch(_) {}
+                var bH = { 'Content-Type': 'application/json' };
+                if (token) bH['Authorization'] = 'Bearer ' + token;
+                var buildRes = await fetch('/api/studio/chat', {
+                    method: 'POST', headers: bH,
+                    body: JSON.stringify({ session_id: _buildSessionId, message: text.trim(), model: model, current_code: _buildCurrentCode || null })
+                });
+                hideTyping();
+                if (buildRes.ok && (buildRes.headers.get('content-type') || '').includes('text/event-stream')) {
+                    var reader = buildRes.body.getReader();
+                    var decoder = new TextDecoder();
+                    var fullCode = '';
+                    addMessage('Building...', false);
+                    var lastBubble = messages.lastElementChild ? messages.lastElementChild.querySelector('.chat-bubble') : null;
+                    while (true) {
+                        var chunk = await reader.read();
+                        if (chunk.done) break;
+                        decoder.decode(chunk.value, { stream: true }).split('\n').forEach(function(line) {
+                            line = line.trim();
+                            if (!line.startsWith('data: ')) return;
+                            try {
+                                var evt = JSON.parse(line.slice(6));
+                                if (evt.type === 'delta' && evt.code) { fullCode += evt.code; if (lastBubble) lastBubble.textContent = 'Building... (' + (fullCode.length / 1024).toFixed(0) + 'KB)'; }
+                                if (evt.type === 'session' && evt.session_id) _buildSessionId = evt.session_id;
+                            } catch(_) {}
+                        });
+                    }
+                    if (fullCode.length > 50) {
+                        _buildCurrentCode = fullCode;
+                        if (lastBubble) lastBubble.innerHTML = 'Publishing...';
+                        var pubRes = await fetch('/api/publish-site', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ slug: _buildSlug, code: fullCode, email: 'inclawbator@inclawbate.app', source: 'inclawbator-build', update: true, creator_wallet: connectedWallet || '' }) });
+                        var pubData = await pubRes.json();
+                        if (pubData.url || pubData.success) {
+                            if (lastBubble) lastBubble.innerHTML = 'Updated! What else do you want to change?';
+                            var pf = document.getElementById('buildPreviewFrame');
+                            if (pf) pf.src = 'https://inclawbate.app/s/' + _buildSlug + '?t=' + Date.now();
+                            var sb = document.getElementById('chatSuggestionsBar');
+                            if (sb) { sb.innerHTML = '';
+                                ['Change the design', 'Add features', 'Looks good!', 'Exit editing'].forEach(function(s) {
+                                    var p = document.createElement('button'); p.className = 'chat-suggestion-pill'; p.textContent = s;
+                                    p.onclick = function() { sb.innerHTML = ''; if (s === 'Exit editing') exitBuildMode(); else sendMessage(s); };
+                                    sb.appendChild(p);
+                                });
+                            }
+                        } else { if (lastBubble) lastBubble.textContent = 'Built but publish failed.'; }
+                    } else { if (lastBubble) lastBubble.textContent = 'Could not generate. Try a clearer description.'; }
+                    chatHistory.push({ role: 'assistant', content: 'App updated.' });
+                } else {
+                    var bd = await buildRes.json();
+                    addMessage(bd.error || 'Build failed.', false);
+                }
+            } catch (e) { hideTyping(); addMessage('Build error — try again.', false); }
+            sending = false; sendBtn.disabled = false; input.focus();
+            return;
+        }
+
+        // ── NORMAL MODE: use agent-chat ──
         try {
             var walletAddr = connectedWallet || null;
             var res = await fetch(AGENT_URL, {
@@ -2289,9 +2353,7 @@
             var data = await res.json();
             hideTyping();
             if (data.reply) {
-                // Check for transaction data (DeFi actions)
                 var txData = data.tx_data || null;
-                // If app_url returned, load it in the right panel instead of inline
                 if (data.app_url) {
                     loadAppInBuildPanel(data.app_url);
                     addMessage(data.reply, false, data.function_called, null, txData, data.suggestions);
@@ -2299,14 +2361,10 @@
                     addMessage(data.reply, false, data.function_called, null, txData, data.suggestions);
                 }
                 chatHistory.push({ role: 'assistant', content: data.reply });
-                // Store pending tx for user to confirm
-                if (txData && (txData.tx || txData.txs)) {
-                    pendingTxData = txData;
-                }
+                if (txData && (txData.tx || txData.txs)) { pendingTxData = txData; }
             }
             else if (data.error) { addMessage('Sorry, something went wrong. Try again!', false); }
             if (data.session_id) sessionId = data.session_id;
-            // Start polling for council replies if a request was created
             if (data.council_request_id) startCouncilPolling(data.council_request_id);
         } catch (e) {
             hideTyping();
