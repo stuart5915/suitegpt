@@ -30,9 +30,10 @@ export default async function handler(req, res) {
         const { name, description, website, x_handle, telegram, github, chain, category, logo_url, token_address, token_symbol, submitted_by } = req.body;
         if (!name) return res.status(400).json({ error: 'name is required' });
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const autoLogo = logo_url || (x_handle ? `https://unavatar.io/x/${x_handle.replace('@','')}` : null);
         const { data, error } = await supabase.from('pgt_agents').insert({
             name, slug, description, website, x_handle, telegram, github, chain: chain || 'multi',
-            category: category || 'general', logo_url, token_address, token_symbol,
+            category: category || 'general', logo_url: autoLogo, token_address, token_symbol,
             submitted_by, approved: false
         }).select().single();
         if (error) return res.status(500).json({ error: error.message });
