@@ -1045,18 +1045,27 @@
         <div class="chat-suggestions-bar" id="chatSuggestionsBar"></div>
         <!-- Model selector (shown when editing an app) -->
         <div class="build-mode-bar" id="buildModeBar" style="display:none;">
-            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid rgba(255,255,255,0.06);">
-                <span style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Model:</span>
-                <select id="buildModelSelect" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:4px 8px;color:#fff;font-size:0.72rem;font-family:var(--font-display);font-weight:700;cursor:pointer;">
-                    <option value="gemini">Gemini Flash (Free)</option>
-                    <option value="llama">Llama 70B (Free)</option>
-                    <option value="kimi">Kimi K2 (Free)</option>
-                    <option value="fast">Haiku (10 cr)</option>
-                    <option value="standard" selected>Sonnet (50 cr)</option>
-                    <option value="pro">Opus (100 cr)</option>
-                </select>
-                <span id="buildCredits" style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);margin-left:auto;"></span>
-                <button onclick="exitBuildMode()" style="font-size:0.62rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-weight:700;">Exit editing</button>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid rgba(255,255,255,0.06);position:relative;">
+                <div style="position:relative;" id="modelPickerWrap">
+                    <button id="modelPickerBtn" onclick="toggleModelPicker()" style="display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:0.72rem;font-family:var(--font-display);font-weight:700;cursor:pointer;transition:all 0.15s;">
+                        <span id="modelPickerLabel">Gemini Flash</span>
+                        <span id="modelPickerBadge" style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(74,222,128,0.12);color:#4ade80;">Free</span>
+                        <span style="font-size:0.6rem;color:var(--text-dim);">&#9650;</span>
+                    </button>
+                    <div id="modelPickerMenu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;min-width:220px;background:hsla(240,10%,8%,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;box-shadow:0 -8px 30px rgba(0,0,0,0.5);z-index:100;">
+                        <div style="font-family:var(--font-mono);font-size:0.52rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px;">Free Models</div>
+                        <button class="model-opt active" data-model="gemini" onclick="pickModel('gemini','Gemini Flash','Free')">Gemini Flash <span class="model-badge-free">Free</span></button>
+                        <button class="model-opt" data-model="llama" onclick="pickModel('llama','Llama 70B','Free')">Llama 70B <span class="model-badge-free">Free</span></button>
+                        <button class="model-opt" data-model="kimi" onclick="pickModel('kimi','Kimi','Free')">Kimi <span class="model-badge-free">Free</span></button>
+                        <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
+                        <div style="font-family:var(--font-mono);font-size:0.52rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px;">Premium (pay CLAWS)</div>
+                        <button class="model-opt" data-model="fast" onclick="pickModel('fast','Haiku','~500 CLAWS')">Haiku <span class="model-badge-paid">~500 CLAWS</span></button>
+                        <button class="model-opt" data-model="standard" onclick="pickModel('standard','Sonnet','~2,500 CLAWS')">Sonnet <span class="model-badge-paid">~2,500 CLAWS</span></button>
+                        <button class="model-opt" data-model="pro" onclick="pickModel('pro','Opus','~5,000 CLAWS')">Opus <span class="model-badge-paid">~5,000 CLAWS</span></button>
+                    </div>
+                </div>
+                <input type="hidden" id="buildModelSelect" value="gemini">
+                <button onclick="exitBuildMode()" style="font-size:0.62rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-weight:700;margin-left:auto;">Exit editing</button>
             </div>
         </div>
         <form class="chat-input-row" id="chatForm" autocomplete="off">
@@ -1121,7 +1130,7 @@
                             <div style="display:flex;gap:4px;margin-bottom:14px;background:rgba(255,255,255,0.03);border-radius:10px;padding:3px;">
                                 <button class="swap-type-btn active" onclick="switchSwapType(this,'market')">Market</button>
                                 <button class="swap-type-btn" onclick="switchSwapType(this,'limit')">Limit</button>
-                                <button class="swap-type-btn" onclick="switchSwapType(this,'dca')">DCA</button>
+                                <button class="swap-type-btn" onclick="switchSwapType(this,'dca')">DCA CLAWS</button>
                             </div>
 
                             <!-- You pay -->
@@ -1167,13 +1176,17 @@
                                 <input type="number" id="swapLimitPrice" placeholder="0.0" style="width:100%;background:none;border:none;color:#fff;font-size:1.1rem;font-weight:800;outline:none;font-family:var(--font-mono);">
                             </div>
 
-                            <!-- DCA frequency (hidden by default) -->
-                            <div id="swapDcaRow" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-top:4px;margin-bottom:4px;">
-                                <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Frequency</div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="swap-freq-btn active" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="daily">Daily</button>
-                                    <button class="swap-freq-btn" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="weekly">Weekly</button>
-                                    <button class="swap-freq-btn" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="monthly">Monthly</button>
+                            <!-- DCA CLAWS info (hidden by default) -->
+                            <div id="swapDcaRow" style="display:none;margin-top:4px;margin-bottom:4px;">
+                                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;">
+                                    <div style="font-weight:800;font-size:0.9rem;margin-bottom:8px;">&#129438; CLAWS AutoBuy</div>
+                                    <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">Deposit ETH once &mdash; automatically buys CLAWS on your schedule. Cancel anytime, get remaining ETH back. No fees.</div>
+                                    <div style="display:flex;flex-direction:column;gap:4px;font-size:0.72rem;color:var(--text-dim);margin-bottom:14px;">
+                                        <div>&#9989; CLAWS sent directly to your wallet</div>
+                                        <div>&#9989; Runs every 10min to 24hrs</div>
+                                        <div>&#9989; Cancel anytime &mdash; withdraw remaining ETH</div>
+                                    </div>
+                                    <a href="/tools/autobuy" target="_blank" style="display:block;padding:12px;background:var(--accent-gradient);color:#fff;border-radius:10px;font-weight:800;font-size:0.88rem;text-align:center;text-decoration:none;">Open CLAWS AutoBuy &#8594;</a>
                                 </div>
                             </div>
 
@@ -1458,6 +1471,8 @@
                         </div>
                     </div>
                 </div>
+                </div> <!-- end defiDashboard -->
+            </div> <!-- end defiPanel -->
             <div class="inclaw-context-panel learn-panel" data-context="learn">
 
                 <!-- ── Glossary ── -->
@@ -3177,9 +3192,9 @@ function switchSwapType(btn, type) {
     document.getElementById('swapLimitRow').style.display = type === 'limit' ? 'block' : 'none';
     document.getElementById('swapDcaRow').style.display = type === 'dca' ? 'block' : 'none';
     var execBtn = document.getElementById('swapExecuteBtn');
-    if (type === 'market') execBtn.textContent = 'Swap';
-    else if (type === 'limit') execBtn.textContent = 'Place Limit Order';
-    else if (type === 'dca') execBtn.textContent = 'Start DCA';
+    if (type === 'market') { execBtn.textContent = 'Swap'; execBtn.style.display = 'block'; }
+    else if (type === 'limit') { execBtn.textContent = 'Place Limit Order'; execBtn.style.display = 'block'; }
+    else if (type === 'dca') { execBtn.style.display = 'none'; } // DCA has its own CTA
 }
 
 function flipSwapTokens() {
