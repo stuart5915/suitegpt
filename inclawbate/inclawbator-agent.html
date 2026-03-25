@@ -3042,11 +3042,32 @@ var BALANCEOF_SIG = '0x70a08231';
 var EARNED_SIG = '0x008cc262';
 
 function defiChat(msg) {
-    var input = document.getElementById('chatInput');
-    var form = document.getElementById('chatForm');
-    if (input && form) {
-        input.value = msg;
-        form.dispatchEvent(new Event('submit', { cancelable: true }));
+    var isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        // Open mobile chat overlay and send through mobile path
+        openMobileChat();
+        var desktopInput = document.getElementById('chatInput');
+        var desktopForm = document.getElementById('chatForm');
+        if (desktopInput && desktopForm) {
+            desktopInput.value = msg;
+            desktopForm.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+        // Show user message in mobile overlay immediately
+        var destMsgs = document.getElementById('mobileChatMessages');
+        if (destMsgs) {
+            var msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-msg chat-msg-user';
+            msgDiv.innerHTML = '<div class="chat-avatar">&#128100;</div><div class="chat-bubble">' + msg.replace(/</g, '&lt;') + '</div>';
+            destMsgs.appendChild(msgDiv);
+            destMsgs.scrollTop = destMsgs.scrollHeight;
+        }
+    } else {
+        var input = document.getElementById('chatInput');
+        var form = document.getElementById('chatForm');
+        if (input && form) {
+            input.value = msg;
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
     }
 }
 
