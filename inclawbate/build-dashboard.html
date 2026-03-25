@@ -124,13 +124,55 @@
     var container = document.getElementById('dashContent');
 
     if (!wallet || wallet.length < 10) {
-        container.innerHTML = '<div class="dash-empty">' +
-            '<div style="font-size:2rem;margin-bottom:12px;">&#128296;</div>' +
-            '<div style="font-weight:800;color:#fff;margin-bottom:6px;">Start Building</div>' +
-            '<div>Type what you want to build in the chat. Connect a wallet later to deploy on-chain.</div>' +
+        container.innerHTML =
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-size:0.88rem;font-weight:800;color:#fff;margin-bottom:4px;">What do you want to build?</div>' +
+                '<div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Pick a template or describe anything in the chat.</div>' +
+            '</div>' +
+            '<div class="dash-grid">' +
+                '<div class="dash-card" onclick="sendToChat(\'Build me a landing page for my project\')">' +
+                    '<div class="dash-card-icon">&#127760;</div>' +
+                    '<div class="dash-card-name">Landing Page</div>' +
+                    '<div class="dash-card-desc">Professional site with hero, features, and CTA</div>' +
+                '</div>' +
+                '<div class="dash-card" onclick="sendToChat(\'Build me a portfolio tracker that shows my token balances\')">' +
+                    '<div class="dash-card-icon">&#128200;</div>' +
+                    '<div class="dash-card-name">Portfolio Tracker</div>' +
+                    '<div class="dash-card-desc">Track token balances, prices, and P&L</div>' +
+                '</div>' +
+                '<div class="dash-card" onclick="sendToChat(\'Build me a staking dashboard for my community\')">' +
+                    '<div class="dash-card-icon">&#129438;</div>' +
+                    '<div class="dash-card-name">Staking Dashboard</div>' +
+                    '<div class="dash-card-desc">Stake tokens, view rewards, claim earnings</div>' +
+                '</div>' +
+                '<div class="dash-card" onclick="sendToChat(\'Build me a simple web app\')">' +
+                    '<div class="dash-card-icon">&#9889;</div>' +
+                    '<div class="dash-card-name">Custom App</div>' +
+                    '<div class="dash-card-desc">Describe anything — AI builds it live</div>' +
+                '</div>' +
             '</div>';
         return;
     }
+
+    // Send prompt to parent Inclawbator chat
+    window.sendToChat = function(prompt) {
+        try {
+            if (window.parent && window.parent.sendChatMessage) {
+                window.parent.sendChatMessage(prompt);
+            } else if (window.parent) {
+                // Fallback: find the chat input and submit
+                var input = window.parent.document.querySelector('.inclaw-input input, .inclaw-input textarea');
+                if (input) {
+                    input.value = prompt;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    var form = input.closest('form');
+                    var btn = window.parent.document.querySelector('.inclaw-send-btn, .inclaw-input button[type="submit"]');
+                    if (btn) btn.click();
+                    else if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
+                }
+            }
+        } catch(e) { console.error('sendToChat:', e); }
+    };
 
     // Fetch all user data in parallel
     Promise.all([
