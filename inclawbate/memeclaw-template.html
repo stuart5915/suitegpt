@@ -321,19 +321,81 @@
         .vote-btn:disabled { opacity: 0.4; cursor: default; }
         .vote-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        /* ── Milestone ── */
-        .milestone { padding: 32px 0; border-bottom: 1px solid var(--border); }
-        .milestone-box {
+        /* ── Volume Milestones ── */
+        .milestones { padding: 32px 0; border-bottom: 1px solid var(--border); }
+        .milestones-header { font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; }
+        .milestones-sub { font-size: 0.82rem; color: var(--text-2); margin-bottom: 20px; }
+        .milestone-track {
+            position: relative;
+            padding-left: 24px;
+        }
+        .milestone-track::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: var(--border);
+        }
+        .milestone-item {
+            position: relative;
+            padding: 14px 16px;
+            margin-bottom: 12px;
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--r-md);
-            padding: 20px;
-            text-align: center;
+            transition: all 0.3s;
         }
-        .milestone-text { font-size: 0.85rem; color: var(--text-2); margin-bottom: 14px; }
-        .milestone-bar { height: 6px; background: var(--bg-deep); border-radius: 6px; overflow: hidden; }
-        .milestone-fill { height: 100%; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fbbf24)); border-radius: 6px; transition: width 1s ease; width: 0%; }
-        .milestone-sub { font-family: var(--mono); font-size: 0.68rem; color: var(--text-3); margin-top: 8px; }
+        .milestone-item.unlocked {
+            border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+            background: color-mix(in srgb, var(--accent) 4%, var(--bg-card));
+        }
+        .milestone-item::before {
+            content: '';
+            position: absolute;
+            left: -21px;
+            top: 18px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            transition: all 0.3s;
+        }
+        .milestone-item.unlocked::before {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        .milestone-vol {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+        .milestone-item:not(.unlocked) .milestone-vol { color: var(--text-3); }
+        .milestone-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+        .milestone-item:not(.unlocked) .milestone-title { color: var(--text-3); }
+        .milestone-desc {
+            font-size: 0.75rem;
+            color: var(--text-3);
+            line-height: 1.5;
+        }
+        .milestone-item.unlocked .milestone-desc { color: var(--text-2); }
+        .milestone-check {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 0.85rem;
+        }
 
         /* ── Staking CTA ── */
         .staking-cta {
@@ -513,13 +575,42 @@
         </div>
     </div>
 
-    <!-- Milestone -->
-    <div class="milestone">
-        <div class="section-label">Milestone</div>
-        <div class="milestone-box">
-            <div class="milestone-text">When trading volume hits the target, the <strong style="color:var(--accent)">winning idea gets built</strong> by the Inclawbator.</div>
-            <div class="milestone-bar"><div class="milestone-fill" id="milestoneBar"></div></div>
-            <div class="milestone-sub">Community-powered development</div>
+    <!-- Volume Milestones -->
+    <div class="milestones">
+        <div class="section-label">Volume Unlocks</div>
+        <div class="milestones-header">The more it trades, the more it gets</div>
+        <div class="milestones-sub">Real development and marketing unlocks at every milestone. Powered by Inclawbate.</div>
+        <div class="milestone-track" id="milestoneTrack">
+            <div class="milestone-item" data-vol="500">
+                <div class="milestone-vol">$500 Volume</div>
+                <div class="milestone-title">Weekly Site Updates + Community Posts</div>
+                <div class="milestone-desc">Weekly updates to the token site and 2 posts per week on Inclawbate socials.</div>
+                <span class="milestone-check"></span>
+            </div>
+            <div class="milestone-item" data-vol="1000">
+                <div class="milestone-vol">$1,000 Volume</div>
+                <div class="milestone-title">Dedicated X Account + Marketing</div>
+                <div class="milestone-desc">Automated X account with scheduled posts, memes, and community engagement.</div>
+                <span class="milestone-check"></span>
+            </div>
+            <div class="milestone-item" data-vol="2000">
+                <div class="milestone-vol">$2,000 Volume</div>
+                <div class="milestone-title">Dedicated Developer Focus</div>
+                <div class="milestone-desc">Priority Inclawbator dev time. Custom features, integrations, and tooling built for this token.</div>
+                <span class="milestone-check"></span>
+            </div>
+            <div class="milestone-item" data-vol="5000">
+                <div class="milestone-vol">$5,000 Volume</div>
+                <div class="milestone-title">Full Ecosystem Build-Out</div>
+                <div class="milestone-desc">Staking pool, DexScreener listing, partnership outreach, and the winning community vote gets built.</div>
+                <span class="milestone-check"></span>
+            </div>
+            <div class="milestone-item" data-vol="10000">
+                <div class="milestone-vol">$10,000 Volume</div>
+                <div class="milestone-title">Autonomous Growth Engine</div>
+                <div class="milestone-desc">Fully autonomous AI agent managing marketing, community, and growth. The token runs itself.</div>
+                <span class="milestone-check"></span>
+            </div>
         </div>
     </div>
 
@@ -575,7 +666,31 @@
     };
 
     function showToast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
-    setTimeout(function(){var b=document.getElementById('milestoneBar');if(b)b.style.width='8%';},600);
+
+    // Volume milestones — check DexScreener for volume and unlock tiers
+    function updateMilestones(volume) {
+        var items = document.querySelectorAll('.milestone-item');
+        items.forEach(function(item) {
+            var threshold = parseInt(item.getAttribute('data-vol'));
+            var check = item.querySelector('.milestone-check');
+            if (volume >= threshold) {
+                item.classList.add('unlocked');
+                if (check) check.textContent = '\u2713';
+            }
+        });
+    }
+
+    // Try to fetch volume from DexScreener
+    fetch('https://api.dexscreener.com/latest/dex/tokens/{{TOKEN_ADDRESS}}')
+        .then(function(r){return r.json()})
+        .then(function(d){
+            var vol = 0;
+            if (d.pairs && d.pairs.length > 0) {
+                d.pairs.forEach(function(p){ vol += (p.volume && p.volume.h24 ? p.volume.h24 : 0); });
+            }
+            updateMilestones(vol);
+        })
+        .catch(function(){ updateMilestones(0); });
 })();
 </script>
 
