@@ -2739,7 +2739,7 @@
         // ── BUILD MODE: use /api/studio/chat with model + streaming ──
         if (_buildMode && _buildSlug) {
             try {
-                var model = (document.getElementById('buildModelSelect') || {}).value || 'gemini';
+                var model = (document.getElementById('buildModelSelect') || document.getElementById('mobileModelSelect') || {}).value || 'gemini';
                 var token = null;
                 try { token = localStorage.getItem('inclawbate_token'); } catch(_) {}
                 var bH = { 'Content-Type': 'application/json' };
@@ -2886,10 +2886,14 @@
         _buildMode = true;
         _buildSessionId = null; // null = API creates a new session on first message
 
-        // Show model selector + edit mode bar
+        // Show model selector + edit mode bar (desktop + mobile)
         var bar = document.getElementById('buildModeBar');
         if (bar) bar.style.display = '';
+        var mobileBar = document.getElementById('mobileModelBar');
+        if (mobileBar) mobileBar.style.display = '';
         input.placeholder = 'Describe changes to your app...';
+        var mobileInput = document.getElementById('mobileChatBarInput');
+        if (mobileInput) mobileInput.placeholder = 'Describe changes...';
 
         // Load app preview in right panel
         var buildPanel = document.querySelector('[data-context="build"]');
@@ -2918,7 +2922,11 @@
         _buildCurrentCode = null;
         var bar = document.getElementById('buildModeBar');
         if (bar) bar.style.display = 'none';
+        var mobileBar = document.getElementById('mobileModelBar');
+        if (mobileBar) mobileBar.style.display = 'none';
         input.placeholder = 'Ask me anything...';
+        var mobileInput = document.getElementById('mobileChatBarInput');
+        if (mobileInput) mobileInput.placeholder = 'Ask the Inclawbator...';
         loadBuildDashboard();
     }
     window.exitBuildMode = exitBuildMode;
@@ -3627,6 +3635,21 @@ var _mobileSyncInterval = setInterval(function() {
 
 <!-- Mobile Chat Bar (persistent at bottom) -->
 <div class="mobile-chat-bar" id="mobileChatBar">
+    <!-- Mobile model selector (shown when editing an app) -->
+    <div id="mobileModelBar" style="display:none;padding-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-family:var(--font-mono);font-size:0.55rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Model:</span>
+            <select id="mobileModelSelect" onchange="var ds=document.getElementById('buildModelSelect');if(ds)ds.value=this.value" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:3px 6px;color:#fff;font-size:0.68rem;font-family:var(--font-display);font-weight:700;cursor:pointer;flex:1;max-width:180px;">
+                <option value="gemini">Gemini Flash (Free)</option>
+                <option value="llama">Llama 70B (Free)</option>
+                <option value="kimi">Kimi (Free)</option>
+                <option value="fast">Haiku (10 cr)</option>
+                <option value="standard" selected>Sonnet (50 cr)</option>
+                <option value="pro">Opus (100 cr)</option>
+            </select>
+            <button onclick="exitBuildMode()" style="font-size:0.58rem;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);cursor:pointer;margin-left:auto;">Exit editing</button>
+        </div>
+    </div>
     <div class="mobile-chat-bar-row">
         <button class="mobile-chat-bar-expand" onclick="openMobileChat()" title="View conversation">&#129438;</button>
         <input type="text" class="mobile-chat-bar-input" id="mobileChatBarInput" placeholder="Ask the Inclawbator..." maxlength="500"
