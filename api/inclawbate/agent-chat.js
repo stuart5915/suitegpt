@@ -2005,9 +2005,9 @@ export default async function handler(req, res) {
 
     // Educational/explanatory prompts — skip tools, just answer the question
     // These are Learn-tab prompts and general knowledge questions that don't need any tool execution
-    const isEducational = /^(explain|walk me through|what (is|are|does|do)|how (does|do|is|are)|give me a (glossary|overview|summary|breakdown|guide|list)|teach me|tell me about|describe|compare|why (is|are|does|do))\b/i.test(message)
-      && message.length > 30
-      && !/\b(0x[a-f0-9]{10,}|my wallet|my token|deploy|launch|build me|create me|stake \d|swap \d|buy \d|airdrop)\b/i.test(message);
+    const isEducational = /^(explain|walk me through|what (is|are|does|do|can|should|would)|how (does|do|is|are|can|should|would)|give me a (glossary|overview|summary|breakdown|guide|list|full list)|teach me|tell me (about|how|what|why)|describe|compare|why (is|are|does|do|would|should|can))\b/i.test(message)
+      && message.length > 20
+      && !/\b(0x[a-f0-9]{10,}|my wallet|my token|my app|deploy|launch|build me|create me|stake \d|swap \d|buy \d|sell \d|airdrop|send \d)\b/i.test(message);
 
     let functionCalled = null;
     let toolArgs = null;
@@ -2133,7 +2133,8 @@ export default async function handler(req, res) {
     return sendReply({ reply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(!functionCalled && !reply.includes('Done!') && { suggestions: ['Build an app', 'Launch a token', 'Explore DeFi', 'Learn about Inclawbate'] }) });
   } catch (e) {
     console.error('Agent chat error:', e);
-    const errHint = e?.message?.includes('fetch') ? 'network' : e?.message?.includes('JSON') ? 'parse' : e?.message?.includes('Cannot read') ? 'null_ref' : e?.message?.slice(0, 50) || 'unknown';
-    return res.status(500).json({ error: 'Something went wrong (' + errHint + '). Please try again.' });
+    // Return a helpful reply instead of a 500 error — keeps the conversation alive
+    const fallbackReply = "I hit a hiccup processing that. I can launch tokens, build apps, manage DeFi, and answer questions about the ecosystem — try asking in a different way!";
+    return res.status(200).json({ reply: fallbackReply, session_id: sid || req.body?.session_id, suggestions: ['Build an app', 'Launch a token', 'Explore DeFi', 'What is Inclawbate?'] });
   }
 }
