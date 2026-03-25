@@ -968,6 +968,22 @@
             </div>
         </div>
         <div class="chat-suggestions-bar" id="chatSuggestionsBar"></div>
+        <!-- Model selector (shown when editing an app) -->
+        <div class="build-mode-bar" id="buildModeBar" style="display:none;">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid rgba(255,255,255,0.06);">
+                <span style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Model:</span>
+                <select id="buildModelSelect" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:4px 8px;color:#fff;font-size:0.72rem;font-family:var(--font-display);font-weight:700;cursor:pointer;">
+                    <option value="gemini">Gemini Flash (Free)</option>
+                    <option value="llama">Llama 70B (Free)</option>
+                    <option value="kimi">Kimi K2 (Free)</option>
+                    <option value="fast">Haiku (10 cr)</option>
+                    <option value="standard" selected>Sonnet (50 cr)</option>
+                    <option value="pro">Opus (100 cr)</option>
+                </select>
+                <span id="buildCredits" style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);margin-left:auto;"></span>
+                <button onclick="exitBuildMode()" style="font-size:0.62rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-weight:700;">Exit editing</button>
+            </div>
+        </div>
         <form class="chat-input-row" id="chatForm" autocomplete="off">
             <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything..." maxlength="500" autocomplete="off">
             <button type="submit" class="chat-send" id="chatSend" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
@@ -1018,14 +1034,57 @@
 
                     <!-- 4 Section tabs -->
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:14px;">
-                        <button class="defi-cat-btn active" onclick="switchDefiSection('claws')" data-defi-cat="claws"><span style="font-size:0.9rem;">&#129438;</span><span>CLAWS</span></button>
-                        <button class="defi-cat-btn" onclick="switchDefiSection('swap')" data-defi-cat="swap"><span style="font-size:0.9rem;">&#128260;</span><span>Swap</span></button>
+                        <button class="defi-cat-btn active" onclick="switchDefiSection('trade')" data-defi-cat="trade"><span style="font-size:0.9rem;">&#128260;</span><span>Trade</span></button>
                         <button class="defi-cat-btn" onclick="switchDefiSection('earn')" data-defi-cat="earn"><span style="font-size:0.9rem;">&#127793;</span><span>Earn</span></button>
-                        <button class="defi-cat-btn" onclick="switchDefiSection('borrow')" data-defi-cat="borrow"><span style="font-size:0.9rem;">&#127974;</span><span>Borrow</span></button>
+                        <button class="defi-cat-btn" onclick="switchDefiSection('lend')" data-defi-cat="lend"><span style="font-size:0.9rem;">&#127974;</span><span>Lend &amp; Borrow</span></button>
+                        <button class="defi-cat-btn" onclick="switchDefiSection('manage')" data-defi-cat="manage"><span style="font-size:0.9rem;">&#128202;</span><span>Manage</span></button>
                     </div>
 
-                    <!-- ── CLAWS Section ── -->
-                    <div class="defi-section active" data-defi-section="claws">
+                    <!-- ══ TRADE Section ══ -->
+                    <div class="defi-section active" data-defi-section="trade">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Swap</div>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px;">
+                            <button class="defi-action-btn" onclick="defiChat('Swap ETH for CLAWS')">ETH &#8594; CLAWS</button>
+                            <button class="defi-action-btn" onclick="defiChat('Swap ETH for USDC')">ETH &#8594; USDC</button>
+                            <button class="defi-action-btn" onclick="defiChat('Swap USDC for ETH')">USDC &#8594; ETH</button>
+                            <button class="defi-action-btn" onclick="defiChat('Swap USDC for CLAWS')">USDC &#8594; CLAWS</button>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Swap CLAWS for ETH')">CLAWS &#8594; ETH</button>
+                            <button class="defi-pill" onclick="defiChat('Swap CLAWS for USDC')">CLAWS &#8594; USDC</button>
+                            <button class="defi-pill" onclick="defiChat('I want to swap tokens')">Custom swap</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Perps (Leveraged Trading)</div>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px;">
+                            <button class="defi-action-btn" onclick="defiChat('Long ETH 5x with $100')">&#128994; Long ETH 5x</button>
+                            <button class="defi-action-btn" onclick="defiChat('Short BTC 3x with $50')">&#128308; Short BTC 3x</button>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Long SOL 10x with $25')">Long SOL</button>
+                            <button class="defi-pill" onclick="defiChat('Long DOGE 5x with $20')">Long DOGE</button>
+                            <button class="defi-pill" onclick="defiChat('Short PEPE 3x with $10')">Short PEPE</button>
+                            <button class="defi-pill" onclick="defiChat('Long LINK 5x with $50')">Long LINK</button>
+                            <button class="defi-pill" onclick="defiChat('Show me perps markets')">All markets</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Limit Orders</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Set a limit order to buy CLAWS when price drops 10%')">Buy CLAWS dip</button>
+                            <button class="defi-pill" onclick="defiChat('Set a limit order to sell ETH at $3000')">Sell ETH at $3K</button>
+                            <button class="defi-pill" onclick="defiChat('How do limit orders work?')">How it works</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">DCA (Dollar Cost Average)</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            <button class="defi-pill" onclick="defiChat('Set up a recurring buy of $10 ETH every day')">$10 ETH daily</button>
+                            <button class="defi-pill" onclick="defiChat('Set up a recurring buy of $50 CLAWS every week')">$50 CLAWS weekly</button>
+                            <button class="defi-pill" onclick="defiChat('How do I set up DCA?')">How it works</button>
+                        </div>
+                    </div>
+
+                    <!-- ══ EARN Section ══ -->
+                    <div class="defi-section" data-defi-section="earn">
                         <!-- Staking position -->
                         <div id="defiStakePos" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:14px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -1039,39 +1098,42 @@
                         </div>
                         <div id="defiNoPositions" style="font-size:0.76rem;color:var(--text-dim);text-align:center;padding:14px;margin-bottom:14px;background:rgba(255,255,255,0.02);border-radius:10px;">No staking position yet. Stake CLAWS to start earning.</div>
 
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Quick Actions</div>
-                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px;">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">&#129438; CLAWS Staking</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
                             <button class="defi-action-btn" onclick="defiChat('I want to buy CLAWS')">&#128176; Buy</button>
                             <button class="defi-action-btn" onclick="defiChat('Stake my CLAWS')">&#128171; Stake</button>
                             <button class="defi-action-btn" onclick="defiChat('Claim my staking rewards')">&#127873; Claim</button>
                         </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
                             <button class="defi-pill" onclick="defiChat('Unstake my CLAWS')">Unstake</button>
                             <button class="defi-pill" onclick="defiChat('What is the CLAWS staking APY?')">Check APY</button>
-                            <button class="defi-pill" onclick="defiChat('Show CLAWS analytics')">Analytics</button>
                         </div>
-                    </div>
 
-                    <!-- ── Swap Section ── -->
-                    <div class="defi-section" data-defi-section="swap">
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Popular Swaps</div>
-                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px;">
-                            <button class="defi-action-btn" onclick="defiChat('Swap ETH for CLAWS')">ETH &#8594; CLAWS</button>
-                            <button class="defi-action-btn" onclick="defiChat('Swap CLAWS for ETH')">CLAWS &#8594; ETH</button>
-                            <button class="defi-action-btn" onclick="defiChat('Swap ETH for USDC')">ETH &#8594; USDC</button>
-                            <button class="defi-action-btn" onclick="defiChat('Swap USDC for ETH')">USDC &#8594; ETH</button>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">ETH Staking</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Stake ETH via Lido for wstETH')">Lido wstETH <span style="color:var(--lobster-300);">~3.4%</span></button>
+                            <button class="defi-pill" onclick="defiChat('Stake ETH via Coinbase for cbETH')">Coinbase cbETH <span style="color:var(--lobster-300);">~3.2%</span></button>
+                            <button class="defi-pill" onclick="defiChat('Stake ETH via Rocket Pool for rETH')">Rocket Pool <span style="color:var(--lobster-300);">~3.3%</span></button>
                         </div>
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">More</div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Liquidity Pools</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Add ETH/USDC LP on Aerodrome')">ETH/USDC <span style="color:var(--lobster-300);">12-25%</span></button>
+                            <button class="defi-pill" onclick="defiChat('Add CLAWS/ETH LP on Aerodrome')">CLAWS/ETH LP</button>
+                            <button class="defi-pill" onclick="defiChat('What LP opportunities are available?')">Browse LPs</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Vaults (Auto-compound)</div>
                         <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                            <button class="defi-pill" onclick="defiChat('Swap USDC for CLAWS')">USDC &#8594; CLAWS</button>
-                            <button class="defi-pill" onclick="defiChat('Swap CLAWS for USDC')">CLAWS &#8594; USDC</button>
-                            <button class="defi-pill" onclick="defiChat('I want to swap tokens')">Custom swap</button>
+                            <button class="defi-pill" onclick="defiChat('Show me auto-compounding vaults')">Browse vaults</button>
+                            <button class="defi-pill" onclick="defiChat('What is the best yield strategy for 1000 USDC?')">Best strategy</button>
+                            <button class="defi-pill" onclick="defiChat('Compare yield rates across protocols')">Compare rates</button>
                         </div>
                     </div>
 
-                    <!-- ── Earn Section ── -->
-                    <div class="defi-section" data-defi-section="earn">
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Lending (Low Risk)</div>
+                    <!-- ══ LEND & BORROW Section ══ -->
+                    <div class="defi-section" data-defi-section="lend">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Lend (Earn Interest)</div>
                         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
                             <div class="defi-vault-card" onclick="defiChat('Lend USDC on Moonwell')">
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1095,42 +1157,12 @@
                                 <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">OG lending protocol.</div>
                             </div>
                         </div>
-
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">ETH Staking</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
-                            <button class="defi-pill" onclick="defiChat('Stake ETH via Lido for wstETH')">Lido <span style="color:var(--lobster-300);">~3.4%</span></button>
-                            <button class="defi-pill" onclick="defiChat('Stake ETH via Coinbase for cbETH')">Coinbase <span style="color:var(--lobster-300);">~3.2%</span></button>
-                            <button class="defi-pill" onclick="defiChat('Stake ETH via Rocket Pool for rETH')">Rocket Pool <span style="color:var(--lobster-300);">~3.3%</span></button>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Lend ETH on Aave')">Lend ETH</button>
+                            <button class="defi-pill" onclick="defiChat('Lend WETH on Moonwell')">Lend WETH</button>
+                            <button class="defi-pill" onclick="defiChat('Compare lending rates')">Compare rates</button>
                         </div>
 
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">&#128200; Perps Trading</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
-                            <button class="defi-pill" onclick="defiChat('Show me perps markets')">Browse markets</button>
-                            <button class="defi-pill" onclick="defiChat('Long ETH 5x with $100')">Long ETH 5x</button>
-                            <button class="defi-pill" onclick="defiChat('Short BTC 3x with $50')">Short BTC 3x</button>
-                            <button class="defi-pill" onclick="defiChat('Long SOL 10x with $25')">Long SOL 10x</button>
-                            <button class="defi-pill" onclick="defiChat('Long DOGE 5x with $20')">Long DOGE 5x</button>
-                            <button class="defi-pill" onclick="defiChat('Short PEPE 3x with $10')">Short PEPE 3x</button>
-                        </div>
-
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Liquidity Pools (Higher Risk)</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
-                            <button class="defi-pill" onclick="defiChat('Add ETH/USDC LP on Aerodrome')">ETH/USDC <span style="color:var(--lobster-300);">12-25%</span></button>
-                            <button class="defi-pill" onclick="defiChat('Add CLAWS/ETH LP on Aerodrome')">CLAWS/ETH LP</button>
-                            <button class="defi-pill" onclick="defiChat('What LP opportunities are available?')">Browse LPs</button>
-                        </div>
-
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Manage</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                            <button class="defi-pill" onclick="defiChat('Show all my DeFi positions')">My positions</button>
-                            <button class="defi-pill" onclick="defiChat('Claim all my rewards')">Claim all</button>
-                            <button class="defi-pill" onclick="defiChat('What is my total yield?')">Total yield</button>
-                        </div>
-                    </div>
-
-                    <!-- ── Borrow Section ── -->
-                    <div class="defi-section" data-defi-section="borrow">
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Borrow Against Your Assets</div>
                         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
                             <div class="defi-vault-card" onclick="defiChat('Borrow USDC against my ETH on Aave')">
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1147,11 +1179,50 @@
                                 <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">Deposit USDC as collateral, borrow ETH.</div>
                             </div>
                         </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Borrow USDC on Moonwell')">Moonwell</button>
+                            <button class="defi-pill" onclick="defiChat('Borrow USDC on Compound')">Compound</button>
+                            <button class="defi-pill" onclick="defiChat('What can I borrow against my assets?')">What can I borrow?</button>
+                            <button class="defi-pill" onclick="defiChat('Compare borrowing rates')">Compare rates</button>
+                        </div>
+
                         <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Advanced</div>
                         <div style="display:flex;flex-wrap:wrap;gap:6px;">
                             <button class="defi-pill" onclick="defiChat('Set up a leverage loop: deposit ETH, borrow USDC, buy more ETH')">Leverage loop</button>
-                            <button class="defi-pill" onclick="defiChat('What can I borrow against my assets?')">What can I borrow?</button>
-                            <button class="defi-pill" onclick="defiChat('Compare borrowing rates across protocols')">Compare rates</button>
+                            <button class="defi-pill" onclick="defiChat('Flash loan strategy')">Flash loans</button>
+                            <button class="defi-pill" onclick="defiChat('How does liquidation work?')">Liquidation risk</button>
+                        </div>
+                    </div>
+
+                    <!-- ══ MANAGE Section ══ -->
+                    <div class="defi-section" data-defi-section="manage">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Positions</div>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:18px;">
+                            <button class="defi-action-btn" onclick="defiChat('Show all my DeFi positions')">&#128202; My positions</button>
+                            <button class="defi-action-btn" onclick="defiChat('What is my total yield?')">&#128176; Total yield</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Actions</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Claim all my rewards')">Claim all rewards</button>
+                            <button class="defi-pill" onclick="defiChat('Claim my staking rewards')">Claim CLAWS</button>
+                            <button class="defi-pill" onclick="defiChat('Withdraw from my lending position')">Withdraw lending</button>
+                            <button class="defi-pill" onclick="defiChat('Unstake my CLAWS')">Unstake CLAWS</button>
+                            <button class="defi-pill" onclick="defiChat('Remove my LP position')">Remove LP</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Portfolio</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+                            <button class="defi-pill" onclick="defiChat('Show CLAWS analytics')">CLAWS analytics</button>
+                            <button class="defi-pill" onclick="defiChat('What is the CLAWS staking APY?')">Staking APY</button>
+                            <button class="defi-pill" onclick="defiChat('Check my perps positions')">Perps positions</button>
+                            <button class="defi-pill" onclick="defiChat('Check my Aave position')">Aave position</button>
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Settings</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            <button class="defi-pill" onclick="defiChat('I want to receive yield as CLAWS')">Yield as CLAWS (0% fee)</button>
+                            <button class="defi-pill" onclick="defiChat('I want to receive yield as USDC')">Yield as USDC (2% fee)</button>
                         </div>
                     </div>
                 </div>
@@ -2282,17 +2353,56 @@
         } catch (_) {}
     }
 
-    // Load an app into the Build Studio in the right panel
+    // ── Build Mode State ──
+    var _buildMode = false;
+    var _buildSlug = null;
+    var _buildSessionId = null;
+    var _buildCurrentCode = null;
+
     function loadAppInBuildPanel(url) {
         switchTab('build');
+        var slugMatch = url.match(/\/s\/([\w-]+)/);
+        var slug = slugMatch ? slugMatch[1] : '';
+        _buildSlug = slug;
+        _buildMode = true;
+        _buildSessionId = 'build_' + Date.now();
+
+        // Show model selector + edit mode bar
+        var bar = document.getElementById('buildModeBar');
+        if (bar) bar.style.display = '';
+        input.placeholder = 'Describe changes to your app...';
+
+        // Load app preview in right panel
         var buildPanel = document.querySelector('[data-context="build"]');
         if (buildPanel) {
-            var slugMatch = url.match(/\/s\/([\w-]+)/);
-            var slug = slugMatch ? slugMatch[1] : '';
-            var buildUrl = '/build?app=' + encodeURIComponent(slug);
-            buildPanel.innerHTML = '<iframe src="' + buildUrl + '" class="inclaw-context-iframe" title="Build Studio"></iframe>';
+            buildPanel.innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:hsla(240,10%,6%,0.95);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
+                    '<span style="font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:#e87955;text-transform:uppercase;letter-spacing:0.05em;">Editing: ' + slug + '</span>' +
+                    '<div style="display:flex;gap:4px;">' +
+                        '<button onclick="loadBuildDashboard()" style="font-size:0.65rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;">&#128218; My Apps</button>' +
+                        '<a href="' + url + '" target="_blank" style="font-size:0.65rem;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;text-decoration:none;">&#x2197; Open</a>' +
+                    '</div>' +
+                '</div>' +
+                '<iframe id="buildPreviewFrame" src="' + url + '?t=' + Date.now() + '" style="flex:1;width:100%;border:none;background:#0a0a0f;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>';
         }
+
+        // Fetch current code for editing context
+        fetch('/api/serve-site?slug=' + encodeURIComponent(slug) + '&raw=1')
+            .then(function(r) { return r.text(); })
+            .then(function(code) { if (code && code.length > 50) _buildCurrentCode = code; })
+            .catch(function() {});
     }
+
+    function exitBuildMode() {
+        _buildMode = false;
+        _buildSlug = null;
+        _buildCurrentCode = null;
+        var bar = document.getElementById('buildModeBar');
+        if (bar) bar.style.display = 'none';
+        input.placeholder = 'Ask me anything...';
+        loadBuildDashboard();
+    }
+    window.exitBuildMode = exitBuildMode;
 
     // Restore the build dashboard
     window.loadBuildDashboard = function() {
