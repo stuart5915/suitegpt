@@ -75,17 +75,34 @@
         .inclaw-context-empty > div { position: relative; z-index: 1; }
 
         /* Mobile: stack vertically, hide context panel */
-        /* ── Mobile: right panel = main view, floating chat bubble ── */
-        .mobile-chat-fab {
+        /* ── Mobile: right panel = main view, persistent chat bar ── */
+        .mobile-chat-bar {
             display: none;
-            position: fixed; bottom: 20px; right: 20px; z-index: 200;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: var(--accent-gradient); color: #fff; border: none;
-            font-size: 1.5rem; cursor: pointer;
-            box-shadow: 0 4px 20px rgba(192,83,77,0.4);
-            transition: transform 0.15s;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+            padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: hsla(240, 10%, 5%, 0.95);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border-subtle);
         }
-        .mobile-chat-fab:hover { transform: scale(1.1); }
+        .mobile-chat-bar-row {
+            display: flex; gap: 8px; align-items: center;
+        }
+        .mobile-chat-bar-expand {
+            background: none; border: none; color: var(--lobster-300);
+            font-size: 1.3rem; cursor: pointer; padding: 0 4px; flex-shrink: 0;
+        }
+        .mobile-chat-bar-input {
+            flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);
+            border-radius: 999px; padding: 10px 16px; color: var(--text-primary);
+            font-family: var(--font-body, var(--font-sans)); font-size: 0.85rem; outline: none;
+        }
+        .mobile-chat-bar-input:focus { border-color: var(--lobster-400); }
+        .mobile-chat-bar-send {
+            background: var(--accent-gradient); color: #fff; border: none;
+            border-radius: 50%; width: 38px; height: 38px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .mobile-chat-fab { display: none; } /* removed — using bar instead */
         .mobile-chat-overlay {
             display: none;
             position: fixed; bottom: 0; left: 0; right: 0; z-index: 250;
@@ -132,11 +149,11 @@
         @media (max-width: 768px) {
             .inclaw-split { flex-direction: column; }
             .inclaw-chat-col { display: none; } /* hide desktop chat */
-            .inclaw-context-col { display: block !important; width: 100%; height: auto; min-height: calc(100vh - var(--nav-height, 64px) - 100px); }
+            .inclaw-context-col { display: block !important; width: 100%; height: auto; padding-bottom: 70px !important; } /* room for chat bar */
             .inclaw-docs-link { display: none; }
             .inclaw-tab { font-size: 0.7rem; padding: 5px 10px; flex: 1; text-align: center; }
             .inclaw-chat-tabs { display: flex; width: 100%; position: sticky; top: var(--nav-height, 64px); z-index: 50; background: var(--bg-deepest, #08080d); }
-            .mobile-chat-fab { display: flex; align-items: center; justify-content: center; }
+            .mobile-chat-bar { display: block; }
             /* Sub-tabs 25% width */
             .defi-cat-btn { font-size: 0.68rem !important; }
             .defi-cat-btn span:last-child { font-size: 0.62rem; }
@@ -3420,29 +3437,33 @@ initDefiWallet();
 function openMobileChat() {
     document.getElementById('mobileChatOverlay').classList.add('open');
     document.getElementById('mobileChatBackdrop').classList.add('open');
-    document.getElementById('mobileChatFab').style.display = 'none';
-    // Clone chat messages into mobile overlay
+    // Sync chat messages into mobile overlay
     var srcMsgs = document.getElementById('chatMessages');
     var destMsgs = document.getElementById('mobileChatMessages');
     if (srcMsgs && destMsgs) {
         destMsgs.innerHTML = srcMsgs.innerHTML;
         destMsgs.scrollTop = destMsgs.scrollHeight;
     }
+    // Focus the overlay input
+    var input = document.getElementById('mobileChatInput');
+    if (input) setTimeout(function() { input.focus(); }, 200);
 }
 
 function closeMobileChat() {
     document.getElementById('mobileChatOverlay').classList.remove('open');
     document.getElementById('mobileChatBackdrop').classList.remove('open');
-    if (window.innerWidth <= 768) {
-        document.getElementById('mobileChatFab').style.display = 'flex';
-    }
 }
 
 function sendMobileMessage() {
-    var input = document.getElementById('mobileChatInput');
-    var text = input.value.trim();
+    // Check both bar input and overlay input
+    var barInput = document.getElementById('mobileChatBarInput');
+    var overlayInput = document.getElementById('mobileChatInput');
+    var text = '';
+    if (barInput && barInput.value.trim()) { text = barInput.value.trim(); barInput.value = ''; }
+    else if (overlayInput && overlayInput.value.trim()) { text = overlayInput.value.trim(); overlayInput.value = ''; }
     if (!text) return;
-    input.value = '';
+    // Open the chat overlay to show the conversation
+    openMobileChat();
     // Use the main sendMessage via the desktop input
     var desktopInput = document.getElementById('chatInput');
     var desktopForm = document.getElementById('chatForm');
@@ -3481,8 +3502,19 @@ var _mobileSyncInterval = setInterval(function() {
 }, 2000);
 </script>
 
-<!-- Mobile Chat FAB + Overlay -->
-<button class="mobile-chat-fab" id="mobileChatFab" onclick="openMobileChat()">&#129438;</button>
+<!-- Mobile Chat Bar (persistent at bottom) -->
+<div class="mobile-chat-bar" id="mobileChatBar">
+    <div class="mobile-chat-bar-row">
+        <button class="mobile-chat-bar-expand" onclick="openMobileChat()" title="View conversation">&#129438;</button>
+        <input type="text" class="mobile-chat-bar-input" id="mobileChatBarInput" placeholder="Ask the Inclawbator..." maxlength="500"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();sendMobileMessage();}">
+        <button class="mobile-chat-bar-send" onclick="sendMobileMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- Mobile Chat Overlay (full conversation) -->
 <div class="mobile-chat-backdrop" id="mobileChatBackdrop" onclick="closeMobileChat()"></div>
 <div class="mobile-chat-overlay" id="mobileChatOverlay">
     <div class="mobile-chat-header">
