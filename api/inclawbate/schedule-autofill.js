@@ -94,29 +94,30 @@ PROCESS:
 3. Vary compositions: aerial views of the consciousness network, intimate close-ups of the glowing core, wide shots showing mind-to-body connections, split compositions, triptychs
 4. Every image should feel: alive, intelligent, vast but purposeful, warm (coral core), beautiful, slightly alien`;
 
-// @inclawbate = the company. Living Architecture — systems that breathe, infrastructure as art.
-const INCLAWBATE_IMAGE_CONTEXT = `You must write an image prompt that visually captures what the tweet is ABOUT — translate the concept into the "Living Architecture" visual language.
+// @inclawbate = the company. Simple, warm, conceptual images.
+const INCLAWBATE_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences max) for an AI image generator.
 
-BRAND: Inclawbate — the perpetual value engine. An ecosystem with an AI agent (11 skills), governance council, self-funding treasury, 5+ revenue-generating products, 100+ apps, staking, LP positions, and embodiments across multiple platforms. This is INFRASTRUCTURE, not a craft project.
+RULES:
+- The image must visually represent the CONCEPT of the tweet, NOT the specific project or brand
+- NEVER mention Inclawbate, CLAWS, ecosystem, treasury, protocol, blockchain, or any project names — the image model doesn't know what these are
+- Instead, translate the tweet's FEELING into a universal visual metaphor
+- Keep it SIMPLE — one clear subject, one mood, one composition
+- VARY every prompt — never repeat the same visual concept twice
 
-VISUAL LANGUAGE — "Living Architecture": Systems that breathe. Infrastructure rendered as art. Think: architectural cross-sections of living machines, isometric diagrams of flowing systems, aerial views of interconnected structures, organisms that are also engines, circulatory systems of value, mechanical gardens, self-sustaining loops visualized.
+STYLE: Dark moody backgrounds, warm accent lighting (coral, amber, teal). Clean, editorial, concept art quality. Cinematic lighting.
 
-STYLE: Dark charcoal backgrounds (#1a1a2e), clean architectural lines, isometric or cross-section perspectives. Coral (#e87955) for energy and value flow. Gold (#d4a853) for treasury and yield. Teal (#2dd4bf) for intelligence and AI. Warm white for structure and text elements. Concept art quality, editorial, diagrammatic but beautiful. Like a Dieter Rams product rendered as a living city.
+TRANSLATE tweets into universal visuals:
+- "building/shipping" → hands assembling, construction, blueprints, workshop tools
+- "community/together" → chairs around a table, campfire glow, bridges connecting
+- "growth/earning" → plants growing, water flowing uphill, seeds sprouting
+- "value/treasury" → golden light in a vault, coins catching light, treasure chest
+- "AI/agents" → glowing neural network, circuit patterns, abstract digital brain
+- "love/mission" → warm light through a window, sunrise, hands reaching toward light
+- "launch/deploy" → rocket trail, runway lights, open door with light behind it
+- "staking/patience" → hourglass, tree roots growing deep, slow river
 
-VISUAL VOCABULARY — mix and match per scene:
-- FLOWS: Value streams, revenue pipes, staking channels — golden liquid or light moving through transparent tubes and pathways
-- NODES: Products as distinct architectural modules — each one different but connected to the central structure
-- THE CORE: Treasury as a central chamber or reactor — glowing gold, receiving inputs from all sides, distributing outward
-- GOVERNANCE: Council as a ring or amphitheater around the core — seats of light, voting indicators, allocation arrows
-- GROWTH: New modules being constructed, scaffolding of light, expansion at the edges of the structure
-- THE AGENT: A subtle neural presence woven through the architecture — teal threads in the walls, an eye in the control room
-
-NO: text in image, human faces or bodies, cartoon characters, mascots, wooden/craft aesthetics, cozy warm still-lifes, pottery, bread, plants in pots, generic nature imagery. This is an ENGINE, not an etsy shop.
+NO: text, words, logos, human faces, brand names, specific project references. Just beautiful abstract/conceptual imagery.
 FORMAT: 1:1 square.
-
-PROCESS:
-1. What is the tweet about? (treasury? governance? a product? building? staking? the whole system?)
-2. Which visual vocabulary elements fit? (flows? nodes? the core? governance ring? growth?)
 3. Compose ONE scene that captures the concept architecturally. Keep it clean, systemic, alive.`;
 
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
@@ -257,99 +258,50 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'The Engine': 'The perpetual cycle visualized. MUST vary wildly. Pool: a cross-section of a self-sustaining reactor with golden value flowing in loops, an isometric engine room with pipes feeding back into themselves, a circulatory system diagram with the treasury as the heart, a Rube Goldberg machine rendered in clean architectural lines where the output feeds the input, a perpetual motion sculpture with golden liquid cycling through transparent chambers, an aerial view of a circular city where every district feeds the center, a turbine cross-section with golden energy flowing through coral-lit channels, a water wheel powering itself — output flowing back to the input stream, a mechanical clock with visible gears all turning each other in a closed loop, nested Russian dolls but as transparent architectural modules each powering the next, a dam and hydroelectric system where the river loops back to the reservoir, a tokamak fusion reactor cross-section with golden plasma contained in magnetic fields.',
-    'Incubations': 'Products as architectural modules. MUST vary wildly. Pool: multiple distinct building modules connected by golden pipes to a central core, a launch pad with a new structure rising — scaffolding of teal light still attached, a greenhouse attached to the main engine where new structures grow under controlled conditions, an assembly line where raw materials enter one side and finished products exit connected to the network, satellite structures orbiting a central station each with unique architecture, a tree with different fruits on each branch — each fruit a distinct glowing module, a harbor with different ships docked each one different but all connected to the same port infrastructure, a terraced mountainside where each level is a different product connected by waterfalls of golden value, a modular space station with new pods being attached at the edges, a coral reef where each coral species is architecturally distinct but shares the same foundation, a campus of buildings each with different rooflines connected by covered walkways of light, a circuit board with distinct chip modules each performing a different function.',
-    '$CLAWS & DeFi': 'The financial nervous system. MUST vary wildly. Pool: a network of transparent pipes with golden liquid flowing through valves and junctions, a treasury vault cross-section showing stacked positions — lending shelves LP pools staking chambers, a bloodstream visualization with golden cells flowing through arteries of the system, a dam with multiple spillways each directing golden flow to different destinations, a root system cross-section showing nutrients (gold) being distributed from central tap root, an aquifer diagram with golden water table feeding multiple wells, tidal patterns in an enclosed system — golden waves redistributing with each cycle, a mechanical clock face where each gear represents a different DeFi position all interlocking, a distillery with golden liquid being refined through multiple stages, a power grid diagram with the treasury as the central plant and substations as positions, a hydraulic system cross-section with pressure gauges and flow meters at each junction, a geothermal system with golden heat rising through layers to power surface structures.',
-    'Builder Access': 'The invitation to create. MUST vary wildly. Pool: an open door in the side of the engine revealing tools and workstations inside, a control panel with clearly labeled switches and dials — accessible and powerful, a modular construction kit with pieces that snap together — architectural and clean, a bridge extending from the engine core to an empty plot where something can be built, a toolbox that IS the engine — open it and the tools are the system itself, an API diagram rendered as a vending machine — input a request get back a product, a drafting table with blueprints that show how to connect to the larger system, a plug-and-play rack where new modules slot into the main architecture, skill icons arranged as a periodic table — each one a capability, a workspace pod attached to the main engine with a fresh empty screen ready to be filled, a welcome mat at the entrance to a vast machine room — small human scale meeting enormous system scale, a switchboard with labeled jacks — connect one to start building.',
-    'Council & Governance': 'Collective intelligence running the machine. MUST vary wildly. Pool: an amphitheater ring around the engine core with voting indicators at each seat, a control room with multiple screens showing different parts of the system — each screen a council member perspective, a roundtable rendered as a circuit with each node casting a vote of colored light, allocation arrows flowing from a central pool to different channels — each arrow a decision, a parliamentary chamber inside the engine where the walls show system health metrics, a scales-of-justice mechanism built into the engine — balancing allocation weights, a steering wheel connected to the engine by visible mechanical linkages, a senate floor where each seat projects a holographic view of their domain, a neural network where the nodes are council seats and the connections are decisions, a mission control room overlooking the engine from above with each station monitoring a different subsystem, a chess board where the pieces are system components being strategically positioned, a river delta where a council dam controls which channels receive golden flow.',
-    'The Network': 'Where Inclawbate lives — everywhere. MUST vary wildly. Pool: a central engine with bridges extending to distant platform-islands (Virtuals Bankr Telegram ClawHub), a nervous system diagram with the brain as the engine and nerves reaching to different body parts (embodiments), a transit map where different colored lines connect to the same central station, a satellite view showing the engine broadcasting signals to receivers across a landscape, a mycelium network connecting distinct surface mushrooms — each mushroom a different platform, an embassy district where each building flies a different platform flag but shares infrastructure, a radio tower at the center of the engine broadcasting on multiple frequencies simultaneously, a port city with ships arriving from different oceans each carrying cargo back to the central market, a spider web with the engine at center and threads reaching to anchor points labeled with platform silhouettes, a space probe network — the engine as mission control connected to probes on different planets, a root ball where one plant sends rhizomes to colonize new ground in every direction, a lighthouse sending different colored beams in different directions — each beam finding a different shore.',
-    'Week in the Engine': 'The system pulse. MUST vary wildly. Pool: a dashboard showing all engine metrics with green indicators across the board, an EKG heartbeat monitor where each peak represents something shipped this week, a factory floor at end-of-shift — completed products stacked the engine still humming, a tide chart showing the week high and low water marks of activity, a flight board showing all arrivals and departures this week — some on time some delayed some landed, an engine diagnostic readout with all systems nominal, a time-lapse cross-section of the engine showing it grow denser and more connected over the week, a report card for a machine — metrics grades trends all rendered architecturally, a speedometer cluster showing velocity across different parts of the system, a seismograph that recorded the week vibrations — each spike an event, a mission patch for this week operations — clean iconic graphical, a control room at golden hour with all screens showing positive trends.',
+    'The Engine': 'Self-sustaining system. Vary: water wheel, clockwork gears, flowing river loop, heartbeat, perpetual motion machine.',
+    'Incubations': 'New things being built. Vary: greenhouse with seedlings, workshop with tools, scaffolding, launch pad, assembly.',
+    '$CLAWS & DeFi': 'Value flowing. Vary: golden rivers, treasure vault, roots distributing nutrients, dam with spillways.',
+    'Builder Access': 'Open invitation to create. Vary: open door with light, toolbox, blank canvas, workbench, drafting table.',
+    'Council & Governance': 'Collective decisions. Vary: roundtable, scales of justice, steering wheel, chess board, compass.',
+    'The Network': 'Connected everywhere. Vary: web of lights, bridges between islands, satellite dishes, mycelium network.',
+    'Week in the Engine': 'Progress and momentum. Vary: dashboard with green lights, rising graph, completed puzzle, sunrise.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
     'The Engine': [
-        'Isometric cross-section of a self-sustaining engine on dark charcoal background. Golden liquid flows through transparent pipes in a visible loop — out from a central glowing treasury chamber, through smaller modules, and back to the center. Coral accent lights at junctions. Architectural, clean, alive. 1:1.',
-        'A circular flow diagram rendered as beautiful architecture — golden value streams flowing clockwise through distinct chambers labeled by subtle glowing icons. The loop has no beginning or end. Dark background, teal structural lines, gold flow. Concept art. 1:1.',
-        'Aerial view of a circular city on dark background. Every district connects to a golden river flowing through the center. The river loops — what exits one district enters the next. The city IS the engine. Architectural, isometric, coral and gold on charcoal. 1:1.',
-        'A perpetual water wheel in cross-section — golden liquid pours from the top, turns the wheel, collects at the bottom, and is pumped back up through glowing coral pipes. The machine runs itself. Dark background, clean engineering lines. 1:1.',
-        'A heart-like organ rendered architecturally — four chambers visible in cross-section, golden value pumping through arteries to different parts of a larger system and returning through veins. The treasury as a living heart. Dark charcoal, anatomical precision. 1:1.',
-        'A tokamak fusion reactor cross-section on dark background — golden plasma contained in magnetic fields shaped by coral structural rings. The reaction sustains itself. Clean, scientific, beautiful. Teal control indicators around the rim. 1:1.',
-        'A Rube Goldberg machine rendered in sleek architectural lines — each stage triggers the next, and the final output feeds back into the first stage. Golden balls of value roll through the system. Dark background, coral accents at trigger points. 1:1.',
-        'Nested transparent spheres on dark background — each sphere contains a different system (treasury, staking, products, governance) and golden threads connect them all. The innermost sphere glows brightest. Architectural, layered, clean. 1:1.',
-        'A mechanical orrery on dark background — but instead of planets, the orbiting bodies are system modules (treasury, council, products, token) all mechanically linked and turning in harmony around a golden core. Brass and coral, precise. 1:1.',
-        'Cross-section of a dam and hydroelectric system where the river loops back to the reservoir via golden pipes. The system generates more energy than it consumes. Dark background, architectural blueprint style with coral and gold highlights. 1:1.',
+        'A beautiful clockwork mechanism with golden gears interlocking perfectly, warm amber backlighting on a dark background. Precision, self-sustaining motion. 1:1.',
+        'A waterfall that flows in a complete circle — water falls, collects, rises, falls again. Warm golden light, dark moody background. Perpetual flow. 1:1.',
+        'A glowing heartbeat line on a dark monitor, the pulse strong and steady, warm coral color. Life, rhythm, persistence. Cinematic, clean. 1:1.',
     ],
     'Incubations': [
-        'A central engine structure on dark background with five distinct architectural modules attached by golden pipes — each module has unique architecture (one angular, one curved, one crystalline, one organic, one mechanical). Products born from one system. Isometric, clean. 1:1.',
-        'A greenhouse module attached to the side of a massive engine — inside, new structures grow under teal light, some small and forming, others nearly complete and ready to detach. Incubation as architecture. Dark background, warm interior glow. 1:1.',
-        'A launch gantry integrated into the engine architecture — a new module rising upward on scaffolding of teal light, golden umbilical cables still attached to the main structure. Launch in progress. Dark background, dramatic upward composition. 1:1.',
-        'Five satellite modules orbiting a central station in the void — each one distinct in shape and color but all connected by golden tethers to the center. Products as satellites of the engine. Dark background, orbital diagram aesthetic. 1:1.',
-        'An assembly line rendered architecturally — raw golden material enters one end of a transparent factory module, passes through stages of transformation, and exits as a complete product-building that connects to the larger network. Dark background, cross-section view. 1:1.',
-        'A harbor with a massive engine-structure as the port — five different vessels docked, each unique in design, each with golden cargo being loaded and unloaded. Trade flowing between products and the central treasury. Dark background, aerial view. 1:1.',
-        'A coral reef rendered architecturally — the foundation is the engine core, and growing from it are diverse structures in different stages of development. Some fully formed, some just beginning. Dark background, bio-architectural, teal and coral. 1:1.',
-        'A tree cross-section on dark background — the trunk is the engine, and each major branch terminates in a different glowing fruit-module (poker chip, prediction market, game controller, aid symbol, sports odds). Golden sap flows through. 1:1.',
-        'A modular space station in the void — the central hub glows gold with treasury energy, and new pod-modules are being attached at the edges by construction arms of teal light. Expansion in progress. Dark background, sci-fi architectural. 1:1.',
-        'A terraced mountainside in isometric view — each terrace is a different product platform, all connected by waterfalls of golden value cascading from the treasury peak at the top. Dark background, architectural topography. 1:1.',
+        'Small green seedlings growing from rich soil in a dark greenhouse, each one a different shape, warm golden grow-light from above. New life, potential. 1:1.',
+        'A woodworking workshop with tools laid out neatly, a half-finished project on the bench, warm lamplight. Creation in progress. 1:1.',
+        'A rocket on a launch pad at dawn, the first rays of warm light hitting the body, steam rising. About to launch. Dark sky, warm horizon. 1:1.',
     ],
     '$CLAWS & DeFi': [
-        'A transparent pipe network on dark background — golden liquid flowing through valves, junctions, and reservoirs. Pressure gauges with coral indicators at each node. The financial plumbing of the ecosystem rendered as beautiful engineering. 1:1.',
-        'Cross-section of a treasury vault — multiple shelves visible, each holding a different DeFi position rendered as distinct glowing objects (ETH lending as a blue crystal, LP as intertwined gold-teal streams, staked CLAWS as coral formations). Dark background, organized, precise. 1:1.',
-        'A bloodstream visualization — golden cells (value) flowing through arteries of different sizes, some branching to staking chambers, some to LP pools, some to lending positions. The circulatory system of DeFi. Dark charcoal, anatomical beauty. 1:1.',
-        'A dam with three spillways on dark background — each spillway directs golden flow to a different destination (staking pool, LP reservoir, lending channel). Control gates with teal indicators. Engineered distribution. 1:1.',
-        'A distillery in cross-section — raw golden material enters at top, passes through multiple refining stages (staking, lending, LP), and concentrated value collects in vessels at each stage. Dark background, alchemical precision. 1:1.',
-        'An aquifer diagram on dark background — golden water table underground feeding multiple wells at the surface. Each well draws from the same source but serves a different purpose. Geological beauty, cross-section view. 1:1.',
-        'A power grid diagram — the treasury as the central power plant, high-voltage golden lines running to substations (staking, LP, lending), transformers stepping down to distribution networks. Dark background, technical beauty. 1:1.',
-        'A root system cross-section — golden nutrients flowing from a central tap root outward through branching roots to every corner of the soil. The underground financial infrastructure. Dark earth background, bioluminescent roots. 1:1.',
-        'A hydraulic press system in cross-section — golden fluid under pressure in the main chamber, smaller pistons at different positions generating force in different parts of the system. Pascal principle as DeFi. Dark background, mechanical precision. 1:1.',
-        'Tidal pools at different levels in an architectural landscape — golden liquid settling into natural basins at different elevations, each pool a different DeFi position. Serene, systemic, overhead view. Dark background. 1:1.',
+        'Golden coins stacked neatly on a dark marble surface, warm side lighting creating long shadows. Value, precision, wealth. 1:1.',
+        'A river of golden light flowing through a dark canyon, splitting into multiple streams at a fork. Distribution, flow. Cinematic, aerial view. 1:1.',
+        'An hourglass with golden sand flowing, warm backlight making the glass glow. Time, patience, accumulation. Dark background. 1:1.',
     ],
     'Builder Access': [
-        'A massive engine wall with a single open door, warm teal light spilling out. Inside: a clean workstation with tools, screens, and a connection port to the larger system. The invitation to enter. Dark exterior, warm interior. 1:1.',
-        'A control panel rendered as art — clearly labeled switches, dials, and sliders, each one a different skill or capability. Accessible, powerful, well-designed. Dark background, coral and teal indicator lights. 1:1.',
-        'A modular construction kit — architectural pieces that snap together like LEGO but render as engine components. Some assembled into a small structure, others waiting. The pieces ARE the system. Dark background, isometric view. 1:1.',
-        'An API diagram rendered as a vending machine — a glowing input slot at top, and at the bottom, finished product-modules emerge ready to connect to the network. Simple input, powerful output. Dark background, architectural. 1:1.',
-        'A periodic table of skills — each element is a capability icon (build app, launch token, deploy staking, schedule post, audit code) in a grid on dark background. Teal borders, coral accent on the most powerful elements. Scientific, systematic. 1:1.',
-        'A plug-and-play rack in the engine room — empty slots with clearly marked connection interfaces, one slot showing a new module being inserted. Easy integration. Dark background, warm teal light from the rack. 1:1.',
-        'A bridge extending from the glowing engine core across a dark void to an empty platform — on the platform, foundations are laid for something new. The path from the engine to creation. Dark background, golden bridge, teal platform lights. 1:1.',
-        'A toolbox that IS a miniature engine — open the lid and inside are tools that are system components: golden wrenches that are value pipes, teal screwdrivers that are skill endpoints. Dark background, macro detail. 1:1.',
-        'A drafting table with an architectural blueprint showing how a new module connects to the larger engine. Clean lines, annotation markers, connection points highlighted in coral. Dark background, warm desk lamp. 1:1.',
-        'A welcome arch at the entrance to the engine complex — beyond it, a vast interconnected system of modules and flows visible in warm golden light. Small scale meeting enormous scale. Dark background, dramatic depth perspective. 1:1.',
+        'An open door in a dark wall, warm golden light flooding through from the other side. Invitation, opportunity, welcome. Cinematic. 1:1.',
+        'A clean desk with a glowing laptop, warm coffee, blueprints spread out. Ready to build. Warm overhead light, dark room. 1:1.',
+        'Colorful building blocks arranged neatly on a dark surface, some assembled into a small structure, some waiting. Possibility. Warm light. 1:1.',
     ],
     'Council & Governance': [
-        'An amphitheater ring built around the engine core — each seat projects a teal light indicating a vote. Golden allocation arrows flow from the center to destinations the council has chosen. Dark background, overhead view. 1:1.',
-        'A control room overlooking the engine from above — multiple screens showing different system metrics, each station a council seat. Decisions made with full visibility. Dark background, warm screen glow, coral indicators. 1:1.',
-        'A roundtable rendered as a circuit on dark background — each node at the table edge is a council seat casting colored light (teal for yes, coral for no). The circuit connects them all. Collective decision as electrical flow. 1:1.',
-        'A scales-of-justice mechanism built into the engine — two balance pans holding different allocation options, the mechanism determining equilibrium. Governance as engineering. Dark background, gold and teal, precise. 1:1.',
-        'A steering wheel mechanically linked to visible engine components — turn the wheel, and gears, chains, and linkages redirect golden flow to different parts of the system. Governance as direct mechanical control. Dark background. 1:1.',
-        'A river delta seen from above on dark background — a council dam at the fork controls which channels receive golden flow. Each channel leads to a different part of the ecosystem. Allocation as hydrology. 1:1.',
-        'A parliamentary chamber inside the engine — the walls display live system health metrics, the floor shows a map of value flows, the ceiling is the engine core itself. Governance embedded in the machine. Dark background, warm coral lighting. 1:1.',
-        'A chess board where the pieces are system components — treasury as king, products as rooks, token as queen — being strategically positioned. Dark background, golden and teal pieces, architectural chess. 1:1.',
-        'A neural network where each node is a council seat and each connection is a decision — some connections bright (active votes), some faint (pending). Governance as network. Dark background, teal and coral. 1:1.',
-        'A mission control room during a critical operation — all stations active, all screens showing data, allocation vectors being calculated on the main display. The council steering the engine. Dark background, cinematic. 1:1.',
+        'Empty chairs arranged in a circle around a warm glowing lantern on a dark background. Gathering, shared purpose, council. 1:1.',
+        'A compass on a dark surface, the needle pointing true north, warm brass finish catching the light. Direction, guidance. 1:1.',
+        'A balanced scale in perfect equilibrium, golden weights on each side, warm spotlight from above. Fairness, balance. Dark background. 1:1.',
     ],
     'The Network': [
-        'A central engine with golden bridges extending in five directions to distant platform-islands — each island has distinct architecture representing Virtuals, Bankr, Telegram, ClawHub, X. One system, many presences. Dark void, aerial view. 1:1.',
-        'A nervous system diagram — the engine as the brain, teal nerve fibers extending to different body parts, each body part a different platform embodiment. The same intelligence in every limb. Dark background, anatomical. 1:1.',
-        'A transit map on dark background — different colored lines (teal, coral, gold) connecting the central station (Inclawbate) to outlying stations (platform logos as abstract icons). Clean, diagrammatic, beautiful. 1:1.',
-        'A radio tower rising from the engine core, broadcasting on multiple frequencies — each frequency shown as a different colored wave reaching a different receiver in the distance. One signal, many channels. Dark background, wave visualization. 1:1.',
-        'A mycelium network cross-section — the underground web (Inclawbate) connects many distinct surface mushrooms, each one a different shape and color (each platform). Hidden infrastructure supporting visible growth. Dark soil, bioluminescent threads. 1:1.',
-        'A lighthouse sending different colored beams in different directions from the engine top — each beam illuminating a different shore where a platform structure sits. Guidance broadcast everywhere. Dark background, dramatic beams. 1:1.',
-        'A spider web with the engine at center and silk threads reaching to anchor points around the frame — each anchor point is a platform node with its own small glow. The web connects everything. Dark background, dew drops of golden value on threads. 1:1.',
-        'A satellite dish array on top of the engine — multiple dishes pointed in different directions, each maintaining a connection to a distant platform satellite. Communication infrastructure. Dark background, teal signal beams. 1:1.',
-        'An embassy district — multiple distinct buildings each flying a different platform flag, but all sharing the same golden underground infrastructure visible in cross-section. Unity through shared foundation. Dark background, isometric. 1:1.',
-        'A port city aerial view — the engine is the harbor, and ships arrive from different oceans (platforms) carrying cargo. Golden goods flow between all docks. Dark background, warm port lights. 1:1.',
+        'Glowing fiber optic cables branching out in all directions from a central point, warm teal and coral light, dark background. Connection, reach. 1:1.',
+        'Multiple bridges connecting small islands across dark water, each bridge lit with warm golden lanterns. Paths, connection, unity. 1:1.',
+        'A web of warm lights seen from above at night — like a city grid, each intersection glowing. Network, infrastructure, reach. 1:1.',
     ],
     'Week in the Engine': [
-        'An engine dashboard on dark background — all gauges in the green, golden flow meters showing high throughput, coral indicator lights all positive. A good week in the machine. Clean, technical, satisfying. 1:1.',
-        'An EKG heartbeat monitor showing the engine pulse over seven days — each peak represents something shipped, each valley a rest cycle. The system is alive and healthy. Dark background, coral trace on charcoal. 1:1.',
-        'A factory floor at end-of-shift — completed product modules stacked neatly, the engine still humming in the background, golden indicators showing production numbers. Satisfying, productive. Dark background, warm overhead. 1:1.',
-        'A time-lapse cross-section of the engine — layered exposures showing it grow denser and more connected across the week. Monday at the edges (sparse), today at the center (complex, bright). Dark background. 1:1.',
-        'A flight departure/arrival board rendered architecturally — entries showing what launched, what landed, what\'s in transit. Some rows coral (shipped), some teal (in progress), some gold (planned). Dark background, editorial. 1:1.',
-        'An engine diagnostic readout on dark background — all systems nominal, health bars full, efficiency metrics in gold numbers. The weekly checkup shows a machine running well. Technical, clean, coral accents. 1:1.',
-        'A mission patch for this week — a clean, iconic graphic combining key elements from what was accomplished: a product icon, a governance symbol, a growth indicator, all arranged in a geometric emblem. Dark background, coral and teal on gold. 1:1.',
-        'A speedometer cluster showing velocity across different parts of the system — treasury flow, app creation, staking growth, governance activity. All needles pointing right. Dark background, golden dials, coral redline. 1:1.',
-        'A seismograph that recorded the week vibrations — each spike an event: a product launch, a governance vote, a treasury deposit, a community milestone. The pattern tells the story. Dark background, teal trace. 1:1.',
-        'A control room at golden hour — warm light washing over screens that show positive trends across every metric. The engine performed well this cycle. Dark background, cinematic, satisfied energy. 1:1.',
+        'A warm sunrise breaking over a dark horizon, golden rays reaching across the landscape. New day, fresh start, momentum. 1:1.',
+        'A completed jigsaw puzzle on a dark table, the last piece being placed, warm overhead light. Satisfaction, completion. 1:1.',
+        'A mountain summit marker at golden hour, warm light on the sign, vast dark valleys below. Achievement, perspective. 1:1.',
     ],
 };
 
