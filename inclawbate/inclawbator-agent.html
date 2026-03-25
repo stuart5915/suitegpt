@@ -1468,11 +1468,55 @@
 
             </div>
             <div class="inclaw-context-panel" data-context="council">
-                <div class="inclaw-context-empty">
-                    <div style="font-size:2.5rem;margin-bottom:12px;">&#129309;</div>
-                    <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:6px;">Talk to the Council</div>
-                    <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Describe what you need and drop your contact info in the chat. A council member will reply here or reach out directly.</div>
+                <div style="padding:20px;display:flex;flex-direction:column;height:100%">
+                    <div style="text-align:center;margin-bottom:20px">
+                        <div style="font-size:2.2rem;margin-bottom:8px">&#129309;</div>
+                        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px">Talk to the Council</div>
+                        <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">Your message goes straight to the council Telegram chat. A real human will reach out.</div>
+                    </div>
+                    <div id="councilForm" style="flex:1;display:flex;flex-direction:column;gap:12px">
+                        <div>
+                            <label style="font-size:0.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;display:block">What do you need?</label>
+                            <textarea id="councilDesc" placeholder="Describe what you need help with — design, dev, strategy, marketing, token launch, anything." rows="4" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;padding:10px 12px;font-size:0.85rem;font-family:inherit;resize:vertical;line-height:1.5"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;display:block">How can we reach you?</label>
+                            <input id="councilContact" type="text" placeholder="@telegram, @twitter, email, or wallet" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;padding:10px 12px;font-size:0.85rem;font-family:inherit">
+                        </div>
+                        <button id="councilSendBtn" onclick="window._sendCouncilRequest()" style="padding:12px;background:var(--accent-primary,#6366f1);color:#fff;border:none;border-radius:10px;font-size:0.88rem;font-weight:800;cursor:pointer;font-family:inherit;transition:opacity 0.15s">Send to Council</button>
+                    </div>
+                    <div id="councilSent" style="display:none;text-align:center;padding:40px 20px">
+                        <div style="font-size:2rem;margin-bottom:10px">&#9989;</div>
+                        <div style="font-size:0.95rem;font-weight:800;color:#fff;margin-bottom:6px">Message sent!</div>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5">A council member will reach out via your contact info. Usually within a few hours.</div>
+                        <button onclick="document.getElementById('councilForm').style.display='flex';document.getElementById('councilSent').style.display='none';document.getElementById('councilDesc').value='';document.getElementById('councilContact').value=''" style="margin-top:16px;padding:8px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-secondary);font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">Send another</button>
+                    </div>
                 </div>
+                <script>
+                window._sendCouncilRequest = async function() {
+                    var desc = document.getElementById('councilDesc').value.trim();
+                    var contact = document.getElementById('councilContact').value.trim();
+                    var btn = document.getElementById('councilSendBtn');
+                    if (!desc) { alert('Please describe what you need'); return; }
+                    if (!contact) { alert('Please add your contact info so we can reach you'); return; }
+                    btn.disabled = true; btn.textContent = 'Sending...'; btn.style.opacity = '0.6';
+                    try {
+                        var resp = await fetch('/api/inclawbate/hire-request', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ description: desc, contact: contact })
+                        });
+                        var data = await resp.json();
+                        if (data.success) {
+                            document.getElementById('councilForm').style.display = 'none';
+                            document.getElementById('councilSent').style.display = '';
+                        } else {
+                            alert(data.error || 'Something went wrong');
+                        }
+                    } catch(e) { alert('Failed to send — try again'); }
+                    btn.disabled = false; btn.textContent = 'Send to Council'; btn.style.opacity = '';
+                };
+                </script>
             </div>
         </div>
     </div> <!-- end inclaw-split -->
