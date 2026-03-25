@@ -3535,11 +3535,19 @@ var _mobileSyncInterval = setInterval(function() {
 <script>
 // On mobile, move tabs outside the chat column so they're visible
 if (window.innerWidth <= 768) {
-    var tabs = document.querySelector('.inclaw-chat-tabs');
     var app = document.querySelector('.inclaw-app');
-    if (tabs && app) {
-        app.insertBefore(tabs, app.querySelector('.inclaw-split'));
+    var split = app ? app.querySelector('.inclaw-split') : null;
+    // Move top tabs above the split layout
+    var tabs = document.querySelector('.inclaw-chat-tabs');
+    if (tabs && app && split) {
+        app.insertBefore(tabs, split);
         tabs.style.display = 'flex';
+    }
+    // Move sub-tabs (categories + pill panels) above the context panel
+    var prompts = document.querySelector('.chat-prompts');
+    if (prompts && app && split) {
+        app.insertBefore(prompts, split);
+        prompts.style.display = 'block';
     }
 }
 </script>
