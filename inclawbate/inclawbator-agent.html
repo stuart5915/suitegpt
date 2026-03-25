@@ -75,12 +75,71 @@
         .inclaw-context-empty > div { position: relative; z-index: 1; }
 
         /* Mobile: stack vertically, hide context panel */
+        /* ── Mobile: right panel = main view, floating chat bubble ── */
+        .mobile-chat-fab {
+            display: none;
+            position: fixed; bottom: 20px; right: 20px; z-index: 200;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--accent-gradient); color: #fff; border: none;
+            font-size: 1.5rem; cursor: pointer;
+            box-shadow: 0 4px 20px rgba(192,83,77,0.4);
+            transition: transform 0.15s;
+        }
+        .mobile-chat-fab:hover { transform: scale(1.1); }
+        .mobile-chat-overlay {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 250;
+            height: 70vh; background: var(--bg-deepest, #08080d);
+            border-top: 1px solid var(--border-subtle);
+            border-radius: 16px 16px 0 0;
+            flex-direction: column;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+        }
+        .mobile-chat-overlay.open { display: flex; }
+        .mobile-chat-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+        .mobile-chat-header span { font-weight: 800; font-size: 0.9rem; }
+        .mobile-chat-close {
+            background: none; border: none; color: var(--text-dim);
+            font-size: 1.2rem; cursor: pointer; padding: 4px 8px;
+        }
+        .mobile-chat-body {
+            flex: 1; overflow-y: auto; padding: 12px;
+        }
+        .mobile-chat-input-row {
+            display: flex; gap: 8px; padding: 10px 12px;
+            border-top: 1px solid var(--border-subtle); flex-shrink: 0;
+        }
+        .mobile-chat-input {
+            flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);
+            border-radius: 999px; padding: 10px 16px; color: var(--text-primary);
+            font-family: var(--font-body); font-size: 0.85rem; outline: none;
+        }
+        .mobile-chat-send {
+            background: var(--accent-gradient); color: #fff; border: none;
+            border-radius: 50%; width: 40px; height: 40px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .mobile-chat-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 240;
+            background: rgba(0,0,0,0.5);
+        }
+        .mobile-chat-backdrop.open { display: block; }
+
         @media (max-width: 768px) {
             .inclaw-split { flex-direction: column; }
-            .inclaw-chat-col { width: 100%; height: 100%; border-right: none; }
-            .inclaw-context-col { display: none; }
+            .inclaw-chat-col { display: none; } /* hide desktop chat */
+            .inclaw-context-col { display: block !important; width: 100%; height: auto; min-height: calc(100vh - var(--nav-height, 64px) - 100px); }
             .inclaw-docs-link { display: none; }
-            .inclaw-tab { font-size: 0.7rem; padding: 5px 10px; }
+            .inclaw-tab { font-size: 0.7rem; padding: 5px 10px; flex: 1; text-align: center; }
+            .inclaw-chat-tabs { display: flex; width: 100%; position: sticky; top: var(--nav-height, 64px); z-index: 50; background: var(--bg-deepest, #08080d); }
+            .mobile-chat-fab { display: flex; align-items: center; justify-content: center; }
+            /* Sub-tabs 25% width */
+            .defi-cat-btn { font-size: 0.68rem !important; }
+            .defi-cat-btn span:last-child { font-size: 0.62rem; }
         }
 
         /* DeFi Dashboard */
@@ -3356,6 +3415,101 @@ function initDefiWallet() {
     });
 }
 initDefiWallet();
+
+// ── Mobile Chat Bubble ──
+function openMobileChat() {
+    document.getElementById('mobileChatOverlay').classList.add('open');
+    document.getElementById('mobileChatBackdrop').classList.add('open');
+    document.getElementById('mobileChatFab').style.display = 'none';
+    // Clone chat messages into mobile overlay
+    var srcMsgs = document.getElementById('chatMessages');
+    var destMsgs = document.getElementById('mobileChatMessages');
+    if (srcMsgs && destMsgs) {
+        destMsgs.innerHTML = srcMsgs.innerHTML;
+        destMsgs.scrollTop = destMsgs.scrollHeight;
+    }
+}
+
+function closeMobileChat() {
+    document.getElementById('mobileChatOverlay').classList.remove('open');
+    document.getElementById('mobileChatBackdrop').classList.remove('open');
+    if (window.innerWidth <= 768) {
+        document.getElementById('mobileChatFab').style.display = 'flex';
+    }
+}
+
+function sendMobileMessage() {
+    var input = document.getElementById('mobileChatInput');
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    // Use the main sendMessage via the desktop input
+    var desktopInput = document.getElementById('chatInput');
+    var desktopForm = document.getElementById('chatForm');
+    if (desktopInput && desktopForm) {
+        desktopInput.value = text;
+        desktopForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    }
+    // Add user message to mobile view immediately
+    var destMsgs = document.getElementById('mobileChatMessages');
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-msg chat-msg-user';
+    msgDiv.innerHTML = '<div class="chat-avatar">&#128100;</div><div class="chat-bubble">' + text.replace(/</g, '&lt;') + '</div>';
+    destMsgs.appendChild(msgDiv);
+    destMsgs.scrollTop = destMsgs.scrollHeight;
+    // Sync response after a delay
+    setTimeout(function() {
+        var srcMsgs = document.getElementById('chatMessages');
+        if (srcMsgs && destMsgs) {
+            destMsgs.innerHTML = srcMsgs.innerHTML;
+            destMsgs.scrollTop = destMsgs.scrollHeight;
+        }
+    }, 3000);
+}
+
+// Also keep syncing mobile chat when new messages arrive
+var _mobileSyncInterval = setInterval(function() {
+    var overlay = document.getElementById('mobileChatOverlay');
+    if (overlay && overlay.classList.contains('open')) {
+        var srcMsgs = document.getElementById('chatMessages');
+        var destMsgs = document.getElementById('mobileChatMessages');
+        if (srcMsgs && destMsgs && srcMsgs.innerHTML !== destMsgs.innerHTML) {
+            destMsgs.innerHTML = srcMsgs.innerHTML;
+            destMsgs.scrollTop = destMsgs.scrollHeight;
+        }
+    }
+}, 2000);
+</script>
+
+<!-- Mobile Chat FAB + Overlay -->
+<button class="mobile-chat-fab" id="mobileChatFab" onclick="openMobileChat()">&#129438;</button>
+<div class="mobile-chat-backdrop" id="mobileChatBackdrop" onclick="closeMobileChat()"></div>
+<div class="mobile-chat-overlay" id="mobileChatOverlay">
+    <div class="mobile-chat-header">
+        <span>&#129438; Inclawbator</span>
+        <button class="mobile-chat-close" onclick="closeMobileChat()">&times;</button>
+    </div>
+    <div class="mobile-chat-body" id="mobileChatMessages"></div>
+    <div class="mobile-chat-input-row">
+        <input type="text" class="mobile-chat-input" id="mobileChatInput" placeholder="Ask anything..." maxlength="500"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();sendMobileMessage();}">
+        <button class="mobile-chat-send" onclick="sendMobileMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- Mobile: show tabs above context panel -->
+<script>
+// On mobile, move tabs outside the chat column so they're visible
+if (window.innerWidth <= 768) {
+    var tabs = document.querySelector('.inclaw-chat-tabs');
+    var app = document.querySelector('.inclaw-app');
+    if (tabs && app) {
+        app.insertBefore(tabs, app.querySelector('.inclaw-split'));
+        tabs.style.display = 'flex';
+    }
+}
 </script>
 </body>
 </html>
