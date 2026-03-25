@@ -90,6 +90,20 @@ export default async function handler(req, res) {
             })
             .filter(e => e.x_handle);
 
+        // Fetch cached on-chain CLAWS staking data
+        const { data: chainRow } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'chain_data_cache')
+            .single();
+        let chainData = null;
+        try { chainData = chainRow ? JSON.parse(chainRow.value) : null; } catch {}
+
+        // Fetch published apps count
+        const { count: appsCount } = await supabase
+            .from('user_apps')
+            .select('id', { count: 'exact', head: true });
+
         return res.status(200).json({
             total_humans: totalHumans || allProfiles.length,
             wallets_connected: walletsConnected,
@@ -98,7 +112,16 @@ export default async function handler(req, res) {
             busy_count: busyCount,
             top_skills: topSkills,
             recent_signups: recentSignups,
-            top_earners: topEarners
+            top_earners: topEarners,
+            apps_count: appsCount || 0,
+            claws_staking: chainData?.staking ? {
+                staker_count: chainData.staking.stakerCount || 0,
+                total_staked: Math.round(chainData.staking.staked || 0),
+                apy: Math.round((chainData.staking.apy || 0) * 10) / 10,
+                staked_pct: chainData.staking.stakedPct || '0',
+                daily_rewards: Math.round(chainData.staking.dailyRewards || 0),
+            } : null,
+            chain_data_updated: chainData?.updated_at || null,
         });
 
     } catch (err) {
