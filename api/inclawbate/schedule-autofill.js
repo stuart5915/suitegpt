@@ -75,40 +75,32 @@ const SLOT_ANGLES = {
 // Brand archetype — account-specific image prompt contexts
 
 // @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
-const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences max) for an AI image generator.
+const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (2-3 sentences max) for an AI image generator.
+
+THE CHARACTER: A stylized red/coral lobster character — friendly, confident, slightly cartoonish but cool. Think 3D render, Pixar-quality, clean. The lobster is the MAIN SUBJECT of every image. It should be doing something that relates to the tweet's topic.
 
 RULES:
-- The image must represent the CONCEPT of the tweet — NOT the specific project or brand
-- NEVER mention Inclawbator, Inclawbate, CLAWS, lobster, ecosystem, protocol, blockchain, agents, or any project names
-- Translate the tweet's MEANING into a beautiful, universal visual metaphor
-- Keep it SIMPLE — one subject, one mood, one composition
-- EVERY prompt must be COMPLETELY DIFFERENT from the last — wildly vary subjects, styles, perspectives
+- Every image features the lobster character in a scene related to the tweet
+- The lobster should be DOING something — not just standing there
+- Dark moody backgrounds with warm coral/teal accent lighting
+- 3D render style, clean, high quality, slightly stylized
+- Vary the scene, pose, and activity every time — never repeat
+- Keep the prompt SHORT — describe the lobster, what it's doing, and the setting
 
-STYLE OPTIONS (rotate between these — never use the same style twice in a row):
-- Macro photography: extreme close-up of a real object with dramatic lighting
-- Aerial/satellite: top-down view of landscapes, cities, patterns in nature
-- Still life: objects arranged on a surface with moody lighting
-- Abstract: flowing colors, light trails, smoke, paint in water
-- Nature: animals, plants, weather, geological formations
-- Architecture: buildings, bridges, interiors, staircases, doors
-- Space/cosmic: nebulae, planets, auroras, star fields
-- Underwater: deep sea creatures, coral, light filtering through water
-- Mechanical: clockwork, engines, gears, instruments, tools
-- Cinematic: movie-like scenes with dramatic lighting and depth
+SCENE IDEAS based on tweet topic:
+- "building/apps" → lobster at a glowing computer desk coding, or building with tools
+- "community" → lobster around a campfire with smaller creatures, or conducting an orchestra
+- "growth/earning" → lobster tending a garden of glowing plants, or stacking golden coins
+- "liquidity/DeFi" → lobster surfing a wave of golden light, or directing flowing water channels
+- "staking" → lobster meditating on a mountain top, or planting seeds in a garden
+- "AI/intelligence" → lobster wearing a lab coat looking at holograms, or chess with a robot
+- "launch" → lobster launching a rocket, or opening a treasure chest with light pouring out
+- "governance/council" → lobster at a round table with others, or holding scales of justice
+- "weekly recap" → lobster relaxing in a hammock with a checklist, or celebrating with sparklers
+- "mission/love" → lobster holding a glowing heart, or watching sunrise from a cliff
 
-TRANSLATE tweet concepts into visuals:
-- "building/creating" → workshop, construction, hands shaping clay, architect's desk
-- "community" → flock of birds, school of fish, campfire circle, city lights from above
-- "growth" → time-lapse of blooming flower, tree rings, mountain at sunrise
-- "liquidity/flow" → river delta from space, mercury drops merging, waterfall at golden hour
-- "staking/patience" → ancient tree roots, stalactites forming, sediment layers
-- "AI/intelligence" → neural patterns in nature (mycelium, lightning, river branches)
-- "launch/new" → butterfly emerging, first light of dawn, rocket trail across sky
-- "strength/foundation" → cliff face, cathedral pillars, diamond forming under pressure
-- "connection" → bridges, mycelium network, constellation map, fiber optics
-- "value/treasure" → geode cracked open revealing crystals, gold vein in rock, sunken chest
-
-NO: text, words, logos, brand names, lobsters, project references, generic AI robot imagery, corporate stock photo vibes. Just beautiful, evocative, real imagery.
+STYLE: 3D render, Pixar-quality, dark cinematic background, warm coral and teal lighting. Clean, professional, slightly whimsical.
+NO: text, words, logos, realistic photo style, horror, ugly. Keep it beautiful and on-brand.
 FORMAT: 1:1 square.`;
 
 // @inclawbate = the company. Simple, warm, conceptual images.
