@@ -84,6 +84,8 @@
         }
 
         /* DeFi Dashboard */
+        .defi-right-panel { display: none; }
+        .defi-right-panel.active { display: block; }
         .defi-action-btn {
             background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px; padding: 12px; color: var(--text-primary);
@@ -1028,11 +1030,44 @@
                         </div>
                     </div>
 
-                    <!-- Active Positions -->
-                    <div style="margin-bottom:24px;">
-                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Active Positions</div>
+                    <!-- ═══ Tab-linked panels ═══ -->
 
-                        <div id="defiStakePos" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:8px;">
+                    <!-- TRADE panel (default) -->
+                    <div class="defi-right-panel active" data-defi-right="trade">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Markets</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
+                                <span style="font-weight:700;font-size:0.85rem;">ETH</span>
+                                <span id="defiEthPrice" style="font-family:var(--font-mono);font-size:0.82rem;color:#fff;">—</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
+                                <span style="font-weight:700;font-size:0.85rem;">CLAWS</span>
+                                <span id="defiClawsPrice" style="font-family:var(--font-mono);font-size:0.82rem;color:#fff;">—</span>
+                            </div>
+                        </div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Your Balances</div>
+                        <div style="display:flex;gap:8px;margin-bottom:20px;">
+                            <div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,0.02);border-radius:10px;">
+                                <div style="font-size:0.6rem;color:var(--text-dim);">ETH</div>
+                                <div id="tradeEthBal" style="font-weight:700;font-size:0.85rem;">—</div>
+                            </div>
+                            <div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,0.02);border-radius:10px;">
+                                <div style="font-size:0.6rem;color:var(--text-dim);">USDC</div>
+                                <div id="tradeUsdcBal" style="font-weight:700;font-size:0.85rem;">—</div>
+                            </div>
+                            <div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,0.02);border-radius:10px;">
+                                <div style="font-size:0.6rem;color:var(--text-dim);">CLAWS</div>
+                                <div id="tradeClawsBal" style="font-weight:700;font-size:0.85rem;">—</div>
+                            </div>
+                        </div>
+                        <div style="text-align:center;font-size:0.75rem;color:var(--text-dim);line-height:1.5;">
+                            Use the chat to swap, set limit orders, DCA, or trade perps.
+                        </div>
+                    </div>
+
+                    <!-- EARN panel -->
+                    <div class="defi-right-panel" data-defi-right="earn">
+                        <div id="defiStakePos" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                                 <span style="font-weight:800;font-size:0.85rem;">&#129438; CLAWS Staking</span>
                                 <span style="font-family:var(--font-mono);font-size:0.6rem;color:#4ade80;background:rgba(74,222,128,0.1);padding:2px 8px;border-radius:999px;">Active</span>
@@ -1042,16 +1077,109 @@
                                 <span>Rewards: <strong id="defiRewards" style="color:#4ade80;">—</strong></span>
                             </div>
                         </div>
+                        <div id="defiNoPositions" style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:16px;background:rgba(255,255,255,0.02);border-radius:10px;margin-bottom:16px;">
+                            No staking position yet.
+                        </div>
 
-                        <div id="defiNoPositions" style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:20px;background:rgba(255,255,255,0.02);border-radius:12px;">
-                            No active positions yet.<br>Use the chat to swap, stake, lend, or trade perps.
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Vaults &amp; Staking</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Stake my CLAWS')">
+                                <span style="font-weight:700;font-size:0.82rem;">&#129438; CLAWS Staking</span>
+                                <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">Variable APY</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Stake ETH via Lido for wstETH')">
+                                <span style="font-weight:700;font-size:0.82rem;">&#9879; Lido wstETH</span>
+                                <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">~3.4%</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Stake ETH via Coinbase for cbETH')">
+                                <span style="font-weight:700;font-size:0.82rem;">&#9879; Coinbase cbETH</span>
+                                <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">~3.2%</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Add ETH/USDC LP on Aerodrome')">
+                                <span style="font-weight:700;font-size:0.82rem;">&#128167; Aerodrome ETH/USDC</span>
+                                <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">12-25%</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Helpful hint -->
-                    <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.02);border-radius:12px;">
-                        <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
-                            Use the chat to take action — swap tokens, stake CLAWS, open perps, lend, borrow, and more. This panel shows your live portfolio.
+                    <!-- LEND & BORROW panel -->
+                    <div class="defi-right-panel" data-defi-right="lend">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Lending Protocols</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Lend USDC on Moonwell')">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:700;font-size:0.82rem;">&#x1F7E2; Moonwell</span>
+                                    <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">~4.2% APY</span>
+                                </div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">USDC lending. Low risk.</div>
+                            </div>
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Lend USDC on Aave')">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:700;font-size:0.82rem;">&#x1F7E2; Aave v3</span>
+                                    <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">~3.8% APY</span>
+                                </div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">Battle-tested. USDC &amp; ETH.</div>
+                            </div>
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Lend USDC on Compound')">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:700;font-size:0.82rem;">&#x1F7E2; Compound</span>
+                                    <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300);font-weight:700;">~3.5% APY</span>
+                                </div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">OG lending protocol.</div>
+                            </div>
+                        </div>
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Borrowing</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Borrow USDC against my ETH on Aave')">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:700;font-size:0.82rem;">Borrow USDC vs ETH</span>
+                                    <span style="font-family:var(--font-mono);font-size:0.65rem;color:#2dd4bf;background:rgba(45,212,191,0.1);padding:2px 8px;border-radius:999px;">Aave</span>
+                                </div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">Deposit ETH, borrow USDC. LTV 75%.</div>
+                            </div>
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Borrow ETH against my USDC on Aave')">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:700;font-size:0.82rem;">Borrow ETH vs USDC</span>
+                                    <span style="font-family:var(--font-mono);font-size:0.65rem;color:#2dd4bf;background:rgba(45,212,191,0.1);padding:2px 8px;border-radius:999px;">Aave</span>
+                                </div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:3px;">Deposit USDC, borrow ETH.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MANAGE / STRATEGIES panel -->
+                    <div class="defi-right-panel" data-defi-right="manage">
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">All Positions</div>
+
+                        <div id="defiStakePos2" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-weight:800;font-size:0.85rem;">&#129438; CLAWS Staking</span>
+                                <span style="font-family:var(--font-mono);font-size:0.6rem;color:#4ade80;background:rgba(74,222,128,0.1);padding:2px 8px;border-radius:999px;">Active</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-secondary);">
+                                <span>Staked: <strong id="defiStaked2" style="color:#fff;">—</strong></span>
+                                <span>Rewards: <strong id="defiRewards2" style="color:#4ade80;">—</strong></span>
+                            </div>
+                        </div>
+
+                        <div id="defiNoPositions2" style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:16px;background:rgba(255,255,255,0.02);border-radius:10px;margin-bottom:16px;">
+                            No active positions. Use the chat to get started.
+                        </div>
+
+                        <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Suggested Strategies</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('What is the best yield strategy for 1000 USDC?')">
+                                <div style="font-weight:700;font-size:0.82rem;">&#x1F7E2; Conservative</div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">Lend USDC on Moonwell/Aave. ~4% APY, low risk.</div>
+                            </div>
+                            <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Build me a balanced DeFi strategy')">
+                                <div style="font-weight:700;font-size:0.82rem;">&#x1F535; Balanced</div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">Split: lending + ETH staking + CLAWS staking. ~5-8% blended.</div>
+                            </div>
+                            <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Build me an aggressive yield strategy')">
+                                <div style="font-weight:700;font-size:0.82rem;">&#x1F534; Aggressive</div>
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">Aerodrome LP + leverage. 15-25% APY, higher risk.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2843,6 +2971,11 @@ function toggleCatPills(btn, pillsId) {
         target.style.display = 'block';
         btn.classList.add('active');
     }
+    // Also switch the right panel to match (defi-trade → trade, defi-earn → earn, etc.)
+    var rightKey = pillsId.replace('defi-', '');
+    document.querySelectorAll('.defi-right-panel').forEach(function(p) { p.classList.remove('active'); });
+    var rightPanel = document.querySelector('[data-defi-right="' + rightKey + '"]');
+    if (rightPanel) rightPanel.classList.add('active');
 }
 
 function switchDefiSection(sectionId) {
@@ -3116,6 +3249,7 @@ async function loadDefiDashboard() {
         var d = await res.json();
         if (d.error) throw new Error(d.error);
 
+        // Portfolio header
         document.getElementById('defiEthBal').textContent = d.eth.balance;
         document.getElementById('defiEthUsd').textContent = d.eth.usd;
         document.getElementById('defiUsdcBal').textContent = d.usdc.balance;
@@ -3124,14 +3258,22 @@ async function loadDefiDashboard() {
         document.getElementById('defiClawsUsd').textContent = d.claws.usd;
         document.getElementById('defiTotalUsd').textContent = d.total;
 
+        // Trade panel balances + prices
+        var el;
+        if ((el = document.getElementById('tradeEthBal'))) el.textContent = d.eth.balance;
+        if ((el = document.getElementById('tradeUsdcBal'))) el.textContent = d.usdc.balance;
+        if ((el = document.getElementById('tradeClawsBal'))) el.textContent = d.claws.balance;
+        if ((el = document.getElementById('defiEthPrice')) && d.prices) el.textContent = '$' + d.prices.eth.toFixed(2);
+        if ((el = document.getElementById('defiClawsPrice')) && d.prices) el.textContent = '$' + d.prices.claws.toFixed(8);
+
+        // Earn + Manage staking positions (update all instances)
+        var stakeEls = ['defiStakePos', 'defiStakePos2'];
+        var noEls = ['defiNoPositions', 'defiNoPositions2'];
+        stakeEls.forEach(function(id) { var e = document.getElementById(id); if (e) e.style.display = d.staking.active ? 'block' : 'none'; });
+        noEls.forEach(function(id) { var e = document.getElementById(id); if (e) e.style.display = d.staking.active ? 'none' : 'block'; });
         if (d.staking.active) {
-            document.getElementById('defiStakePos').style.display = 'block';
-            document.getElementById('defiNoPositions').style.display = 'none';
-            document.getElementById('defiStaked').textContent = d.staking.staked + ' CLAWS';
-            document.getElementById('defiRewards').textContent = d.staking.earned + ' CLAWS';
-        } else {
-            document.getElementById('defiStakePos').style.display = 'none';
-            document.getElementById('defiNoPositions').style.display = 'block';
+            ['defiStaked', 'defiStaked2'].forEach(function(id) { var e = document.getElementById(id); if (e) e.textContent = d.staking.staked + ' CLAWS'; });
+            ['defiRewards', 'defiRewards2'].forEach(function(id) { var e = document.getElementById(id); if (e) e.textContent = d.staking.earned + ' CLAWS'; });
         }
     } catch (e) {
         console.warn('DeFi dashboard load error:', e.message);
