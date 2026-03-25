@@ -3005,11 +3005,38 @@
         var menu = document.getElementById('modelPickerMenu');
         if (menu) menu.style.display = 'none';
     };
-    // Close picker on outside click
+    // Mobile model picker
+    window.toggleMobileModelPicker = function() {
+        var menu = document.getElementById('mobileModelMenu');
+        if (menu) menu.style.display = menu.style.display === 'none' ? '' : 'none';
+    };
+    window.pickMobileModel = function(value, label, cost) {
+        // Update hidden input
+        var sel = document.getElementById('mobileModelSelect');
+        if (sel) sel.value = value;
+        // Update button label
+        var lbl = document.getElementById('mobileModelLabel');
+        if (lbl) lbl.textContent = label;
+        var badge = document.getElementById('mobileModelBadge');
+        if (badge) { badge.textContent = cost; badge.className = cost === 'Free' ? 'model-badge-free' : 'model-badge-paid'; }
+        // Sync desktop
+        var ds = document.getElementById('buildModelSelect');
+        if (ds) ds.value = value;
+        // Also sync desktop picker display
+        if (window.pickModel) window.pickModel(value, label, cost);
+        // Close menu
+        var menu = document.getElementById('mobileModelMenu');
+        if (menu) menu.style.display = 'none';
+    };
+
+    // Close pickers on outside click
     document.addEventListener('click', function(e) {
         var wrap = document.getElementById('modelPickerWrap');
         var menu = document.getElementById('modelPickerMenu');
         if (wrap && menu && !wrap.contains(e.target)) menu.style.display = 'none';
+        var mWrap = document.getElementById('mobileModelPickerWrap');
+        var mMenu = document.getElementById('mobileModelMenu');
+        if (mWrap && mMenu && !mWrap.contains(e.target)) mMenu.style.display = 'none';
     });
 
     // Switch build right panel between dashboard and launch views
@@ -3769,16 +3796,26 @@ var _mobileSyncInterval = setInterval(function() {
 <div class="mobile-chat-bar" id="mobileChatBar">
     <!-- Mobile model selector (shown when editing an app) -->
     <div id="mobileModelBar" style="display:none;padding-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="font-family:var(--font-mono);font-size:0.55rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Model:</span>
-            <select id="mobileModelSelect" onchange="var ds=document.getElementById('buildModelSelect');if(ds)ds.value=this.value" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:3px 6px;color:#fff;font-size:0.68rem;font-family:var(--font-display);font-weight:700;cursor:pointer;flex:1;max-width:180px;">
-                <option value="gemini">Gemini Flash (Free)</option>
-                <option value="llama">Llama 70B (Free)</option>
-                <option value="kimi">Kimi (Free)</option>
-                <option value="fast">Haiku (~500 CLAWS)</option>
-                <option value="standard">Sonnet (~2,500 CLAWS)</option>
-                <option value="pro">Opus (~5,000 CLAWS)</option>
-            </select>
+        <div style="display:flex;align-items:center;gap:6px;position:relative;">
+            <div id="mobileModelPickerWrap" style="position:relative;">
+                <button id="mobileModelPickerBtn" onclick="toggleMobileModelPicker()" style="display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:0.72rem;font-family:var(--font-display);font-weight:700;cursor:pointer;">
+                    <span id="mobileModelLabel">Gemini Flash</span>
+                    <span id="mobileModelBadge" class="model-badge-free">Free</span>
+                    <span style="font-size:0.6rem;color:var(--text-dim);">&#9650;</span>
+                </button>
+                <div id="mobileModelMenu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:auto;min-width:220px;background:hsla(240,10%,8%,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;box-shadow:0 -8px 30px rgba(0,0,0,0.5);z-index:300;">
+                    <div style="font-family:var(--font-mono);font-size:0.52rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px;">Free Models</div>
+                    <button class="model-opt" data-mmodel="gemini" onclick="pickMobileModel('gemini','Gemini Flash','Free')">Gemini Flash <span class="model-badge-free">Free</span></button>
+                    <button class="model-opt" data-mmodel="llama" onclick="pickMobileModel('llama','Llama 70B','Free')">Llama 70B <span class="model-badge-free">Free</span></button>
+                    <button class="model-opt" data-mmodel="kimi" onclick="pickMobileModel('kimi','Kimi','Free')">Kimi <span class="model-badge-free">Free</span></button>
+                    <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
+                    <div style="font-family:var(--font-mono);font-size:0.52rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px;">Premium (pay CLAWS)</div>
+                    <button class="model-opt" data-mmodel="fast" onclick="pickMobileModel('fast','Haiku','~500 CLAWS')">Haiku <span class="model-badge-paid">~500 CLAWS</span></button>
+                    <button class="model-opt" data-mmodel="standard" onclick="pickMobileModel('standard','Sonnet','~2,500 CLAWS')">Sonnet <span class="model-badge-paid">~2,500 CLAWS</span></button>
+                    <button class="model-opt" data-mmodel="pro" onclick="pickMobileModel('pro','Opus','~5,000 CLAWS')">Opus <span class="model-badge-paid">~5,000 CLAWS</span></button>
+                </div>
+            </div>
+            <input type="hidden" id="mobileModelSelect" value="gemini">
             <button onclick="exitBuildMode()" style="font-size:0.58rem;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);cursor:pointer;margin-left:auto;">Exit editing</button>
         </div>
     </div>
