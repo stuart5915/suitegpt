@@ -135,7 +135,7 @@ async function postTweetOAuth2(text, accessToken) {
 // ── OAuth 1.0a signing helper ──
 
 function buildOAuth1Header(method, url, extraParams, account) {
-    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : account === 'publicgoodstech' ? 'PGT' : 'INCLAWBATOR';
+    const prefix = account === 'inclawbate' ? 'INCLAWBATE' : account === 'publicgoodstech' ? 'PUBLICGOODS' : 'INCLAWBATOR';
     const X_API_KEY = process.env[prefix + '_X_API_KEY'] || process.env.INCLAWBATOR_X_API_KEY;
     const X_API_SECRET = process.env[prefix + '_X_API_SECRET'] || process.env.INCLAWBATOR_X_API_SECRET;
     const X_ACCESS_TOKEN = process.env[prefix + '_X_ACCESS_TOKEN'];
