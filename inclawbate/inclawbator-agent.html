@@ -168,6 +168,20 @@
         .defi-right-panel.active { display: block; }
         .defi-sub { display: none; }
         .defi-sub.active { display: block; }
+        .swap-type-btn {
+            flex: 1; padding: 8px; background: none; border: none;
+            color: var(--text-dim); font-weight: 700; font-size: 0.78rem;
+            border-radius: 8px; cursor: pointer; transition: all 0.15s;
+        }
+        .swap-type-btn.active { background: rgba(255,255,255,0.08); color: #fff; }
+        .swap-type-btn:hover { color: var(--text-primary); }
+        .swap-freq-btn {
+            flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            color: var(--text-dim); font-weight: 700; font-size: 0.78rem;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .swap-freq-btn.active { background: rgba(192,83,77,0.15); border-color: var(--lobster-400); color: #fff; }
         .defi-action-btn {
             background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px; padding: 12px; color: var(--text-primary);
@@ -913,10 +927,7 @@
             <!-- Trade sub-pills -->
             <div class="cat-pills-expand" data-pills="defi-trade" style="display:block;margin-top:8px;">
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill active" onclick="switchDefiSub(this,'trade','claws')">CLAWS</button>
-                    <button class="defi-pill" onclick="switchDefiSub(this,'trade','market')">Market order</button>
-                    <button class="defi-pill" onclick="switchDefiSub(this,'trade','limit')">Limit order</button>
-                    <button class="defi-pill" onclick="switchDefiSub(this,'trade','dca')">DCA</button>
+                    <button class="defi-pill active" onclick="switchDefiSub(this,'trade','swap')">Swap</button>
                     <button class="defi-pill" onclick="switchDefiSub(this,'trade','perps')">Perps</button>
                 </div>
             </div>
@@ -1104,41 +1115,76 @@
                     <!-- TRADE panel (default) -->
                     <!-- TRADE panel with sub-sections -->
                     <div class="defi-right-panel active" data-defi-right="trade">
-                        <div class="defi-sub active" data-sub="trade-claws">
-                            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;margin-bottom:14px;">
-                                <div><div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:2px;">CLAWS PRICE</div><div id="defiClawsPrice" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:900;color:#fff;">&#8212;</div></div>
-                                <div style="font-size:2rem;">&#129438;</div>
+                        <!-- SWAP UI -->
+                        <div class="defi-sub active" data-sub="trade-swap">
+                            <!-- Order type tabs -->
+                            <div style="display:flex;gap:4px;margin-bottom:14px;background:rgba(255,255,255,0.03);border-radius:10px;padding:3px;">
+                                <button class="swap-type-btn active" onclick="switchSwapType(this,'market')">Market</button>
+                                <button class="swap-type-btn" onclick="switchSwapType(this,'limit')">Limit</button>
+                                <button class="swap-type-btn" onclick="switchSwapType(this,'dca')">DCA</button>
                             </div>
-                            <div style="display:flex;gap:8px;">
-                                <button onclick="defiChat('I want to buy CLAWS')" style="flex:1;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.9rem;cursor:pointer;transition:all 0.15s;text-align:center;">&#128994; Buy CLAWS</button>
-                                <button onclick="defiChat('I want to sell CLAWS')" style="flex:1;padding:14px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.9rem;cursor:pointer;transition:all 0.15s;text-align:center;">&#128308; Sell CLAWS</button>
+
+                            <!-- You pay -->
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:4px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                    <span style="font-size:0.72rem;color:var(--text-dim);">You pay</span>
+                                    <span style="font-size:0.68rem;color:var(--text-dim);" id="swapPayBalance">Balance: —</span>
+                                </div>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <input type="number" id="swapPayAmount" placeholder="0.0" style="flex:1;background:none;border:none;color:#fff;font-size:1.3rem;font-weight:800;outline:none;font-family:var(--font-mono);width:0;">
+                                    <select id="swapPayToken" onchange="updateSwapBalances()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:999px;color:#fff;font-weight:700;font-size:0.82rem;padding:8px 12px;cursor:pointer;outline:none;">
+                                        <option value="ETH">ETH</option>
+                                        <option value="USDC">USDC</option>
+                                        <option value="CLAWS">CLAWS</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            <!-- Flip button -->
+                            <div style="text-align:center;margin:-6px 0;position:relative;z-index:1;">
+                                <button onclick="flipSwapTokens()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50%;width:32px;height:32px;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;transition:all 0.15s;" onmouseenter="this.style.borderColor='var(--lobster-400)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.1)'">&darr;</button>
+                            </div>
+
+                            <!-- You receive -->
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:4px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                    <span style="font-size:0.72rem;color:var(--text-dim);">You receive</span>
+                                    <span style="font-size:0.68rem;color:var(--text-dim);" id="swapReceiveBalance">Balance: —</span>
+                                </div>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <div id="swapReceiveAmount" style="flex:1;font-size:1.3rem;font-weight:800;color:var(--text-dim);font-family:var(--font-mono);">0.0</div>
+                                    <select id="swapReceiveToken" onchange="updateSwapBalances()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:999px;color:#fff;font-weight:700;font-size:0.82rem;padding:8px 12px;cursor:pointer;outline:none;">
+                                        <option value="CLAWS">CLAWS</option>
+                                        <option value="ETH">ETH</option>
+                                        <option value="USDC">USDC</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Limit price (hidden by default) -->
+                            <div id="swapLimitRow" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-top:4px;margin-bottom:4px;">
+                                <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Trigger price</div>
+                                <input type="number" id="swapLimitPrice" placeholder="0.0" style="width:100%;background:none;border:none;color:#fff;font-size:1.1rem;font-weight:800;outline:none;font-family:var(--font-mono);">
+                            </div>
+
+                            <!-- DCA frequency (hidden by default) -->
+                            <div id="swapDcaRow" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-top:4px;margin-bottom:4px;">
+                                <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Frequency</div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="swap-freq-btn active" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="daily">Daily</button>
+                                    <button class="swap-freq-btn" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="weekly">Weekly</button>
+                                    <button class="swap-freq-btn" onclick="this.parentNode.querySelectorAll('.swap-freq-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-freq="monthly">Monthly</button>
+                                </div>
+                            </div>
+
+                            <!-- Swap button -->
+                            <button id="swapExecuteBtn" onclick="executeSwapFromUI()" style="width:100%;padding:14px;background:var(--accent-gradient);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;margin-top:10px;transition:opacity 0.15s;" onmouseenter="this.style.opacity='0.85'" onmouseleave="this.style.opacity='1'">Swap</button>
+
+                            <!-- Route info -->
+                            <div style="text-align:center;margin-top:8px;font-size:0.68rem;color:var(--text-dim);">Powered by ParaSwap &mdash; best route across Base DEXes</div>
                         </div>
-                        <div class="defi-sub" data-sub="trade-market">
-                            <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Market Swap</div>
-                            <div style="display:flex;flex-direction:column;gap:6px;">
-                                <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Swap ETH for USDC')"><span style="font-weight:700;">ETH &rarr; USDC</span><span id="defiEthPrice" style="font-family:var(--font-mono);font-size:0.82rem;">&#8212;</span></div>
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Swap USDC for ETH')"><span style="font-weight:700;">USDC &rarr; ETH</span></div>
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Swap ETH for CLAWS')"><span style="font-weight:700;">ETH &rarr; CLAWS</span></div>
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('I want to swap tokens')"><span style="font-weight:700;">Custom swap</span></div>
-                            </div>
-                        </div>
-                        <div class="defi-sub" data-sub="trade-limit">
-                            <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Limit Orders</div>
-                            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">Set a target price &mdash; executes automatically.</div>
-                            <div style="display:flex;flex-direction:column;gap:6px;">
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Set a limit order to buy CLAWS when price drops 10%')"><span style="font-weight:700;">Buy CLAWS on dip</span></div>
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Set a limit order to sell ETH at $3000')"><span style="font-weight:700;">Sell ETH at target</span></div>
-                            </div>
-                        </div>
-                        <div class="defi-sub" data-sub="trade-dca">
-                            <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Dollar Cost Average</div>
-                            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">Auto-buy on a schedule to smooth out volatility.</div>
-                            <div style="display:flex;flex-direction:column;gap:6px;">
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Set up DCA: buy $10 ETH every day')"><span style="font-weight:700;">$10 ETH daily</span></div>
-                                <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Set up DCA: buy $50 CLAWS every week')"><span style="font-weight:700;">$50 CLAWS weekly</span></div>
-                            </div>
-                        </div>
+
+                        <!-- PERPS UI -->
                         <div class="defi-sub" data-sub="trade-perps">
                             <div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Perpetual Futures</div>
                             <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">50+ markets via Synthetix v3. Up to 50x leverage.</div>
@@ -3109,6 +3155,66 @@ function switchDefiSub(btn, panelKey, subKey) {
         var sub = panel.querySelector('[data-sub="' + panelKey + '-' + subKey + '"]');
         if (sub) sub.classList.add('active');
     }
+}
+
+// ── Swap UI Functions ──
+var _swapType = 'market';
+
+function switchSwapType(btn, type) {
+    _swapType = type;
+    btn.parentNode.querySelectorAll('.swap-type-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('swapLimitRow').style.display = type === 'limit' ? 'block' : 'none';
+    document.getElementById('swapDcaRow').style.display = type === 'dca' ? 'block' : 'none';
+    var execBtn = document.getElementById('swapExecuteBtn');
+    if (type === 'market') execBtn.textContent = 'Swap';
+    else if (type === 'limit') execBtn.textContent = 'Place Limit Order';
+    else if (type === 'dca') execBtn.textContent = 'Start DCA';
+}
+
+function flipSwapTokens() {
+    var pay = document.getElementById('swapPayToken');
+    var receive = document.getElementById('swapReceiveToken');
+    var tmp = pay.value;
+    pay.value = receive.value;
+    receive.value = tmp;
+    updateSwapBalances();
+}
+
+function updateSwapBalances() {
+    // Pull balances from the portfolio display
+    var bals = { ETH: '—', USDC: '—', CLAWS: '—' };
+    var ethEl = document.getElementById('defiEthBal');
+    var usdcEl = document.getElementById('defiUsdcBal');
+    var clawsEl = document.getElementById('defiClawsBal');
+    if (ethEl) bals.ETH = ethEl.textContent;
+    if (usdcEl) bals.USDC = usdcEl.textContent;
+    if (clawsEl) bals.CLAWS = clawsEl.textContent;
+    var payToken = document.getElementById('swapPayToken').value;
+    var recToken = document.getElementById('swapReceiveToken').value;
+    document.getElementById('swapPayBalance').textContent = 'Balance: ' + (bals[payToken] || '—');
+    document.getElementById('swapReceiveBalance').textContent = 'Balance: ' + (bals[recToken] || '—');
+}
+
+function executeSwapFromUI() {
+    var amount = document.getElementById('swapPayAmount').value;
+    var payToken = document.getElementById('swapPayToken').value;
+    var recToken = document.getElementById('swapReceiveToken').value;
+    if (!amount || parseFloat(amount) <= 0) { alert('Enter an amount'); return; }
+    if (payToken === recToken) { alert('Select different tokens'); return; }
+
+    var msg = '';
+    if (_swapType === 'market') {
+        msg = 'Swap ' + amount + ' ' + payToken + ' for ' + recToken;
+    } else if (_swapType === 'limit') {
+        var price = document.getElementById('swapLimitPrice').value;
+        msg = 'Set a limit order to swap ' + amount + ' ' + payToken + ' for ' + recToken + (price ? ' at price ' + price : '');
+    } else if (_swapType === 'dca') {
+        var freqBtn = document.querySelector('.swap-freq-btn.active');
+        var freq = freqBtn ? freqBtn.dataset.freq : 'daily';
+        msg = 'Set up DCA: buy ' + amount + ' ' + recToken + ' with ' + payToken + ' ' + freq;
+    }
+    defiChat(msg);
 }
 
 function switchDefiSection(sectionId) {
