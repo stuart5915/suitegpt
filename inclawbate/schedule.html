@@ -4034,26 +4034,14 @@
                 ctx.fillStyle = 'rgba(255,255,255,0.4)';
                 ctx.fillText(agent.category || '', size * 0.22, y + rowH / 2 + size * 0.016);
 
-                // Mentions bar
-                var barX = size * 0.62, barW = size * 0.24, barH = size * 0.012;
-                var barY = y + rowH / 2 - barH / 2;
-                var fillW = barW * ((agent.mentions_count || 0) / maxMentions);
-                // Bar track
-                ctx.fillStyle = 'rgba(255,255,255,0.04)';
-                ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, barH / 2); ctx.fill();
-                // Bar fill
-                var barGrad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
-                barGrad.addColorStop(0, i < 3 ? medalColors[i] : PGT_GREEN);
-                barGrad.addColorStop(1, PGT_CYAN);
-                ctx.fillStyle = barGrad;
-                ctx.beginPath(); ctx.roundRect(barX, barY, Math.max(fillW, barH), barH, barH / 2); ctx.fill();
-
-                // Mention count
-                ctx.font = '700 ' + (size * 0.017) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = i < 3 ? medalColors[i] : PGT_GREEN;
-                ctx.textAlign = 'right';
-                ctx.fillText(String(agent.mentions_count || 0), size * 0.92, y + rowH / 2);
-                ctx.textAlign = 'left';
+                // X handle on the right
+                if (agent.x_handle) {
+                    ctx.font = '400 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(52,211,153,0.6)';
+                    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                    ctx.fillText('@' + agent.x_handle, size * 0.92, y + rowH / 2);
+                    ctx.textAlign = 'left';
+                }
             });
 
         } else if (tplId === 'new_radar') {
