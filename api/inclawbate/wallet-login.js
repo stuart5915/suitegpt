@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyMessage, randomBytes } from 'ethers';
 import { createJwt } from './x-callback.js';
+import { track } from './track.js';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -28,6 +29,9 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Fire-and-forget API stat tracking
+    try { track('wallet_connects'); } catch (_) {}
 
     const { address, signature, message } = req.body || {};
 

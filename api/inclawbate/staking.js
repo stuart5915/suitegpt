@@ -4,6 +4,7 @@
 // Public, read-only, CORS open, cached 60s
 
 import { createClient } from '@supabase/supabase-js';
+import { track } from './track.js';
 
 const INCLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
 const STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
@@ -32,6 +33,9 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Fire-and-forget API stat tracking
+    try { track('staking_actions'); } catch (_) {}
 
     try {
         const wallet = (req.query.wallet || '').toLowerCase().trim();

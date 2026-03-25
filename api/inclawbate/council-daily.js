@@ -378,7 +378,21 @@ function getDateStr() {
     return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
 }
 
-function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats) {
+async function fetchApiStats() {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data } = await supabase
+            .from('api_daily_stats')
+            .select('*')
+            .eq('stat_date', today)
+            .single();
+        return data || { total_requests: 0, agent_chat: 0, build_app: 0, token_launches: 0, staking_actions: 0, wallet_connects: 0 };
+    } catch (e) {
+        return { total_requests: 0, agent_chat: 0, build_app: 0, token_launches: 0, staking_actions: 0, wallet_connects: 0 };
+    }
+}
+
+function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday, stakerCount, angelStats, apiStats) {
     const date = getDateStr();
     const price = claws?.price || 0;
 
@@ -494,6 +508,17 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         });
         msg += `\nVote: inclawbate.app/claws`;
         msg += `</blockquote>`;
+    }
+
+    // ── Platform Activity ──
+    if (apiStats && apiStats.total_requests > 0) {
+        msg += `\n📡 <b>Platform Activity</b>\n`;
+        msg += `   ${apiStats.total_requests} API requests\n`;
+        if (apiStats.agent_chat > 0) msg += `   ${apiStats.agent_chat} Inclawbator chats\n`;
+        if (apiStats.build_app > 0) msg += `   ${apiStats.build_app} apps built\n`;
+        if (apiStats.token_launches > 0) msg += `   ${apiStats.token_launches} token launches\n`;
+        if (apiStats.staking_actions > 0) msg += `   ${apiStats.staking_actions} staking queries\n`;
+        if (apiStats.wallet_connects > 0) msg += `   ${apiStats.wallet_connects} wallet connects\n`;
     }
 
     // ── Expandable: State ──
@@ -641,12 +666,13 @@ export default async function handler(req, res) {
 
     try {
         // Fetch non-RPC data + chain data cache in parallel
-        const [claws, tasks, allocation, chainCache, angelFloor] = await Promise.all([
+        const [claws, tasks, allocation, chainCache, angelFloor, apiStats] = await Promise.all([
             fetchClawsPrice(),
             fetchTasks(),
             fetchAllocationSynthesis(),
             fetchChainDataCache(),
-            fetchAngelFloorPrice()
+            fetchAngelFloorPrice(),
+            fetchApiStats()
         ]);
 
         const clawsPrice = claws?.price || 0;
@@ -702,7 +728,7 @@ export default async function handler(req, res) {
 
         // Build messages
         const date = getDateStr();
-        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
+        const telegramPost = buildTelegramPost(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats, apiStats);
         const tweet = buildTweet(claws, supply, tasks, treasuryData, allocation, yesterday, stakerCount, angelStats);
 
         // Generate and send daily stats image

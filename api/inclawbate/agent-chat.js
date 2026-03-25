@@ -5,6 +5,7 @@ import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { logToFeed } from './notify.js';
 import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';
 import { openPerpPosition, getPerpsMarkets } from './perps-actions.js';
+import { track } from './track.js';
 import crypto from 'crypto';
 
 // ── Rate limiter (in-memory, per Vercel instance — resets on cold start) ──
@@ -1680,6 +1681,9 @@ export default async function handler(req, res) {
   const { message, session_id, wallet, client_history } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message is required' });
 
+  // Fire-and-forget API stat tracking
+  try { track('agent_chat'); } catch (_) {}
+
   // Server-side security pre-filter — catch attacks before they hit the LLM (saves API credits too)
   // Normalize unicode to prevent homoglyph attacks (Cyrillic 'е' → Latin 'e', etc.)
   const normalizedMsg = (typeof message === 'string' ? message : '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');
@@ -1872,8 +1876,10 @@ export default async function handler(req, res) {
     if (!body.suggestions && body.reply) {
       const tool = body.function_called;
       if (tool === 'build_app') {
+        try { track('build_app'); } catch (_) {}
         body.suggestions = ['Make changes', 'Build something new', 'Do something else'];
       } else if (tool === 'deploy_token') {
+        try { track('token_launches'); } catch (_) {}
         body.suggestions = ['Check token analytics', 'Deploy staking pool', 'Airdrop tokens', 'Do something else'];
       } else if (tool === 'deploy_staking') {
         body.suggestions = ['Check staking stats', 'Launch a token', 'Do something else'];
@@ -2062,7 +2068,6 @@ export default async function handler(req, res) {
     }
 
     // Educational/explanatory prompts — skip tools, just answer the question
-    // These are Learn-tab prompts and general knowledge questions that don't need any tool execution
     const isEducational = /^(explain|walk me through|what (is|are|does|do|can|should|would)|how (does|do|is|are|can|should|would)|give me a (glossary|overview|summary|breakdown|guide|list|full list)|teach me|tell me (about|how|what|why)|describe|compare|why (is|are|does|do|would|should|can))\b/i.test(message)
       && message.length > 20
       && !/\b(0x[a-f0-9]{10,}|my wallet|my token|my app|deploy|launch|build me|create me|stake \d|swap \d|buy \d|sell \d|airdrop|send \d)\b/i.test(message);
