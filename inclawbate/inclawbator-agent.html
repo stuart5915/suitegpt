@@ -3691,37 +3691,51 @@ function sendMobileMessage() {
     if (barInput && barInput.value.trim()) { text = barInput.value.trim(); barInput.value = ''; }
     else if (overlayInput && overlayInput.value.trim()) { text = overlayInput.value.trim(); overlayInput.value = ''; }
     if (!text) return;
-    // Show toast instead of full overlay
-    showMobileToast('Thinking...');
-    // Send via main chat
+    // Show persistent toast while working
+    showMobileToast('Thinking...', true);
     if (window.sendMessage) { window.sendMessage(text); }
-    // Watch for response
+    // Watch for response AND live progress updates
     var srcMsgs = document.getElementById('chatMessages');
-    var lastCount = srcMsgs ? srcMsgs.children.length : 0;
+    var lastText = '';
     var ci = setInterval(function() {
         if (!srcMsgs) { clearInterval(ci); return; }
-        if (srcMsgs.children.length > lastCount) {
-            var last = srcMsgs.lastElementChild;
-            var b = last ? last.querySelector('.chat-bubble') : null;
-            if (b && !last.classList.contains('chat-msg-user')) {
-                showMobileToast(b.textContent || b.innerText);
-                clearInterval(ci);
+        var last = srcMsgs.lastElementChild;
+        var b = last ? last.querySelector('.chat-bubble') : null;
+        if (b && !last.classList.contains('chat-msg-user')) {
+            var txt = b.textContent || b.innerText || '';
+            if (txt !== lastText) {
+                lastText = txt;
+                updateMobileToast(txt);
+                if (!/^(Thinking|Building|Publishing)/i.test(txt)) {
+                    showMobileToast(txt, false);
+                    clearInterval(ci);
+                }
             }
-            lastCount = srcMsgs.children.length;
         }
     }, 500);
-    setTimeout(function() { clearInterval(ci); }, 30000);
+    setTimeout(function() { clearInterval(ci); }, 60000);
 }
 
-function showMobileToast(text) {
+function showMobileToast(text, persistent) {
     var ex = document.querySelector('.mobile-toast');
     if (ex) ex.remove();
     var t = document.createElement('div');
     t.className = 'mobile-toast';
-    t.innerHTML = '<div class="toast-label">&#129438; Inclawbator</div>' + String(text||'').replace(/</g,'&lt;').slice(0,300);
+    t.id = 'mobileToast';
+    var safe = String(text||'').replace(/</g,'&lt;').slice(0,300);
+    t.innerHTML = '<div class="toast-label">&#129438; Inclawbator</div><div class="toast-text">' + safe + '</div>';
     document.body.appendChild(t);
-    setTimeout(function() { t.classList.add('fading'); setTimeout(function() { if(t.parentNode) t.remove(); }, 600); }, 6000);
+    if (!persistent) {
+        setTimeout(function() { t.classList.add('fading'); setTimeout(function() { if(t.parentNode) t.remove(); }, 600); }, 6000);
+    }
     t.onclick = function() { t.classList.add('fading'); setTimeout(function() { if(t.parentNode) t.remove(); }, 300); };
+}
+
+function updateMobileToast(text) {
+    var t = document.getElementById('mobileToast');
+    if (!t) return;
+    var el = t.querySelector('.toast-text');
+    if (el) el.textContent = String(text||'').slice(0,300);
 }
 
 // Also keep syncing mobile chat when new messages arrive
