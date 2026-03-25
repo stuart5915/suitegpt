@@ -783,6 +783,25 @@ export default async function handler(req, res) {
                     else await sendMsg(chatId, '❌ Failed: ' + (await r.text()).slice(0, 200));
                 } catch (e) { await sendMsg(chatId, '❌ ' + esc(e.message)); }
             }
+        } else if (cmd === 'devdaily') {
+            if (!isAdmin(username)) { await sendMsg(chatId, '🔒 Admin only.'); }
+            else {
+                await sendMsg(chatId, '⏳ Generating dev daily...');
+                try {
+                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'www.inclawbate.app';
+                    const protocol = host.includes('localhost') ? 'http' : 'https';
+                    const r = await fetch(`${protocol}://${host}/api/inclawbate/dev-daily`, { method: 'POST' });
+                    const result = await r.json();
+                    if (r.ok && result.post) {
+                        await sendMsg(chatId, result.post);
+                        if (result.tweet) {
+                            await sendMsg(chatId, '📋 <b>Copy for X:</b>\n\n' + esc(result.tweet));
+                        }
+                    } else {
+                        await sendMsg(chatId, '❌ ' + (result.error || 'Failed'));
+                    }
+                } catch (e) { await sendMsg(chatId, '❌ ' + esc(e.message)); }
+            }
         } else if (cmd === 'chatinfo') {
             const threadId = message.message_thread_id || 'none';
             await sendMsg(chatId, '🆔 Chat ID: <code>' + chatId + '</code>\nThread ID: <code>' + threadId + '</code>');
@@ -812,6 +831,8 @@ export default async function handler(req, res) {
                 '/narrative — Story world, locations, characters\n\n' +
                 '<b>Council</b>\n' +
                 '/daily — Post daily CLAWS update (admin)\n\n' +
+                '<b>Builder</b>\n' +
+                '/devdaily — AI-grouped commit summary (admin)\n\n' +
                 '<b>Other</b>\n' +
                 '/start yourxhandle — Link your X profile (DM)\n' +
                 '/myid — Get your chat ID\n' +
