@@ -595,8 +595,15 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
             isAdmin = true;
         }
 
+        // Check wallet directly from header or query (client sends connected wallet)
+        const directWallet = (req.headers['x-wallet'] || req.query.wallet || '').toLowerCase();
+        if (!isAdmin && directWallet) {
+            if (ADMIN_WALLETS.includes(directWallet)) isAdmin = true;
+            else if (EDITOR_WALLETS.includes(directWallet)) isEditor = true;
+        }
+
         // Check wallet role via JWT
-        if (!isAdmin && authHeader?.startsWith('Bearer ')) {
+        if (!isAdmin && !isEditor && authHeader?.startsWith('Bearer ')) {
             try {
                 const { authenticateRequest } = await import('./x-callback.js');
                 const user = authenticateRequest(req);
