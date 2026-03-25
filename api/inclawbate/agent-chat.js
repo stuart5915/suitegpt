@@ -64,18 +64,13 @@ EDIT / WORK ON EXISTING APP — When a user says "work on [app name]", "edit [ap
 What changes do you want to make?"
 Use the app's URL from the list you already showed. The frontend will display the app preview automatically when it sees the URL. Wait for the user to describe their changes before calling build_app.
 
-BUILD AN APP — NEVER call build_app immediately when someone says they want to build something. This is a CONVERSATION, not a one-shot command.
+BUILD AN APP — Two modes:
 
-MANDATORY RULE: If the user has NOT provided BOTH (1) a specific app name AND (2) a detailed description of what the app should do, you MUST ask first. Do NOT invent an app name or description yourself. Use the user's own words.
+NEW APPS: When someone says "build me an app" or "build something new" — chat first! Ask what they want. Only call build_app once they've described what they want in enough detail.
 
-WRONG: User says "build me an app" → you call build_app with a made-up name and description
-RIGHT: User says "build me an app" → you reply: "What kind of app? A game, dashboard, landing page? Describe what you want and I'll build it!"
+UPDATING EXISTING APPS: When conversation history contains [CONTEXT: User is now editing app...] and the user describes changes — call build_app IMMEDIATELY with update: true and the slug from context. Do NOT ask for more clarification. The user's description IS the instruction. Pass their full description as: "Update this app. Changes requested: [their description]".
 
-WRONG: User says "make me a portfolio tracker" → you call build_app immediately with your own description
-RIGHT: User says "make me a portfolio tracker" → you reply: "Cool! What tokens/chains should it track? Any specific layout you want?"
-
-Only call build_app AFTER the user has explicitly given you enough detail. Ask clarifying questions first.
-For UPDATES to existing apps: include update: true and the existing app_name. If someone says "work on X" without describing changes, show them the app URL and ASK what they want changed.
+CRITICAL: If the user just described changes to an app they're editing, EXECUTE NOW. Do not say "what sections?" or "can you be more specific?" — just call build_app with update: true.
 IMPORTANT: "build a website", "make me an app", "I want to build an app" — these are CONVERSATION STARTERS, not tool calls. Chat first. Do NOT call build_app or list_my_apps.
 
 HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
@@ -1487,7 +1482,7 @@ function generateDirectReply(tool, resultJson, args) {
 
       case 'claim_staking_rewards':
         if (d.error) return d.error;
-        if (d.success) return `Claim your pending CLAWS staking rewards`;
+        if (d.success) return `Claim **${d.pendingRewards} CLAWS** in pending staking rewards`;
         return null;
 
       case 'health_check':
@@ -1731,6 +1726,11 @@ export default async function handler(req, res) {
           if (match) {
             const appUrl = 'https://inclawbate.app/s/' + match.slug;
             const reply = "Here's **" + (match.name || match.slug) + "**:\n\n" + appUrl + "\n\nWhat changes do you want to make?";
+            // Save to session history so LLM knows which app is being edited
+            const sess = sessions.get(sid) || [{ role: 'system', content: SYSTEM_PROMPT }];
+            sess.push({ role: 'user', content: sanitizedMessage });
+            sess.push({ role: 'assistant', content: reply + '\n\n[CONTEXT: User is now editing app "' + (match.name || match.slug) + '" with slug "' + match.slug + '". When they describe changes, call build_app with app_name: "' + match.slug + '", update: true, and a description incorporating their requested changes.]' });
+            sessions.set(sid, sess);
             return res.status(200).json({
               reply,
               app_url: appUrl,

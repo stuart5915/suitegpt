@@ -196,15 +196,35 @@ function buildUnstakeTx(amount, wallet) {
   };
 }
 
-// getReward() — function selector: 0x3d18b912
+// claim() — function selector: 0x4e71d92d (ClawsStaking.sol)
 function buildClaimRewardsTx(wallet) {
   return {
     to: CLAWS_STAKING,
-    data: '0x3d18b912',
+    data: '0x4e71d92d',
     value: '0',
     chainId: BASE_CHAIN_ID,
     from: wallet,
   };
+}
+
+const BASE_RPC = 'https://mainnet.base.org';
+
+// Fetch pending rewards from staking contract: earned(address) → 0x008cc262
+async function fetchPendingRewards(wallet) {
+  try {
+    const padded = wallet.toLowerCase().replace('0x', '').padStart(64, '0');
+    const res = await fetch(BASE_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', method: 'eth_call',
+        params: [{ to: CLAWS_STAKING, data: '0x008cc262' + padded }, 'latest'],
+        id: 1
+      })
+    });
+    const json = await res.json();
+    return Number(BigInt(json.result || '0x0')) / 1e18;
+  } catch (e) { return 0; }
 }
 
 export async function stakeClaws({ amount, wallet }) {
@@ -248,9 +268,14 @@ export async function unstakeClaws({ amount, wallet }) {
 export async function claimStakingRewards({ wallet }) {
   if (!wallet) return { error: 'I need your wallet address. Connect your wallet.' };
 
+  const pending = await fetchPendingRewards(wallet);
+  if (pending <= 0) return { error: 'No pending rewards to claim right now.' };
+
   return {
     success: true,
     action: 'claim',
+    pendingRewards: formatAmount(pending, 0),
+    pendingRaw: pending,
     txs: [
       { label: 'Claim CLAWS Rewards', tx: buildClaimRewardsTx(wallet) },
     ],
