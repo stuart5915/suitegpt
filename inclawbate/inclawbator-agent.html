@@ -1836,37 +1836,37 @@
                     <div class="learn-section-label">Deep Dive Topics</div>
                     <div id="learnTopicsView">
                         <div class="learn-topic-grid">
-                            <div class="learn-topic-card" onclick="showLearnTopic('defi')">
+                            <div class="learn-topic-card" data-lcat="defi" onclick="showLearnTopic('defi')">
                                 <div class="lt-count">8</div>
                                 <div class="lt-icon">&#128176;</div>
                                 <div class="lt-name">DeFi</div>
                                 <div class="lt-desc">Tokens, swaps, staking, lending, yield.</div>
                             </div>
-                            <div class="learn-topic-card" onclick="showLearnTopic('building')">
+                            <div class="learn-topic-card" data-lcat="build" onclick="showLearnTopic('building')">
                                 <div class="lt-count">7</div>
                                 <div class="lt-icon">&#128295;</div>
                                 <div class="lt-name">Building</div>
                                 <div class="lt-desc">Apps, tokens, staking, API, skills.</div>
                             </div>
-                            <div class="learn-topic-card" onclick="showLearnTopic('value')">
+                            <div class="learn-topic-card" data-lcat="value" onclick="showLearnTopic('value')">
                                 <div class="lt-count">6</div>
                                 <div class="lt-icon">&#127793;</div>
                                 <div class="lt-name">Value</div>
                                 <div class="lt-desc">Tokenomics, treasury, revenue.</div>
                             </div>
-                            <div class="learn-topic-card" onclick="showLearnTopic('agents')">
+                            <div class="learn-topic-card" data-lcat="system" onclick="showLearnTopic('agents')">
                                 <div class="lt-count">5</div>
                                 <div class="lt-icon">&#129302;</div>
                                 <div class="lt-name">Agents</div>
                                 <div class="lt-desc">AI agents, swarms, economies.</div>
                             </div>
-                            <div class="learn-topic-card" onclick="showLearnTopic('energy')">
+                            <div class="learn-topic-card" data-lcat="system" onclick="showLearnTopic('energy')">
                                 <div class="lt-count">5</div>
                                 <div class="lt-icon">&#9889;</div>
                                 <div class="lt-name">Systems</div>
                                 <div class="lt-desc">Networks, loops, emergence.</div>
                             </div>
-                            <div class="learn-topic-card" onclick="showLearnTopic('security')">
+                            <div class="learn-topic-card" data-lcat="system" onclick="showLearnTopic('security')">
                                 <div class="lt-count">5</div>
                                 <div class="lt-icon">&#128737;</div>
                                 <div class="lt-name">Security</div>
@@ -3106,7 +3106,7 @@
         if (ctxPanel) ctxPanel.classList.add('active');
 
         // Lazy-load Learn stats when tab is opened
-        if (cat === 'learn') loadLearnStats();
+        if (cat === 'learn') { loadLearnStats(); filterLearnContent(_activeLearnCat); }
 
         // Hide build mode bar when not on Build tab or not editing
         var buildBar = document.getElementById('buildModeBar');
@@ -3325,6 +3325,19 @@ function switchDefiSection(sectionId) {
 // ── Learn Dashboard ──
 function toggleGuide(el) {
     el.classList.toggle('open');
+}
+
+// Filter learn panel content by sub-tab category
+var _activeLearnCat = 'defi'; // default
+function filterLearnContent(cat) {
+    _activeLearnCat = cat;
+    var panel = document.querySelector('.learn-panel');
+    if (!panel) return;
+    var items = panel.querySelectorAll('[data-lcat]');
+    items.forEach(function(el) {
+        var cats = (el.getAttribute('data-lcat') || '').split(' ');
+        el.style.display = cats.indexOf(cat) !== -1 ? '' : 'none';
+    });
 }
 
 // Glossary tap-to-toggle for mobile (hover doesn't work on touch)
