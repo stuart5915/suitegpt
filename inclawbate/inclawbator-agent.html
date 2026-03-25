@@ -3040,39 +3040,31 @@ async function loadDefiDashboard() {
     var refreshBtn = document.getElementById('defiRefreshBtn');
     if (refreshBtn) { refreshBtn.textContent = 'Loading...'; refreshBtn.disabled = true; }
 
-    // ONE batch RPC call + ONE DexScreener call (for both prices)
-    var [data, clawsDex] = await Promise.all([
-        batchRead(wallet),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDR).then(function(r) { return r.json(); }).catch(function() { return {}; })
-    ]);
+    try {
+        var res = await fetch('/api/inclawbate/wallet-balances?wallet=' + encodeURIComponent(wallet));
+        var d = await res.json();
+        if (d.error) throw new Error(d.error);
 
-    var clawsPair = (clawsDex.pairs || [])[0] || {};
-    var clawsPrice = parseFloat(clawsPair.priceUsd || '0');
-    // Get ETH price from CLAWS pair's quoteToken if it's WETH, or use a reasonable default
-    var ethPrice = clawsPair.priceNative ? (clawsPrice / parseFloat(clawsPair.priceNative)) : 2500;
-    if (!ethPrice || ethPrice < 100) ethPrice = 2500;
+        document.getElementById('defiEthBal').textContent = d.eth.balance;
+        document.getElementById('defiEthUsd').textContent = d.eth.usd;
+        document.getElementById('defiUsdcBal').textContent = d.usdc.balance;
+        document.getElementById('defiUsdcUsd').textContent = d.usdc.usd;
+        document.getElementById('defiClawsBal').textContent = d.claws.balance;
+        document.getElementById('defiClawsUsd').textContent = d.claws.usd;
+        document.getElementById('defiTotalUsd').textContent = d.total;
 
-    // Update balances
-    document.getElementById('defiEthBal').textContent = fmtNum(data.ethBal, 4);
-    document.getElementById('defiEthUsd').textContent = '$' + fmtNum(data.ethBal * ethPrice);
-    document.getElementById('defiUsdcBal').textContent = fmtNum(data.usdcBal);
-    document.getElementById('defiUsdcUsd').textContent = '$' + fmtNum(data.usdcBal);
-    document.getElementById('defiClawsBal').textContent = fmtNum(data.clawsBal);
-    document.getElementById('defiClawsUsd').textContent = clawsPrice > 0 ? '$' + fmtNum(data.clawsBal * clawsPrice) : '—';
-
-    // Total portfolio
-    var total = (data.ethBal * ethPrice) + data.usdcBal + (data.clawsBal * clawsPrice) + (data.staked * clawsPrice);
-    document.getElementById('defiTotalUsd').textContent = '$' + fmtNum(total);
-
-    // Staking position
-    if (data.staked > 0) {
-        document.getElementById('defiStakePos').style.display = 'block';
-        document.getElementById('defiNoPositions').style.display = 'none';
-        document.getElementById('defiStaked').textContent = fmtNum(data.staked) + ' CLAWS';
-        document.getElementById('defiRewards').textContent = fmtNum(data.earned) + ' CLAWS';
-    } else {
-        document.getElementById('defiStakePos').style.display = 'none';
-        document.getElementById('defiNoPositions').style.display = 'block';
+        if (d.staking.active) {
+            document.getElementById('defiStakePos').style.display = 'block';
+            document.getElementById('defiNoPositions').style.display = 'none';
+            document.getElementById('defiStaked').textContent = d.staking.staked + ' CLAWS';
+            document.getElementById('defiRewards').textContent = d.staking.earned + ' CLAWS';
+        } else {
+            document.getElementById('defiStakePos').style.display = 'none';
+            document.getElementById('defiNoPositions').style.display = 'block';
+        }
+    } catch (e) {
+        console.warn('DeFi dashboard load error:', e.message);
+        // Don't clear existing data on error — keep showing last known values
     }
 
     _defiLoading = false;
