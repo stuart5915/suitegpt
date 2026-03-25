@@ -2434,6 +2434,65 @@
         } catch (e) { return false; }
     }
 
+    // ── Load app from ?app=slug URL param (for Inclawbator integration) ──
+    function checkAppParam() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var slug = params.get('app');
+            if (!slug) return false;
+
+            // Clean URL
+            history.replaceState(null, '', window.location.pathname);
+
+            // Fetch the app's code from serve-site API
+            appendMessage('assistant', 'Loading "' + slug + '"...');
+            fetch('/api/serve-site?slug=' + encodeURIComponent(slug) + '&raw=1')
+                .then(function(r) { return r.text(); })
+                .then(function(code) {
+                    if (!code || code.length < 50) {
+                        appendMessage('assistant', 'Could not load app "' + slug + '". It may not exist.');
+                        return;
+                    }
+                    // Also fetch app metadata
+                    fetch('/api/inclawbate/apps?slug=' + encodeURIComponent(slug))
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            var app = (data.apps || [])[0] || {};
+                            state.editingApp = {
+                                slug: slug,
+                                name: app.name || slug,
+                                description: app.description || '',
+                                category: app.category || 'other',
+                                tags: app.tags || '',
+                                claws_price: app.claws_price || 0
+                            };
+                            state.currentCode = code;
+                            state.title = app.name || slug;
+                            showView('build');
+                            els.buildTitle.textContent = state.title;
+                            if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
+                            updatePreview(code);
+                            appendMessage('assistant', 'Editing "' + (app.name || slug) + '". Describe what you want to change, or pick a model and start building.');
+                            showVariablePricingHints();
+                        })
+                        .catch(function() {
+                            // Metadata fetch failed but we have the code
+                            state.editingApp = { slug: slug, name: slug };
+                            state.currentCode = code;
+                            state.title = slug;
+                            showView('build');
+                            updatePreview(code);
+                            appendMessage('assistant', 'Editing "' + slug + '". Describe what you want to change.');
+                        });
+                })
+                .catch(function() {
+                    appendMessage('assistant', 'Could not load app "' + slug + '". Try again.');
+                });
+
+            return true;
+        } catch (e) { return false; }
+    }
+
     // ── Onboarding Tooltips ──
     var onboardSteps = [
         {
@@ -2597,9 +2656,10 @@
         // Handle Stripe payment return
         checkPaymentReturn();
 
-        // Check if we're loading from an edit or fork
+        // Check if we're loading from an edit, fork, or ?app=slug param
         if (checkEditSource()) return;
         if (checkForkSource()) return;
+        if (checkAppParam()) return;
 
         loadProjects();
     }

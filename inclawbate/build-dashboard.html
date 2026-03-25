@@ -156,12 +156,12 @@
             html += '<div class="dash-grid">';
             apps.forEach(function(app) {
                 var url = 'https://inclawbate.app/s/' + app.slug;
-                html += '<div class="dash-card" onclick="sendToChat(\'I want to work on ' + (app.name || app.slug).replace(/'/g, '') + '\')">';
+                html += '<div class="dash-card" onclick="openInBuildStudio(\'' + app.slug + '\')">';
                 html += '<div class="dash-card-icon">&#128187;</div>';
                 html += '<div class="dash-card-name">' + escHtml(app.name || app.slug) + '</div>';
                 html += '<div class="dash-card-desc">' + escHtml((app.description || '').slice(0, 80)) + '</div>';
                 html += '<div class="dash-card-actions">';
-                html += '<span class="dash-card-btn dash-card-btn--edit">Edit</span>';
+                html += '<span class="dash-card-btn dash-card-btn--edit">Edit in Studio</span>';
                 html += '<a class="dash-card-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()">View</a>';
                 html += '</div>';
                 html += '</div>';
@@ -219,6 +219,19 @@
     function escHtml(s) {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    // Open app in Build Studio (replaces this dashboard in the parent panel)
+    window.openInBuildStudio = function(slug) {
+        try {
+            // Tell parent to load Build Studio with this app
+            if (window.parent) {
+                window.parent.postMessage({ type: 'open-build-studio', slug: slug }, '*');
+            }
+        } catch(_) {
+            // Fallback: navigate directly
+            window.location.href = '/build?app=' + encodeURIComponent(slug);
+        }
+    };
 
     // Send a message to the parent Inclawbator chat
     window.sendToChat = function(msg) {
