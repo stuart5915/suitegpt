@@ -766,20 +766,16 @@
         </div>
         <!-- ═══ BUILD TAB ═══ -->
         <div class="chat-cat-actions visible" data-cat-panel="build" style="padding:8px 12px;">
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                <button class="defi-cat-btn active" onclick="toggleCatPills(this,'build-apps')" data-cat-expand="build-apps">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+                <button class="defi-cat-btn active" onclick="toggleCatPills(this,'build-apps');showBuildContext('dashboard')" data-cat-expand="build-apps">
                     <span style="font-size:1rem;">&#128296;</span>
                     <span>Build App</span>
                 </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'build-launch')" data-cat-expand="build-launch">
+                <button class="defi-cat-btn" onclick="toggleCatPills(this,'build-launch');showBuildContext('launch')" data-cat-expand="build-launch">
                     <span style="font-size:1rem;">&#128640;</span>
-                    <span>Launch</span>
+                    <span>Launch / Deploy</span>
                 </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'build-deploy')" data-cat-expand="build-deploy">
-                    <span style="font-size:1rem;">&#128171;</span>
-                    <span>Deploy</span>
-                </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'build-manage')" data-cat-expand="build-manage">
+                <button class="defi-cat-btn" onclick="toggleCatPills(this,'build-manage');showBuildContext('dashboard')" data-cat-expand="build-manage">
                     <span style="font-size:1rem;">&#128218;</span>
                     <span>Manage</span>
                 </button>
@@ -790,29 +786,23 @@
                     <button class="defi-pill" onclick="defiChat('Build me a portfolio tracker')">Portfolio tracker</button>
                     <button class="defi-pill" onclick="defiChat('Build a staking dashboard')">Staking dashboard</button>
                     <button class="defi-pill" onclick="defiChat('Build a landing page for my project')">Landing page</button>
-                    <button class="defi-pill" onclick="defiChat('Build a token analytics page')">Token analytics page</button>
                 </div>
             </div>
             <div class="cat-pills-expand" data-pills="build-launch" style="display:none;margin-top:8px;">
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
                     <button class="defi-pill" onclick="defiChat('I want to launch a token')">Launch a token</button>
-                    <button class="defi-pill" onclick="defiChat('Launch a community token with staking')">Community token</button>
-                    <button class="defi-pill" onclick="defiChat('Launch a charity token')">Charity token</button>
                     <button class="defi-pill" onclick="defiChat('Launch a meme coin')">Meme coin</button>
-                </div>
-            </div>
-            <div class="cat-pills-expand" data-pills="build-deploy" style="display:none;margin-top:8px;">
-                <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill" onclick="defiChat('Deploy a staking pool for my token')">Staking pool</button>
+                    <button class="defi-pill" onclick="defiChat('Deploy a staking pool for my token')">Deploy staking</button>
                     <button class="defi-pill" onclick="defiChat('Airdrop tokens to my community')">Airdrop tokens</button>
-                    <button class="defi-pill" onclick="defiChat('Create an AI marketing agent for X')">Marketing agent</button>
+                    <button class="defi-pill" onclick="defiChat('Deploy an ERC-20 token')">Deploy ERC-20</button>
+                    <button class="defi-pill" onclick="defiChat('Deploy an NFT collection')">Deploy NFT</button>
                 </div>
             </div>
             <div class="cat-pills-expand" data-pills="build-manage" style="display:none;margin-top:8px;">
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
                     <button class="defi-pill" onclick="defiChat('Show me my apps')">My apps</button>
                     <button class="defi-pill" onclick="defiChat('Run a health check on my project')">Health check</button>
-                    <button class="defi-pill" onclick="defiChat('Show CLAWS staking stats')">Staking stats</button>
+                    <button class="defi-pill" onclick="defiChat('Create an AI marketing agent for X')">Marketing agent</button>
                     <button class="defi-pill" onclick="defiChat('Check the price of my token')">Token price</button>
                 </div>
             </div>
@@ -2835,6 +2825,56 @@
         loadBuildDashboard();
     }
     window.exitBuildMode = exitBuildMode;
+
+    // Switch build right panel between dashboard and launch views
+    window.showBuildContext = function(view) {
+        if (_buildMode) return; // don't switch while editing an app
+        var buildPanel = document.querySelector('[data-context="build"]');
+        if (!buildPanel) return;
+        if (view === 'launch') {
+            buildPanel.innerHTML =
+                '<div style="overflow-y:auto;padding:20px;height:100%;">' +
+                    '<div style="margin-bottom:20px;">' +
+                        '<div style="font-size:0.95rem;font-weight:800;color:#fff;margin-bottom:4px;">&#128640; Launch &amp; Deploy</div>' +
+                        '<div style="font-size:0.78rem;color:var(--text-secondary);">Launch tokens and deploy smart contracts on Base.</div>' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                        '<div onclick="sendMessage(\'I want to launch a token\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#128640;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">Launch Token</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Deploy ERC-20 on Base via Clanker with automatic LP + staking.</div>' +
+                        '</div>' +
+                        '<div onclick="sendMessage(\'Deploy a staking pool for my token\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#128171;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">Deploy Staking</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Create a staking pool. Holders stake and earn CLAWS rewards.</div>' +
+                        '</div>' +
+                        '<div onclick="sendMessage(\'Airdrop tokens to my community\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#127919;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">Airdrop Tokens</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Distribute tokens to multiple wallets in one transaction.</div>' +
+                        '</div>' +
+                        '<div onclick="sendMessage(\'Deploy an ERC-20 token\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#128220;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">Custom ERC-20</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Deploy a custom token with configurable supply and settings.</div>' +
+                        '</div>' +
+                        '<div onclick="sendMessage(\'Deploy an NFT collection\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#127912;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">NFT Collection</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Deploy ERC-721 with minting. Set name, symbol, max supply.</div>' +
+                        '</div>' +
+                        '<div onclick="sendMessage(\'Deploy a payment splitter\')" style="cursor:pointer;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.15s;" onmouseenter="this.style.borderColor=\'rgba(232,121,85,0.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.06)\'">' +
+                            '<div style="font-size:1.5rem;margin-bottom:6px;">&#128176;</div>' +
+                            '<div style="font-weight:800;color:#fff;font-size:0.82rem;margin-bottom:3px;">Payment Splitter</div>' +
+                            '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);">Auto-split payments across multiple wallets by percentage.</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        } else {
+            loadBuildDashboard();
+        }
+    };
 
     // Restore the build dashboard
     window.loadBuildDashboard = function() {
