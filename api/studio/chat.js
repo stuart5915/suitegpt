@@ -27,7 +27,7 @@ const FREE_CREDIT_WALLETS = [
 const MODEL_TIERS = {
     gemini:   { provider: 'gemini',    model: 'gemini-2.5-flash',          credits: 0,   label: 'Gemini Flash', maxTokens: 65536 },
     llama:    { provider: 'groq',      model: 'llama-3.3-70b-versatile',   credits: 0,   label: 'Llama 70B',    maxTokens: 8192  },
-    kimi:     { provider: 'moonshot',   model: 'kimi-latest',                credits: 0,   label: 'Kimi',         maxTokens: 16384 },
+    kimi:     { provider: 'moonshot',   model: 'moonshot-v1-128k',           credits: 0,   label: 'Kimi',         maxTokens: 16384 },
     fast:     { provider: 'anthropic', model: 'claude-haiku-4-5-20251001', credits: 10,  label: 'Haiku',        maxTokens: 16384 },
     standard: { provider: 'anthropic', model: 'claude-sonnet-4-6',         credits: 50,  label: 'Sonnet',       maxTokens: 64000 },
     pro:      { provider: 'anthropic', model: 'claude-opus-4-6',           credits: 100, label: 'Opus',         maxTokens: 64000 }
