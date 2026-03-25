@@ -636,7 +636,7 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         }
 
         if (action === 'approve') {
-            if (!isAdmin) return res.status(403).json({ error: 'Only admin can approve tweets' });
+            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to approve tweets' });
             const { slot_id } = req.body;
             const { error } = await supabase
                 .from('agent_schedule')
@@ -906,7 +906,7 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
         }
 
         if (action === 'approve_all') {
-            if (!isAdmin) return res.status(403).json({ error: 'Only admin can approve tweets' });
+            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to approve tweets' });
             const { date: approveDate, account: approveAccount } = req.body;
             if (!approveDate) return res.status(400).json({ error: 'date required' });
             const dayStart = approveDate + 'T00:00:00Z';
@@ -925,7 +925,7 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
 
         // ── Post Now — immediately post a scheduled slot ──
         if (action === 'post_now') {
-            if (!isAdmin) return res.status(403).json({ error: 'Only admin can post immediately' });
+            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to post' });
             const { slot_id } = req.body;
             if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
 
