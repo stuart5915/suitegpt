@@ -4,6 +4,7 @@
 import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { logToFeed } from './notify.js';
 import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';
+import { openPerpPosition, getPerpsMarkets } from './perps-actions.js';
 import crypto from 'crypto';
 
 // ── Rate limiter (in-memory, per Vercel instance — resets on cold start) ──
@@ -101,6 +102,10 @@ STAKE CLAWS — Use stake_claws when someone wants to stake CLAWS tokens. Do NOT
 UNSTAKE CLAWS — Use unstake_claws when someone wants to unstake/withdraw their staked CLAWS. Do NOT call this tool until you have the amount. If they don't say how much, ask them. Wallet auto-injected.
 
 CLAIM STAKING REWARDS — Use claim_staking_rewards when someone wants to claim their pending CLAWS staking rewards. No parameters needed beyond wallet.
+
+PERPS TRADING — Use open_perp when someone wants to trade perpetual futures. Examples: "Long ETH 5x with $100", "Short BTC 3x", "Open a 10x long on SOL". Requires: market (ETH, BTC, SOL, etc), direction (long/short), margin (USDC amount). Leverage defaults to 1x if not specified. Uses Synthetix Perps v3 on Base — 50+ markets available.
+
+PERPS MARKETS — Use get_perps_markets when someone asks what perps markets are available, asks about perps prices, or says "show me perps".
 
 Guidelines:
 - Be FRIENDLY and conversational — you're a helpful builder, not a robot. Get excited about what users want to create.
@@ -423,6 +428,32 @@ const TOOLS = [
         },
         required: []
       }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'open_perp',
+      description: 'Open a perpetual futures position via Synthetix Perps v3. Supports long/short on 50+ markets (ETH, BTC, SOL, DOGE, PEPE, LINK, ARB, OP, etc). Shows entry price, liquidation price, fees, and funding rate.',
+      parameters: {
+        type: 'object',
+        properties: {
+          market: { type: 'string', description: 'Market to trade — e.g. ETH, BTC, SOL, DOGE, PEPE' },
+          direction: { type: 'string', enum: ['long', 'short'], description: 'Long (bet price goes up) or Short (bet price goes down)' },
+          margin: { type: 'string', description: 'USDC margin amount (e.g. "100")' },
+          leverage: { type: 'string', description: 'Leverage multiplier (1-50x, e.g. "5")' },
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['market', 'direction', 'margin']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_perps_markets',
+      description: 'List available perpetual futures markets with current prices. Call when someone asks what markets are available for perps trading.',
+      parameters: { type: 'object', properties: {} }
     }
   },
   {
@@ -1217,6 +1248,8 @@ async function executeTool(name, args) {
     case 'stake_claws': return JSON.stringify(await stakeClaws({ amount: args.amount, wallet: args.wallet }));
     case 'unstake_claws': return JSON.stringify(await unstakeClaws({ amount: args.amount, wallet: args.wallet }));
     case 'claim_staking_rewards': return JSON.stringify(await claimStakingRewards({ wallet: args.wallet }));
+    case 'open_perp': return JSON.stringify(await openPerpPosition({ market: args.market, direction: args.direction, margin: args.margin, leverage: args.leverage, wallet: args.wallet }));
+    case 'get_perps_markets': return JSON.stringify(await getPerpsMarkets());
     case 'list_my_apps': return await listMyApps(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
   }
@@ -1497,6 +1530,31 @@ function generateDirectReply(tool, resultJson, args) {
           }).join('\n') + '\n\nWhich one do you want to work on, or want to build something new?',
           suggestions: ['Build something new', 'Work on ' + (d.apps[d.apps.length - 1]?.name || 'an app'), 'Do something else']
         };
+
+      case 'open_perp':
+        if (d.error) return d.error;
+        if (d.success) {
+          let reply = `**${d.direction} ${d.market}** ${d.leverage}\n\n`;
+          reply += `Margin: ${d.margin} USDC\n`;
+          reply += `Size: ${d.size} (${d.notional} notional)\n`;
+          reply += `Entry: ${d.entryPrice}\n`;
+          reply += `Liq. price: ${d.liqPrice}\n`;
+          reply += `Fees: ${d.fees}\n`;
+          reply += `Funding: ${d.fundingRate}`;
+          if (d.kwentaLink) reply += `\n\nExecute on Kwenta: ${d.kwentaLink}`;
+          return { reply, suggestions: ['Open another position', 'Show perps markets', 'Do something else'] };
+        }
+        return null;
+
+      case 'get_perps_markets':
+        if (d.error) return d.error;
+        if (d.markets) {
+          let reply = `**Perpetual Futures** — ${d.count}+ markets via Synthetix v3\n\n`;
+          d.markets.forEach(m => { reply += `• **${m.symbol}** — ${m.price}\n`; });
+          reply += `\nSay "Long ETH 5x with $100" or "Short BTC 3x with $50" to trade.`;
+          return { reply, suggestions: ['Long ETH 5x $100', 'Short BTC 3x $50', 'Long SOL 10x $25', 'Do something else'] };
+        }
+        return null;
 
       default:
         return null;
@@ -2066,7 +2124,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject sanitized wallet into tools that accept it
-        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app')) {
+        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app' || functionCalled === 'open_perp')) {
           args.wallet = sanitizedWallet;
         }
         args._clientIp = clientIp; // for per-tool rate limiting (not sent to LLM)
