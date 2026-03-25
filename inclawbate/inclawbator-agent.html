@@ -2863,49 +2863,58 @@ function encodeCall(target, calldata) {
     return t + allowFail + offset + dataLen + dataPadded;
 }
 
-async function batchRead(wallet) {
-    var paddedWallet = padAddr(wallet);
-    // Build 4 calls: USDC balanceOf, CLAWS balanceOf, staking balanceOf, staking earned
-    // Plus getEthBalance via Multicall3.getEthBalance(address)
-    var calls = [
-        { target: USDC_ADDR, data: BALANCEOF_SIG + paddedWallet },
-        { target: CLAWS_ADDR, data: BALANCEOF_SIG + paddedWallet },
-        { target: STAKING_ADDR, data: BALANCEOF_SIG + paddedWallet },
-        { target: STAKING_ADDR, data: EARNED_SIG + paddedWallet },
-    ];
+// Cache to avoid redundant calls
+var _lastDefiData = null;
+var _lastDefiTime = 0;
 
-    // Use JSON-RPC batch: eth_getBalance + one multicall = 2 RPC calls total in one HTTP request
+function safeHexToNum(hex, decimals) {
+    try {
+        if (!hex || hex === '0x' || hex === '0x0' || typeof hex !== 'string') return 0;
+        return Number(BigInt(hex)) / (10 ** decimals);
+    } catch (e) { return 0; }
+}
+
+async function batchRead(wallet) {
+    // Return cache if less than 15 seconds old
+    if (_lastDefiData && Date.now() - _lastDefiTime < 15000) return _lastDefiData;
+
+    var paddedWallet = padAddr(wallet);
     var batchBody = [
-        { jsonrpc: '2.0', method: 'eth_getBalance', params: [wallet, 'latest'], id: 1 }
+        { jsonrpc: '2.0', method: 'eth_getBalance', params: [wallet, 'latest'], id: 1 },
+        { jsonrpc: '2.0', method: 'eth_call', params: [{ to: USDC_ADDR, data: BALANCEOF_SIG + paddedWallet }, 'latest'], id: 2 },
+        { jsonrpc: '2.0', method: 'eth_call', params: [{ to: CLAWS_ADDR, data: BALANCEOF_SIG + paddedWallet }, 'latest'], id: 3 },
+        { jsonrpc: '2.0', method: 'eth_call', params: [{ to: STAKING_ADDR, data: BALANCEOF_SIG + paddedWallet }, 'latest'], id: 4 },
+        { jsonrpc: '2.0', method: 'eth_call', params: [{ to: STAKING_ADDR, data: EARNED_SIG + paddedWallet }, 'latest'], id: 5 },
     ];
-    // Build aggregate3 call for the 4 reads
-    // aggregate3((address,bool,bytes)[]) selector: 0x82ad56cb
-    // We'll just do individual eth_calls in a JSON-RPC batch (simpler, still 1 HTTP request)
-    calls.forEach(function(c, i) {
-        batchBody.push({
-            jsonrpc: '2.0', method: 'eth_call',
-            params: [{ to: c.target, data: c.data }, 'latest'],
-            id: i + 2
-        });
-    });
 
     try {
         var res = await fetch(BASE_RPC, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(batchBody)
         });
-        var results = await res.json();
-        // Sort by id to ensure order
-        results.sort(function(a, b) { return a.id - b.id; });
-        var ethBal = Number(BigInt(results[0].result || '0x0')) / 1e18;
-        var usdcBal = Number(BigInt(results[1].result || '0x0')) / 1e6;
-        var clawsBal = Number(BigInt(results[2].result || '0x0')) / 1e18;
-        var staked = Number(BigInt(results[3].result || '0x0')) / 1e18;
-        var earned = Number(BigInt(results[4].result || '0x0')) / 1e18;
-        return { ethBal: ethBal, usdcBal: usdcBal, clawsBal: clawsBal, staked: staked, earned: earned };
+        var raw = await res.json();
+        // Handle rate limit or error response (not an array)
+        if (!Array.isArray(raw)) {
+            console.warn('RPC batch returned non-array:', raw);
+            return _lastDefiData || { ethBal: 0, usdcBal: 0, clawsBal: 0, staked: 0, earned: 0 };
+        }
+        // Build a map by id for safe lookup
+        var byId = {};
+        raw.forEach(function(r) { byId[r.id] = r.result; });
+
+        var data = {
+            ethBal: safeHexToNum(byId[1], 18),
+            usdcBal: safeHexToNum(byId[2], 6),
+            clawsBal: safeHexToNum(byId[3], 18),
+            staked: safeHexToNum(byId[4], 18),
+            earned: safeHexToNum(byId[5], 18),
+        };
+        _lastDefiData = data;
+        _lastDefiTime = Date.now();
+        return data;
     } catch (e) {
         console.error('Batch RPC error:', e);
-        return { ethBal: 0, usdcBal: 0, clawsBal: 0, staked: 0, earned: 0 };
+        return _lastDefiData || { ethBal: 0, usdcBal: 0, clawsBal: 0, staked: 0, earned: 0 };
     }
 }
 
@@ -2963,7 +2972,7 @@ async function loadDefiDashboard() {
     if (refreshBtn) { refreshBtn.textContent = '&#8635; Refresh'; refreshBtn.disabled = false; }
 }
 
-// Only load on explicit tab click — no auto-loading
+// Load on tab click
 document.querySelectorAll('.inclaw-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         if (tab.dataset.tab === 'defi') {
@@ -2971,17 +2980,30 @@ document.querySelectorAll('.inclaw-tab').forEach(function(tab) {
         }
     });
 });
-// Also reload when wallet connects
-if (window.WalletKit) {
-    WalletKit.onConnect(function() { loadDefiDashboard(); });
-} else {
-    var _waitKit = setInterval(function() {
-        if (window.WalletKit) {
-            clearInterval(_waitKit);
-            WalletKit.onConnect(function() { loadDefiDashboard(); });
-        }
-    }, 500);
+
+// Auto-refresh every 30s while DeFi tab is visible
+var _defiAutoRefresh = null;
+function startDefiAutoRefresh() {
+    if (_defiAutoRefresh) return;
+    _defiAutoRefresh = setInterval(function() {
+        var panel = document.querySelector('[data-context="defi"].active');
+        if (panel) loadDefiDashboard();
+    }, 30000);
 }
+
+// Load on wallet connect + start auto-refresh
+function initDefiWallet() {
+    if (!window.WalletKit) { setTimeout(initDefiWallet, 500); return; }
+    if (WalletKit.isConnected()) {
+        loadDefiDashboard();
+        startDefiAutoRefresh();
+    }
+    WalletKit.onConnect(function() {
+        loadDefiDashboard();
+        startDefiAutoRefresh();
+    });
+}
+initDefiWallet();
 </script>
 </body>
 </html>
