@@ -1625,6 +1625,7 @@
             { type: 'pending', emoji: '📥', label: 'Pending' },
         ],
         'inclawbate': [
+            { type: 'apps', emoji: '📱', label: 'Apps to Promote' },
             { type: 'builders', emoji: '🤝', label: 'Project Founders / Builders' },
             { type: 'protocols', emoji: '📢', label: 'Crypto/DeFi Influencers' },
             { type: 'agents', emoji: '⛓', label: 'DeFi Protocols & Platforms' },
@@ -1781,7 +1782,7 @@
     window._searchResearch = function() { _loadResearch(); };
 
     window._addResearchEntry = function() {
-        var typeLabel = _researchType === 'agents' ? 'Agent' : _researchType === 'goods' ? 'Public Good' : _researchType === 'protocols' ? 'Protocol / Company' : 'Builder';
+        var typeLabel = _researchType === 'agents' ? 'Agent' : _researchType === 'goods' ? 'Public Good' : _researchType === 'protocols' ? 'Protocol / Company' : _researchType === 'apps' ? 'App' : 'Builder';
         var fields = '<div class="rb-field"><label>Name *</label><input id="rbName"></div>' +
             '<div class="rb-field"><label>X Handle</label><input id="rbHandle" placeholder="@handle"></div>' +
             '<div class="rb-field"><label>Description</label><textarea id="rbDesc" placeholder="What does it do?"></textarea></div>' +
@@ -1805,6 +1806,10 @@
             fields += '<div class="rb-field"><label>Category</label><select id="rbCategory"><option value="chain">Chain/L1/L2</option><option value="defi">DeFi Protocol</option><option value="ai-company">AI Company</option><option value="infra">Infrastructure</option><option value="exchange">Exchange</option><option value="wallet">Wallet</option><option value="protocol">Other Protocol</option></select></div>' +
                 '<div class="rb-field"><label>Chain</label><input id="rbChain" placeholder="Base, Ethereum, Multi..."></div>' +
                 '<div class="rb-field"><label>Token Symbol</label><input id="rbToken" placeholder="ETH, UNI, etc"></div>';
+        }
+        if (_researchType === 'apps') {
+            fields += '<div class="rb-field"><label>App URL</label><input id="rbWebsite" placeholder="https://inclawbate.app/..."></div>' +
+                '<div class="rb-field"><label>Category</label><select id="rbCategory"><option value="app">App</option><option value="game">Game</option><option value="tool">Tool</option><option value="dashboard">Dashboard</option><option value="defi">DeFi</option></select></div>';
         }
         fields += '<div class="rb-field"><label>Notes (internal)</label><input id="rbNotes" placeholder="Internal notes..."></div>';
 
@@ -1850,6 +1855,10 @@
             body.chain = (document.getElementById('rbChain') || {}).value || '';
             body.category = (document.getElementById('rbCategory') || {}).value || 'protocol';
             body.token_symbol = (document.getElementById('rbToken') || {}).value || '';
+        }
+        if (_researchType === 'apps') {
+            body.website = (document.getElementById('rbWebsite') || {}).value || '';
+            body.category = (document.getElementById('rbCategory') || {}).value || 'app';
         }
 
         try {

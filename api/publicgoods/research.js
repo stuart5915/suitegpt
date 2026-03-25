@@ -25,8 +25,8 @@ export default async function handler(req, res) {
     const wallet = (req.query.wallet || req.body?.wallet || '').toLowerCase();
     if (!isAdmin(wallet)) return res.status(403).json({ error: 'Admin only' });
 
-    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols', 'pending'
-    const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : type === 'protocols' ? 'pgt_protocols' : 'pgt_agents';
+    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols', 'apps', 'pending'
+    const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : type === 'protocols' ? 'pgt_protocols' : type === 'apps' ? 'pgt_apps' : 'pgt_agents';
 
     // GET — list all (including unapproved, for admin)
     if (req.method === 'GET') {
@@ -37,6 +37,7 @@ export default async function handler(req, res) {
                 { table: 'pgt_public_goods', type: 'goods' },
                 { table: 'pgt_builders', type: 'builders' },
                 { table: 'pgt_protocols', type: 'protocols' },
+                { table: 'pgt_apps', type: 'apps' },
             ];
             const all = [];
             for (const t of tables) {
@@ -74,6 +75,7 @@ export default async function handler(req, res) {
         if (type === 'agents') Object.assign(row, { telegram, chain: chain || 'multi', status: status || 'live', logo_url: autoLogo, token_address, token_symbol, submitted_by: wallet });
         if (type === 'goods') Object.assign(row, { chain, logo_url: autoLogo, submitted_by: wallet });
         if (type === 'protocols') Object.assign(row, { chain, logo_url: autoLogo, token_symbol, submitted_by: wallet });
+        if (type === 'apps') Object.assign(row, { url: website, logo_url: autoLogo, submitted_by: wallet });
 
         const { data, error } = await supabase.from(table).insert(row).select().single();
         if (error) return res.status(500).json({ error: error.message });
