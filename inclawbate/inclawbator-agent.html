@@ -3670,37 +3670,43 @@ function closeMobileChat() {
 }
 
 function sendMobileMessage() {
-    // Check both bar input and overlay input
     var barInput = document.getElementById('mobileChatBarInput');
     var overlayInput = document.getElementById('mobileChatInput');
     var text = '';
     if (barInput && barInput.value.trim()) { text = barInput.value.trim(); barInput.value = ''; }
     else if (overlayInput && overlayInput.value.trim()) { text = overlayInput.value.trim(); overlayInput.value = ''; }
     if (!text) return;
-    // Open the chat overlay to show the conversation
-    openMobileChat();
-    // Use the main sendMessage via the desktop input
-    var desktopInput = document.getElementById('chatInput');
-    var desktopForm = document.getElementById('chatForm');
-    if (desktopInput && desktopForm) {
-        desktopInput.value = text;
-        desktopForm.dispatchEvent(new Event('submit', { cancelable: true }));
-    }
-    // Add user message to mobile view immediately
-    var destMsgs = document.getElementById('mobileChatMessages');
-    var msgDiv = document.createElement('div');
-    msgDiv.className = 'chat-msg chat-msg-user';
-    msgDiv.innerHTML = '<div class="chat-avatar">&#128100;</div><div class="chat-bubble">' + text.replace(/</g, '&lt;') + '</div>';
-    destMsgs.appendChild(msgDiv);
-    destMsgs.scrollTop = destMsgs.scrollHeight;
-    // Sync response after a delay
-    setTimeout(function() {
-        var srcMsgs = document.getElementById('chatMessages');
-        if (srcMsgs && destMsgs) {
-            destMsgs.innerHTML = srcMsgs.innerHTML;
-            destMsgs.scrollTop = destMsgs.scrollHeight;
+    // Show toast instead of full overlay
+    showMobileToast('Thinking...');
+    // Send via main chat
+    if (window.sendMessage) { window.sendMessage(text); }
+    // Watch for response
+    var srcMsgs = document.getElementById('chatMessages');
+    var lastCount = srcMsgs ? srcMsgs.children.length : 0;
+    var ci = setInterval(function() {
+        if (!srcMsgs) { clearInterval(ci); return; }
+        if (srcMsgs.children.length > lastCount) {
+            var last = srcMsgs.lastElementChild;
+            var b = last ? last.querySelector('.chat-bubble') : null;
+            if (b && !last.classList.contains('chat-msg-user')) {
+                showMobileToast(b.textContent || b.innerText);
+                clearInterval(ci);
+            }
+            lastCount = srcMsgs.children.length;
         }
-    }, 3000);
+    }, 500);
+    setTimeout(function() { clearInterval(ci); }, 30000);
+}
+
+function showMobileToast(text) {
+    var ex = document.querySelector('.mobile-toast');
+    if (ex) ex.remove();
+    var t = document.createElement('div');
+    t.className = 'mobile-toast';
+    t.innerHTML = '<div class="toast-label">&#129438; Inclawbator</div>' + String(text||'').replace(/</g,'&lt;').slice(0,300);
+    document.body.appendChild(t);
+    setTimeout(function() { t.classList.add('fading'); setTimeout(function() { if(t.parentNode) t.remove(); }, 600); }, 6000);
+    t.onclick = function() { t.classList.add('fading'); setTimeout(function() { if(t.parentNode) t.remove(); }, 300); };
 }
 
 // Also keep syncing mobile chat when new messages arrive
