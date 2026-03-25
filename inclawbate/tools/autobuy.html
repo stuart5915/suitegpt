@@ -640,6 +640,17 @@ if (_initEth) {
         }
     } catch (e) {}
 })();
+
+// Report height to parent for iframe auto-resize
+function reportHeight() {
+    if (window.parent !== window) {
+        var h = document.body.scrollHeight;
+        window.parent.postMessage({ type: 'autobuy-height', height: h }, '*');
+    }
+}
+reportHeight();
+setInterval(reportHeight, 1000);
+new MutationObserver(reportHeight).observe(document.body, { childList: true, subtree: true, attributes: true });
 </script>
 </body>
 </html>
