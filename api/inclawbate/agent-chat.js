@@ -470,6 +470,170 @@ const TOOLS = [
         required: ['wallet']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_balances',
+      description: 'Get all balances for a wallet — USDC poker chips, POKERAI chips, CLAWS staked, and pending rewards.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'claim_lp_fees',
+      description: 'Get info and instructions on how to claim LP fee rewards from token launches. Requires on-chain tx from the user wallet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' },
+          token_address: { type: 'string', description: 'Optional — specific token address to check LP fees for' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fund_staking_pool',
+      description: 'Get instructions for funding a staking pool with CLAWS rewards. Requires on-chain tx from the pool admin wallet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Admin wallet address' },
+          pool_address: { type: 'string', description: 'Staking pool contract address' },
+          amount: { type: 'number', description: 'Amount of CLAWS to deposit as rewards' }
+        },
+        required: ['wallet', 'pool_address', 'amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'manage_staking_pool',
+      description: 'Pause or resume a staking pool. Requires on-chain tx from the pool admin wallet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Admin wallet address' },
+          pool_address: { type: 'string', description: 'Staking pool contract address' },
+          action: { type: 'string', enum: ['pause', 'resume'], description: 'Pause or resume the pool' }
+        },
+        required: ['wallet', 'pool_address', 'action']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_tokens',
+      description: 'List tokens the user has launched on Inclawbate. Returns names, symbols, addresses, and prices.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_incubations',
+      description: 'Check the status of incubation applications for a wallet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'buy_credits',
+      description: 'Get info on buying Inclawbate credits — pricing, payment methods, and link to purchase.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', description: 'Number of credits to buy' }
+        },
+        required: ['amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_autobuy_status',
+      description: 'Check auto-buy position status — current progress, next buy time, and amount.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_agents',
+      description: 'List AI marketing agents the user has created. Returns agent names, status, and post counts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'admin_credit_chips',
+      description: 'Admin only — credit poker chips directly to a wallet. Only works for admin wallets.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Admin wallet address (must be authorized)' },
+          target_wallet: { type: 'string', description: 'Wallet to credit chips to' },
+          amount: { type: 'number', description: 'Amount of chips to credit' },
+          currency: { type: 'string', enum: ['usdc', 'pokerai'], description: 'Currency type — defaults to usdc' }
+        },
+        required: ['wallet', 'target_wallet', 'amount']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'admin_approve_project',
+      description: 'Admin only — approve or reject a project submission.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'Admin wallet address (must be authorized)' },
+          project_id: { type: 'string', description: 'Project ID to approve or reject' },
+          action: { type: 'string', enum: ['approve', 'reject'], description: 'Approve or reject the project' }
+        },
+        required: ['wallet', 'project_id', 'action']
+      }
+    }
   }
 ];
 
@@ -1252,7 +1416,388 @@ async function executeTool(name, args) {
     case 'open_perp': return JSON.stringify(await openPerpPosition({ market: args.market, direction: args.direction, margin: args.margin, leverage: args.leverage, wallet: args.wallet }));
     case 'get_perps_markets': return JSON.stringify(await getPerpsMarkets());
     case 'list_my_apps': return await listMyApps(args);
+    case 'get_my_balances': return await getMyBalances(args);
+    case 'claim_lp_fees': return await claimLpFees(args);
+    case 'fund_staking_pool': return await fundStakingPool(args);
+    case 'manage_staking_pool': return await manageStakingPool(args);
+    case 'get_my_tokens': return await getMyTokens(args);
+    case 'get_my_incubations': return await getMyIncubations(args);
+    case 'buy_credits': return buyCredits(args);
+    case 'get_autobuy_status': return await getAutobuyStatus(args);
+    case 'get_my_agents': return await getMyAgents(args);
+    case 'admin_credit_chips': return await adminCreditChips(args);
+    case 'admin_approve_project': return await adminApproveProject(args);
     default: return JSON.stringify({ error: 'Unknown tool' });
+  }
+}
+
+// ── New tool implementations ──
+
+const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+
+async function getSupabaseClient() {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+async function getMyBalances(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  try {
+    const supabase = await getSupabaseClient();
+    const { data: pokerWallet, error } = await supabase
+      .from('poker_wallets')
+      .select('usdc_chips, pokerai_chips, wallet_address')
+      .eq('wallet_address', args.wallet.toLowerCase())
+      .single();
+
+    const balances = {
+      wallet: args.wallet,
+      usdc_chips: pokerWallet?.usdc_chips || 0,
+      pokerai_chips: pokerWallet?.pokerai_chips || 0
+    };
+
+    // Also fetch staking position
+    try {
+      const stakingResult = await getStakingStats({ wallet: args.wallet });
+      const stakingData = JSON.parse(stakingResult);
+      if (stakingData.wallet_position) {
+        balances.claws_staked = stakingData.wallet_position.staked || '0';
+        balances.claws_staked_usd = stakingData.wallet_position.staked_usd || '$0';
+        balances.pending_rewards = stakingData.wallet_position.daily_reward || '0';
+      }
+    } catch (_) {}
+
+    return JSON.stringify(balances);
+  } catch (e) {
+    console.error('getMyBalances error:', e);
+    return JSON.stringify({ error: 'Could not fetch balances. Try again in a moment.' });
+  }
+}
+
+async function claimLpFees(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  return JSON.stringify({
+    action: 'claim_lp_fees',
+    wallet: args.wallet,
+    token_address: args.token_address || null,
+    instructions: [
+      'Go to the Inclawbate Dashboard',
+      'Connect your wallet',
+      'Navigate to the LP Fees section',
+      'Click "Claim" on any unclaimed fees',
+      'Confirm the transaction in your wallet'
+    ],
+    url: 'https://inclawbate.app/dashboard',
+    note: 'LP fee claiming requires an on-chain transaction from your wallet. Fees accumulate from trading activity on your launched tokens.',
+    needs_wallet_action: true
+  });
+}
+
+async function fundStakingPool(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  if (!isValidAddr(args.pool_address)) return JSON.stringify({ error: 'A valid staking pool address is required.' });
+  if (!args.amount || args.amount <= 0) return JSON.stringify({ error: 'Amount must be greater than 0.' });
+  return JSON.stringify({
+    action: 'fund_staking_pool',
+    wallet: args.wallet,
+    pool_address: args.pool_address,
+    amount: args.amount,
+    token: 'CLAWS',
+    token_address: '0x7ca47B141639B893C6782823C0b219f872056379',
+    instructions: [
+      'Go to the Inclawbate Dashboard',
+      'Connect the pool admin wallet',
+      'Navigate to your staking pool',
+      'Enter ' + args.amount + ' CLAWS to deposit as rewards',
+      'Approve CLAWS spending if prompted',
+      'Confirm the deposit transaction'
+    ],
+    url: 'https://inclawbate.app/dashboard',
+    note: 'Only the pool admin wallet can fund rewards. This requires 1-2 on-chain transactions (approve + deposit).',
+    needs_wallet_action: true
+  });
+}
+
+async function manageStakingPool(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  if (!isValidAddr(args.pool_address)) return JSON.stringify({ error: 'A valid staking pool address is required.' });
+  if (!['pause', 'resume'].includes(args.action)) return JSON.stringify({ error: 'Action must be "pause" or "resume".' });
+  return JSON.stringify({
+    action: 'manage_staking_pool',
+    wallet: args.wallet,
+    pool_address: args.pool_address,
+    pool_action: args.action,
+    instructions: [
+      'Go to the Inclawbate Dashboard',
+      'Connect the pool admin wallet',
+      'Navigate to your staking pool',
+      args.action === 'pause' ? 'Click "Pause Pool" to stop new staking' : 'Click "Resume Pool" to re-enable staking',
+      'Confirm the transaction in your wallet'
+    ],
+    url: 'https://inclawbate.app/dashboard',
+    note: 'Only the pool admin can ' + args.action + ' the pool. This requires an on-chain transaction.',
+    needs_wallet_action: true
+  });
+}
+
+async function getMyTokens(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  try {
+    const supabase = await getSupabaseClient();
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('id, token_name, token_symbol, token_address, status, created_at')
+      .eq('creator_wallet', args.wallet.toLowerCase())
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!projects || !projects.length) {
+      return JSON.stringify({ tokens: [], message: 'No tokens found for this wallet. Want to launch one?' });
+    }
+
+    // Optionally fetch price for each token
+    const tokens = [];
+    for (const p of projects.slice(0, 10)) {
+      const token = {
+        name: p.token_name || 'Unknown',
+        symbol: p.token_symbol || '?',
+        address: p.token_address || null,
+        status: p.status || 'active',
+        launched: p.created_at?.split('T')[0] || null,
+        price_usd: null
+      };
+      if (p.token_address) {
+        try {
+          const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + p.token_address);
+          const data = await res.json();
+          const pair = (data.pairs || []).find(pr => pr.chainId === 'base');
+          if (pair) token.price_usd = pair.priceUsd || null;
+        } catch (_) {}
+      }
+      tokens.push(token);
+    }
+
+    return JSON.stringify({
+      tokens,
+      total: projects.length,
+      message: 'You have ' + projects.length + ' token' + (projects.length === 1 ? '' : 's') + ' launched.'
+    });
+  } catch (e) {
+    console.error('getMyTokens error:', e);
+    return JSON.stringify({ error: 'Could not fetch your tokens. Try again in a moment.' });
+  }
+}
+
+async function getMyIncubations(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  try {
+    const supabase = await getSupabaseClient();
+    const { data: applications, error } = await supabase
+      .from('incubation_applications')
+      .select('id, project_name, status, created_at, notes')
+      .eq('wallet', args.wallet.toLowerCase())
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!applications || !applications.length) {
+      return JSON.stringify({ applications: [], message: 'No incubation applications found. Want to apply for full incubation?' });
+    }
+
+    return JSON.stringify({
+      applications: applications.map(a => ({
+        id: a.id,
+        project: a.project_name || 'Unnamed',
+        status: a.status || 'pending',
+        applied: a.created_at?.split('T')[0] || null,
+        notes: a.notes || null
+      })),
+      total: applications.length,
+      message: 'You have ' + applications.length + ' incubation application' + (applications.length === 1 ? '' : 's') + '.'
+    });
+  } catch (e) {
+    console.error('getMyIncubations error:', e);
+    return JSON.stringify({ error: 'Could not fetch your incubation applications. Try again in a moment.' });
+  }
+}
+
+function buyCredits(args) {
+  const amount = args.amount || 1;
+  const clawsCost = amount * 100;
+  return JSON.stringify({
+    action: 'buy_credits',
+    amount: amount,
+    pricing: {
+      rate: '100 CLAWS = 1 credit',
+      total_claws: clawsCost,
+      token_address: '0x7ca47B141639B893C6782823C0b219f872056379'
+    },
+    instructions: [
+      'Go to the Inclawbate Dashboard',
+      'Connect your wallet',
+      'Navigate to Credits section',
+      'Enter ' + amount + ' credit' + (amount === 1 ? '' : 's') + ' to purchase',
+      'Approve ' + clawsCost.toLocaleString() + ' CLAWS spend',
+      'Confirm the purchase transaction'
+    ],
+    url: 'https://inclawbate.app/dashboard',
+    note: 'Credits are used for premium features across the Inclawbate ecosystem. 100 CLAWS per credit.'
+  });
+}
+
+async function getAutobuyStatus(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  try {
+    const supabase = await getSupabaseClient();
+    const { data: positions, error } = await supabase
+      .from('autobuy_positions')
+      .select('id, token_address, token_name, amount_per_buy, frequency, next_buy_at, total_bought, status, created_at')
+      .eq('wallet', args.wallet.toLowerCase())
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!positions || !positions.length) {
+      return JSON.stringify({ positions: [], message: 'No active auto-buy positions found. Set one up on the dashboard!' });
+    }
+
+    return JSON.stringify({
+      positions: positions.map(p => ({
+        id: p.id,
+        token: p.token_name || 'Unknown',
+        token_address: p.token_address || null,
+        amount_per_buy: p.amount_per_buy || 0,
+        frequency: p.frequency || 'daily',
+        next_buy: p.next_buy_at || null,
+        total_bought: p.total_bought || 0,
+        status: p.status || 'active'
+      })),
+      total: positions.length,
+      url: 'https://inclawbate.app/dashboard'
+    });
+  } catch (e) {
+    console.error('getAutobuyStatus error:', e);
+    return JSON.stringify({ error: 'Could not fetch auto-buy status. Try again in a moment.' });
+  }
+}
+
+async function getMyAgents(args) {
+  if (!isValidAddr(args.wallet)) return JSON.stringify({ error: 'A valid wallet address is required.' });
+  try {
+    const supabase = await getSupabaseClient();
+    const { data: agents, error } = await supabase
+      .from('projects')
+      .select('id, token_name, agent_enabled, agent_name, agent_posts_count, agent_vibe, status, created_at')
+      .eq('creator_wallet', args.wallet.toLowerCase())
+      .eq('agent_enabled', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!agents || !agents.length) {
+      return JSON.stringify({ agents: [], message: 'No AI agents found. Want to create one? Head to inclawbate.app/schedule.' });
+    }
+
+    return JSON.stringify({
+      agents: agents.map(a => ({
+        name: a.agent_name || a.token_name || 'Unnamed Agent',
+        project: a.token_name || null,
+        vibe: a.agent_vibe || 'default',
+        posts: a.agent_posts_count || 0,
+        status: a.status || 'active',
+        created: a.created_at?.split('T')[0] || null
+      })),
+      total: agents.length,
+      message: 'You have ' + agents.length + ' active AI agent' + (agents.length === 1 ? '' : 's') + '.',
+      manage_url: 'https://inclawbate.app/schedule'
+    });
+  } catch (e) {
+    console.error('getMyAgents error:', e);
+    return JSON.stringify({ error: 'Could not fetch your agents. Try again in a moment.' });
+  }
+}
+
+async function adminCreditChips(args) {
+  if (!args.wallet || !ADMIN_WALLETS.includes(args.wallet.toLowerCase())) {
+    return JSON.stringify({ error: 'Unauthorized. Only admin wallets can credit chips.' });
+  }
+  if (!isValidAddr(args.target_wallet)) return JSON.stringify({ error: 'A valid target wallet address is required.' });
+  if (!args.amount || args.amount <= 0) return JSON.stringify({ error: 'Amount must be greater than 0.' });
+
+  const currency = args.currency || 'usdc';
+  const chipField = currency === 'pokerai' ? 'pokerai_chips' : 'usdc_chips';
+
+  try {
+    const supabase = await getSupabaseClient();
+
+    // Check if wallet exists
+    const { data: existing } = await supabase
+      .from('poker_wallets')
+      .select('wallet_address, ' + chipField)
+      .eq('wallet_address', args.target_wallet.toLowerCase())
+      .single();
+
+    if (existing) {
+      // Update existing balance
+      const newBalance = (existing[chipField] || 0) + args.amount;
+      const { error } = await supabase
+        .from('poker_wallets')
+        .update({ [chipField]: newBalance })
+        .eq('wallet_address', args.target_wallet.toLowerCase());
+      if (error) throw error;
+    } else {
+      // Create new wallet entry
+      const { error } = await supabase
+        .from('poker_wallets')
+        .insert({ wallet_address: args.target_wallet.toLowerCase(), [chipField]: args.amount });
+      if (error) throw error;
+    }
+
+    return JSON.stringify({
+      success: true,
+      target_wallet: args.target_wallet,
+      amount: args.amount,
+      currency: currency.toUpperCase(),
+      new_balance: existing ? (existing[chipField] || 0) + args.amount : args.amount,
+      message: 'Credited ' + args.amount + ' ' + currency.toUpperCase() + ' chips to ' + args.target_wallet.slice(0, 10) + '...'
+    });
+  } catch (e) {
+    console.error('adminCreditChips error:', e);
+    return JSON.stringify({ error: 'Failed to credit chips. ' + (e.message || 'Try again.') });
+  }
+}
+
+async function adminApproveProject(args) {
+  if (!args.wallet || !ADMIN_WALLETS.includes(args.wallet.toLowerCase())) {
+    return JSON.stringify({ error: 'Unauthorized. Only admin wallets can approve/reject projects.' });
+  }
+  if (!args.project_id) return JSON.stringify({ error: 'Project ID is required.' });
+  if (!['approve', 'reject'].includes(args.action)) return JSON.stringify({ error: 'Action must be "approve" or "reject".' });
+
+  try {
+    const supabase = await getSupabaseClient();
+    const newStatus = args.action === 'approve' ? 'approved' : 'rejected';
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', args.project_id)
+      .select('id, token_name, status')
+      .single();
+
+    if (error) throw error;
+    if (!data) return JSON.stringify({ error: 'Project not found with ID: ' + args.project_id });
+
+    return JSON.stringify({
+      success: true,
+      project_id: data.id,
+      project_name: data.token_name || 'Unknown',
+      new_status: newStatus,
+      message: 'Project "' + (data.token_name || args.project_id) + '" has been ' + newStatus + '.'
+    });
+  } catch (e) {
+    console.error('adminApproveProject error:', e);
+    return JSON.stringify({ error: 'Failed to ' + args.action + ' project. ' + (e.message || 'Try again.') });
   }
 }
 
@@ -1556,6 +2101,81 @@ function generateDirectReply(tool, resultJson, args) {
           return { reply, suggestions: ['Long ETH 5x $100', 'Short BTC 3x $50', 'Long SOL 10x $25', 'Do something else'] };
         }
         return null;
+
+      case 'get_my_balances': {
+        let reply = `**Your Balances:**\n\n`;
+        reply += `• USDC Chips: ${Number(d.usdc_chips || 0).toLocaleString()}\n`;
+        reply += `• POKERAI Chips: ${Number(d.pokerai_chips || 0).toLocaleString()}\n`;
+        if (d.claws_staked) reply += `• CLAWS Staked: ${d.claws_staked} (${d.claws_staked_usd})\n`;
+        if (d.pending_rewards && d.pending_rewards !== '0') reply += `• Pending Rewards: ${d.pending_rewards} CLAWS/day\n`;
+        return { reply, suggestions: ['Stake more CLAWS', 'Check my tokens', 'Swap tokens', 'Do something else'] };
+      }
+
+      case 'claim_lp_fees':
+        return {
+          reply: `To claim your LP fees:\n\n${(d.instructions || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\n${d.note || ''}`,
+          suggestions: ['Check my balances', 'Check token analytics', 'Do something else']
+        };
+
+      case 'fund_staking_pool':
+        return {
+          reply: `To fund your staking pool with **${d.amount} CLAWS**:\n\n${(d.instructions || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nPool: \`${d.pool_address}\`\n\n${d.note || ''}`,
+          suggestions: ['Check staking stats', 'Manage my pool', 'Do something else']
+        };
+
+      case 'manage_staking_pool':
+        return {
+          reply: `To **${d.pool_action}** your staking pool:\n\n${(d.instructions || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nPool: \`${d.pool_address}\`\n\n${d.note || ''}`,
+          suggestions: ['Fund staking pool', 'Check staking stats', 'Do something else']
+        };
+
+      case 'get_my_tokens':
+        if (!d.tokens || !d.tokens.length) return { reply: d.message || "No tokens found.", suggestions: ['Launch a token', 'Do something else'] };
+        return {
+          reply: '**Your Tokens** (' + d.total + '):\n\n' + d.tokens.map((t, i) => `${i + 1}. **${t.name}** ($${t.symbol})${t.price_usd ? ' — $' + t.price_usd : ''}${t.address ? '\n   \`' + t.address + '\`' : ''}`).join('\n') + '\n\n' + d.message,
+          suggestions: ['Check token analytics', 'Deploy staking', 'Launch another token', 'Do something else']
+        };
+
+      case 'get_my_incubations':
+        if (!d.applications || !d.applications.length) return { reply: d.message || "No incubation applications found.", suggestions: ['Apply for incubation', 'Launch a token myself', 'Do something else'] };
+        return {
+          reply: '**Your Incubation Applications** (' + d.total + '):\n\n' + d.applications.map((a, i) => `${i + 1}. **${a.project}** — Status: ${a.status}${a.applied ? ' (applied ' + a.applied + ')' : ''}${a.notes ? '\n   Note: ' + a.notes : ''}`).join('\n'),
+          suggestions: ['Apply for another incubation', 'Check my tokens', 'Do something else']
+        };
+
+      case 'buy_credits':
+        return {
+          reply: `**Credit Purchase — ${d.amount} credit${d.amount === 1 ? '' : 's'}**\n\nRate: ${d.pricing.rate}\nTotal cost: ${d.pricing.total_claws.toLocaleString()} CLAWS\n\n${(d.instructions || []).map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\n${d.note || ''}`,
+          suggestions: ['Check my balances', 'Buy CLAWS first', 'Do something else']
+        };
+
+      case 'get_autobuy_status':
+        if (!d.positions || !d.positions.length) return { reply: d.message || "No auto-buy positions found.", suggestions: ['Set up auto-buy', 'Check my balances', 'Do something else'] };
+        return {
+          reply: '**Your Auto-Buy Positions:**\n\n' + d.positions.map((p, i) => `${i + 1}. **${p.token}** — ${p.amount_per_buy} per ${p.frequency}\n   Status: ${p.status}${p.next_buy ? ' | Next buy: ' + new Date(p.next_buy).toLocaleDateString() : ''}\n   Total bought: ${p.total_bought}`).join('\n'),
+          suggestions: ['Check my balances', 'Swap tokens', 'Do something else']
+        };
+
+      case 'get_my_agents':
+        if (!d.agents || !d.agents.length) return { reply: d.message || "No AI agents found.", suggestions: ['Create an AI agent', 'Do something else'] };
+        return {
+          reply: '**Your AI Agents** (' + d.total + '):\n\n' + d.agents.map((a, i) => `${i + 1}. **${a.name}** (${a.vibe} vibe)\n   Status: ${a.status} | Posts: ${a.posts}${a.project ? ' | Project: ' + a.project : ''}`).join('\n') + '\n\n' + d.message + '\nManage at: ' + (d.manage_url || 'inclawbate.app/schedule'),
+          suggestions: ['Create another agent', 'Check token analytics', 'Do something else']
+        };
+
+      case 'admin_credit_chips':
+        if (d.success) return {
+          reply: `Chips credited!\n\n• Target: ${d.target_wallet}\n• Amount: ${d.amount.toLocaleString()} ${d.currency} chips\n• New balance: ${d.new_balance.toLocaleString()} chips`,
+          suggestions: ['Credit more chips', 'Check balances', 'Do something else']
+        };
+        return d.error || 'Failed to credit chips.';
+
+      case 'admin_approve_project':
+        if (d.success) return {
+          reply: `Project **${d.project_name}** has been **${d.new_status}**.`,
+          suggestions: ['Review another project', 'Check analytics', 'Do something else']
+        };
+        return d.error || 'Failed to update project.';
 
       default:
         return null;
@@ -1895,7 +2515,7 @@ export default async function handler(req, res) {
         body.suggestions = ['Build me an app', 'Launch a token', 'Do something else'];
       } else if (tool === 'health_check') {
         body.suggestions = ['Check token analytics', 'Deploy staking', 'Hire the Council', 'Do something else'];
-      } else if (tool === 'list_my_apps') {
+      } else if (tool === 'list_my_apps' || tool === 'get_my_balances' || tool === 'claim_lp_fees' || tool === 'fund_staking_pool' || tool === 'manage_staking_pool' || tool === 'get_my_tokens' || tool === 'get_my_incubations' || tool === 'buy_credits' || tool === 'get_autobuy_status' || tool === 'get_my_agents' || tool === 'admin_credit_chips' || tool === 'admin_approve_project') {
         // Already has suggestions from generateDirectReply
       } else {
         body.suggestions = ['Build me an app', 'Launch a token', 'Swap tokens', 'Stake CLAWS', 'What can you do?'];
@@ -1904,7 +2524,7 @@ export default async function handler(req, res) {
 
     if (feedSource !== 'x') {
       // Map technical tool names to human-friendly labels for public feed (never leak function names)
-      const TOOL_LABELS = { deploy_token: 'Token Launch', deploy_staking: 'Staking Deploy', build_app: 'App Build', get_ecosystem_info: 'Ecosystem Info', get_incubation_info: 'Incubation Info', get_token_analytics: 'Analytics', get_staking_stats: 'Staking Stats', health_check: 'Health Check', create_agent_info: 'Agent Info', book_promo: 'Promo Booking', disperse_tokens: 'Airdrop', hire_inclawbator: 'Council Hire', get_yield_options: 'Yield Options', deposit_to_strategy: 'Deposit', withdraw_from_strategy: 'Withdraw', check_positions: 'Positions', set_reward_preference: 'Reward Pref', swap_tokens: 'Swap', stake_claws: 'Stake', unstake_claws: 'Unstake', claim_staking_rewards: 'Claim Rewards', list_my_apps: 'My Apps' };
+      const TOOL_LABELS = { deploy_token: 'Token Launch', deploy_staking: 'Staking Deploy', build_app: 'App Build', get_ecosystem_info: 'Ecosystem Info', get_incubation_info: 'Incubation Info', get_token_analytics: 'Analytics', get_staking_stats: 'Staking Stats', health_check: 'Health Check', create_agent_info: 'Agent Info', book_promo: 'Promo Booking', disperse_tokens: 'Airdrop', hire_inclawbator: 'Council Hire', get_yield_options: 'Yield Options', deposit_to_strategy: 'Deposit', withdraw_from_strategy: 'Withdraw', check_positions: 'Positions', set_reward_preference: 'Reward Pref', swap_tokens: 'Swap', stake_claws: 'Stake', unstake_claws: 'Unstake', claim_staking_rewards: 'Claim Rewards', list_my_apps: 'My Apps', get_my_balances: 'Balances', claim_lp_fees: 'LP Fees', fund_staking_pool: 'Fund Pool', manage_staking_pool: 'Manage Pool', get_my_tokens: 'My Tokens', get_my_incubations: 'Incubations', buy_credits: 'Buy Credits', get_autobuy_status: 'Auto-Buy', get_my_agents: 'My Agents', admin_credit_chips: 'Admin Credit', admin_approve_project: 'Admin Approve' };
       const feedTool = body.function_called ? (TOOL_LABELS[body.function_called] || 'Action') : null;
       await logToFeed({ source: feedSource, user: feedUser, message: rawMessage, reply: body.reply, tool: feedTool }).catch(e => console.error('Feed error:', e.message));
     }
@@ -2129,7 +2749,7 @@ export default async function handler(req, res) {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
         // Inject sanitized wallet into tools that accept it
-        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app' || functionCalled === 'open_perp')) {
+        if (sanitizedWallet && !args.wallet && (functionCalled === 'health_check' || functionCalled === 'get_staking_stats' || functionCalled === 'check_positions' || functionCalled === 'deposit_to_strategy' || functionCalled === 'withdraw_from_strategy' || functionCalled === 'set_reward_preference' || functionCalled === 'swap_tokens' || functionCalled === 'stake_claws' || functionCalled === 'unstake_claws' || functionCalled === 'claim_staking_rewards' || functionCalled === 'list_my_apps' || functionCalled === 'build_app' || functionCalled === 'open_perp' || functionCalled === 'get_my_balances' || functionCalled === 'claim_lp_fees' || functionCalled === 'fund_staking_pool' || functionCalled === 'manage_staking_pool' || functionCalled === 'get_my_tokens' || functionCalled === 'get_my_incubations' || functionCalled === 'get_autobuy_status' || functionCalled === 'get_my_agents' || functionCalled === 'admin_credit_chips' || functionCalled === 'admin_approve_project')) {
           args.wallet = sanitizedWallet;
         }
         args._clientIp = clientIp; // for per-tool rate limiting (not sent to LLM)
