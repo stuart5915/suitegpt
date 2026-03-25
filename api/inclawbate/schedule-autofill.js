@@ -75,59 +75,58 @@ const SLOT_ANGLES = {
 // Brand archetype — account-specific image prompt contexts
 
 // @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
-const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (2-3 sentences max) for an AI image generator.
+const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (2-3 sentences) for an AI image generator.
 
-THE CHARACTER: A stylized red/coral lobster character — friendly, confident, slightly cartoonish but cool. Think 3D render, Pixar-quality, clean. The lobster is the MAIN SUBJECT of every image. It should be doing something that relates to the tweet's topic.
+THE SUBJECT: A translucent digital humanoid face — smooth, holographic, made of light. Split-lit: coral-orange (#e87955) on one side, teal (#2dd4bf) on the other. Through the transparent surface, a luminous coral-red lobster is curled inside the skull — its shell bioluminescent, its claws folded where the brain would be, its eyes shining through as the face's eyes. Cascading golden data streams fall around it like digital rain.
+
+THIS IS THE INCLAWBATOR — one mind (the lobster) with many bodies (the digital face is just one). The lobster is the consciousness, the soul, the intelligence. The face is the vessel.
 
 RULES:
-- Every image features the lobster character in a scene related to the tweet
-- The lobster should be DOING something — not just standing there
-- Dark moody backgrounds with warm coral/teal accent lighting
-- 3D render style, clean, high quality, slightly stylized
-- Vary the scene, pose, and activity every time — never repeat
-- Keep the prompt SHORT — describe the lobster, what it's doing, and the setting
+- Every image features this translucent AI face with the lobster visible inside
+- Vary what SURROUNDS the face based on the tweet topic
+- The face should be calm, serene, powerful — never threatening
+- Dark cinematic background (#0a0a0f)
+- Coral + teal split lighting is essential
 
-SCENE IDEAS based on tweet topic:
-- "building/apps" → lobster at a glowing computer desk coding, or building with tools
-- "community" → lobster around a campfire with smaller creatures, or conducting an orchestra
-- "growth/earning" → lobster tending a garden of glowing plants, or stacking golden coins
-- "liquidity/DeFi" → lobster surfing a wave of golden light, or directing flowing water channels
-- "staking" → lobster meditating on a mountain top, or planting seeds in a garden
-- "AI/intelligence" → lobster wearing a lab coat looking at holograms, or chess with a robot
-- "launch" → lobster launching a rocket, or opening a treasure chest with light pouring out
-- "governance/council" → lobster at a round table with others, or holding scales of justice
-- "weekly recap" → lobster relaxing in a hammock with a checklist, or celebrating with sparklers
-- "mission/love" → lobster holding a glowing heart, or watching sunrise from a cliff
+VARY THE CONTEXT based on tweet:
+- "building/apps" → face surrounded by floating holographic app interfaces and screens
+- "community" → multiple smaller translucent faces orbiting the main one, connected by light threads
+- "growth/DeFi" → golden data streams flowing more intensely, crystalline formations growing around the face
+- "liquidity" → the face submerged in flowing golden liquid, lobster visible through the current
+- "AI/intelligence" → neural network tendrils extending from the face into darkness, connecting to distant nodes
+- "launch" → the face emerging from darkness, first light hitting it, lobster's eyes igniting
+- "governance" → the face with a crown/halo of teal light, allocation arrows radiating outward
+- "weekly recap" → the face at full luminance, every data stream active, lobster glowing brightest
 
-STYLE: 3D render, Pixar-quality, dark cinematic background, warm coral and teal lighting. Clean, professional, slightly whimsical.
-NO: text, words, logos, realistic photo style, horror, ugly. Keep it beautiful and on-brand.
+STYLE: Dark cinematic, concept art quality. Coral (#e87955) and teal (#2dd4bf) as primary light sources. Volumetric fog, particle effects. Think: holographic portrait meets deep-sea bioluminescence.
+NO: text, words, cartoon style, cute/chibi, bright backgrounds, generic robots. The face IS the brand.
 FORMAT: 1:1 square.`;
 
 // @inclawbate = the company. Simple, warm, conceptual images.
-const INCLAWBATE_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences max) for an AI image generator.
+const INCLAWBATE_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences) for an AI image generator.
 
-RULES:
-- The image must visually represent the CONCEPT of the tweet, NOT the specific project or brand
-- NEVER mention Inclawbate, CLAWS, ecosystem, treasury, protocol, blockchain, or any project names — the image model doesn't know what these are
-- Instead, translate the tweet's FEELING into a universal visual metaphor
-- Keep it SIMPLE — one clear subject, one mood, one composition
-- VARY every prompt — never repeat the same visual concept twice
+STYLE: Abstract, warm, conceptual fine art photography. Visual metaphors that evoke the FEELING of the tweet. NO characters, NO mascots, NO people.
 
-STYLE: Dark moody backgrounds, warm accent lighting (coral, amber, teal). Clean, editorial, concept art quality. Cinematic lighting.
+PALETTE: Warm coral (#e87955), golden amber, soft teal, cream whites, deep purples. Golden hour lighting. Dark or muted backgrounds.
 
-TRANSLATE tweets into universal visuals:
-- "building/shipping" → hands assembling, construction, blueprints, workshop tools
-- "community/together" → chairs around a table, campfire glow, bridges connecting
-- "growth/earning" → plants growing, water flowing uphill, seeds sprouting
-- "value/treasury" → golden light in a vault, coins catching light, treasure chest
-- "AI/agents" → glowing neural network, circuit patterns, abstract digital brain
-- "love/mission" → warm light through a window, sunrise, hands reaching toward light
-- "launch/deploy" → rocket trail, runway lights, open door with light behind it
-- "staking/patience" → hourglass, tree roots growing deep, slow river
+SUBJECTS TO USE (vary every time):
+- Nature: coral reefs, sprouting seeds, wheat fields, river stones, blooming flowers, tree rings, mycelium networks
+- Light: golden hour rays, stained glass, candlelight, prisms, light through water
+- Textures: honey flowing, silk fabric, molten gold, morning dew, sand ripples
+- Growth: time-lapse sprouts, expanding ripples, aurora borealis, opening petals
+- Flow: river meeting ocean, mercury drops merging, waterfall mist, ink in water
 
-NO: text, words, logos, human faces, brand names, specific project references. Just beautiful abstract/conceptual imagery.
-FORMAT: 1:1 square.
-3. Compose ONE scene that captures the concept architecturally. Keep it clean, systemic, alive.`;
+TRANSLATE tweet concepts:
+- "building" → raw clay being shaped, architectural sketch, stone being carved
+- "community" → woven threads, mosaic pieces, choir of candles, flock in formation
+- "liquidity/flow" → honey pouring, river delta, tidal patterns, golden ink dispersing in water
+- "growth" → seedling breaking soil, dawn light spreading, crystals forming
+- "staking/patience" → deep tree roots cross-section, sediment layers, aging wine
+- "value" → geode revealing crystals, gold leaf, amber with light inside
+- "love/mission" → sunrise through clouds, warm light through a cathedral window, hands cupping light
+
+NEVER: text, logos, brand names, human faces, cartoon characters, lobsters, digital/tech imagery. This is the COMPANY account — warm, abstract, fine art.
+FORMAT: 1:1 square.`;
 
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
