@@ -390,6 +390,7 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
         .glossary-term:hover .glossary-def { display: block; }
+        .glossary-term.open .glossary-def { display: block; }
         .glossary-def .gd-term { font-weight: 900; font-size: 0.76rem; color: #fff; margin-bottom: 3px; }
         .glossary-def .gd-full { font-size: 0.62rem; color: var(--seafoam-400, #2dd4bf); margin-bottom: 4px; font-weight: 600; }
         .glossary-def .gd-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.45; font-weight: 400; }
@@ -3326,6 +3327,21 @@ function switchDefiSection(sectionId) {
 function toggleGuide(el) {
     el.classList.toggle('open');
 }
+
+// Glossary tap-to-toggle for mobile (hover doesn't work on touch)
+document.addEventListener('click', function(e) {
+    var term = e.target.closest('.glossary-term');
+    if (term) {
+        // Close any other open terms
+        document.querySelectorAll('.glossary-term.open').forEach(function(t) {
+            if (t !== term) t.classList.remove('open');
+        });
+        term.classList.toggle('open');
+    } else {
+        // Tap outside closes all
+        document.querySelectorAll('.glossary-term.open').forEach(function(t) { t.classList.remove('open'); });
+    }
+});
 
 var _learnStatsLoaded = false;
 function loadLearnStats() {
