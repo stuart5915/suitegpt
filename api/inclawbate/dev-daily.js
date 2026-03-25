@@ -68,7 +68,7 @@ async function groupCommitsWithAI(commits) {
             messages: [
                 {
                     role: 'system',
-                    content: 'You group git commit messages into 4-7 themed categories. For each category, provide a short emoji, a category name, the count of commits, and a 1-line summary of what was done. Output ONLY valid JSON array: [{"emoji":"📱","name":"Mobile UX","count":5,"summary":"Nav redesign, toast responses, model picker"},...]. No markdown, no explanation, just the JSON array.'
+                    content: 'You group git commit messages into 4-7 themed categories. For each category, provide a short emoji, a category name, the count of commits, and a VERY SHORT summary (max 6 words). Output ONLY valid JSON array: [{"emoji":"📱","name":"Mobile UX","count":5,"summary":"nav, toasts, model picker"},...]. No markdown, no explanation, just the JSON array. Keep summaries punchy — just key nouns, no filler words.'
                 },
                 {
                     role: 'user',
@@ -167,10 +167,7 @@ export default async function handler(req, res) {
         }
         tweet += `\n${commits.length} commits shipped\ninclawbate.app`;
 
-        // Trim tweet to 280 chars if needed
-        if (tweet.length > 280) {
-            tweet = tweet.slice(0, 277) + '...';
-        }
+        // No char limit — user pastes manually and can split into thread if needed
 
         return res.status(200).json({ post, tweet, commitCount: commits.length });
     } catch (e) {
