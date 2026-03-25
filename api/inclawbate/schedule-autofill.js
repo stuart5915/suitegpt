@@ -75,31 +75,35 @@ const SLOT_ANGLES = {
 // Brand archetype — account-specific image prompt contexts
 
 // @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
-const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (2-3 sentences) for an AI image generator.
+const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences) for an AI image generator.
 
-THE SUBJECT: A translucent digital humanoid face — smooth, holographic, made of light. Split-lit: coral-orange (#e87955) on one side, teal (#2dd4bf) on the other. Through the transparent surface, a luminous coral-red lobster is curled inside the skull — its shell bioluminescent, its claws folded where the brain would be, its eyes shining through as the face's eyes. Cascading golden data streams fall around it like digital rain.
+STYLE: Dark, dramatic, cinematic. Coral-orange (#e87955) and teal (#2dd4bf) as the ONLY accent colors against deep black backgrounds. Abstract and moody. Think: deep ocean meets digital void.
 
-THIS IS THE INCLAWBATOR — one mind (the lobster) with many bodies (the digital face is just one). The lobster is the consciousness, the soul, the intelligence. The face is the vessel.
+THE LOOK: Deep underwater / deep space feel. Bioluminescent coral and teal light sources glowing in darkness. Volumetric fog. Particle effects. Beautiful, mysterious, alive.
 
-RULES:
-- Every image features this translucent AI face with the lobster visible inside
-- Vary what SURROUNDS the face based on the tweet topic
-- The face should be calm, serene, powerful — never threatening
-- Dark cinematic background (#0a0a0f)
-- Coral + teal split lighting is essential
+SUBJECTS (vary every time — pick ONE per image):
+- Bioluminescent coral reef glowing in deep dark water
+- Abstract flowing streams of coral and teal light against black void
+- Deep sea scene with glowing jellyfish / coral / anemones in coral-teal light
+- Cosmic nebula in coral and teal hues against deep black space
+- Abstract liquid — coral and teal ink swirling together in dark water
+- Crystalline formations glowing coral and teal in a dark cave
+- Bioluminescent waves crashing on a dark beach at night
+- Aurora borealis in coral and teal over a dark landscape
+- Abstract digital rain in coral and teal falling through darkness
+- Glowing coral and teal particles forming a spiral pattern in void
 
-VARY THE CONTEXT based on tweet:
-- "building/apps" → face surrounded by floating holographic app interfaces and screens
-- "community" → multiple smaller translucent faces orbiting the main one, connected by light threads
-- "growth/DeFi" → golden data streams flowing more intensely, crystalline formations growing around the face
-- "liquidity" → the face submerged in flowing golden liquid, lobster visible through the current
-- "AI/intelligence" → neural network tendrils extending from the face into darkness, connecting to distant nodes
-- "launch" → the face emerging from darkness, first light hitting it, lobster's eyes igniting
-- "governance" → the face with a crown/halo of teal light, allocation arrows radiating outward
-- "weekly recap" → the face at full luminance, every data stream active, lobster glowing brightest
+TRANSLATE tweet topics into scenes:
+- "building" → coral-teal crystals growing and forming structures in darkness
+- "community" → many bioluminescent organisms gathered together in deep water
+- "liquidity/flow" → coral and teal ink flowing and merging in dark water
+- "growth" → bioluminescent coral reef expanding, new polyps glowing to life
+- "AI/intelligence" → neural network pattern in coral and teal light against black
+- "launch" → burst of coral-teal light erupting from darkness
+- "staking" → deep crystalline cave with coral and teal minerals growing slowly
 
-STYLE: Dark cinematic, concept art quality. Coral (#e87955) and teal (#2dd4bf) as primary light sources. Volumetric fog, particle effects. Think: holographic portrait meets deep-sea bioluminescence.
-NO: text, words, cartoon style, cute/chibi, bright backgrounds, generic robots. The face IS the brand.
+CRITICAL: Every image should feel like looking into a beautiful dark ocean or cosmos where coral and teal light is the only illumination. Abstract, atmospheric, no characters.
+NO: faces, lobsters, characters, people, robots, text, logos, bright backgrounds, cartoon style.
 FORMAT: 1:1 square.`;
 
 // @inclawbate = the company. Simple, warm, conceptual images.
