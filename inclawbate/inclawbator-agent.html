@@ -2611,11 +2611,11 @@ function loadLearnStats() {
     _learnStatsLoaded = true;
 
     function fmtTvl(n) {
-        if (!n) return '—';
-        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-        if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-        return String(n);
+        if (n == null) return '—';
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+        return '$' + Math.round(n);
     }
 
     function applyStaking(st) {
@@ -2623,7 +2623,10 @@ function loadLearnStats() {
         el = document.getElementById('learnStatStakers');
         if (el && st.total_stakers != null) el.textContent = st.total_stakers;
         el = document.getElementById('learnStatTvl');
-        if (el && st.total_staked != null) el.textContent = fmtTvl(st.total_staked);
+        if (el) {
+            var tvl = st.tvl_usd != null ? st.tvl_usd : (st.total_staked != null ? st.total_staked : null);
+            el.textContent = tvl != null ? fmtTvl(tvl) : '—';
+        }
         el = document.getElementById('learnStatApy');
         if (el && st.estimated_apy != null) el.textContent = st.estimated_apy + '%';
     }
