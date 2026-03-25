@@ -279,13 +279,18 @@ async function checkPosition() {
     try {
         const pos = await contract.getPosition(userAddress);
         const active = pos[7]; // active
+        const remaining = pos[0]; // remaining ETH (BigInt)
         const buysCompleted = Number(pos[4]);
         const totalBuys = Number(pos[5]);
         const totalClawsBought = pos[6];
 
-        if (active) {
+        if (active && remaining > 0n) {
+            // Active DCA — show stats + withdraw button
             showActive(pos);
             startPolling();
+        } else if (remaining > 0n) {
+            // Has remaining ETH but not active (stuck?) — show active with withdraw
+            showActive(pos);
         } else if (buysCompleted > 0 && buysCompleted >= totalBuys && totalClawsBought > 0n) {
             showComplete(totalClawsBought);
         } else {
@@ -365,7 +370,11 @@ async function doDeposit() {
         btn.innerHTML = '<span class="loading"></span>Waiting for confirmation...';
         await tx.wait();
 
+        // Wait a moment for the chain to update, then re-check position
+        await new Promise(r => setTimeout(r, 2000));
         await checkPosition();
+        // Double-check after another delay in case first read was stale
+        setTimeout(checkPosition, 5000);
     } catch (e) {
         console.error('Deposit error:', e);
         const msg = e.shortMessage || e.reason || e.message || String(e);
