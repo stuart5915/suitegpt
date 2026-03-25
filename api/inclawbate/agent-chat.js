@@ -329,7 +329,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'check_positions',
-      description: 'Check active DeFi yield positions for a wallet — deposits, APY, earnings, current value.',
+      description: 'Check a wallet\'s EXISTING active DeFi positions — what they already deposited, current earnings, value. Do NOT use this when user asks to SEE or BROWSE yield options/strategies — use get_yield_options for that.',
       parameters: {
         type: 'object',
         properties: {
