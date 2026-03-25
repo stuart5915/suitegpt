@@ -367,11 +367,143 @@
             animation: fadeUp 0.2s ease-out;
         }
 
+        /* ── System Docs Accordion ── */
+        .mc-docs {
+            margin-bottom: var(--space-xl);
+        }
+        .mc-docs-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+        }
+        .mc-docs-toggle:hover { border-color: var(--border-bright); }
+        .mc-docs-toggle.open { border-radius: var(--radius-lg) var(--radius-lg) 0 0; border-bottom-color: transparent; }
+        .mc-docs-arrow {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+        .mc-docs-toggle.open .mc-docs-arrow { transform: rotate(180deg); }
+        .mc-docs-body {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            padding: 20px;
+            animation: fadeUp 0.2s ease;
+        }
+        .mc-docs-body.open { display: block; }
+
+        /* Flow diagram */
+        .mc-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 20px;
+        }
+        .mc-flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 0;
+        }
+        .mc-flow-node {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            position: relative;
+        }
+        .mc-flow-node--detect { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); }
+        .mc-flow-node--launch { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); }
+        .mc-flow-node--build { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); }
+        .mc-flow-node--stake { background: rgba(232,121,85,0.12); border: 1px solid rgba(232,121,85,0.25); }
+        .mc-flow-node--volume { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25); }
+        .mc-flow-node--grow { background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.25); }
+        .mc-flow-node::after {
+            content: '';
+            position: absolute;
+            bottom: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 14px;
+            background: var(--border-subtle);
+        }
+        .mc-flow-step:last-child .mc-flow-node::after { display: none; }
+        .mc-flow-info { flex: 1; }
+        .mc-flow-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .mc-flow-desc {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .mc-flow-trigger {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--lobster-400);
+            margin-top: 3px;
+            display: inline-block;
+            padding: 1px 6px;
+            background: rgba(232,121,85,0.08);
+            border-radius: 4px;
+        }
+
+        /* Mechanics grid */
+        .mc-mechanics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .mc-mech {
+            padding: 12px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+        }
+        .mc-mech-title {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .mc-mech-val {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
         @media (max-width: 600px) {
             .mc-hero h1 { font-size: 1.6rem; }
             .mc-item { padding: var(--space-sm) var(--space-md); }
             .mc-item-desc { display: none; }
             .mc-item-img { width: 36px; height: 36px; }
+            .mc-mechanics { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -422,6 +554,90 @@
         <div class="mc-stat">
             <div class="mc-stat-val" id="mcTracked">0</div>
             <div class="mc-stat-label">Memes Tracked</div>
+        </div>
+    </div>
+
+    <!-- System Docs -->
+    <div class="mc-docs">
+        <button class="mc-docs-toggle" onclick="this.classList.toggle('open');document.getElementById('mcDocsBody').classList.toggle('open')">
+            <span>How the MemeClaw System Works</span>
+            <span class="mc-docs-arrow">&#9660;</span>
+        </button>
+        <div class="mc-docs-body" id="mcDocsBody">
+
+            <!-- Flow Diagram -->
+            <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:12px;font-weight:700">System Flow</div>
+            <div class="mc-flow">
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--detect">&#128270;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Meme Detection</div>
+                        <div class="mc-flow-desc">Know Your Meme publishes a newly certified meme. The MemeClaw agent detects it and pulls the name, image, description, and origin lore.</div>
+                        <span class="mc-flow-trigger">Trigger: KYM certification</span>
+                    </div>
+                </div>
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--launch">&#128640;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Token Launch</div>
+                        <div class="mc-flow-desc">Inclawbator auto-deploys a token on Base via Clanker. Token name, symbol, and image all derived from the meme. LP created automatically.</div>
+                        <span class="mc-flow-trigger">Auto or manual launch</span>
+                    </div>
+                </div>
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--build">&#128736;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Site Generation</div>
+                        <div class="mc-flow-desc">AI generates a landing page from the template with lore, token info, community vote, and volume milestones. Published to inclawbate.app/s/[slug].</div>
+                        <span class="mc-flow-trigger">Fires after token deploy</span>
+                    </div>
+                </div>
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--stake">&#129438;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Staking Pool Created</div>
+                        <div class="mc-flow-desc">A staking pool is deployed for the token. Holders can stake to earn CLAWS rewards. LP fees auto-fund the rewards pool.</div>
+                        <span class="mc-flow-trigger">Fires after site publish</span>
+                    </div>
+                </div>
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--volume">&#128200;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Volume Milestones Unlock</div>
+                        <div class="mc-flow-desc">As 24h trading volume grows, new services unlock automatically: weekly updates ($500), dedicated X account ($1K), dev focus ($2K), full build-out ($5K), autonomous agent ($10K).</div>
+                        <span class="mc-flow-trigger">Checked via DexScreener API</span>
+                    </div>
+                </div>
+                <div class="mc-flow-step">
+                    <div class="mc-flow-node mc-flow-node--grow">&#9889;</div>
+                    <div class="mc-flow-info">
+                        <div class="mc-flow-title">Community Vote Executes</div>
+                        <div class="mc-flow-desc">Token holders vote on what the meme becomes next. The winning idea gets built by the Inclawbator. The meme evolves from a token into a product.</div>
+                        <span class="mc-flow-trigger">Volume milestone reached</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue & Mechanics -->
+            <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;font-weight:700">System Mechanics</div>
+            <div class="mc-mechanics">
+                <div class="mc-mech">
+                    <div class="mc-mech-title">Revenue Loop</div>
+                    <div class="mc-mech-val">LP fees from every meme token flow back to the Inclawbate ecosystem. More memes = more LP = more revenue. Self-sustaining.</div>
+                </div>
+                <div class="mc-mech">
+                    <div class="mc-mech-title">Token Launch</div>
+                    <div class="mc-mech-val">Clanker on Base. 0.5% creator fee on trades. Pre-allocated supply for staking rewards and ecosystem.</div>
+                </div>
+                <div class="mc-mech">
+                    <div class="mc-mech-title">Volume Triggers</div>
+                    <div class="mc-mech-val">DexScreener 24h volume checked in real-time. Each tier unlocks more Inclawbate resources for the token.</div>
+                </div>
+                <div class="mc-mech">
+                    <div class="mc-mech-title">Staking</div>
+                    <div class="mc-mech-val">Stake meme tokens, earn CLAWS. Rewards funded by LP fees. Same staking infra as all Inclawbate tokens.</div>
+                </div>
+            </div>
         </div>
     </div>
 
