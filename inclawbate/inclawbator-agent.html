@@ -1173,6 +1173,8 @@
                                 <button class="swap-type-btn" onclick="switchSwapType(this,'dca')">DCA CLAWS</button>
                             </div>
 
+                            <!-- Swap inputs (hidden when DCA active) -->
+                            <div id="swapInputsWrap">
                             <!-- You pay -->
                             <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:4px;">
                                 <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
@@ -1216,18 +1218,11 @@
                                 <input type="number" id="swapLimitPrice" placeholder="0.0" style="width:100%;background:none;border:none;color:#fff;font-size:1.1rem;font-weight:800;outline:none;font-family:var(--font-mono);">
                             </div>
 
-                            <!-- DCA CLAWS info (hidden by default) -->
+                            </div><!-- end swapInputsWrap -->
+
+                            <!-- DCA CLAWS — embedded autobuy tool (hidden by default) -->
                             <div id="swapDcaRow" style="display:none;margin-top:4px;margin-bottom:4px;">
-                                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;">
-                                    <div style="font-weight:800;font-size:0.9rem;margin-bottom:8px;">&#129438; CLAWS AutoBuy</div>
-                                    <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;">Deposit ETH once &mdash; automatically buys CLAWS on your schedule. Cancel anytime, get remaining ETH back. No fees.</div>
-                                    <div style="display:flex;flex-direction:column;gap:4px;font-size:0.72rem;color:var(--text-dim);margin-bottom:14px;">
-                                        <div>&#9989; CLAWS sent directly to your wallet</div>
-                                        <div>&#9989; Runs every 10min to 24hrs</div>
-                                        <div>&#9989; Cancel anytime &mdash; withdraw remaining ETH</div>
-                                    </div>
-                                    <a href="/tools/autobuy" target="_blank" style="display:block;padding:12px;background:var(--accent-gradient);color:#fff;border-radius:10px;font-weight:800;font-size:0.88rem;text-align:center;text-decoration:none;">Open CLAWS AutoBuy &#8594;</a>
-                                </div>
+                                <iframe src="/tools/autobuy" style="width:100%;height:500px;border:none;border-radius:12px;background:#0a0a0f;" id="dcaIframe"></iframe>
                             </div>
 
                             <!-- Swap button -->
@@ -3262,10 +3257,11 @@ function switchSwapType(btn, type) {
     btn.classList.add('active');
     document.getElementById('swapLimitRow').style.display = type === 'limit' ? 'block' : 'none';
     document.getElementById('swapDcaRow').style.display = type === 'dca' ? 'block' : 'none';
+    document.getElementById('swapInputsWrap').style.display = type === 'dca' ? 'none' : 'block';
     var execBtn = document.getElementById('swapExecuteBtn');
     if (type === 'market') { execBtn.textContent = 'Swap'; execBtn.style.display = 'block'; }
     else if (type === 'limit') { execBtn.textContent = 'Place Limit Order'; execBtn.style.display = 'block'; }
-    else if (type === 'dca') { execBtn.style.display = 'none'; } // DCA has its own CTA
+    else if (type === 'dca') { execBtn.style.display = 'none'; }
 }
 
 function flipSwapTokens() {
