@@ -2441,7 +2441,26 @@ var _learnStatsLoaded = false;
 function loadLearnStats() {
     if (_learnStatsLoaded) return;
     _learnStatsLoaded = true;
-    // Fetch apps count
+
+    function fmtTvl(n) {
+        if (!n) return '—';
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+        return String(n);
+    }
+
+    function applyStaking(st) {
+        var el;
+        el = document.getElementById('learnStatStakers');
+        if (el && st.total_stakers != null) el.textContent = st.total_stakers;
+        el = document.getElementById('learnStatTvl');
+        if (el && st.total_staked != null) el.textContent = fmtTvl(st.total_staked);
+        el = document.getElementById('learnStatApy');
+        if (el && st.estimated_apy != null) el.textContent = st.estimated_apy + '%';
+    }
+
+    // Apps count
     fetch('/api/inclawbate/apps')
         .then(function(r) { return r.json(); })
         .then(function(d) {
@@ -2449,25 +2468,22 @@ function loadLearnStats() {
             var el = document.getElementById('learnStatApps');
             if (el) el.textContent = count || '—';
         }).catch(function() {});
-    // Fetch staking + analytics
-    fetch('/api/inclawbate/analytics')
-        .then(function(r) { return r.json(); })
+
+    // Staking: try dedicated endpoint first (returns treasury.{...}), fall back to analytics (returns staking.{...})
+    fetch('/api/inclawbate/staking')
+        .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(function(d) {
-            var st = d.staking || {};
-            var el;
-            el = document.getElementById('learnStatStakers');
-            if (el) el.textContent = st.total_stakers || st.totalStakers || '—';
-            el = document.getElementById('learnStatTvl');
-            if (el) {
-                var tvl = st.total_staked || st.totalStaked || 0;
-                if (tvl >= 1e9) el.textContent = (tvl / 1e9).toFixed(1) + 'B';
-                else if (tvl >= 1e6) el.textContent = (tvl / 1e6).toFixed(1) + 'M';
-                else if (tvl >= 1e3) el.textContent = (tvl / 1e3).toFixed(0) + 'K';
-                else el.textContent = tvl || '—';
-            }
-            el = document.getElementById('learnStatApy');
-            if (el) el.textContent = (st.apy || st.currentApy || '—') + (typeof (st.apy || st.currentApy) === 'number' ? '%' : '');
-        }).catch(function() {});
+            var st = d.treasury || d.staking || {};
+            if (st.total_stakers != null) { applyStaking(st); return; }
+            throw new Error('empty');
+        })
+        .catch(function() {
+            // Fallback to analytics
+            fetch('/api/inclawbate/analytics')
+                .then(function(r) { return r.json(); })
+                .then(function(d) { applyStaking(d.staking || {}); })
+                .catch(function() {});
+        });
 }
 
 function learnChat(msg) {
