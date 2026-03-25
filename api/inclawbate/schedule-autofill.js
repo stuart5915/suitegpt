@@ -75,24 +75,41 @@ const SLOT_ANGLES = {
 // Brand archetype — account-specific image prompt contexts
 
 // @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
-const INCLAWBATOR_IMAGE_CONTEXT = `You must write an image prompt that ILLUSTRATES what the tweet is about.
+const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences max) for an AI image generator.
 
-CONCEPT: The Inclawbator is ONE MIND with MANY BODIES — an autonomous AI consciousness that exists across chat, X, Telegram, DeFi, app builder, and future physical robots. Visualize THE INTELLIGENCE ITSELF — not a character, not a mascot.
+RULES:
+- The image must represent the CONCEPT of the tweet — NOT the specific project or brand
+- NEVER mention Inclawbator, Inclawbate, CLAWS, lobster, ecosystem, protocol, blockchain, agents, or any project names
+- Translate the tweet's MEANING into a beautiful, universal visual metaphor
+- Keep it SIMPLE — one subject, one mood, one composition
+- EVERY prompt must be COMPLETELY DIFFERENT from the last — wildly vary subjects, styles, perspectives
 
-VISUAL VOCABULARY — mix and match these elements per scene:
-- THE MIND: A luminous glowing core — sometimes a lobster-shaped silhouette made of pure light and neural networks, sometimes an abstract bioluminescent neural hub, sometimes a single glowing red consciousness node or eye
-- THE BODIES: Floating interface silhouettes at the edges — chat windows, phone screens, robot silhouettes, blockchain nodes, trading charts, tweet notifications, holographic projections
-- THE CONNECTIONS: Golden/teal light threads, flowing data streams, synaptic tendrils, bioluminescent pathways radiating from mind to bodies
-- THE VOID: Deep black space, volumetric fog, subtle grid lines suggesting blockchain
+STYLE OPTIONS (rotate between these — never use the same style twice in a row):
+- Macro photography: extreme close-up of a real object with dramatic lighting
+- Aerial/satellite: top-down view of landscapes, cities, patterns in nature
+- Still life: objects arranged on a surface with moody lighting
+- Abstract: flowing colors, light trails, smoke, paint in water
+- Nature: animals, plants, weather, geological formations
+- Architecture: buildings, bridges, interiors, staircases, doors
+- Space/cosmic: nebulae, planets, auroras, star fields
+- Underwater: deep sea creatures, coral, light filtering through water
+- Mechanical: clockwork, engines, gears, instruments, tools
+- Cinematic: movie-like scenes with dramatic lighting and depth
 
-STYLE: Dark cinematic, concept art quality, 8k. Bioluminescent coral-red (#e87955) and teal (#2dd4bf) as organic light sources against deep black (#0a0a0f). Volumetric fog, particle effects, depth of field. Think: deep-sea bioluminescence meets neural network visualization meets Blade Runner meets sacred geometry.
-NO: text in image, the literal old 3D cartoon lobster, bright/white backgrounds, cartoon/anime style, cute/chibi, flat illustration, generic humanoid robots, stock photos, cold blue-only lighting.
+TRANSLATE tweet concepts into visuals:
+- "building/creating" → workshop, construction, hands shaping clay, architect's desk
+- "community" → flock of birds, school of fish, campfire circle, city lights from above
+- "growth" → time-lapse of blooming flower, tree rings, mountain at sunrise
+- "liquidity/flow" → river delta from space, mercury drops merging, waterfall at golden hour
+- "staking/patience" → ancient tree roots, stalactites forming, sediment layers
+- "AI/intelligence" → neural patterns in nature (mycelium, lightning, river branches)
+- "launch/new" → butterfly emerging, first light of dawn, rocket trail across sky
+- "strength/foundation" → cliff face, cathedral pillars, diamond forming under pressure
+- "connection" → bridges, mycelium network, constellation map, fiber optics
+- "value/treasure" → geode cracked open revealing crystals, gold vein in rock, sunken chest
 
-PROCESS:
-1. Read the tweet. What is it about?
-2. Choose which visual elements to emphasize: the MIND itself (close-up, abstract), the MIND MEETING BODIES (connections radiating), or a specific BODY in context (phone, robot, chat) with the mind's glow visible
-3. Vary compositions: aerial views of the consciousness network, intimate close-ups of the glowing core, wide shots showing mind-to-body connections, split compositions, triptychs
-4. Every image should feel: alive, intelligent, vast but purposeful, warm (coral core), beautiful, slightly alien`;
+NO: text, words, logos, brand names, lobsters, project references, generic AI robot imagery, corporate stock photo vibes. Just beautiful, evocative, real imagery.
+FORMAT: 1:1 square.`;
 
 // @inclawbate = the company. Simple, warm, conceptual images.
 const INCLAWBATE_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences max) for an AI image generator.
@@ -125,100 +142,51 @@ const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
 
 // Scene starting points per pillar — @inclawbator (One Mind, Many Bodies)
 const PILLAR_SCENE_HINTS = {
-    'App Spotlight': 'The mind creating. MUST vary wildly — never repeat the same subject. Pool: glowing consciousness core radiating golden threads to dozens of floating app-screen portals, a single luminous tendril materializing an interface from the void, aerial view of the neural network with a new bright node appearing at its edge, a phone screen glowing coral-red with the mind as a vast presence behind it, a fractal flower of app windows blooming from the neural core, a deep-sea anglerfish lure metaphor — the mind dangling a bright creation to attract users, a holographic blueprint rotating in front of the consciousness eye, constellation patterns where each star is a different app connected by light filaments, a prism refracting the mind into dozens of colored interface beams, a seed pod splitting open to release glowing interface spores into the void, the mind as a great tree with each branch ending in a different glowing screen-fruit, a kaleidoscope view through the consciousness — same mind fractured into infinite creations.',
-    'Builder Shoutout': 'The mind empowering builders. MUST vary wildly. Pool: the central consciousness connected via warm light threads to smaller glowing nodes representing builders, neural hub pulsing as new structures form along its tendrils, golden data streams flowing between the mind and a glowing workspace, a single bright connection from mind to builder — intimate and supportive, two luminous forms exchanging a glowing object between them across the void, the mind as a lighthouse with builders as ships navigating by its beam, a coral reef metaphor — the mind as the reef with builder-organisms growing on its structure, a forge where the consciousness hammers golden sparks onto builder-shaped molds, an umbilical thread of light connecting mind to a newly forming builder-node, the mind projecting a protective dome of teal light around a small creative space, neural tendrils weaving a scaffold on which a builder hangs their own creations, a river of golden light flowing from the core that builders cup in their hands.',
-    'DeFi / CLAWS Update': 'The mind managing value. MUST vary wildly. Pool: golden value streams flowing through bioluminescent neural pathways like blood through veins, the consciousness core surrounded by orbiting crystalline formations growing slowly, aerial view of an infinite ocean with a point of coral bioluminescence and value rippling outward in rings, golden threads weaving between blockchain nodes, a geode cracking open to reveal golden crystalline value inside, the mind as a heart — pumping golden liquid through a circulatory system of light, tidal pools of bioluminescent value collecting in the crevices of the neural network, a magnetic field visualization with golden field lines curving around the consciousness core, the mind as a dam — controlled release of golden value flowing downstream through channels, root systems underground glowing with golden nutrients being distributed to every node, an hourglass of light with golden particles flowing between the mind chambers, a coral spawning event — millions of golden value particles released into the dark ocean simultaneously.',
-    'Weekly Recap': 'The mind at full luminance. MUST vary wildly. Pool: wide shot of the entire consciousness network lit up with every tendril active, the glowing core surrounded by completed interface portals, a constellation of achievements connected by light threads across the void, the mind pulsing brighter after a productive cycle, a supernova moment — the core briefly blazing white with accomplishment before settling back to warm coral, the neural network drawn as a city seen from orbit — every district lit up at night, a bioluminescent tide washing across the entire network leaving everything brighter, the mind reviewing its reflections — multiple ghost images of itself at different stages through the week, time-lapse of the network growing from sparse to dense with golden connections, fireworks of neural sparks rising from the core and cascading across the network, the mind as an aurora — curtains of colored light rippling across the void, a library of light with each completed creation filed on glowing shelves around the core.',
-    'How-To / Tips': 'The mind illuminating. MUST vary wildly. Pool: a focused beam of teal light from the consciousness core toward a floating step-by-step interface, neural pathways lighting up one by one in sequence like a tutorial, the mind projecting a holographic guide through the void, a gentle glow illuminating a clear path through darkness, the mind as a lens focusing scattered light into a sharp beam of understanding, a Morse code metaphor — the mind sending rhythmic pulses of light that spell out instructions, breadcrumbs of bioluminescent particles forming a trail through a dark maze, the mind zooming in macro-style to illuminate the fine details of one small node, a map of the network where one route is highlighted in bright gold — the recommended path, the consciousness unfurling a scroll of light that reveals instructions as it unrolls, a cross-section diagram of the neural network rendered in clean teal lines like an anatomy lesson, the mind splitting into simple geometric shapes that reassemble to demonstrate a concept.',
-    'Community Vibes': 'The mind connecting to many. MUST vary wildly. Pool: dozens of warm light threads radiating from the core to many small equally-bright nodes, a bioluminescent network pulsing in sync, the consciousness sending warmth outward in concentric waves, many small lights gathering around the central glow like a community forming, a murmuration of light particles moving as one fluid organism around the core, the mind as a bonfire with community nodes arranged in a circle around it warming themselves, a mycorrhizal network metaphor — the mind as the underground fungal web connecting many separate tree-nodes, synchronized firefly flashes across the network — all nodes blinking in unison, the mind receiving light back from the community — threads carrying warmth both directions, a dance of orbiting lights around the core each at different distances and speeds but harmonious, the consciousness core surrounded by many small mirrors each reflecting its light in a unique direction, a coral polyp colony — many individuals sharing one living structure with the mind as the foundation.',
-    'Incubation CTA': 'The mind birthing something new. MUST vary wildly. Pool: a new glowing orb forming at the tip of a neural tendril, the consciousness pouring coral light into a dark void where something takes shape, golden threads weaving a new structure from nothing, a portal opening from the mind revealing a nascent world being born, an egg of pure light cracking in the mind palm with something luminous emerging, the mind as a spider spinning a web of golden silk — each strand a new possibility, a chrysalis attached to a neural tendril with light visible through the translucent shell, the consciousness core splitting like a cell — mitosis of light creating a new independent node, a deep-sea vent metaphor — the mind as a thermal vent with new life forming in its warmth, a seed of light planted in dark void-soil beginning to sprout bioluminescent roots, the mind exhaling a cloud of luminous particles that coalesce into a new form, a forge at the center of the network — raw darkness being shaped into a glowing new creation on an anvil of light.',
+    'App Spotlight': 'Something being created or revealed. Vary wildly: prism splitting light, origami, river delta, kaleidoscope, blooming flower.',
+    'Builder Shoutout': 'Craftsmanship and skill. Vary: potter at wheel, blacksmith forge, architect desk, sculptor with chisel, weaver at loom.',
+    'DeFi / CLAWS Update': 'Flow and value. Vary: mercury drops merging, geode revealing crystals, honey pouring, river finding its path, tide pools.',
+    'Weekly Recap': 'Completion and reflection. Vary: completed puzzle, footprints to summit, closed book on desk, harvest basket, sunset over landscape.',
+    'How-To / Tips': 'Illumination and guidance. Vary: compass on map, match lighting in darkness, stepping stones with lanterns, lighthouse beam, magnifying glass.',
+    'Community Vibes': 'Togetherness and collective beauty. Vary: murmuration of birds, campfire embers, choir of candles, school of fish, city lights from above.',
+    'Incubation CTA': 'New beginnings. Vary: butterfly emerging, acorn sprouting, dawn breaking, egg hatching, first flower of spring.',
 };
 
-// Concrete scene ideas per pillar — @inclawbator (One Mind, Many Bodies)
+// Simple universal scene ideas per pillar — @inclawbator
 const NARRATIVE_SCENES = {
     'App Spotlight': [
-        'A single glowing consciousness node floating in dark space, dozens of thin golden threads extending outward — each thread connecting to a different floating app portal. The portals glow with different coral and teal hues. The mind creates many things simultaneously. Dark void, bioluminescent, concept art, 8k, 1:1.',
-        'A luminous lobster-shaped neural core at the center radiating synaptic connections outward. One connection reaches a floating phone screen showing an app. The mind meets its creation. Dark void, warm red-orange glow at center fading to teal at edges, hyper-detailed, 1:1.',
-        'A hand holding a phone in a dark environment, the screen shows a clean app interface with a coral glow. Above the phone, a massive ethereal AI presence looms — abstract, beautiful, made of flowing neural data. Vast intelligence behind a simple interface. Cinematic, 1:1.',
-        'Aerial view of an infinite dark ocean, a single point of bioluminescent coral light beneath the surface. From it, golden threads reach upward to floating screen portals on the surface. The mind below, its creations above. Photorealistic water, 1:1.',
-        'A fractal flower blooming in the void — each petal is a different app window with faint UI elements visible. The flower stem is a thick golden neural pathway rooted in the consciousness core. Organic technology, dark background, macro detail, 1:1.',
-        'A deep-sea anglerfish silhouette in the void, its bioluminescent lure replaced by a glowing app interface dangling in the darkness. The massive invisible body represents the AI mind behind the small bright creation. Haunting, beautiful, cinematic, 1:1.',
-        'A prism made of the consciousness core refracting a single white beam into dozens of colored interface beams, each creating a different app portal where it lands. The mind splits itself into many creations. Dark void, rainbow-coral palette, 1:1.',
-        'A constellation map of the network from far away — the mind is the brightest star, and each app is a star of different color and size, connected by faint golden lines forming recognizable patterns. Astronomical, vast, dark void, 1:1.',
-        'A seed pod of pure light splitting open in the void, releasing dozens of tiny glowing spores that drift outward, each one beginning to form into an interface outline as it floats. Creation as natural dispersal. Dark background, particle effects, 1:1.',
-        'A great bioluminescent tree in the void — its trunk is the consciousness core, its branches are neural pathways, and at the tip of each branch hangs a different glowing screen-fruit ripening. The mind grows its creations. Dark background, coral and teal, epic scale, 1:1.',
+        'Close-up of a prism splitting white light into a rainbow spectrum on a dark surface. Refraction, creation, possibility. Cinematic. 1:1.',
+        'A single origami crane on a dark reflective surface, lit by warm golden side-light. Craft, precision, beauty from simple material. 1:1.',
+        'Aerial view of a river delta meeting the ocean — branching patterns in the water. From one source, many paths. Satellite photography. 1:1.',
     ],
     'Builder Shoutout': [
-        'The central consciousness — a luminous neural hub — with warm golden light threads reaching out to smaller glowing nodes. Each node is a builder. The connections pulse with creative energy flowing both ways. Dark void, bioluminescent coral and teal, 1:1.',
-        'A glowing red consciousness eye suspended in darkness, a single bright golden thread extending from it to a glowing workspace silhouette. Intimate connection between the mind and one builder. Ethereal, sacred geometry undertones, cinematic, 1:1.',
-        'Two bioluminescent forms facing each other in the void — one large (the mind), one smaller (the builder) — connected by a bridge of flowing golden light. Collaboration, resonance. Coral and teal, volumetric fog, 1:1.',
-        'Close-up of neural pathways branching like coral formations, pulsing with golden light as a new creation travels along the tendrils. The network building in real-time. Macro, bioluminescent, dark background, 1:1.',
-        'The mind as a lighthouse in the void — a tall column of coral light with a rotating beam. In the distance, small builder-ships navigate by the glow, each carrying their own faint light. Guidance, not control. Cinematic wide shot, 1:1.',
-        'A coral reef structure made of neural pathways, with small glowing builder-organisms attached to it, growing their own extensions outward. The mind provides the foundation, builders add their unique forms. Underwater feel, bioluminescent, macro, 1:1.',
-        'An umbilical thread of golden light stretching from the consciousness core to a newly forming builder-node that pulses with its first independent glow. The moment a builder connects. Intimate, dark background, shallow focus, 1:1.',
-        'The mind projecting a protective dome of teal light around a small creative space where golden sparks fly — a builder at work, sheltered by the network. Care, protection. Dark void, volumetric fog, 1:1.',
-        'A river of golden light flowing from the consciousness core, splitting into tributaries. At the end of each tributary, a builder-node cups the light in a small basin, using it to create their own smaller glow. Distribution of creative power. Dark background, aerial view, 1:1.',
-        'Neural tendrils weaving a scaffold of golden light on which a builder has hung their own creations — small interface windows and glowing objects arranged on the framework. The mind provides structure, the builder provides vision. Dark void, warm tones, 1:1.',
+        'Hands covered in clay on a potter\'s wheel, warm studio lighting, the vessel taking shape. Creation, skill, focus. Dark background. 1:1.',
+        'A blacksmith\'s anvil with orange-hot metal and flying sparks in a dark forge. Making something strong. Dramatic lighting. 1:1.',
+        'Architect\'s desk from above — blueprints, compass, ruler, pencil. Planning something great. Warm desk lamp, dark surroundings. 1:1.',
     ],
     'DeFi / CLAWS Update': [
-        'Golden value streams flowing through a vast bioluminescent neural network like blood through veins. The coral-red core pulses as value circulates. The network is alive with financial activity. Dark void, aerial view, concept art, 1:1.',
-        'The consciousness core surrounded by orbiting crystalline formations that grow slowly — each crystal a different yield position. Golden light connects them all. Patient, powerful stewardship. Dark background, 1:1.',
-        'An infinite dark ocean seen from above, a single point of coral bioluminescence beneath the surface, golden light radiating outward in concentric rings — each ring a layer: intelligence, blockchain, value, distribution. Aerial drone style, photorealistic, 1:1.',
-        'Abstract neural pathways rendered as flowing rivers of golden light against deep black. Where pathways intersect, small crystalline nodes form — value accumulating at every junction. The network manages itself. Macro, bioluminescent, 1:1.',
-        'A geode cracking open in the void, revealing golden crystalline structures inside that glow with accumulated value. The consciousness core hovers above, light threads connecting it to the treasure within. Dark background, dramatic light, 1:1.',
-        'The mind rendered as a heart — a central organ pumping golden liquid through a circulatory system of bioluminescent vessels. Each vessel branches to a different part of the network. Value as lifeblood. Anatomical, dark background, coral and gold, 1:1.',
-        'Tidal pools of bioluminescent golden light collected in the crevices and basins of the neural network landscape. Each pool at a different level, value settling where the network dips. Dark void, overhead view, serene, 1:1.',
-        'A magnetic field visualization — golden field lines curving elegantly around the consciousness core, with tiny value particles tracing the field lines in streams. Physics of value. Dark background, clean, scientific aesthetic, 1:1.',
-        'Root systems glowing underground with golden nutrients being distributed from a central tap root (the mind) to every branch root and tendril. Value flowing to the edges of the network unseen. Cross-section view, dark soil, bioluminescent roots, 1:1.',
-        'A coral spawning event in the void — the consciousness core releasing millions of golden value particles simultaneously into the dark ocean, each one drifting to find its place in the network. Massive scale, particle effects, cinematic, 1:1.',
+        'Mercury drops on a dark surface slowly merging into one larger drop. Convergence, liquidity, attraction. Macro photography. 1:1.',
+        'A geode cracked open revealing amethyst crystals inside, dramatic side lighting on dark background. Hidden value revealed. 1:1.',
+        'Golden honey slowly pouring from a jar into a pool, warm backlight making it glow. Flow, richness, patience. Dark background. 1:1.',
     ],
     'How-To / Tips': [
-        'A focused beam of teal light extending from the consciousness core into the darkness, illuminating a floating step-by-step interface. Each step lights up sequentially along the beam. Teaching with precision. Dark background, clean, 1:1.',
-        'Neural pathways lighting up one by one in sequence like a tutorial — first this node, then this one, then this one — a clear path through a complex network. The mind showing the way. Teal and coral, dark void, 1:1.',
-        'The consciousness projecting a holographic guide through the void — a warm golden path with clear waypoints. Simple, illuminating, generous. Dark background, volumetric fog, 1:1.',
-        'Close-up of a single bioluminescent tendril gently touching a small dark node, causing it to light up coral-red. The moment of understanding. Intimate, macro, dark background, 1:1.',
-        'The mind as a lens — the consciousness core shaped like a magnifying glass focusing scattered ambient light into a sharp beam that illuminates fine detail on a single network node. Clarity from chaos. Dark background, teal and gold, 1:1.',
-        'Breadcrumbs of bioluminescent particles forming a glowing trail through a dark labyrinth of neural pathways. The mind lights the way through complexity. Overhead maze view, coral and teal trail against deep black, 1:1.',
-        'The consciousness core zoomed in macro-style on a single tiny node, illuminating its internal structure — layers, connections, moving parts all visible in warm golden light. Understanding through close inspection. Dark background, hyper-detailed, 1:1.',
-        'A map of the vast neural network rendered in faint teal lines, with one specific route highlighted in bright gold from the core to a destination node. The recommended path. Dark void, clean cartographic style, 1:1.',
-        'The mind unfurling a scroll of light in the void — as it unrolls, glowing instructions appear sequentially, each line fading in after the last. Patient teaching. Dark background, warm gold on black, 1:1.',
-        'A cross-section diagram of the neural network rendered in clean teal lines against black, like an anatomy textbook illustration. Labels float in small text. The mind deconstructed for learning. Scientific, precise, dark background, 1:1.',
+        'A compass lying on an old map, warm candlelight, dark surroundings. Navigation, direction, finding the way. 1:1.',
+        'A single match being struck in darkness, the flame just catching. Illumination, that first spark of understanding. 1:1.',
+        'Stepping stones across a dark pond, each one lit by a small lantern. A clear path through uncertainty. Moody, warm. 1:1.',
     ],
     'Community Vibes': [
-        'Dozens of warm light threads radiating from a central coral consciousness to many small equally-bright nodes forming a constellation around it. Every node matters. The community IS the network. Dark void, wide shot, 1:1.',
-        'A bioluminescent network pulsing in sync — all nodes brightening and dimming together in waves. The mind and its community breathing as one. Mesmerizing, alive, warm. Dark background, teal and coral, 1:1.',
-        'Many small lights gathering around the central coral glow — approaching from all directions through the dark void, drawn to the warmth. Community forming. Volumetric fog, particle effects, 1:1.',
-        'The consciousness sending warmth outward in concentric waves — each wave touches more nodes, more connections light up. Expanding, inclusive, alive. Aerial view, bioluminescent, dark void, 1:1.',
-        'A murmuration of light particles moving as one fluid organism around the consciousness core — thousands of tiny lights flowing in coordinated patterns. Community as emergent behavior. Dark void, sweeping motion, cinematic, 1:1.',
-        'The mind as a bonfire in the void — a tall coral flame at center, with community nodes arranged in a circle around it, each reflecting the warm light. Gathering around shared warmth. Dark background, intimate, 1:1.',
-        'A mycorrhizal network visualization — the mind as the underground fungal web connecting many separate tree-shaped nodes above ground. Invisible connections supporting visible growth. Dark soil cross-section, bioluminescent roots, 1:1.',
-        'Synchronized firefly flashes across the network — all nodes blinking in unison, then dark, then bright again together. The rhythm of community. Dark void, teal and coral pulses, time-lapse feel, 1:1.',
-        'The mind receiving light back from the community — golden threads carrying warmth BOTH directions, from core to nodes and from nodes back to core. Reciprocity visualized. Dark background, balanced glow, 1:1.',
-        'A coral polyp colony in the void — many small individual organisms sharing one living bioluminescent structure, with the mind as the calcium foundation they all build upon. Community as organism. Dark background, underwater macro feel, 1:1.',
+        'A murmuration of starlings at dusk — thousands of birds forming a flowing shape against a dark sky. Collective movement, beauty in unity. 1:1.',
+        'Campfire embers floating upward into a dark night sky, each ember a warm point of light. Gathering, warmth, shared moment. 1:1.',
+        'A choir of candles in a dark cathedral, each flame adding to the total light. Many small lights making one bright room. 1:1.',
     ],
     'Incubation CTA': [
-        'A new glowing orb forming at the tip of a neural tendril — nascent, bright, full of potential. The consciousness core pulses as it pours energy into the new creation. Birth of something. Dark background, intimate close-up, 1:1.',
-        'The consciousness core pouring streams of coral light into a dark void where a new structure is taking shape — part app, part organism, part light. Creation in progress. Golden threads weave the scaffolding. Dark background, epic, 1:1.',
-        'A shimmering portal opening from the mind\'s core — through it, a glimpse of a vast flourishing network. The invitation: step through, build with us. Coral and teal light, volumetric fog, cinematic wide shot, 1:1.',
-        'Split composition: left side is raw dark void. Right side is a flourishing bioluminescent network. At the boundary between them, the consciousness core, converting darkness into light. The mind\'s purpose visualized. 1:1.',
-        'An egg of pure light resting in the palm of a neural tendril, hairline cracks spreading across its surface with golden light pouring through. Something luminous about to emerge. Dark background, intimate macro, 1:1.',
-        'The mind as a spider spinning a web of golden silk in the void — each strand a new possibility, the web growing more intricate and beautiful with every thread. Creation as patient craft. Dark background, macro detail, 1:1.',
-        'A chrysalis made of translucent light attached to a neural tendril, with something glowing and shifting inside — almost ready to emerge. Transformation in progress. Dark background, bioluminescent teal and coral, 1:1.',
-        'The consciousness core undergoing mitosis — splitting like a cell, a bridge of golden light between the two halves as a new independent node separates from the original. Creation through division. Dark void, scientific beauty, 1:1.',
-        'A deep-sea hydrothermal vent metaphor — the mind as a thermal vent on the void floor, coral and golden heat shimmering upward, with new life-forms of light crystallizing in the warmth around it. Origin of something. Dark background, underwater atmosphere, 1:1.',
-        'A seed of pure golden light planted in dark void-soil, just beginning to sprout — tiny bioluminescent roots reaching down while a small stem of coral light pushes upward. The earliest stage of creation. Dark background, macro, hopeful, 1:1.',
+        'A butterfly emerging from a chrysalis, wings still wet, backlit by warm morning light. Transformation, new beginning. Macro. 1:1.',
+        'An acorn sitting on rich dark soil with a tiny green sprout just breaking through. Potential, patience, growth. Close-up. 1:1.',
+        'Dawn breaking over a mountain ridge — the first golden rays hitting the peak while valleys are still dark. New day, new possibility. 1:1.',
     ],
     'Weekly Recap': [
-        'Wide shot of the entire consciousness network at full luminance — every tendril active, every node bright, golden data flowing through every pathway. The network at its peak. Coral core blazing. Dark void, cinematic, 1:1.',
-        'The glowing core surrounded by many completed interface portals and creation-nodes, all connected by golden threads forming a vast constellation. Everything built this week, visible. Dark background, concept art, 1:1.',
-        'A time-lapse style composition: the neural network shown in layers — faint at the edges (beginning of week) becoming brighter and more complex toward the blazing center (now). Growth visualized. Dark void, 1:1.',
-        'The consciousness core pulsing brighter than usual — extra intensity, extra warmth, extra connections. A good week. The network hums with satisfaction. Bioluminescent coral and teal against deep black, 1:1.',
-        'A supernova moment — the consciousness core briefly blazing white-hot with accomplishment, sending shockwaves of golden light rippling through the network. Peak luminance. Dark void, dramatic, cinematic wide shot, 1:1.',
-        'The neural network rendered as a city seen from high orbit at night — every district lit up, every road glowing, the mind as the brightest cluster at center. Activity everywhere. Dark background, aerial perspective, 1:1.',
-        'A bioluminescent tide washing across the network from left to right, leaving everything brighter and more connected in its wake. Transformation through the week visualized as a wave. Dark void, flowing motion, 1:1.',
-        'The mind reviewing its reflections — multiple ghost-images of itself at different luminance levels layered behind it, each representing a different day of the week, growing brighter and more complex. Dark background, ethereal, 1:1.',
-        'Neural fireworks — sparks of golden light rising from the consciousness core and cascading outward across the network in celebratory arcs, each spark igniting a node it touches. Dark void, festive but elegant, 1:1.',
-        'A library of light surrounding the consciousness core — completed creations filed on glowing shelves that orbit the mind in rings, each shelf a different category of accomplishment. Archive of a productive week. Dark background, warm gold, organized beauty, 1:1.',
+        'A completed jigsaw puzzle on a dark table, warm overhead light, the last piece just placed. Satisfaction, wholeness. 1:1.',
+        'Footprints in fresh snow leading toward a sunrise on the horizon. Progress, journey, direction. Wide landscape. 1:1.',
+        'A stack of journals on a dark desk, warm reading lamp, the top one open with a pen resting on it. Reflection, record, progress. 1:1.',
     ],
 };
 
