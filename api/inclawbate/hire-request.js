@@ -64,10 +64,9 @@ export default async function handler(req, res) {
         // Build notification message
         const budgetText = budget > 0 ? (BUDGET_LABELS[budget] || budget + ' CLAWS') : 'Let them quote';
 
-        const msg = `🦞 <b>New hire request!</b>\n\n` +
-            `<b>What:</b> ${escHtml(desc)}\n` +
-            `<b>Budget:</b> ${budgetText}\n` +
-            `<b>Contact:</b> ${escHtml(contactInfo)}`;
+        const msg = `🦞 <b>New council request</b>\n\n` +
+            `${escHtml(desc)}\n\n` +
+            `<b>Reach them:</b> ${escHtml(contactInfo)}`;
 
         // Notify the council group
         if (COUNCIL_CHAT_ID) {
