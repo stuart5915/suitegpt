@@ -476,7 +476,9 @@ export default async function handler(req, res) {
     }
 
     // Validate provider API keys
-    const { ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, MOONSHOT_API_KEY } = process.env;
+    const { ANTHROPIC_API_KEY, GEMINI_API_KEY, MOONSHOT_API_KEY } = process.env;
+    // Support both GROQ_API_KEY (singular) and GROQ_API_KEYS (plural, comma-separated)
+    const GROQ_API_KEY = process.env.GROQ_API_KEY || (process.env.GROQ_API_KEYS || '').split(',')[0]?.trim() || '';
     const providerKeys = { anthropic: ANTHROPIC_API_KEY, gemini: GEMINI_API_KEY, groq: GROQ_API_KEY, moonshot: MOONSHOT_API_KEY };
     if (!providerKeys[tier.provider]) {
         return res.status(500).json({ error: tier.label + ' is not configured. Try a different model.' });
