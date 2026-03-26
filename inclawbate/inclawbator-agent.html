@@ -942,7 +942,6 @@
     <div class="inclaw-chat-tabs">
         <button class="inclaw-tab active" data-tab="build">&#128296; Build</button>
         <button class="inclaw-tab" data-tab="defi">&#127974; DeFi</button>
-        <button class="inclaw-tab" data-tab="learn">&#128218; Learn</button>
         <button class="inclaw-tab" data-tab="council">&#129309; Council</button>
         <a href="/inclawbator/docs" class="inclaw-docs-link" title="Full docs">Docs &rarr;</a>
     </div>
@@ -1245,9 +1244,9 @@
                         <div class="defi-sub" data-sub="trade-disperse">
                             <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;">Send any token to multiple wallets in one transaction.</div>
 
-                            <!-- Token address -->
-                            <div style="margin-bottom:12px;">
-                                <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;">TOKEN</div>
+                            <!-- 1. Token -->
+                            <div style="margin-bottom:14px;">
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;">1. TOKEN</div>
                                 <div style="display:flex;gap:6px;margin-bottom:6px;">
                                     <button class="swap-freq-btn active" onclick="setDisperseToken(this,'0x7ca47B141639B893C6782823C0b219f872056379','CLAWS',18)">CLAWS</button>
                                     <button class="swap-freq-btn" onclick="setDisperseToken(this,'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913','USDC',6)">USDC</button>
@@ -1256,25 +1255,64 @@
                                 <input type="text" id="disperseTokenAddr" placeholder="Token contract address (0x...)" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.78rem;outline:none;" value="0x7ca47B141639B893C6782823C0b219f872056379">
                             </div>
 
-                            <!-- Recipients -->
-                            <div style="margin-bottom:12px;">
-                                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                                    <span style="font-size:0.68rem;color:var(--text-dim);">RECIPIENTS</span>
-                                    <span style="font-size:0.65rem;color:var(--text-dim);" id="disperseCount">0 addresses</span>
+                            <!-- 2. Total amount -->
+                            <div style="margin-bottom:14px;">
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;">2. TOTAL AMOUNT TO SEND</div>
+                                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:8px;">
+                                    <input type="number" id="disperseAmount" placeholder="0" style="flex:1;background:none;border:none;color:#fff;font-size:1.2rem;font-weight:800;outline:none;font-family:var(--font-mono);width:0;" oninput="updateDispersePreview()">
+                                    <span id="disperseSymbolLabel" style="font-weight:700;font-size:0.85rem;color:var(--text-dim);">CLAWS</span>
                                 </div>
-                                <textarea id="disperseList" rows="6" placeholder="One per line: address,amount&#10;0xABC...,1000&#10;0xDEF...,2000&#10;&#10;Or paste a CSV" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.75rem;outline:none;resize:vertical;" oninput="updateDisperseCount()"></textarea>
                             </div>
 
-                            <!-- Total (auto-calculated from list above) -->
-                            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:12px;font-size:0.82rem;">
-                                <span style="color:var(--text-dim);font-size:0.72rem;">TOTAL (auto-calculated)</span>
-                                <span id="disperseTotal" style="font-weight:800;font-family:var(--font-mono);font-size:0.95rem;">0 CLAWS</span>
+                            <!-- 3. Distribution method -->
+                            <div style="margin-bottom:14px;">
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;">3. DISTRIBUTION</div>
+                                <div style="display:flex;gap:4px;background:rgba(255,255,255,0.03);border-radius:10px;padding:3px;margin-bottom:10px;">
+                                    <button class="swap-type-btn active" onclick="setDisperseMode(this,'equal')">Equal split</button>
+                                    <button class="swap-type-btn" onclick="setDisperseMode(this,'custom')">Custom amounts</button>
+                                    <button class="swap-type-btn" onclick="setDisperseMode(this,'percent')">Percentage</button>
+                                </div>
+                            </div>
+
+                            <!-- 4. Wallet addresses -->
+                            <div style="margin-bottom:14px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                                    <span style="font-size:0.68rem;color:var(--text-dim);">4. WALLETS</span>
+                                    <span style="font-size:0.65rem;color:var(--text-dim);" id="disperseCount">0 addresses</span>
+                                </div>
+                                <!-- Equal mode: just addresses -->
+                                <div id="disperseEqualInput">
+                                    <textarea id="disperseAddresses" rows="5" placeholder="Paste wallet addresses, one per line&#10;0xABC...&#10;0xDEF...&#10;0x123..." style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.75rem;outline:none;resize:vertical;" oninput="updateDispersePreview()"></textarea>
+                                </div>
+                                <!-- Custom mode: address,amount -->
+                                <div id="disperseCustomInput" style="display:none;">
+                                    <textarea id="disperseCustomList" rows="5" placeholder="address,amount (one per line)&#10;0xABC...,1000&#10;0xDEF...,2000&#10;0x123...,500" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.75rem;outline:none;resize:vertical;" oninput="updateDispersePreview()"></textarea>
+                                </div>
+                                <!-- Percent mode: address,% -->
+                                <div id="dispersePercentInput" style="display:none;">
+                                    <textarea id="dispersePercentList" rows="5" placeholder="address,percentage (must total 100)&#10;0xABC...,50&#10;0xDEF...,30&#10;0x123...,20" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.75rem;outline:none;resize:vertical;" oninput="updateDispersePreview()"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preview -->
+                            <div style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:12px;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;">
+                                    <span style="color:var(--text-dim);">Recipients</span>
+                                    <span id="dispersePreviewCount" style="font-weight:700;">0</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;">
+                                    <span style="color:var(--text-dim);">Each receives</span>
+                                    <span id="dispersePreviewEach" style="font-weight:700;font-family:var(--font-mono);">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;font-size:0.78rem;">
+                                    <span style="color:var(--text-dim);">Total</span>
+                                    <span id="dispersePreviewTotal" style="font-weight:800;font-family:var(--font-mono);color:#fff;">0</span>
+                                </div>
                             </div>
 
                             <!-- Send button -->
                             <button id="disperseBtn" onclick="executeDisperse()" style="width:100%;padding:14px;background:var(--accent-gradient);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.9rem;cursor:pointer;">Approve &amp; Send</button>
-
-                            <div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-dim);">Uses disperse.app contract &mdash; 1 approve + 1 send tx</div>
+                            <div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-dim);">1 approve + 1 send via disperse.app</div>
                             <div id="disperseStatus" style="margin-top:8px;font-size:0.78rem;text-align:center;display:none;"></div>
                         </div>
                     </div>
@@ -3416,6 +3454,7 @@ function executeSwapFromUI() {
 var DISPERSE_CONTRACT = '0xD152f549545093347A162Dce210e7293f1452150'; // disperse.app on Base
 var _disperseDecimals = 18;
 var _disperseSymbol = 'CLAWS';
+var _disperseMode = 'equal';
 
 function setDisperseToken(btn, addr, symbol, decimals) {
     btn.parentNode.querySelectorAll('.swap-freq-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -3423,41 +3462,93 @@ function setDisperseToken(btn, addr, symbol, decimals) {
     _disperseDecimals = decimals;
     _disperseSymbol = symbol;
     document.getElementById('disperseTokenAddr').value = addr;
+    document.getElementById('disperseSymbolLabel').textContent = symbol === 'Custom' ? 'TOKEN' : symbol;
     if (symbol === 'Custom') {
         document.getElementById('disperseTokenAddr').focus();
-        _disperseDecimals = 18; // default, user should verify
+        _disperseDecimals = 18;
     }
-    updateDisperseCount();
+    updateDispersePreview();
 }
 
-function parseDisperseList() {
-    var raw = document.getElementById('disperseList').value.trim();
+function setDisperseMode(btn, mode) {
+    _disperseMode = mode;
+    btn.parentNode.querySelectorAll('.swap-type-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('disperseEqualInput').style.display = mode === 'equal' ? 'block' : 'none';
+    document.getElementById('disperseCustomInput').style.display = mode === 'custom' ? 'block' : 'none';
+    document.getElementById('dispersePercentInput').style.display = mode === 'percent' ? 'block' : 'none';
+    updateDispersePreview();
+}
+
+function parseAddressList(raw) {
     if (!raw) return [];
-    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    return raw.split('\n').map(function(l) { return l.trim(); }).filter(function(l) {
+        return /^0x[a-fA-F0-9]{40}/.test(l);
+    });
+}
+
+function getDisperseEntries() {
+    var totalAmount = parseFloat(document.getElementById('disperseAmount').value) || 0;
     var entries = [];
-    for (var i = 0; i < lines.length; i++) {
-        var parts = lines[i].split(/[,\t\s]+/);
-        if (parts.length >= 2 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
-            var amt = parseFloat(parts[1]);
-            if (amt > 0) entries.push({ address: parts[0], amount: amt });
+
+    if (_disperseMode === 'equal') {
+        var lines = parseAddressList(document.getElementById('disperseAddresses').value);
+        if (lines.length > 0 && totalAmount > 0) {
+            var each = totalAmount / lines.length;
+            lines.forEach(function(l) {
+                var addr = l.match(/^0x[a-fA-F0-9]{40}/)[0];
+                entries.push({ address: addr, amount: each });
+            });
+        }
+    } else if (_disperseMode === 'custom') {
+        var raw = document.getElementById('disperseCustomList').value.trim();
+        if (raw) {
+            raw.split('\n').forEach(function(l) {
+                var parts = l.trim().split(/[,\t\s]+/);
+                if (parts.length >= 2 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+                    var amt = parseFloat(parts[1]);
+                    if (amt > 0) entries.push({ address: parts[0], amount: amt });
+                }
+            });
+        }
+    } else if (_disperseMode === 'percent') {
+        var raw2 = document.getElementById('dispersePercentList').value.trim();
+        if (raw2 && totalAmount > 0) {
+            raw2.split('\n').forEach(function(l) {
+                var parts = l.trim().split(/[,\t\s]+/);
+                if (parts.length >= 2 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+                    var pct = parseFloat(parts[1]);
+                    if (pct > 0) entries.push({ address: parts[0], amount: totalAmount * pct / 100 });
+                }
+            });
         }
     }
     return entries;
 }
 
-function updateDisperseCount() {
-    var entries = parseDisperseList();
-    document.getElementById('disperseCount').textContent = entries.length + ' address' + (entries.length !== 1 ? 'es' : '');
+function updateDispersePreview() {
+    var entries = getDisperseEntries();
+    var count = entries.length;
     var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
-    document.getElementById('disperseTotal').textContent = total.toLocaleString() + ' ' + _disperseSymbol;
+    var each = count > 0 ? total / count : 0;
+
+    document.getElementById('disperseCount').textContent = count + ' address' + (count !== 1 ? 'es' : '');
+    document.getElementById('dispersePreviewCount').textContent = count;
+    document.getElementById('dispersePreviewTotal').textContent = total.toLocaleString() + ' ' + _disperseSymbol;
+
+    if (_disperseMode === 'equal' && count > 0) {
+        document.getElementById('dispersePreviewEach').textContent = each.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ' + _disperseSymbol;
+    } else {
+        document.getElementById('dispersePreviewEach').textContent = _disperseMode === 'equal' ? '—' : 'varies';
+    }
 }
 
 async function executeDisperse() {
     if (!window.ethereum) { alert('Connect wallet first'); return; }
     var tokenAddr = document.getElementById('disperseTokenAddr').value.trim();
     if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddr)) { alert('Enter a valid token address'); return; }
-    var entries = parseDisperseList();
-    if (entries.length === 0) { alert('Add at least one recipient'); return; }
+    var entries = getDisperseEntries();
+    if (entries.length === 0) { alert('Add recipients and an amount'); return; }
 
     var btn = document.getElementById('disperseBtn');
     var status = document.getElementById('disperseStatus');
@@ -3465,19 +3556,15 @@ async function executeDisperse() {
     btn.disabled = true;
 
     try {
-        // Ensure Base chain
         var chainId = await window.ethereum.request({ method: 'eth_chainId' });
         if (chainId !== '0x2105') {
             await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         }
 
         var addresses = entries.map(function(e) { return e.address; });
-        var amounts = entries.map(function(e) {
-            return '0x' + BigInt(Math.round(e.amount * (10 ** _disperseDecimals))).toString(16);
-        });
         var totalRaw = entries.reduce(function(s, e) { return s + BigInt(Math.round(e.amount * (10 ** _disperseDecimals))); }, 0n);
 
-        // Step 1: Approve token spending
+        // Step 1: Approve
         status.textContent = 'Approving token...';
         status.style.color = 'var(--text-secondary)';
         var approveData = '0x095ea7b3' +
@@ -3489,33 +3576,24 @@ async function executeDisperse() {
             params: [{ from: WalletKit.getAddress(), to: tokenAddr, data: approveData }]
         });
 
-        // Small delay for approval to confirm
         status.textContent = 'Waiting for approval...';
         await new Promise(function(r) { setTimeout(r, 3000); });
 
         // Step 2: Disperse
         status.textContent = 'Sending to ' + entries.length + ' addresses...';
-
-        // Encode disperseToken(address token, address[] recipients, uint256[] values)
-        // Selector: 0xc73a2d60
         var encoded = '0xc73a2d60';
-        // token address
         encoded += tokenAddr.toLowerCase().replace('0x', '').padStart(64, '0');
-        // offset to recipients array
-        encoded += (96).toString(16).padStart(64, '0'); // 0x60
-        // offset to values array
+        encoded += (96).toString(16).padStart(64, '0');
         var recipientsLen = addresses.length;
         var valuesOffset = 96 + 32 + recipientsLen * 32;
         encoded += valuesOffset.toString(16).padStart(64, '0');
-        // recipients array
         encoded += recipientsLen.toString(16).padStart(64, '0');
         for (var i = 0; i < addresses.length; i++) {
             encoded += addresses[i].toLowerCase().replace('0x', '').padStart(64, '0');
         }
-        // values array
         encoded += recipientsLen.toString(16).padStart(64, '0');
-        for (var j = 0; j < amounts.length; j++) {
-            encoded += BigInt(amounts[j]).toString(16).padStart(64, '0');
+        for (var j = 0; j < entries.length; j++) {
+            encoded += BigInt(Math.round(entries[j].amount * (10 ** _disperseDecimals))).toString(16).padStart(64, '0');
         }
 
         var txHash = await window.ethereum.request({
@@ -3523,7 +3601,6 @@ async function executeDisperse() {
             params: [{ from: WalletKit.getAddress(), to: DISPERSE_CONTRACT, data: encoded }]
         });
 
-        status.textContent = 'Sent! Tx: ' + txHash.slice(0, 10) + '...';
         status.style.color = '#4ade80';
         status.innerHTML = 'Sent! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:#4ade80;">View on Basescan</a>';
     } catch (e) {
