@@ -358,7 +358,7 @@ async function launchMemeToken(meme) {
     }
 
     // Step 2: Launch the token with image + website baked into the token metadata
-    const launchMsg = `Launch a token called "${meme.title}" with symbol ${symbol.replace('$', '')} to wallet ${CREATOR_WALLET}. Description: "Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw × Inclawbate."${imageUrl ? ` Image: ${imageUrl}` : ''}. Website: ${siteResult.url || siteUrl}`;
+    const launchMsg = `Launch token name: ${meme.title}, symbol: ${symbol.replace('$', '')}, wallet: ${CREATOR_WALLET}, description: Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw x Inclawbate.${imageUrl ? ', image: ' + imageUrl : ''}${siteResult.url ? ', website: ' + siteResult.url : ''}`;
 
     const launchResp = await callAgent(launchMsg, sessionId);
     console.log(`[MemeClaw] Token launch response:`, launchResp?.reply?.slice(0, 200));
