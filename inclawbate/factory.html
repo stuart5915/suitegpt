@@ -731,10 +731,10 @@
                 <button class="audience-chip" id="toggleComposable" onclick="this.classList.toggle('active')">Cross-app composable</button>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:var(--space-md);">
-                <button class="btn-primary" onclick="generatePrompt()">Generate Research Prompt</button>
+                <button class="btn-primary" onclick="copyResearchPrompt()">Copy Research Prompt</button>
             </div>
             <div id="ideaWrap">
-                <p style="color:var(--text-dim);font-size:0.88rem;">Configure your direction above, then hit "Generate Research Prompt".</p>
+                <p style="color:var(--text-dim);font-size:0.88rem;">Hit "Copy Research Prompt" to get a fully-loaded prompt with all your ecosystem data. Paste it into Claude or ChatGPT for deep research.</p>
             </div>
         </div>
 
@@ -1783,6 +1783,16 @@
                 var btn = document.querySelector('.idea-actions .btn-primary');
                 btn.textContent = 'Copied!';
                 setTimeout(function() { btn.textContent = 'Copy to Clipboard'; }, 1500);
+            });
+        };
+
+        window.copyResearchPrompt = function() {
+            generatePrompt();
+            var text = document.getElementById('ideaPromptText').textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.querySelector('[onclick="copyResearchPrompt()"]');
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy Research Prompt'; }, 2000);
             });
         };
 
