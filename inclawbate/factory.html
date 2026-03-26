@@ -609,28 +609,15 @@
             </div>
 
             <div id="launchForm">
-                <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-                    Start with a rough idea. AI generates the rest. Then launch with one click.
-                </div>
                 <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-                    <!-- Step 1: Your idea -->
-                    <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Your Idea</label>
-                        <div style="display:flex;gap:6px">
-                            <input type="text" id="launchIdea" placeholder="e.g. card flipping game, AI fitness tracker, prediction market for sports" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body)">
-                            <button class="btn-primary" onclick="generateDescription()" id="genDescBtn" style="padding:10px 16px;font-size:0.78rem;white-space:nowrap">Generate</button>
-                        </div>
-                    </div>
+                    <!-- Generate Everything button -->
+                    <button class="btn-primary" onclick="generateEverything()" id="genAllBtn" style="width:100%;padding:14px;font-size:1rem">Generate a Project</button>
+                    <div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-top:-6px">AI picks an idea, writes the description, names it, picks a symbol, and suggests logo prompts. Edit anything below.</div>
 
-                    <!-- Step 2: Generated description -->
+                    <!-- Description -->
                     <div>
                         <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Description</label>
-                        <textarea id="launchDesc" placeholder="Click Generate above, or write your own." maxlength="800" rows="4" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body);resize:vertical"></textarea>
-                    </div>
-
-                    <!-- Step 3: Generate name + symbol + image prompts -->
-                    <div>
-                        <button class="btn-secondary" onclick="generateDetails()" id="genDetailsBtn" style="width:100%;padding:10px;font-size:0.82rem">Generate Name, Symbol &amp; Image Prompts</button>
+                        <textarea id="launchDesc" placeholder="Click Generate above — or write your own." maxlength="800" rows="4" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body);resize:vertical"></textarea>
                     </div>
 
                     <div style="display:flex;gap:10px">
@@ -1032,65 +1019,38 @@
             return d.reply || '';
         }
 
-        window.generateDescription = async function() {
-            var idea = document.getElementById('launchIdea').value.trim();
-            if (!idea) { alert('Type your idea first'); return; }
-            var btn = document.getElementById('genDescBtn');
+        window.generateEverything = async function() {
+            var btn = document.getElementById('genAllBtn');
             btn.disabled = true; btn.textContent = 'Generating...';
             try {
                 var reply = await groqGenerate(
-                    'I need you to write a project description for this app idea: "' + idea + '". '
-                    + 'Write 2-3 sentences that explain: what the app does, who it\'s for, and what makes it unique. '
-                    + 'Also explain that it has a token that powers the ecosystem — staking, rewards, and governance. '
-                    + 'Make it sound exciting but real, not hype-y. Output ONLY the description, nothing else.'
-                );
-                document.getElementById('launchDesc').value = reply;
-            } catch(e) { alert('Failed to generate'); }
-            btn.disabled = false; btn.textContent = 'Generate';
-        };
-
-        window.generateDetails = async function() {
-            var desc = document.getElementById('launchDesc').value.trim();
-            // If no description yet, generate it first from the idea
-            if (!desc) {
-                var idea = document.getElementById('launchIdea').value.trim();
-                if (!idea) { alert('Type your idea first'); return; }
-                await window.generateDescription();
-                desc = document.getElementById('launchDesc').value.trim();
-                if (!desc) return;
-            }
-            var btn = document.getElementById('genDetailsBtn');
-            btn.disabled = true; btn.textContent = 'Generating...';
-            try {
-                var reply = await groqGenerate(
-                    'Based on this app description, generate: a catchy project name (2-3 words max), a token symbol (3-5 uppercase letters), and 3 text-to-image prompt suggestions for a token logo. '
-                    + 'The image prompts should describe a clean, minimal, dark-background icon/logo suitable for a crypto token. '
-                    + 'Description: "' + desc + '"\n\n'
+                    'You are an app idea generator for a crypto incubator. Generate a complete project idea. Be creative and original. Think of apps that are fun, useful, or solve real problems. Mix categories: games, tools, social, DeFi, AI, creative, productivity, community.\n\n'
                     + 'Output EXACTLY this JSON format, nothing else:\n'
-                    + '{"name":"Project Name","symbol":"SYMBL","imagePrompts":["prompt 1","prompt 2","prompt 3"]}'
+                    + '{"name":"Project Name","symbol":"SYMBL","description":"2-3 sentence description of what the app does, who it is for, what makes it unique, and how the token powers the ecosystem (staking, rewards, governance). Make it sound exciting but real.","imagePrompts":["detailed text-to-image prompt for a clean minimal dark-background token logo 1","prompt 2","prompt 3"]}'
                 );
-                // Parse JSON from reply
                 var json = reply.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
                 var data = JSON.parse(json);
+                if (data.description) document.getElementById('launchDesc').value = data.description;
                 if (data.name) document.getElementById('launchName').value = data.name;
-                if (data.symbol) document.getElementById('launchSymbol').value = data.symbol;
+                if (data.symbol) document.getElementById('launchSymbol').value = data.symbol.toUpperCase();
                 if (data.imagePrompts && data.imagePrompts.length) {
                     var wrap = document.getElementById('imagePromptsWrap');
                     var list = document.getElementById('imagePrompts');
                     wrap.style.display = '';
                     list.innerHTML = '';
-                    data.imagePrompts.forEach(function(p, i) {
+                    data.imagePrompts.forEach(function(p) {
                         var div = document.createElement('div');
-                        div.style.cssText = 'display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-secondary);line-height:1.4;cursor:pointer';
-                        div.innerHTML = '<span style="flex:1">' + p.replace(/</g, '&lt;') + '</span><span style="font-size:0.65rem;color:var(--lobster-300);font-weight:700;flex-shrink:0" onclick="navigator.clipboard.writeText(\'' + p.replace(/'/g, "\\'") + '\');this.textContent=\'Copied!\';setTimeout(function(){this.textContent=\'Copy\'},1500)">Copy</span>';
+                        div.style.cssText = 'display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-secondary);line-height:1.4';
+                        var escaped = p.replace(/'/g, "\\'").replace(/</g, '&lt;');
+                        div.innerHTML = '<span style="flex:1">' + escaped + '</span><button style="font-size:0.65rem;color:var(--lobster-300);font-weight:700;flex-shrink:0;background:none;border:none;cursor:pointer;font-family:inherit" onclick="navigator.clipboard.writeText(\'' + escaped + '\');this.textContent=\'Copied!\';var b=this;setTimeout(function(){b.textContent=\'Copy\'},1500)">Copy</button>';
                         list.appendChild(div);
                     });
                 }
             } catch(e) {
-                console.error('Generate details error:', e);
-                alert('Failed to parse — try again');
+                console.error('Generate error:', e);
+                alert('Failed to generate — try again');
             }
-            btn.disabled = false; btn.textContent = 'Generate Name, Symbol & Image Prompts';
+            btn.disabled = false; btn.textContent = 'Generate a Project';
         };
 
         // Image preview
