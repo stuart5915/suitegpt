@@ -325,7 +325,8 @@ async function publishTemplateSite(meme, symbol, tokenAddress) {
             creator_wallet: CREATOR_WALLET,
             creator_x_handle: 'inclawbate',
             tags: ['memeclaw', 'meme-token', 'voting'],
-            is_listed: true
+            is_listed: true,
+            update: true
         })
     });
 
@@ -386,10 +387,14 @@ async function launchMemeToken(meme) {
     // Step 3: Re-publish site with the actual token address
     if (tokenAddress) {
         try {
+            console.log(`[MemeClaw] Re-publishing site with token address: ${tokenAddress}`);
             siteResult = await publishTemplateSite(meme, symbol, tokenAddress);
+            console.log(`[MemeClaw] Site re-published:`, siteResult.url);
         } catch (err) {
             console.error(`[MemeClaw] Site re-publish failed:`, err.message);
         }
+    } else {
+        console.error(`[MemeClaw] No token address — site will have 0x000 placeholder`);
     }
 
     totalLaunched++;
