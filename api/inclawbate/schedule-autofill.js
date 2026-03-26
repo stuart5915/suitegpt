@@ -1017,21 +1017,40 @@ function buildOAuth1Header(method, url, extraParams, account) {
 }
 
 async function uploadMediaToX(imageUrl, account) {
+    console.log('[media] Downloading image:', imageUrl);
     const imgResp = await fetch(imageUrl);
-    if (!imgResp.ok) throw new Error('Failed to download image: ' + imgResp.status);
+    if (!imgResp.ok) throw new Error('Failed to download image: HTTP ' + imgResp.status);
     const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
+    console.log('[media] Image size:', imgBuffer.length, 'bytes');
+    if (imgBuffer.length > 5 * 1024 * 1024) throw new Error('Image too large: ' + (imgBuffer.length / 1024 / 1024).toFixed(1) + 'MB (max 5MB)');
     const base64Data = imgBuffer.toString('base64');
+
     const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
+    // OAuth signature must NOT include body params for multipart — sign URL only
     const authHeader = buildOAuth1Header('POST', uploadUrl, {}, account);
-    const body = new URLSearchParams();
-    body.append('media_data', base64Data);
+
+    // Use multipart/form-data (same as agent-heartbeat.js — URL-encoded breaks OAuth sig for large payloads)
+    const boundary = '----XMediaUpload' + Date.now();
+    const bodyParts = [
+        '--' + boundary,
+        'Content-Disposition: form-data; name="media_data"',
+        '',
+        base64Data,
+        '--' + boundary + '--',
+    ];
+    const bodyStr = bodyParts.join('\r\n');
+
     const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: { 'Authorization': authHeader, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString()
+        headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'multipart/form-data; boundary=' + boundary,
+        },
+        body: bodyStr,
     });
     const data = await response.json();
-    if (!response.ok) throw new Error('Media upload failed: ' + (data.error || JSON.stringify(data.errors || data)));
+    console.log('[media] Upload response:', response.status, JSON.stringify(data).slice(0, 200));
+    if (!response.ok) throw new Error('Media upload failed (HTTP ' + response.status + '): ' + (data.error || JSON.stringify(data.errors || data)));
     return data.media_id_string;
 }
 
