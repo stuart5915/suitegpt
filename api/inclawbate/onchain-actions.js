@@ -193,7 +193,7 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
           deploy_tx_hash: receipt.hash,
           creator_wallet: creator_wallet,
           description: description || '',
-          website_url: website_url || '',
+          website_url: '',
           x_handle: x_handle || '',
           telegram_url: telegram_url || '',
           logo_url: image_url || '',
