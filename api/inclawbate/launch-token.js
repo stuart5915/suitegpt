@@ -60,20 +60,25 @@ export default async function handler(req, res) {
             }
         }
 
-        // Also update the apps table if MemeClaw published a site for this token
+        // Link the MemeClaw app to this project by setting website_url to the app ID
         if (result.token_address) {
             try {
-                await supabase
+                // Find the MemeClaw-published app by name
+                const { data: app } = await supabase
                     .from('apps')
-                    .update({
-                        token_address: result.token_address.toLowerCase(),
-                        token_symbol: symbol.toUpperCase(),
-                        ...(result.staking_address ? { staking_address: result.staking_address } : {})
-                    })
+                    .select('id')
                     .ilike('name', `%${name}%`)
-                    .is('token_address', null);
+                    .limit(1)
+                    .single();
+                if (app) {
+                    // Set website_url on the inclawbator_projects row to the app ID (this is how the join works)
+                    await supabase
+                        .from('inclawbator_projects')
+                        .update({ website_url: app.id })
+                        .eq('token_address', result.token_address.toLowerCase());
+                }
             } catch (e) {
-                console.error('Apps table update failed (non-fatal):', e.message);
+                console.error('App-project link failed (non-fatal):', e.message);
             }
         }
 
