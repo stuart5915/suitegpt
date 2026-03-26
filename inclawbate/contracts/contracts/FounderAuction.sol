@@ -22,7 +22,8 @@ contract FounderAuction is ReentrancyGuard {
 
     uint256 public constant ANTI_SNIPE_WINDOW = 5 minutes;
     uint256 public constant ANTI_SNIPE_EXTENSION = 5 minutes;
-    uint256 public constant MIN_BID_INCREMENT = 10e6; // $10 USDC (6 decimals)
+    uint256 public constant MAX_EXTENSIONS = 12;       // Max 1 hour of extensions
+    uint256 public constant MIN_BID_INCREMENT = 10e6;  // $10 USDC (6 decimals)
 
     // ── Auction State ──
 
@@ -32,6 +33,7 @@ contract FounderAuction is ReentrancyGuard {
         uint256 minBid;          // Minimum first bid (USDC, 6 decimals)
         address highestBidder;   // Current winning address
         uint256 highestBid;      // Current winning bid (USDC, 6 decimals)
+        uint256 extensions;      // Number of anti-snipe extensions used
         bool settled;            // Whether winner has claimed
         bool cancelled;          // Emergency cancel
     }
@@ -69,7 +71,8 @@ contract FounderAuction is ReentrancyGuard {
     /// @param duration Auction duration in seconds (default: 86400 = 24h)
     /// @param minBid Minimum first bid in USDC (6 decimals, e.g. 50e6 = $50)
     function startAuction(address token, uint256 duration, uint256 minBid) external onlyOwner {
-        require(auctions[token].endTime == 0, "Auction already exists");
+        Auction storage existing = auctions[token];
+        require(existing.endTime == 0 || existing.settled || existing.cancelled, "Auction still active");
         require(duration > 0 && duration <= 7 days, "Invalid duration");
         require(IERC20(token).balanceOf(address(this)) > 0, "No tokens to auction");
 
@@ -79,6 +82,7 @@ contract FounderAuction is ReentrancyGuard {
             minBid: minBid,
             highestBidder: address(0),
             highestBid: 0,
+            extensions: 0,
             settled: false,
             cancelled: false
         });
@@ -96,6 +100,9 @@ contract FounderAuction is ReentrancyGuard {
         require(a.endTime > 0, "No auction");
         require(!a.cancelled, "Auction cancelled");
         require(block.timestamp < a.endTime, "Auction ended");
+
+        // Cannot outbid yourself
+        require(msg.sender != a.highestBidder, "Already highest bidder");
 
         // Must beat current bid by minimum increment
         if (a.highestBid == 0) {
@@ -117,9 +124,10 @@ contract FounderAuction is ReentrancyGuard {
         a.highestBidder = msg.sender;
         a.highestBid = amount;
 
-        // Anti-snipe: extend if bid is in last 5 minutes
-        if (a.endTime - block.timestamp < ANTI_SNIPE_WINDOW) {
+        // Anti-snipe: extend if bid is in last 5 minutes (capped at MAX_EXTENSIONS)
+        if (a.endTime - block.timestamp < ANTI_SNIPE_WINDOW && a.extensions < MAX_EXTENSIONS) {
             a.endTime += ANTI_SNIPE_EXTENSION;
+            a.extensions++;
         }
 
         emit BidPlaced(token, msg.sender, amount);
