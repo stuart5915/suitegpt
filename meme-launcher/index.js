@@ -311,25 +311,36 @@ async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
         .replace(/\{\{IDEA_4_DESC\}\}/g, esc(ideas[3].desc))
         .replace(/\{\{STAKING_ADDRESS\}\}/g, esc(stakingAddress || ''));
 
-    // Publish via publish-site API
-    const publishResp = await fetch(PUBLISH_API_URL, {
+    // Publish via publish-site API — try create first, then update if slug exists
+    const payload = {
+        name: `${meme.title} Token`,
+        slug,
+        code: html,
+        email: 'memeclaw@inclawbate.app',
+        description: `Community token for the certified meme: ${meme.title}. Vote on what it becomes.`,
+        source: 'memeclaw',
+        category: 'finance',
+        creator_wallet: CREATOR_WALLET,
+        creator_x_handle: 'inclawbate',
+        tags: ['memeclaw', 'meme-token', 'voting'],
+        is_listed: true
+    };
+
+    let publishResp = await fetch(PUBLISH_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: `${meme.title} Token`,
-            slug,
-            code: html,
-            email: 'memeclaw@inclawbate.app',
-            description: `Community token for the certified meme: ${meme.title}. Vote on what it becomes.`,
-            source: 'memeclaw',
-            category: 'finance',
-            creator_wallet: CREATOR_WALLET,
-            creator_x_handle: 'inclawbate',
-            tags: ['memeclaw', 'meme-token', 'voting'],
-            is_listed: true,
-            update: true
-        })
+        body: JSON.stringify(payload)
     });
+
+    // If slug already exists (409 or similar), retry with update: true
+    if (!publishResp.ok) {
+        payload.update = true;
+        publishResp = await fetch(PUBLISH_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
 
     const publishData = await publishResp.json();
     console.log(`[MemeClaw] Site published:`, publishData.url || publishData.error);
@@ -446,7 +457,7 @@ async function launchMemeToken(meme) {
         siteUrl: siteResult.url || null,
         siteSlug: siteResult.slug || null,
         ideas: siteResult.ideas || [],
-        tokenResponse: launchResp?.reply || 'no response',
+        tokenResponse: tokenAddress || 'no address',
         timestamp: new Date().toISOString()
     };
 }
