@@ -217,22 +217,27 @@
         .mc-feed {
             display: flex;
             flex-direction: column;
-            gap: 1px;
-            background: var(--sm-border);
-            border: 1px solid var(--sm-border);
-            border-radius: var(--sm-r-xl);
-            overflow: hidden;
+            gap: 0;
         }
 
         .mc-item {
             display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 20px;
+            gap: 16px;
+            padding: 16px;
             background: var(--sm-card);
-            transition: background 0.15s;
+            border: 1px solid var(--sm-border);
+            border-radius: var(--sm-r-lg);
+            margin-bottom: 12px;
+            transition: all 0.15s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
-        .mc-item:hover { background: var(--sm-card-hover); }
+        .mc-item:hover {
+            border-color: var(--sm-border-bright);
+            background: var(--sm-card-hover);
+            transform: translateY(-1px);
+        }
 
         .mc-item-img {
             width: 120px; height: 120px;
@@ -250,7 +255,7 @@
         .mc-item-name {
             font-family: var(--sm-font);
             font-weight: 800;
-            font-size: 0.92rem;
+            font-size: 1.05rem;
             color: var(--sm-text);
             white-space: nowrap;
             overflow: hidden;
@@ -259,8 +264,67 @@
         .mc-item-symbol {
             font-family: var(--sm-mono);
             font-size: 0.7rem;
-            color: var(--sm-accent);
+            color: var(--sm-text-3);
             font-weight: 600;
+        }
+        .mc-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .mc-item-addr {
+            font-family: var(--sm-mono);
+            font-size: 0.65rem;
+            color: var(--sm-accent);
+        }
+        .mc-item-time {
+            font-family: var(--sm-mono);
+            font-size: 0.62rem;
+            color: var(--sm-text-3);
+        }
+        .mc-item-mcap-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .mc-item-mcap {
+            font-family: var(--sm-mono);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--sm-text);
+        }
+        .mc-item-vol-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(168, 85, 247, 0.15);
+            border-radius: 3px;
+            overflow: hidden;
+            max-width: 120px;
+        }
+        .mc-item-vol-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--sm-accent), #ec4899);
+            transition: width 0.5s ease;
+        }
+        .mc-item-change {
+            font-family: var(--sm-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .mc-item-change.green { color: var(--sm-green); }
+        .mc-item-change.red { color: #ef4444; }
+        .mc-item-lore {
+            font-size: 0.75rem;
+            color: var(--sm-text-3);
+            line-height: 1.4;
+            margin-top: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .mc-item-desc {
             font-size: 0.75rem;
@@ -329,7 +393,7 @@
             text-decoration: none;
         }
 
-        /* Expanded feed item for launched tokens */
+        /* Expanded feed item for launched tokens (legacy — kept for compatibility) */
         .mc-item-stats {
             display: flex;
             gap: 12px;
@@ -353,53 +417,6 @@
         }
         .mc-item-stat-val.green { color: var(--sm-green); }
         .mc-item-stat-val.red { color: #ef4444; }
-
-        /* Buy/Stake inline controls */
-        .mc-item-controls {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .mc-buy-input {
-            width: 80px;
-            padding: 6px 10px;
-            background: var(--sm-bg);
-            border: 1px solid var(--sm-border);
-            border-radius: var(--sm-r-sm);
-            color: var(--sm-text);
-            font-family: var(--sm-mono);
-            font-size: 0.72rem;
-            outline: none;
-        }
-        .mc-buy-input:focus { border-color: var(--sm-accent); }
-        .mc-buy-input::placeholder { color: var(--sm-text-3); }
-
-        .mc-buy-btn, .mc-stake-btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: var(--sm-r-sm);
-            font-family: var(--sm-font);
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.15s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .mc-buy-btn {
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            color: #fff;
-        }
-        .mc-stake-btn {
-            background: rgba(74, 222, 128, 0.12);
-            color: #4ade80;
-            border: 1px solid rgba(74, 222, 128, 0.2);
-        }
-        .mc-buy-btn:hover, .mc-stake-btn:hover { opacity: 0.85; text-decoration: none; }
 
         /* Claim rewards bar */
         .mc-rewards {
@@ -750,9 +767,10 @@
 
         @media (max-width: 600px) {
             .mc-hero h1 { font-size: 1.6rem; }
-            .mc-item { padding: 8px 14px; }
-            .mc-item-desc { display: none; }
+            .mc-item { padding: 12px; gap: 12px; }
+            .mc-item-lore { display: none; }
             .mc-item-img { width: 80px; height: 80px; }
+            .mc-item-vol-bar { max-width: 80px; }
             .mc-mechanics { grid-template-columns: 1fr; }
         }
     </style>
@@ -1087,69 +1105,78 @@
         }
     }
 
+    // ── Time ago helper ──
+    function getTimeAgo(dateStr) {
+        var now = Date.now();
+        var then = new Date(dateStr).getTime();
+        var diff = Math.floor((now - then) / 1000);
+        if (diff < 60) return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
     // ── Render meme item ──
     function renderMemeItem(item) {
         var meme = item.meme || 'Unknown';
         var symbol = item.symbol || generateSymbol(meme);
         var isLaunched = item.tokenAddress || (item.siteUrl && !item.status);
-        var date = item.timestamp ? new Date(item.timestamp).toLocaleDateString() : '';
 
         var row = document.createElement('div');
         row.className = 'mc-item';
 
-        var badge = isLaunched
-            ? '<span class="mc-item-badge mc-item-badge--launched">Launched</span>'
-            : '<span class="mc-item-badge mc-item-badge--queued">Queued</span>';
+        var imgHtml = item.imageUrl
+            ? '<div class="mc-item-img"><img src="' + item.imageUrl + '" alt="' + meme + '" onerror="this.parentElement.innerHTML=\'<div style=\\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--sm-card-hover)\\\'>&#129300;</div>\'"></div>'
+            : '<div class="mc-item-img"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--sm-card-hover)">&#129300;</div></div>';
 
-        var launchBtn = isLaunched
-            ? '<button class="mc-launch-btn mc-launch-btn--done" disabled>Launched \u2713</button>'
-            : '<button class="mc-launch-btn">Launch</button>';
-
-        var actions = '';
         if (isLaunched && item.tokenAddress) {
             var slug = meme.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-token';
             var spawnUrl = 'https://spawnmemes.fun/' + slug;
-            actions = '<div class="mc-actions">'
-                + '<a class="mc-action-btn" href="https://www.clanker.world/clanker/' + item.tokenAddress + '" target="_blank">&#128640; Clanker</a>'
-                + '<a class="mc-action-btn" href="https://basescan.org/token/' + item.tokenAddress + '" target="_blank">&#128270; BaseScan</a>'
-                + '<a class="mc-action-btn" href="https://dexscreener.com/base/' + item.tokenAddress + '" target="_blank">&#128200; DexScreener</a>'
-                + '<a class="mc-action-btn" href="' + spawnUrl + '" target="_blank">&#127760; Site</a>'
+            var addr = item.tokenAddress.slice(0, 8);
+            var timeAgo = item.launchedAt ? getTimeAgo(item.launchedAt) : (item.timestamp ? getTimeAgo(item.timestamp) : '');
+            var lore = (item.description || '').slice(0, 120);
+
+            row.onclick = function() { window.open(spawnUrl, '_blank'); };
+
+            row.innerHTML = imgHtml
+                + '<div class="mc-item-info">'
+                + '<div class="mc-item-name">' + meme + '</div>'
+                + '<div class="mc-item-symbol">' + symbol + '</div>'
+                + '<div class="mc-item-meta">'
+                + '<span class="mc-item-addr">' + addr + '</span>'
+                + (timeAgo ? '<span class="mc-item-time">' + timeAgo + '</span>' : '')
                 + '</div>'
-                + '<div class="mc-item-stats" data-token="' + item.tokenAddress + '">'
-                + '<div class="mc-item-stat"><div class="mc-item-stat-label">Price</div><div class="mc-item-stat-val" data-stat="price">--</div></div>'
-                + '<div class="mc-item-stat"><div class="mc-item-stat-label">24h Vol</div><div class="mc-item-stat-val" data-stat="volume">--</div></div>'
-                + '<div class="mc-item-stat"><div class="mc-item-stat-label">24h</div><div class="mc-item-stat-val" data-stat="change">--</div></div>'
+                + '<div class="mc-item-mcap-row" data-token="' + item.tokenAddress + '">'
+                + '<span class="mc-item-mcap" data-stat="mcap">--</span>'
+                + '<div class="mc-item-vol-bar"><div class="mc-item-vol-fill" data-stat="vol-bar" style="width:0%"></div></div>'
+                + '<span class="mc-item-change" data-stat="change">--</span>'
                 + '</div>'
-                + '<div class="mc-item-controls">'
-                + '<input class="mc-buy-input" type="text" placeholder="0.01 ETH" data-token="' + item.tokenAddress + '">'
-                + '<button class="mc-buy-btn" onclick="buyToken(this, \'' + item.tokenAddress + '\')">Buy</button>'
-                + '<a class="mc-stake-btn" href="' + spawnUrl + '#stake" target="_blank">Stake</a>'
-                + '<button class="mc-action-btn" onclick="addToWallet(\'' + item.tokenAddress + '\', \'' + symbol.replace("$","") + '\', \'' + (item.imageUrl || '') + '\')">+ Wallet</button>'
-                + '<span class="mc-buy-status" style="font-size:0.65rem;color:var(--sm-text-3);display:none"></span>'
+                + (lore ? '<div class="mc-item-lore">' + lore + '</div>' : '')
                 + '</div>';
-        }
+        } else {
+            var badge = '<span class="mc-item-badge mc-item-badge--queued">Queued</span>';
+            var launchBtn = '<button class="mc-launch-btn">Launch</button>';
 
-        var imgHtml = item.imageUrl
-            ? '<div class="mc-item-img"><img src="' + item.imageUrl + '" alt="' + meme + '" onerror="this.parentElement.innerHTML=\'<div style=\\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--sm-card-hover)\\\'>🤔</div>\'"></div>'
-            : '<div class="mc-item-img"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--sm-card-hover)">&#129300;</div></div>';
+            row.innerHTML = imgHtml
+                + '<div class="mc-item-info">'
+                + '<div class="mc-item-name">' + meme + '</div>'
+                + '<div class="mc-item-symbol">' + symbol + '</div>'
+                + '</div>'
+                + '<div style="margin-left:auto;display:flex;align-items:center;gap:8px;">'
+                + badge
+                + launchBtn
+                + '</div>';
 
-        row.innerHTML = imgHtml
-            + '<div class="mc-item-info"><div class="mc-item-name">' + meme + '</div>'
-            + '<div class="mc-item-symbol">' + symbol + '</div>'
-            + (item.tokenAddress ? '<div style="font-family:var(--sm-mono);font-size:0.6rem;color:var(--sm-text-3)">' + item.tokenAddress.slice(0,10) + '...</div>' : '')
-            + actions
-            + '</div>'
-            + badge
-            + launchBtn
-            + '<div class="mc-item-date">' + date + '</div>';
-
-        // Wire launch button
-        var btn = row.querySelector('.mc-launch-btn');
-        if (btn && !isLaunched) {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                launchMeme(meme, btn);
-            });
+            // Wire launch button
+            var btn = row.querySelector('.mc-launch-btn');
+            if (btn) {
+                (function(m, b) {
+                    b.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        launchMeme(m, b);
+                    });
+                })(meme, btn);
+            }
         }
 
         // Tag row with filter data
@@ -1231,7 +1258,7 @@
 
     // Fetch stats for launched tokens
     function loadTokenStats() {
-        var statEls = document.querySelectorAll('.mc-item-stats[data-token]');
+        var statEls = document.querySelectorAll('.mc-item-mcap-row[data-token]');
         statEls.forEach(function(el) {
             var token = el.getAttribute('data-token');
             fetch('https://api.dexscreener.com/latest/dex/tokens/' + token)
@@ -1239,21 +1266,29 @@
                 .then(function(d) {
                     if (!d.pairs || !d.pairs.length) return;
                     var p = d.pairs[0];
-                    var priceEl = el.querySelector('[data-stat="price"]');
-                    var volEl = el.querySelector('[data-stat="volume"]');
+                    var mcapEl = el.querySelector('[data-stat="mcap"]');
+                    var volBarEl = el.querySelector('[data-stat="vol-bar"]');
                     var changeEl = el.querySelector('[data-stat="change"]');
-                    if (priceEl) {
-                        var price = parseFloat(p.priceUsd || 0);
-                        priceEl.textContent = price >= 0.01 ? '$' + price.toFixed(4) : '$' + price.toFixed(8);
+                    if (mcapEl) {
+                        var mcap = p.marketCap || p.fdv || 0;
+                        if (mcap >= 1000000) {
+                            mcapEl.textContent = '$' + (mcap / 1000000).toFixed(1) + 'M';
+                        } else if (mcap >= 1000) {
+                            mcapEl.textContent = '$' + (mcap / 1000).toFixed(1) + 'K';
+                        } else {
+                            mcapEl.textContent = '$' + Math.round(mcap);
+                        }
                     }
-                    if (volEl) {
+                    if (volBarEl) {
                         var vol = p.volume && p.volume.h24 ? p.volume.h24 : 0;
-                        volEl.textContent = vol >= 1000 ? '$' + (vol/1000).toFixed(1) + 'K' : '$' + Math.round(vol);
+                        var mcapVal = p.marketCap || p.fdv || 1;
+                        var pct = Math.min(100, Math.round((vol / mcapVal) * 100));
+                        volBarEl.style.width = pct + '%';
                     }
                     if (changeEl) {
                         var change = p.priceChange && p.priceChange.h24 ? parseFloat(p.priceChange.h24) : 0;
                         changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
-                        changeEl.className = 'mc-item-stat-val ' + (change >= 0 ? 'green' : 'red');
+                        changeEl.className = 'mc-item-change ' + (change >= 0 ? 'green' : 'red');
                     }
                 })
                 .catch(function() {});
