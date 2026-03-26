@@ -395,6 +395,60 @@
         .glossary-def .gd-full { font-size: 0.62rem; color: var(--seafoam-400, #2dd4bf); margin-bottom: 4px; font-weight: 600; }
         .glossary-def .gd-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.45; font-weight: 400; }
 
+        /* Learn mini-chat */
+        .learn-chat-widget {
+            margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;
+        }
+        .learn-chat-messages {
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+            max-height: 300px; overflow-y: auto;
+        }
+        .learn-chat-messages:empty { display: none; }
+        .lcm-msg {
+            font-size: 0.78rem; line-height: 1.5; padding: 8px 12px;
+            border-radius: 10px; max-width: 90%; word-wrap: break-word;
+        }
+        .lcm-user {
+            align-self: flex-end; background: rgba(99,102,241,0.15);
+            color: #c7c7ff; border: 1px solid rgba(99,102,241,0.2);
+        }
+        .lcm-bot {
+            align-self: flex-start; background: rgba(255,255,255,0.04);
+            color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.06);
+        }
+        .lcm-typing {
+            align-self: flex-start; color: var(--text-dim); font-size: 0.72rem;
+            padding: 6px 12px; font-style: italic;
+        }
+        .learn-chat-form {
+            display: flex; gap: 6px; align-items: center;
+        }
+        .learn-chat-input {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 9px 12px; color: #fff; font-size: 0.78rem;
+            font-family: var(--font-display); outline: none; transition: border-color 0.15s;
+        }
+        .learn-chat-input:focus { border-color: var(--seafoam-400, #2dd4bf); }
+        .learn-chat-input::placeholder { color: var(--text-dim); }
+        .learn-chat-send {
+            background: var(--seafoam-400, #2dd4bf); border: none; border-radius: 10px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #0a0a0f; font-size: 0.9rem; flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+        .learn-chat-send:disabled { opacity: 0.4; cursor: default; }
+        .learn-chat-send:hover:not(:disabled) { opacity: 0.85; }
+        .learn-chat-starters {
+            display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;
+        }
+        .learn-chat-starters button {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 5px 10px; font-size: 0.68rem; font-weight: 600;
+            color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+            font-family: var(--font-display);
+        }
+        .learn-chat-starters button:hover { border-color: var(--seafoam-400, #2dd4bf); color: #fff; }
+
         /* Keep old split panel for app preview override */
         .split-panel {
             display: none;
@@ -857,7 +911,6 @@
         <div class="nav-group">
             <a href="#" class="nav-link" onclick="return false">Explore</a>
             <div class="nav-group-menu">
-                <a href="/build">Build</a>
                 <a href="/apps">Apps</a>
                 <a href="/tokens">Tokens</a>
                 <a href="/nfts">NFTs</a>
@@ -969,6 +1022,7 @@
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
                     <button class="defi-pill active" onclick="switchDefiSub(this,'trade','swap')">Swap</button>
                     <button class="defi-pill" onclick="switchDefiSub(this,'trade','perps')">Perps</button>
+                    <button class="defi-pill" onclick="switchDefiSub(this,'trade','disperse')">Disperse</button>
                 </div>
             </div>
             <!-- Earn sub-pills -->
@@ -999,58 +1053,22 @@
         <!-- ═══ LEARN TAB ═══ -->
         <div class="chat-cat-actions" data-cat-panel="learn" style="padding:8px 12px;">
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                <button class="defi-cat-btn active" onclick="toggleCatPills(this,'learn-defi');filterLearnContent('defi')" data-cat-expand="learn-defi">
+                <button class="defi-cat-btn active" onclick="filterLearnContent('defi');this.parentNode.querySelectorAll('.defi-cat-btn').forEach(function(b){b.classList.remove('active')});this.classList.add('active')">
                     <span style="font-size:1rem;">&#128176;</span>
                     <span>DeFi</span>
                 </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'learn-build');filterLearnContent('build')" data-cat-expand="learn-build">
+                <button class="defi-cat-btn" onclick="filterLearnContent('build');this.parentNode.querySelectorAll('.defi-cat-btn').forEach(function(b){b.classList.remove('active')});this.classList.add('active')">
                     <span style="font-size:1rem;">&#128295;</span>
                     <span>Building</span>
                 </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'learn-value');filterLearnContent('value')" data-cat-expand="learn-value">
+                <button class="defi-cat-btn" onclick="filterLearnContent('value');this.parentNode.querySelectorAll('.defi-cat-btn').forEach(function(b){b.classList.remove('active')});this.classList.add('active')">
                     <span style="font-size:1rem;">&#127793;</span>
                     <span>Value</span>
                 </button>
-                <button class="defi-cat-btn" onclick="toggleCatPills(this,'learn-system');filterLearnContent('system')" data-cat-expand="learn-system">
+                <button class="defi-cat-btn" onclick="filterLearnContent('system');this.parentNode.querySelectorAll('.defi-cat-btn').forEach(function(b){b.classList.remove('active')});this.classList.add('active')">
                     <span style="font-size:1rem;">&#9889;</span>
                     <span>Systems</span>
                 </button>
-            </div>
-            <div class="cat-pills-expand" data-pills="learn-defi" style="display:block;margin-top:8px;">
-                <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill" onclick="learnChat('What is DeFi and how does it work?')">What is DeFi?</button>
-                    <button class="defi-pill" onclick="learnChat('Explain how token swaps work')">Token swaps</button>
-                    <button class="defi-pill" onclick="learnChat('Explain staking in simple terms')">Staking</button>
-                    <button class="defi-pill" onclick="learnChat('Explain yield farming strategies')">Yield farming</button>
-                    <button class="defi-pill" onclick="learnChat('Explain lending and borrowing in DeFi')">Lending</button>
-                    <button class="defi-pill" onclick="learnChat('What is CLAWS and how does it work?')">What is CLAWS?</button>
-                </div>
-            </div>
-            <div class="cat-pills-expand" data-pills="learn-build" style="display:none;margin-top:8px;">
-                <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill" onclick="learnChat('Walk me through building my first app on Inclawbate')">Build my first app</button>
-                    <button class="defi-pill" onclick="learnChat('How do I launch a token on Inclawbate?')">Launch a token</button>
-                    <button class="defi-pill" onclick="learnChat('How does the Inclawbate app store work?')">App store</button>
-                    <button class="defi-pill" onclick="learnChat('How do I add staking to my token?')">Add staking</button>
-                    <button class="defi-pill" onclick="learnChat('Tell me about incubation services')">Incubation</button>
-                </div>
-            </div>
-            <div class="cat-pills-expand" data-pills="learn-value" style="display:none;margin-top:8px;">
-                <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill" onclick="learnChat('Explain tokenomics from the ground up')">Tokenomics</button>
-                    <button class="defi-pill" onclick="learnChat('Explain treasury management for crypto projects')">Treasury</button>
-                    <button class="defi-pill" onclick="learnChat('Explain revenue models in crypto')">Revenue models</button>
-                    <button class="defi-pill" onclick="learnChat('Explain governance and DAOs')">DAOs</button>
-                </div>
-            </div>
-            <div class="cat-pills-expand" data-pills="learn-system" style="display:none;margin-top:8px;">
-                <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    <button class="defi-pill" onclick="learnChat('Explain network effects in crypto')">Network effects</button>
-                    <button class="defi-pill" onclick="learnChat('Explain feedback loops and flywheels in crypto')">Feedback loops</button>
-                    <button class="defi-pill" onclick="learnChat('What are AI agents in the crypto context?')">AI agents</button>
-                    <button class="defi-pill" onclick="learnChat('Explain common DeFi scams and how to avoid them')">Security</button>
-                    <button class="defi-pill" onclick="learnChat('What is Inclawbate and how does it work?')">What is Inclawbate?</button>
-                </div>
             </div>
         </div>
         <!-- ═══ COUNCIL TAB (content in right panel only) ═══ -->
@@ -1222,6 +1240,10 @@
                                 <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Short BTC 3x with $50')"><span style="font-weight:700;">&#128308; Short BTC 3x</span></div>
                                 <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Show me perps markets')"><span style="font-weight:700;">Browse all markets</span></div>
                             </div>
+                        </div>
+                        <!-- DISPERSE — embedded airdrop tool -->
+                        <div class="defi-sub" data-sub="trade-disperse">
+                            <iframe src="/airdrop" style="width:100%;border:none;background:#0a0a0f;min-height:200px;" id="disperseIframe" scrolling="no"></iframe>
                         </div>
                     </div>
                     <!-- EARN panel -->
@@ -1615,7 +1637,7 @@
                                 <div class="lg-step"><span class="lg-step-num">3</span> Provide your wallet address when asked — this wallet receives 80% of LP fee rewards</div>
                                 <div class="lg-step"><span class="lg-step-num">4</span> Confirm the transaction in your wallet — your token deploys on Base via Clanker</div>
                                 <div class="lg-step"><span class="lg-step-num">5</span> Add staking: say "Deploy a staking pool for [your token address]"</div>
-                                <button class="defi-pill" onclick="event.stopPropagation();learnChat('I want to launch a token')" style="margin-top:8px;">Try it now &#8594;</button>
+                                <button class="defi-pill" onclick="event.stopPropagation();defiChat('I want to launch a token')" style="margin-top:8px;">Try it now &#8594;</button>
                             </div>
                         </div>
                         <div class="learn-guide-card" data-lcat="build" onclick="toggleGuide(this)">
@@ -1635,7 +1657,7 @@
                                 <div class="lg-step"><span class="lg-step-num">3</span> The Inclawbator generates and deploys your app live — preview appears on the right</div>
                                 <div class="lg-step"><span class="lg-step-num">4</span> Request changes: "Make the header bigger" or "Add a chart"</div>
                                 <div class="lg-step"><span class="lg-step-num">5</span> Your app is live at inclawbate.app/apps/your-app-name</div>
-                                <button class="defi-pill" onclick="event.stopPropagation();learnChat('Build me an app')" style="margin-top:8px;">Try it now &#8594;</button>
+                                <button class="defi-pill" onclick="event.stopPropagation();defiChat('Build me an app')" style="margin-top:8px;">Try it now &#8594;</button>
                             </div>
                         </div>
                         <div class="learn-guide-card" data-lcat="defi value" onclick="toggleGuide(this)">
@@ -1675,7 +1697,7 @@
                                 <div class="lg-step"><span class="lg-step-num">3</span> Say "Lend 1000 USDC on Moonwell" — the Inclawbator builds the transaction</div>
                                 <div class="lg-step"><span class="lg-step-num">4</span> Approve and sign in your wallet — your deposit earns yield immediately</div>
                                 <div class="lg-step"><span class="lg-step-num">5</span> Check positions anytime: "Show all my DeFi positions"</div>
-                                <button class="defi-pill" onclick="event.stopPropagation();learnChat('What yield strategies are available?')" style="margin-top:8px;">See options &#8594;</button>
+                                <button class="defi-pill" onclick="event.stopPropagation();defiChat('What yield strategies are available?')" style="margin-top:8px;">See options &#8594;</button>
                             </div>
                         </div>
                     </div>
@@ -1733,7 +1755,7 @@
                             </div>
                             <div class="lg-body" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
                                 Swap ETH or USDC for CLAWS right here &mdash; switch to the <strong>DeFi</strong> tab and say "Swap ETH for CLAWS". You can also buy directly on Uniswap (Base). Need ETH on Base first? Bridge from Ethereum or buy through Coinbase.
-                                <button class="defi-pill" onclick="event.stopPropagation();learnChat('Swap ETH for CLAWS')" style="margin-top:6px;">Swap now &#8594;</button>
+                                <button class="defi-pill" onclick="event.stopPropagation();defiChat('Swap ETH for CLAWS')" style="margin-top:6px;">Swap now &#8594;</button>
                             </div>
                         </div>
 
@@ -1805,7 +1827,7 @@
                             </div>
                             <div class="lg-body" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
                                 The Inclawbator can lend your assets through DeFi protocols like Moonwell (~4% APY), Aave (~3.8%), and Compound. Just say "Lend 1000 USDC on Moonwell" and it builds the transaction. You earn interest automatically and can withdraw anytime. Your funds stay in audited, battle-tested smart contracts &mdash; not with Inclawbate.
-                                <button class="defi-pill" onclick="event.stopPropagation();learnChat('What yield strategies are available?')" style="margin-top:6px;">See options &#8594;</button>
+                                <button class="defi-pill" onclick="event.stopPropagation();defiChat('What yield strategies are available?')" style="margin-top:6px;">See options &#8594;</button>
                             </div>
                         </div>
 
@@ -1882,6 +1904,22 @@
                             <span>&#127891;</span> DeFi Knowledge
                         </a>
                     </div>
+                </div>
+
+                <!-- ── Ask Anything (mini-chat) ── -->
+                <div class="learn-chat-widget">
+                    <div class="learn-section-label">Ask Anything</div>
+                    <div class="learn-chat-starters" id="learnChatStarters">
+                        <button onclick="askLearn('What is DeFi?')">What is DeFi?</button>
+                        <button onclick="askLearn('How does staking work?')">How does staking work?</button>
+                        <button onclick="askLearn('What is CLAWS?')">What is CLAWS?</button>
+                        <button onclick="askLearn('How do I launch a token?')">How do I launch a token?</button>
+                    </div>
+                    <div class="learn-chat-messages" id="learnChatMessages"></div>
+                    <form class="learn-chat-form" id="learnChatForm" onsubmit="event.preventDefault();askLearn()">
+                        <input type="text" class="learn-chat-input" id="learnChatInput" placeholder="Ask about DeFi, building, tokens..." autocomplete="off">
+                        <button type="submit" class="learn-chat-send" id="learnChatSend">&#10148;</button>
+                    </form>
                 </div>
 
             </div>
@@ -2853,9 +2891,8 @@
             var res = await fetch(AGENT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text.trim(), session_id: sessionId, wallet: walletAddr, client_history: chatHistory, context: window._chatContext || null })
+                body: JSON.stringify({ message: text.trim(), session_id: sessionId, wallet: walletAddr, client_history: chatHistory })
             });
-            window._chatContext = null;
             var data = await res.json();
             hideTyping();
             if (data.reply) {
@@ -3286,10 +3323,14 @@ function switchSwapType(btn, type) {
     else if (type === 'dca') { execBtn.style.display = 'none'; }
 }
 
-// Auto-resize DCA iframe to fit content
+// Auto-resize embedded iframes to fit content
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'autobuy-height') {
         var iframe = document.getElementById('dcaIframe');
+        if (iframe) iframe.style.height = e.data.height + 'px';
+    }
+    if (e.data && e.data.type === 'iframe-height') {
+        var iframe = document.getElementById(e.data.id);
         if (iframe) iframe.style.height = e.data.height + 'px';
     }
 });
@@ -3419,9 +3460,81 @@ function loadLearnStats() {
         }).catch(function() {});
 }
 
+// Learn mini-chat — separate from main Inclawbator chat, educational only
+var _learnHistory = [];
+var _learnSending = false;
+
+function askLearn(msg) {
+    var input = document.getElementById('learnChatInput');
+    var messagesEl = document.getElementById('learnChatMessages');
+    var sendBtn = document.getElementById('learnChatSend');
+    var starters = document.getElementById('learnChatStarters');
+    var widget = document.querySelector('.learn-chat-widget');
+    if (!messagesEl) return;
+
+    var text = msg || (input ? input.value.trim() : '');
+    if (!text || _learnSending) return;
+    if (input) input.value = '';
+
+    // Scroll the learn panel to show the mini-chat widget
+    if (widget) {
+        widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Hide starters after first message
+    if (starters) starters.style.display = 'none';
+
+    // Show user message
+    var userDiv = document.createElement('div');
+    userDiv.className = 'lcm-msg lcm-user';
+    userDiv.textContent = text;
+    messagesEl.appendChild(userDiv);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    // Show typing indicator
+    var typingDiv = document.createElement('div');
+    typingDiv.className = 'lcm-typing';
+    typingDiv.textContent = 'Thinking...';
+    messagesEl.appendChild(typingDiv);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    _learnSending = true;
+    if (sendBtn) sendBtn.disabled = true;
+
+    _learnHistory.push({ role: 'user', content: text });
+
+    fetch('/api/inclawbate/learn-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: _learnHistory.slice(-10) })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        typingDiv.remove();
+        var reply = data.reply || 'Hmm, I couldn\'t get an answer. Try rephrasing?';
+        var botDiv = document.createElement('div');
+        botDiv.className = 'lcm-msg lcm-bot';
+        botDiv.innerHTML = reply.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+        messagesEl.appendChild(botDiv);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        _learnHistory.push({ role: 'assistant', content: reply });
+    })
+    .catch(function() {
+        typingDiv.remove();
+        var errDiv = document.createElement('div');
+        errDiv.className = 'lcm-msg lcm-bot';
+        errDiv.textContent = 'Connection issue — try again in a moment.';
+        messagesEl.appendChild(errDiv);
+    })
+    .finally(function() {
+        _learnSending = false;
+        if (sendBtn) sendBtn.disabled = false;
+        if (input) input.focus();
+    });
+}
+
 function learnChat(msg) {
-    window._chatContext = 'learn';
-    defiChat(msg);
+    askLearn(msg);
 }
 
 var LEARN_TOPICS = {
