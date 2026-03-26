@@ -19,7 +19,8 @@ const KYM_RSS = 'https://knowyourmeme.com/memes.rss';
 const AGENT_CHAT_URL = process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat';
 const PUBLISH_API_URL = process.env.PUBLISH_API_URL || 'https://www.inclawbate.app/api/publish-site';
 const TEMPLATE_URL = process.env.TEMPLATE_URL || 'https://raw.githubusercontent.com/stuart5915/suitegpt/master/inclawbate/memeclaw-template.html';
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_KEYS = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+const GROQ_API_KEY = GROQ_KEYS.length ? GROQ_KEYS[Math.floor(Math.random() * GROQ_KEYS.length)] : null;
 const CREATOR_WALLET = process.env.CREATOR_WALLET; // Grant's wallet — receives 80% LP fees
 const INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS) || 4 * 60 * 60 * 1000; // 4 hours
