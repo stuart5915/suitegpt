@@ -35,35 +35,31 @@ export default async function handler(req, res) {
             reward_bps
         });
 
-        // Auto-deploy staking pool if requested and token deployed
+        // Return token address IMMEDIATELY — don't wait for staking/linking
+        // This prevents Vercel 60s timeout
+        res.status(200).json(result);
+
+        // Background: deploy staking pool + link app (after response sent)
         if (deploy_staking !== false && result.token_address) {
             try {
                 const stakingResult = await deployStakingPool({
                     token_address: result.token_address,
                     creator_wallet
                 });
-                result.staking_address = stakingResult.pool_address;
-                result.staking_tx = stakingResult.tx_hash;
+                console.log('Staking pool deployed:', stakingResult.pool_address);
 
-                // Update the inclawbator_projects row with staking address
-                try {
-                    await supabase
-                        .from('inclawbator_projects')
-                        .update({ staking_address: stakingResult.pool_address })
-                        .eq('token_address', result.token_address.toLowerCase());
-                } catch (e) {
-                    console.error('Staking address update failed (non-fatal):', e.message);
-                }
+                await supabase
+                    .from('inclawbator_projects')
+                    .update({ staking_address: stakingResult.pool_address })
+                    .eq('token_address', result.token_address.toLowerCase());
             } catch (stakingErr) {
                 console.error('Auto-staking deploy failed (non-fatal):', stakingErr.message);
-                result.staking_error = stakingErr.message;
             }
         }
 
-        // Link the MemeClaw app to this project by setting website_url to the app ID
+        // Background: link app to project
         if (result.token_address) {
             try {
-                // Find the MemeClaw-published app by name
                 const { data: app } = await supabase
                     .from('apps')
                     .select('id')
@@ -71,7 +67,6 @@ export default async function handler(req, res) {
                     .limit(1)
                     .single();
                 if (app) {
-                    // Set website_url on the inclawbator_projects row to the app ID (this is how the join works)
                     await supabase
                         .from('inclawbator_projects')
                         .update({ website_url: app.id })
@@ -81,10 +76,8 @@ export default async function handler(req, res) {
                 console.error('App-project link failed (non-fatal):', e.message);
             }
         }
-
-        return res.status(200).json(result);
     } catch (err) {
         console.error('launch-token error:', err);
-        return res.status(500).json({ error: err.message });
+        if (!res.headersSent) return res.status(500).json({ error: err.message });
     }
 }
