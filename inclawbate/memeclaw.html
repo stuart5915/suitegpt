@@ -224,6 +224,77 @@
             flex-shrink: 0;
         }
 
+        /* Action buttons for launched memes */
+        .mc-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .mc-action-btn {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            background: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .mc-action-btn:hover {
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+            text-decoration: none;
+        }
+
+        /* Claim rewards bar */
+        .mc-rewards {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .mc-rewards-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mc-rewards-label {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+        .mc-rewards-sub {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .mc-rewards-btn {
+            padding: 8px 18px;
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-full);
+            font-family: var(--font-display);
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .mc-rewards-btn:hover { opacity: 0.88; }
+
         .mc-empty {
             padding: var(--space-2xl);
             text-align: center;
@@ -521,7 +592,6 @@
         <div class="nav-group">
             <a href="#" class="nav-link" onclick="return false">Explore</a>
             <div class="nav-group-menu">
-                <a href="/build">Build</a>
                 <a href="/apps">Apps</a>
                 <a href="/tokens">Tokens</a>
                 <a href="/stake">Staking</a>
@@ -680,6 +750,17 @@
         <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px">When on, new certified memes auto-launch with token + site + staking. When off, memes queue up for manual launch.</div>
     </div>
 
+    <!-- Claim Rewards -->
+    <div class="mc-rewards" id="mcRewards" style="display:none">
+        <div class="mc-rewards-info">
+            <div>
+                <div class="mc-rewards-label">&#129438; LP Fee Rewards</div>
+                <div class="mc-rewards-sub">Accumulated from all MemeClaw token trades</div>
+            </div>
+        </div>
+        <button class="mc-rewards-btn" onclick="claimRewards()">Claim Rewards</button>
+    </div>
+
     <!-- Feed -->
     <div class="mc-feed-header">
         <div class="mc-feed-title">Meme Token Feed</div>
@@ -822,10 +903,22 @@
             ? '<button class="mc-launch-btn mc-launch-btn--done" disabled>Launched \u2713</button>'
             : '<button class="mc-launch-btn">Launch</button>';
 
+        var actions = '';
+        if (isLaunched && item.tokenAddress) {
+            var slug = meme.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            actions = '<div class="mc-actions">'
+                + '<a class="mc-action-btn" href="https://www.clanker.world/clanker/' + item.tokenAddress + '" target="_blank">&#128640; Clanker</a>'
+                + '<a class="mc-action-btn" href="https://basescan.org/token/' + item.tokenAddress + '" target="_blank">&#128270; BaseScan</a>'
+                + '<a class="mc-action-btn" href="https://dexscreener.com/base/' + item.tokenAddress + '" target="_blank">&#128200; DexScreener</a>'
+                + (item.siteUrl ? '<a class="mc-action-btn" href="' + item.siteUrl + '" target="_blank">&#127760; Site</a>' : '')
+                + '</div>';
+        }
+
         row.innerHTML = '<div class="mc-item-img"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--bg-elevated)">&#129300;</div></div>'
             + '<div class="mc-item-info"><div class="mc-item-name">' + meme + '</div>'
             + '<div class="mc-item-symbol">' + symbol + '</div>'
             + (item.tokenAddress ? '<div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim)">' + item.tokenAddress.slice(0,10) + '...</div>' : '')
+            + actions
             + '</div>'
             + badge
             + launchBtn
@@ -875,6 +968,27 @@
 })();
 </script>
 
+<script>
+    // Show rewards bar if wallet is connected (admin or Grant)
+    function checkRewardsEligibility() {
+        var ELIGIBLE = [
+            '0x91b5c0d07859cfeafeb67d9694121cd741f049bd', // Inclawbate treasury
+            '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'  // Grant
+        ];
+        try {
+            var wallet = localStorage.getItem('connectedWallet') || '';
+            if (wallet && ELIGIBLE.includes(wallet.toLowerCase())) {
+                document.getElementById('mcRewards').style.display = 'flex';
+            }
+        } catch(e) {}
+    }
+    setTimeout(checkRewardsEligibility, 1500);
+
+    window.claimRewards = function() {
+        toast('Claiming LP fee rewards... (coming soon — rewards accumulate on Clanker)');
+        // TODO: integrate Clanker reward claim contract call
+    };
+</script>
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/privy-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
