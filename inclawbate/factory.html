@@ -631,6 +631,17 @@
                             <input type="text" id="launchWallet" placeholder="0x..." maxlength="42" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.8rem;font-family:var(--font-mono)" readonly>
                         </div>
                     </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Token Image</label>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <label style="display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:var(--radius-md);background:var(--bg-elevated);border:1px dashed var(--border-default);cursor:pointer;flex-shrink:0;overflow:hidden" id="imagePreviewWrap">
+                                <input type="file" id="launchImage" accept="image/*" style="display:none" onchange="previewImage(this)">
+                                <span id="imagePreviewText" style="font-size:0.65rem;color:var(--text-dim);text-align:center">Click to upload</span>
+                                <img id="imagePreview" style="width:100%;height:100%;object-fit:cover;display:none">
+                            </label>
+                            <div style="font-size:0.72rem;color:var(--text-dim);line-height:1.4">Logo for the token. Shows on DexScreener, Basescan, wallets. Square, any size.</div>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn-primary" id="launchBtn" onclick="launchProject()" style="width:100%;padding:14px;font-size:1rem">Launch Project</button>
             </div>
@@ -975,6 +986,7 @@
 
         // ---------- One-click launch project ----------
         var AGENT_CHAT = '/api/inclawbate/agent-chat';
+        var INCLAWBATE_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 
         // Auto-fill wallet from profile
         (function() {
@@ -983,6 +995,32 @@
                 if (p && p.wallet_address) document.getElementById('launchWallet').value = p.wallet_address;
             } catch(e) {}
         })();
+
+        // Image preview
+        window.previewImage = function(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.getElementById('imagePreview');
+                    img.src = e.target.result;
+                    img.style.display = '';
+                    document.getElementById('imagePreviewText').style.display = 'none';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        // Upload image and get URL
+        async function uploadImage(file) {
+            if (!file) return null;
+            try {
+                var formData = new FormData();
+                formData.append('file', file);
+                var r = await fetch('/api/inclawbate/upload', { method: 'POST', body: formData });
+                var d = await r.json();
+                return d.url || null;
+            } catch(e) { console.error('Image upload failed:', e); return null; }
+        }
 
         async function agentChat(msg, session) {
             var r = await fetch(AGENT_CHAT, {
@@ -998,6 +1036,7 @@
             var desc = document.getElementById('launchDesc').value.trim();
             var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
             var wallet = document.getElementById('launchWallet').value.trim();
+            var imageFile = document.getElementById('launchImage').files[0] || null;
 
             if (!name) { alert('Project name required'); return; }
             if (!desc) { alert('Description required'); return; }
@@ -1012,12 +1051,22 @@
             var session = 'factory-' + Date.now().toString(36);
 
             try {
-                // Step 1: Launch token
+                // Step 0: Upload image if provided
+                var imageUrl = null;
+                if (imageFile) {
+                    stepEl.textContent = 'Uploading token image...';
+                    imageUrl = await uploadImage(imageFile);
+                }
+
+                // Step 1: Launch token with 30% to Inclawbate wallet
                 stepEl.textContent = 'Step 1/3: Launching $' + symbol + ' on Base via Clanker...';
-                var tokenReply = await agentChat(
-                    'Launch a token called "' + name + '" with symbol ' + symbol + ' to wallet ' + wallet + '. Description: "' + desc + '"',
-                    session
-                );
+                var launchMsg = 'Launch a token called "' + name + '" with symbol ' + symbol + ' to wallet ' + wallet + '. Description: "' + desc + '"';
+                if (imageUrl) launchMsg += '. Image: ' + imageUrl;
+                launchMsg += '. Website: https://inclawbate.app/s/' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                // Request 30% pre-allocation to Inclawbate treasury
+                launchMsg += '. Pre-allocate 30% of supply to ' + INCLAWBATE_WALLET;
+
+                var tokenReply = await agentChat(launchMsg, session);
                 var tokenAddr = null;
                 var addrMatch = (tokenReply.reply || '').match(/0x[a-fA-F0-9]{40}/);
                 if (addrMatch) tokenAddr = addrMatch[0];
@@ -1037,6 +1086,7 @@
                 var siteReply = await agentChat(
                     'Build me an app called "' + slug + '". It should be a landing page for ' + name + '. ' + desc + '. Dark theme, professional. '
                     + (tokenAddr ? 'Token address: ' + tokenAddr + '. Add a buy button linking to Uniswap. ' : '')
+                    + (imageUrl ? 'Use this image as the hero/logo: ' + imageUrl + '. ' : '')
                     + 'Add a staking section linking to inclawbate.app/stake. '
                     + 'Footer: "Powered by Inclawbate App Factory".',
                     session
