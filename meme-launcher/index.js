@@ -357,15 +357,31 @@ async function launchMemeToken(meme) {
         console.error(`[MemeClaw] Site publish failed:`, err.message);
     }
 
-    // Step 2: Launch the token with image + website baked into the token metadata
-    const launchMsg = `Launch token name: ${meme.title}, symbol: ${symbol.replace('$', '')}, wallet: ${CREATOR_WALLET}, description: Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw x Inclawbate.${imageUrl ? ', image: ' + imageUrl : ''}${siteResult.url ? ', website: ' + siteResult.url : ''}`;
-
-    const launchResp = await callAgent(launchMsg, sessionId);
-    console.log(`[MemeClaw] Token launch response:`, launchResp?.reply?.slice(0, 200));
-
-    // Try to extract token address from agent response
-    const addrMatch = (launchResp?.reply || '').match(/0x[a-fA-F0-9]{40}/);
-    const tokenAddress = addrMatch ? addrMatch[0] : null;
+    // Step 2: Launch the token via direct API (no AI parsing — structured JSON)
+    const LAUNCH_API = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/launch-token');
+    let tokenAddress = null;
+    try {
+        const launchResp = await fetch(LAUNCH_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: meme.title,
+                symbol: symbol.replace('$', ''),
+                creator_wallet: CREATOR_WALLET,
+                description: `Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw × Inclawbate.`,
+                image_url: imageUrl || '',
+                website_url: siteResult.url || siteUrl,
+                reward_recipients: [CREATOR_WALLET, INCLAWBATE_TREASURY],
+                reward_bps: [8000, 2000]
+            })
+        });
+        const launchData = await launchResp.json();
+        console.log(`[MemeClaw] Token launch response:`, JSON.stringify(launchData).slice(0, 300));
+        tokenAddress = launchData.token_address || null;
+        if (launchData.error) console.error(`[MemeClaw] Launch error:`, launchData.error);
+    } catch (err) {
+        console.error(`[MemeClaw] Launch API call failed:`, err.message);
+    }
 
     // Step 3: Re-publish site with the actual token address
     if (tokenAddress) {
