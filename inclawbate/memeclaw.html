@@ -992,7 +992,7 @@
 <script>
 (function(){
     var SERVICE_URL = 'https://memeclaw.inclawbate.app';
-    var ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+    var ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd', '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'];
 
     var statusEl = document.getElementById('mcStatus');
     var feedEl = document.getElementById('mcFeed');
@@ -1008,11 +1008,23 @@
         try {
             var profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
             if (profile) return { wallet: (profile.wallet_address || '').toLowerCase() };
+            // Also check connectedWallet (works across domains)
+            var cw = localStorage.getItem('connectedWallet');
+            if (cw) return { wallet: cw.toLowerCase() };
         } catch(e) {}
         return null;
     }
     var auth = getAuth();
     var isAdmin = auth && ADMIN_WALLETS.indexOf(auth.wallet) !== -1;
+
+    // Auto-detect wallet if not in localStorage
+    if (!isAdmin && window.ethereum) {
+        window.ethereum.request({ method: 'eth_accounts' }).then(function(accounts) {
+            if (accounts && accounts[0] && ADMIN_WALLETS.indexOf(accounts[0].toLowerCase()) !== -1) {
+                document.body.classList.add('mc-admin');
+            }
+        }).catch(function() {});
+    }
     if (isAdmin) {
         document.body.classList.add('mc-admin');
         adminBar.style.display = '';
