@@ -690,7 +690,9 @@ async function deployTokenAction(args) {
       image_url: args.image_url,
       website_url: args.website_url,
       x_handle: args.x_handle,
-      telegram_url: args.telegram_url
+      telegram_url: args.telegram_url,
+      reward_recipients,
+      reward_bps
     });
     return JSON.stringify(result);
   } catch (err) {
@@ -2298,7 +2300,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many messages. Please wait a moment and try again.' });
   }
 
-  const { message, session_id, wallet, client_history } = req.body || {};
+  const { message, session_id, wallet, client_history, reward_recipients, reward_bps } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message is required' });
 
   // Fire-and-forget API stat tracking

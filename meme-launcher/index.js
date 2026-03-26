@@ -13,6 +13,7 @@ const PUBLISH_API_URL = process.env.PUBLISH_API_URL || 'https://www.inclawbate.a
 const TEMPLATE_URL = process.env.TEMPLATE_URL || 'https://raw.githubusercontent.com/itsEvilDuck/stuart-hollinger-landing/master/inclawbate/memeclaw-template.html';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const CREATOR_WALLET = process.env.CREATOR_WALLET; // Grant's wallet — receives 80% LP fees
+const INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS) || 4 * 60 * 60 * 1000; // 4 hours
 let AUTO_LAUNCH = process.env.AUTO_LAUNCH === 'true'; // mutable — toggled via /toggle-auto endpoint
 const MAX_PER_POLL = parseInt(process.env.MAX_PER_POLL) || 3; // Max memes to process per poll
@@ -289,7 +290,13 @@ async function callAgent(message, sessionId) {
         const resp = await fetch(AGENT_CHAT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, session_id: sessionId, wallet: CREATOR_WALLET })
+            body: JSON.stringify({
+                message,
+                session_id: sessionId,
+                wallet: CREATOR_WALLET,
+                reward_recipients: [CREATOR_WALLET, INCLAWBATE_TREASURY],
+                reward_bps: [8000, 2000]
+            })
         });
         return await resp.json();
     } catch (err) {

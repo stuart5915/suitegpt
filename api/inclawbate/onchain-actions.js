@@ -85,7 +85,7 @@ function getOperatorWallet() {
 // ══════════════════════════════════════
 // LAUNCH TOKEN via Clanker V4
 // ══════════════════════════════════════
-export async function launchToken({ name, symbol, creator_wallet, description, image_url, website_url, x_handle, telegram_url }) {
+export async function launchToken({ name, symbol, creator_wallet, description, image_url, website_url, x_handle, telegram_url, reward_recipients, reward_bps }) {
   if (!name || !symbol) throw new Error('Token name and symbol are required');
   if (!creator_wallet) throw new Error('Creator wallet address is required');
 
@@ -108,9 +108,9 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
   const coder = ethers.AbiCoder.defaultAbiCoder();
   const sniperMevData = coder.encode(['uint256', 'uint256', 'uint256'], [666777, 41673, 15]);
 
-  // Reward recipients: 80% to creator, 20% to Inclawbate treasury
-  const rewardRecipients = [creator_wallet, INCLAWBATE_TREASURY];
-  const rewardBps = [8000, 2000];
+  // Reward recipients: custom split if provided, otherwise 100% to creator
+  const rewardRecipients = reward_recipients || [creator_wallet];
+  const rewardBps = reward_bps || [10000];
 
   const deploymentConfig = {
     tokenConfig: {
