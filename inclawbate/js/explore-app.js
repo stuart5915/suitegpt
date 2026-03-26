@@ -118,7 +118,7 @@
 
     var BASE_RPCS = [
         'https://mainnet.base.org',
-        'https://1rpc.io/base',
+        'https://base.drpc.org',
         'https://base-mainnet.public.blastapi.io'
     ];
 

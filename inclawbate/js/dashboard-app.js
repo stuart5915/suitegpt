@@ -1216,9 +1216,9 @@ function decodeSolTxData(data) {
 // ── Staking Pools ──
 const BASE_RPCS = [
     'https://mainnet.base.org',
-    'https://1rpc.io/base',
+    'https://base.drpc.org',
     'https://base-mainnet.public.blastapi.io',
-    'https://base.drpc.org'
+    'https://base.llamarpc.com'
 ];
 const CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_SEL = {

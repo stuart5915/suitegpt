@@ -19,7 +19,7 @@ const USDC_DECIMALS = 1_000_000; // 1e6
 // Fallback RPCs — tried in order if primary fails
 const FALLBACK_RPCS = [
   'https://base-mainnet.public.blastapi.io',
-  'https://1rpc.io/base',
+  'https://base.drpc.org',
   'https://mainnet.base.org',
   'https://base.llamarpc.com'  // Moved to last — known to fall behind
 ];

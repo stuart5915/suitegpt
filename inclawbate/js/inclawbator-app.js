@@ -126,7 +126,7 @@ function fmt(n) { return Math.round(Number(n) || 0).toLocaleString('en-US'); }
 
 var BASE_RPCS = [
     'https://mainnet.base.org',
-    'https://1rpc.io/base',
+    'https://base.drpc.org',
     'https://base-mainnet.public.blastapi.io',
     'https://base.drpc.org'
 ];

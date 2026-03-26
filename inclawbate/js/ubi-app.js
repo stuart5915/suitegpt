@@ -149,7 +149,7 @@ function fromWei(hex) {
 // Multiple RPCs for reliability — browser requests to mainnet.base.org often get rate-limited
 var BASE_RPCS = [
     'https://base.drpc.org',
-    'https://1rpc.io/base',
+    'https://base.drpc.org',
     'https://base-mainnet.public.blastapi.io',
     'https://mainnet.base.org'
 ];
