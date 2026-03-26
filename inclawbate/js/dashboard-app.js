@@ -1215,10 +1215,10 @@ function decodeSolTxData(data) {
 
 // ── Staking Pools ──
 const BASE_RPCS = [
-    'https://mainnet.base.org',
-    'https://base.drpc.org',
+    'https://base.llamarpc.com',
     'https://base-mainnet.public.blastapi.io',
-    'https://base.llamarpc.com'
+    'https://base.drpc.org',
+    'https://mainnet.base.org'
 ];
 const CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const STAKING_SEL = {
@@ -1742,6 +1742,7 @@ async function loadStakingPools() {
         }
 
         container.innerHTML = '';
+        const cards = [];
         for (const project of projects) {
             const card = document.createElement('div');
             card.className = 'staking-pool-card';
@@ -1806,29 +1807,36 @@ async function loadStakingPools() {
             });
 
             container.appendChild(card);
+            cards.push({ card, project });
+        }
 
-            // Load on-chain stats + distribution history in parallel
-            Promise.all([
-                loadPoolStats(card, project.staking_address),
-                loadDistributions(card, project.id)
-            ]).then(([_, distributions]) => {
+        // Batch ALL pool stats into a single RPC call (5 reads per pool)
+        const sels = [STAKING_SEL.totalStaked, STAKING_SEL.stakerCount, STAKING_SEL.rewardRate, STAKING_SEL.periodEnd, STAKING_SEL.paused];
+        const batchCalls = [];
+        for (const { project } of cards) {
+            for (const sel of sels) {
+                batchCalls.push({ to: project.staking_address, data: sel });
+            }
+        }
+        const batchResults = await rpcBatchCall(batchCalls);
+
+        // Apply results + load distributions in parallel
+        const distPromises = cards.map(({ card, project }, idx) => {
+            const base = idx * 5;
+            applyPoolStats(card, batchResults.slice(base, base + 5));
+            return loadDistributions(card, project.id).then(distributions => {
                 renderPoolAnalytics(card, distributions);
             });
-        }
+        });
+        await Promise.all(distPromises);
     } catch (e) {
         container.innerHTML = '<div class="overview-empty"><p>Failed to load pools.</p></div>';
     }
 }
 
-async function loadPoolStats(card, poolAddr) {
+function applyPoolStats(card, results) {
     try {
-        const [totalHex, countHex, rateHex, endHex, pausedHex] = await Promise.all([
-            rpcCall(poolAddr, STAKING_SEL.totalStaked),
-            rpcCall(poolAddr, STAKING_SEL.stakerCount),
-            rpcCall(poolAddr, STAKING_SEL.rewardRate),
-            rpcCall(poolAddr, STAKING_SEL.periodEnd),
-            rpcCall(poolAddr, STAKING_SEL.paused),
-        ]);
+        const [totalHex, countHex, rateHex, endHex, pausedHex] = results;
 
         const total = fromWei(totalHex);
         const stakers = Number(BigInt(countHex || '0x0'));
