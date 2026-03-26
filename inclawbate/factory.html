@@ -602,28 +602,72 @@
             </div>
         </div>
 
-        <!-- Today's Pipeline -->
+        <!-- Launch Project (one-click pipeline) -->
         <div class="factory-section">
             <div class="factory-section-hdr">
-                <h2>Today's Pipeline</h2>
-                <button class="btn-primary" id="newIncBtn" onclick="toggleNewForm()">+ New Incubation</button>
+                <h2>Launch a Project</h2>
             </div>
 
-            <!-- New incubation form -->
-            <div class="new-form" id="newForm">
-                <label>App Name</label>
-                <input type="text" id="newAppName" placeholder="e.g. Flip Cards" maxlength="60">
-                <label>Description</label>
-                <textarea id="newAppDesc" placeholder="One-liner for what the app does" maxlength="200"></textarea>
-                <label>Token Symbol (optional)</label>
-                <input type="text" id="newTokenSymbol" placeholder="e.g. $FLIP" maxlength="10">
-                <div class="new-form-actions">
-                    <button class="btn-primary" onclick="createPipeline()">Start Pipeline</button>
-                    <button class="btn-secondary" onclick="toggleNewForm()">Cancel</button>
+            <div id="launchForm">
+                <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
+                    One click does it all: launches the token on Base, deploys a staking pool, and builds a landing page. Then refine the site in the Inclawbator chat.
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Project Name</label>
+                        <input type="text" id="launchName" placeholder="e.g. Flip Cards" maxlength="60" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body)">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Description</label>
+                        <textarea id="launchDesc" placeholder="What does the app do? What's the token for? One paragraph is enough." maxlength="500" rows="3" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body);resize:vertical"></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px">
+                        <div style="flex:1">
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Token Symbol</label>
+                            <input type="text" id="launchSymbol" placeholder="e.g. FLIP" maxlength="10" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-mono);text-transform:uppercase">
+                        </div>
+                        <div style="flex:1">
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Your Wallet</label>
+                            <input type="text" id="launchWallet" placeholder="0x..." maxlength="42" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.8rem;font-family:var(--font-mono)" readonly>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="launchBtn" onclick="launchProject()" style="width:100%;padding:14px;font-size:1rem">Launch Project</button>
+            </div>
+
+            <!-- Launch progress -->
+            <div id="launchProgress" style="display:none">
+                <div style="text-align:center;padding:20px 0">
+                    <div style="font-size:1.5rem;margin-bottom:8px" id="launchSpinner">&#9881;&#65039;</div>
+                    <div style="font-size:0.95rem;font-weight:800;color:var(--text-primary);margin-bottom:4px" id="launchStatus">Launching...</div>
+                    <div style="font-size:0.78rem;color:var(--text-dim)" id="launchStep">Step 1/3: Launching token on Base...</div>
                 </div>
             </div>
 
-            <div id="pipelineWrap">
+            <!-- Launch result -->
+            <div id="launchResult" style="display:none">
+                <div style="text-align:center;margin-bottom:16px">
+                    <div style="font-size:1.5rem;margin-bottom:6px">&#9989;</div>
+                    <div style="font-size:1rem;font-weight:800;color:var(--text-primary)" id="launchResultTitle">Project Launched!</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                    <div style="padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase">Token</span>
+                        <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--lobster-300)" id="resultToken">--</span>
+                    </div>
+                    <div style="padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase">Site</span>
+                        <a style="font-family:var(--font-mono);font-size:0.78rem;color:var(--lobster-300)" id="resultSite" href="#" target="_blank">--</a>
+                    </div>
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;padding:10px;background:var(--bg-elevated);border-radius:var(--radius-md)">
+                    <strong>Next steps:</strong> Go to <a href="/inclawbator" style="color:var(--lobster-300)">the Inclawbator</a> and say "edit the site at [your site URL]" to customize it. You can also buy the token, stake it, fund the pool with CLAWS, and schedule tweets from there.
+                </div>
+                <button class="btn-primary" onclick="resetLaunchForm()" style="width:100%">Launch Another</button>
+            </div>
+
+            <!-- Legacy pipeline (existing incubations still use checkboxes) -->
+            <div id="pipelineWrap" style="display:none">
                 <div class="loading">Loading pipeline...</div>
             </div>
         </div>
@@ -927,6 +971,127 @@
             } catch (e) {
                 alert('Failed to create pipeline');
             }
+        };
+
+        // ---------- One-click launch project ----------
+        var AGENT_CHAT = '/api/inclawbate/agent-chat';
+
+        // Auto-fill wallet from profile
+        (function() {
+            try {
+                var p = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+                if (p && p.wallet_address) document.getElementById('launchWallet').value = p.wallet_address;
+            } catch(e) {}
+        })();
+
+        async function agentChat(msg, session) {
+            var r = await fetch(AGENT_CHAT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, session_id: session, wallet: document.getElementById('launchWallet').value })
+            });
+            return await r.json();
+        }
+
+        window.launchProject = async function() {
+            var name = document.getElementById('launchName').value.trim();
+            var desc = document.getElementById('launchDesc').value.trim();
+            var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
+            var wallet = document.getElementById('launchWallet').value.trim();
+
+            if (!name) { alert('Project name required'); return; }
+            if (!desc) { alert('Description required'); return; }
+            if (!symbol) { alert('Token symbol required'); return; }
+            if (!wallet) { alert('Connect your wallet first'); return; }
+
+            // Show progress
+            document.getElementById('launchForm').style.display = 'none';
+            document.getElementById('launchProgress').style.display = '';
+            var statusEl = document.getElementById('launchStatus');
+            var stepEl = document.getElementById('launchStep');
+            var session = 'factory-' + Date.now().toString(36);
+
+            try {
+                // Step 1: Launch token
+                stepEl.textContent = 'Step 1/3: Launching $' + symbol + ' on Base via Clanker...';
+                var tokenReply = await agentChat(
+                    'Launch a token called "' + name + '" with symbol ' + symbol + ' to wallet ' + wallet + '. Description: "' + desc + '"',
+                    session
+                );
+                var tokenAddr = null;
+                var addrMatch = (tokenReply.reply || '').match(/0x[a-fA-F0-9]{40}/);
+                if (addrMatch) tokenAddr = addrMatch[0];
+
+                // Step 2: Deploy staking pool
+                stepEl.textContent = 'Step 2/3: Deploying staking pool...';
+                if (tokenAddr) {
+                    await agentChat(
+                        'Deploy a staking pool for token address ' + tokenAddr + ' with creator wallet ' + wallet,
+                        session
+                    );
+                }
+
+                // Step 3: Build site
+                stepEl.textContent = 'Step 3/3: Building landing page...';
+                var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                var siteReply = await agentChat(
+                    'Build me an app called "' + slug + '". It should be a landing page for ' + name + '. ' + desc + '. Dark theme, professional. '
+                    + (tokenAddr ? 'Token address: ' + tokenAddr + '. Add a buy button linking to Uniswap. ' : '')
+                    + 'Add a staking section linking to inclawbate.app/stake. '
+                    + 'Footer: "Powered by Inclawbate App Factory".',
+                    session
+                );
+                var siteUrl = null;
+                var siteMatch = (siteReply.reply || '').match(/inclawbate\.app\/s\/[\w-]+/);
+                if (siteMatch) siteUrl = 'https://' + siteMatch[0];
+
+                // Also create in factory DB
+                try {
+                    await fetch(API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            app_name: name,
+                            app_description: desc,
+                            token_symbol: '$' + symbol,
+                            wallet: wallet,
+                            token_address: tokenAddr,
+                            app_slug: slug,
+                            step_app: true,
+                            step_token: !!tokenAddr,
+                            step_pool: !!tokenAddr
+                        })
+                    });
+                } catch(e) {}
+
+                // Show result
+                document.getElementById('launchProgress').style.display = 'none';
+                document.getElementById('launchResult').style.display = '';
+                document.getElementById('launchResultTitle').textContent = name + ' Launched!';
+                document.getElementById('resultToken').textContent = tokenAddr ? tokenAddr.slice(0, 10) + '...' + tokenAddr.slice(-6) : 'Pending...';
+                if (siteUrl) {
+                    var siteEl = document.getElementById('resultSite');
+                    siteEl.textContent = siteUrl.replace('https://', '');
+                    siteEl.href = siteUrl;
+                } else {
+                    document.getElementById('resultSite').textContent = 'inclawbate.app/s/' + slug;
+                    document.getElementById('resultSite').href = 'https://inclawbate.app/s/' + slug;
+                }
+
+            } catch(err) {
+                statusEl.textContent = 'Error';
+                stepEl.textContent = err.message;
+                setTimeout(function() { resetLaunchForm(); }, 3000);
+            }
+        };
+
+        window.resetLaunchForm = function() {
+            document.getElementById('launchForm').style.display = '';
+            document.getElementById('launchProgress').style.display = 'none';
+            document.getElementById('launchResult').style.display = 'none';
+            document.getElementById('launchName').value = '';
+            document.getElementById('launchDesc').value = '';
+            document.getElementById('launchSymbol').value = '';
         };
 
         // ---------- Active incubations ----------
