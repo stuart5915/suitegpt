@@ -900,7 +900,7 @@
         btn.textContent = 'Launching...';
         btn.classList.add('mc-launch-btn--loading');
         btn.disabled = true;
-        toast('Launching ' + meme + ' — token + site + staking...');
+        toast('Launching ' + meme + ' — deploying token + staking pool...');
         try {
             var resp = await fetch(SERVICE_URL + '/launch/' + encodeURIComponent(meme), { method: 'POST' });
             var result = await resp.json();
@@ -909,11 +909,41 @@
                 btn.classList.remove('mc-launch-btn--loading');
                 btn.disabled = false;
                 toast('Error: ' + result.error);
-            } else {
-                btn.textContent = 'Launched \u2713';
-                btn.classList.add('mc-launch-btn--done');
-                toast(meme + ' launched!' + (result.tokenAddress ? ' CA: ' + result.tokenAddress.slice(0,10) + '...' : ''));
+                return;
             }
+            // Backend returns 202 and launches in background — poll for completion
+            toast(meme + ' launch started — this takes ~60s. Page will refresh when done.');
+            var pollCount = 0;
+            var pollInterval = setInterval(async function() {
+                pollCount++;
+                if (pollCount > 24) { // 2 minutes max
+                    clearInterval(pollInterval);
+                    btn.textContent = 'Check status';
+                    btn.classList.remove('mc-launch-btn--loading');
+                    btn.disabled = false;
+                    toast('Launch may still be processing — refresh the page to check.');
+                    return;
+                }
+                try {
+                    var qResp = await fetch(SERVICE_URL + '/queue');
+                    var qData = await qResp.json();
+                    var item = (qData.queue || []).find(function(q) { return q.meme === meme; });
+                    if (item && item.status === 'launched' && item.tokenAddress) {
+                        clearInterval(pollInterval);
+                        btn.textContent = 'Launched \u2713';
+                        btn.classList.add('mc-launch-btn--done');
+                        toast(meme + ' launched! CA: ' + item.tokenAddress.slice(0,10) + '...');
+                        // Refresh page after short delay to show updated data
+                        setTimeout(function() { location.reload(); }, 2000);
+                    } else if (item && item.status === 'failed') {
+                        clearInterval(pollInterval);
+                        btn.textContent = 'Launch';
+                        btn.classList.remove('mc-launch-btn--loading');
+                        btn.disabled = false;
+                        toast('Launch failed: ' + (item.error || 'unknown error'));
+                    }
+                } catch(e) {}
+            }, 5000); // poll every 5s
         } catch(err) {
             btn.textContent = 'Launch';
             btn.classList.remove('mc-launch-btn--loading');

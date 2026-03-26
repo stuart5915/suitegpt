@@ -646,9 +646,12 @@ http.createServer(async (req, res) => {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'CREATOR_WALLET not set' }));
         } else {
+            // Return immediately, launch in background — prevents Railway 503 timeout
+            res.writeHead(202);
+            res.end(JSON.stringify({ status: 'launching', meme: memeName }));
             launchMemeToken(memeData)
-                .then(result => { res.writeHead(200); res.end(JSON.stringify(result)); })
-                .catch(err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
+                .then(result => console.log(`[MemeClaw] ${memeName} launched:`, result.tokenAddress || 'no address'))
+                .catch(err => console.error(`[MemeClaw] ${memeName} failed:`, err.message));
         }
     } else if (req.url === '/launch-next' && req.method === 'POST') {
         // Find oldest queued meme from Supabase
