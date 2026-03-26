@@ -3,6 +3,7 @@
 // Runs once on load + watches for new DOM content (chat messages, etc.)
 
 (function() {
+    try {
     var EMOJI_RE = /[\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{27BF}\u{231A}-\u{231B}\u{23F0}-\u{23FA}\u{2B50}\u{2B55}\u{2705}\u{274C}\u{2764}]/gu;
 
     function wrapEmojis(root) {
@@ -57,4 +58,5 @@
         }, 100);
     });
     observer.observe(document.body, { childList: true, subtree: true });
+    } catch(e) { console.error('InclawIcons error:', e); }
 })();
