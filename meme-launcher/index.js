@@ -594,6 +594,7 @@ http.createServer(async (req, res) => {
                 tokenAddress: row.token_address,
                 siteUrl: row.site_url,
                 siteSlug: row.site_slug,
+                imageUrl: row.image_url,
                 error: row.error_message,
                 timestamp: row.created_at,
                 launchedAt: row.launched_at
