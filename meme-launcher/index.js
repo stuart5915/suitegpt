@@ -4,6 +4,14 @@
 // By 0xGrantE × Inclawbate
 
 import http from 'http';
+import { createClient } from '@supabase/supabase-js';
+
+// ── Supabase ──
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ── Config ──
 
@@ -20,11 +28,105 @@ const MAX_PER_POLL = parseInt(process.env.MAX_PER_POLL) || 3; // Max memes to pr
 
 const ACCENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6'];
 
-// Track what we've already processed
+// In-memory dedup set — loaded from DB on startup, prevents duplicate inserts within a poll cycle
 const processedGuids = new Set();
-const launchQueue = [];
+// Keep launchQueue for backwards compat — populated from DB
+let launchQueue = [];
 let totalLaunched = 0;
 let lastPollTime = null;
+
+// ── DB Helpers ──
+
+async function loadStateFromDB() {
+    try {
+        // Load all known guids so we don't re-process them
+        const { data: allMemes, error } = await supabase
+            .from('memeclaw_memes')
+            .select('kym_guid, status');
+        if (error) throw error;
+
+        for (const m of (allMemes || [])) {
+            if (m.kym_guid) processedGuids.add(m.kym_guid);
+        }
+
+        // Count launched
+        const launched = (allMemes || []).filter(m => m.status === 'launched');
+        totalLaunched = launched.length;
+
+        // Load recent entries into launchQueue for /queue endpoint compat
+        const { data: recent, error: recentErr } = await supabase
+            .from('memeclaw_memes')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        if (recentErr) throw recentErr;
+
+        launchQueue = (recent || []).map(row => ({
+            meme: row.meme_name,
+            link: row.meme_link,
+            symbol: row.symbol,
+            status: row.status,
+            tokenAddress: row.token_address,
+            siteUrl: row.site_url,
+            siteSlug: row.site_slug,
+            error: row.error_message,
+            timestamp: row.created_at,
+            launchedAt: row.launched_at,
+            id: row.id
+        }));
+
+        console.log(`[MemeClaw] DB state loaded — ${processedGuids.size} guids tracked, ${totalLaunched} launched`);
+    } catch (err) {
+        console.error('[MemeClaw] Failed to load state from DB:', err.message);
+        console.warn('[MemeClaw] Continuing with empty state — will rebuild from polls');
+    }
+}
+
+async function upsertMeme(meme, extraFields = {}) {
+    const imageUrl = extractImage(meme.description || '');
+    const desc = extractDescription(meme.description || '');
+    const row = {
+        meme_name: meme.title,
+        meme_link: meme.link || null,
+        kym_guid: meme.guid || null,
+        description: desc,
+        image_url: imageUrl,
+        status: 'queued',
+        ...extraFields
+    };
+
+    const { data, error } = await supabase
+        .from('memeclaw_memes')
+        .upsert(row, { onConflict: 'kym_guid' })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('[MemeClaw] DB upsert error:', error.message);
+        return null;
+    }
+    return data;
+}
+
+async function updateMemeStatus(kymGuid, fields) {
+    const { error } = await supabase
+        .from('memeclaw_memes')
+        .update(fields)
+        .eq('kym_guid', kymGuid);
+    if (error) {
+        console.error('[MemeClaw] DB update error:', error.message);
+    }
+}
+
+async function updateMemeStatusById(id, fields) {
+    const { error } = await supabase
+        .from('memeclaw_memes')
+        .update(fields)
+        .eq('id', id);
+    if (error) {
+        console.error('[MemeClaw] DB update by id error:', error.message);
+    }
+}
 
 // ── RSS Parser (simple, no deps) ──
 
@@ -240,6 +342,9 @@ async function launchMemeToken(meme) {
 
     console.log(`[MemeClaw] Launching: ${meme.title} (${symbol})`);
 
+    // Mark as launching in DB
+    await updateMemeStatus(meme.guid, { status: 'launching', symbol });
+
     const imageUrl = extractImage(meme.description || '');
     const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
     const siteUrl = `https://inclawbate.app/s/${slug}`;
@@ -272,6 +377,26 @@ async function launchMemeToken(meme) {
     }
 
     totalLaunched++;
+
+    // Update DB with launch results
+    if (tokenAddress) {
+        await updateMemeStatus(meme.guid, {
+            status: 'launched',
+            symbol,
+            token_address: tokenAddress,
+            site_url: siteResult.url || siteUrl,
+            site_slug: siteResult.slug || slug,
+            launched_at: new Date().toISOString()
+        });
+    } else {
+        await updateMemeStatus(meme.guid, {
+            status: 'failed',
+            symbol,
+            site_url: siteResult.url || null,
+            site_slug: siteResult.slug || null,
+            error_message: 'No token address returned from agent'
+        });
+    }
 
     // Step 4: Auto-announce on @inclawbator X account
     if (tokenAddress) {
@@ -346,16 +471,38 @@ async function pollKYM() {
             newCount++;
 
             if (AUTO_LAUNCH && CREATOR_WALLET && newCount <= MAX_PER_POLL) {
+                // Upsert as queued first, then launch
+                await upsertMeme(item, { status: 'queued' });
                 try {
                     const result = await launchMemeToken(item);
-                    launchQueue.push(result);
+                    // Update in-memory queue
+                    launchQueue.unshift({
+                        meme: result.meme,
+                        symbol: result.symbol,
+                        status: result.tokenAddress ? 'launched' : 'failed',
+                        tokenAddress: result.tokenAddress,
+                        siteUrl: result.siteUrl,
+                        siteSlug: result.siteSlug,
+                        timestamp: result.timestamp
+                    });
                 } catch (err) {
                     console.error(`[MemeClaw] Launch failed for "${item.title}":`, err.message);
-                    launchQueue.push({ meme: item.title, error: err.message, timestamp: new Date().toISOString() });
+                    await updateMemeStatus(item.guid, {
+                        status: 'failed',
+                        error_message: err.message
+                    });
+                    launchQueue.unshift({
+                        meme: item.title,
+                        status: 'failed',
+                        error: err.message,
+                        timestamp: new Date().toISOString()
+                    });
                 }
             } else {
-                // Queue mode — just track it
-                launchQueue.push({
+                // Queue mode — track in DB with queued status
+                const statusText = AUTO_LAUNCH ? 'skipped' : 'queued';
+                await upsertMeme(item, { status: statusText });
+                launchQueue.unshift({
                     meme: item.title,
                     link: item.link,
                     pubDate: item.pubDate,
@@ -374,27 +521,75 @@ async function pollKYM() {
 // ── Health Check Server ──
 
 const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
     if (req.url === '/health') {
+        // Query DB for live counts
+        let dbTracked = processedGuids.size;
+        let dbLaunched = totalLaunched;
+        let dbQueued = 0;
+        try {
+            const { count: trackedCount } = await supabase
+                .from('memeclaw_memes')
+                .select('*', { count: 'exact', head: true });
+            const { count: launchedCount } = await supabase
+                .from('memeclaw_memes')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'launched');
+            const { count: queuedCount } = await supabase
+                .from('memeclaw_memes')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'queued');
+            dbTracked = trackedCount ?? dbTracked;
+            dbLaunched = launchedCount ?? dbLaunched;
+            dbQueued = queuedCount ?? 0;
+        } catch (e) {
+            console.error('[MemeClaw] Health DB query error:', e.message);
+        }
         res.writeHead(200);
         res.end(JSON.stringify({
             status: 'ok',
             service: 'memeclaw',
             autoLaunch: AUTO_LAUNCH,
-            totalLaunched,
-            tracked: processedGuids.size,
-            queueLength: launchQueue.length,
+            totalLaunched: dbLaunched,
+            tracked: dbTracked,
+            queueLength: dbQueued,
             lastPoll: lastPollTime,
             uptime: Math.floor(process.uptime())
         }));
     } else if (req.url === '/queue') {
-        res.writeHead(200);
-        res.end(JSON.stringify({ queue: launchQueue.slice(-20) }));
+        // Read from Supabase
+        try {
+            const { data, error } = await supabase
+                .from('memeclaw_memes')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (error) throw error;
+            const queue = (data || []).map(row => ({
+                meme: row.meme_name,
+                link: row.meme_link,
+                symbol: row.symbol,
+                status: row.status,
+                tokenAddress: row.token_address,
+                siteUrl: row.site_url,
+                siteSlug: row.site_slug,
+                error: row.error_message,
+                timestamp: row.created_at,
+                launchedAt: row.launched_at
+            }));
+            res.writeHead(200);
+            res.end(JSON.stringify({ queue }));
+        } catch (err) {
+            console.error('[MemeClaw] Queue endpoint DB error:', err.message);
+            // Fallback to in-memory
+            res.writeHead(200);
+            res.end(JSON.stringify({ queue: launchQueue.slice(0, 20) }));
+        }
     } else if (req.url === '/toggle-auto' && req.method === 'POST') {
         AUTO_LAUNCH = !AUTO_LAUNCH;
         console.log(`[MemeClaw] Auto-launch toggled to: ${AUTO_LAUNCH}`);
@@ -403,30 +598,77 @@ http.createServer((req, res) => {
     } else if (req.url.startsWith('/launch/') && req.method === 'POST') {
         // Launch a specific meme by name: POST /launch/Chuck%20Norris
         const memeName = decodeURIComponent(req.url.slice('/launch/'.length));
-        const queued = launchQueue.find(q => q.meme === memeName);
+
+        // Look up in Supabase first
+        let memeData = null;
+        try {
+            const { data } = await supabase
+                .from('memeclaw_memes')
+                .select('*')
+                .eq('meme_name', memeName)
+                .limit(1)
+                .single();
+            if (data) {
+                memeData = {
+                    title: data.meme_name,
+                    link: data.meme_link || '',
+                    guid: data.kym_guid || data.meme_name,
+                    description: data.description || ''
+                };
+            }
+        } catch (e) { /* not found in DB, fine */ }
+
+        // Fallback to in-memory queue, then bare name
+        if (!memeData) {
+            const queued = launchQueue.find(q => q.meme === memeName);
+            memeData = queued
+                ? { title: queued.meme, link: queued.link || '', guid: queued.meme, description: queued.description || '' }
+                : { title: memeName, link: '', guid: memeName, description: '' };
+        }
+
         if (!CREATOR_WALLET) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'CREATOR_WALLET not set' }));
         } else {
-            const memeData = queued
-                ? { title: queued.meme, link: queued.link || '', guid: queued.meme, description: queued.description || '' }
-                : { title: memeName, link: '', guid: memeName, description: '' };
             launchMemeToken(memeData)
                 .then(result => { res.writeHead(200); res.end(JSON.stringify(result)); })
                 .catch(err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
         }
     } else if (req.url === '/launch-next' && req.method === 'POST') {
-        const next = launchQueue.find(q => q.status && q.status.includes('queued'));
-        if (!next) {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'No queued memes' }));
-        } else if (!CREATOR_WALLET) {
+        // Find oldest queued meme from Supabase
+        if (!CREATOR_WALLET) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'CREATOR_WALLET not set' }));
-        } else {
-            launchMemeToken({ title: next.meme, link: next.link || '', guid: next.meme, description: next.description || '' })
+            return;
+        }
+        try {
+            const { data: next, error } = await supabase
+                .from('memeclaw_memes')
+                .select('*')
+                .eq('status', 'queued')
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+
+            if (error || !next) {
+                res.writeHead(404);
+                res.end(JSON.stringify({ error: 'No queued memes' }));
+                return;
+            }
+
+            const memeData = {
+                title: next.meme_name,
+                link: next.meme_link || '',
+                guid: next.kym_guid || next.meme_name,
+                description: next.description || ''
+            };
+
+            launchMemeToken(memeData)
                 .then(result => { res.writeHead(200); res.end(JSON.stringify(result)); })
                 .catch(err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
+        } catch (err) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: err.message }));
         }
     } else {
         res.writeHead(200);
@@ -439,8 +681,10 @@ http.createServer((req, res) => {
 console.log(`[MemeClaw] Starting — auto-launch: ${AUTO_LAUNCH}, poll every ${POLL_INTERVAL_MS / 1000 / 60} min`);
 console.log(`[MemeClaw] Creator wallet: ${CREATOR_WALLET || 'NOT SET (queue-only mode)'}`);
 
-// First poll immediately
-pollKYM();
-
-// Then poll on interval
-setInterval(pollKYM, POLL_INTERVAL_MS);
+// Load state from DB, then start polling
+loadStateFromDB().then(() => {
+    // First poll immediately
+    pollKYM();
+    // Then poll on interval
+    setInterval(pollKYM, POLL_INTERVAL_MS);
+});
