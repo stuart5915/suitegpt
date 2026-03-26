@@ -23,7 +23,7 @@ contract FounderAuction is ReentrancyGuard {
     uint256 public constant ANTI_SNIPE_WINDOW = 5 minutes;
     uint256 public constant ANTI_SNIPE_EXTENSION = 5 minutes;
     uint256 public constant MAX_EXTENSIONS = 12;       // Max 1 hour of extensions
-    uint256 public constant MIN_BID_INCREMENT = 10e6;  // $10 USDC (6 decimals)
+    uint256 public constant MIN_BID_INCREMENT = 1e6;   // $1 USDC (6 decimals)
 
     // ── Auction State ──
 
