@@ -570,6 +570,36 @@
             line-height: 1.5;
         }
 
+        /* Feed tabs */
+        .mc-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: var(--space-md);
+        }
+        .mc-tab {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            background: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .mc-tab:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+        .mc-tab.active {
+            background: var(--lobster-400);
+            border-color: var(--lobster-400);
+            color: #fff;
+        }
+        .mc-tab-count {
+            font-size: 0.62rem;
+            opacity: 0.7;
+            margin-left: 3px;
+        }
+
         @media (max-width: 600px) {
             .mc-hero h1 { font-size: 1.6rem; }
             .mc-item { padding: var(--space-sm) var(--space-md); }
@@ -761,6 +791,13 @@
         <button class="mc-rewards-btn" onclick="claimRewards()">Claim Rewards</button>
     </div>
 
+    <!-- Feed Tabs -->
+    <div class="mc-tabs" id="mcTabs">
+        <button class="mc-tab active" data-filter="all">All<span class="mc-tab-count" id="mcCountAll"></span></button>
+        <button class="mc-tab" data-filter="launched">Launched<span class="mc-tab-count" id="mcCountLaunched"></span></button>
+        <button class="mc-tab" data-filter="queued">Queued<span class="mc-tab-count" id="mcCountQueued"></span></button>
+    </div>
+
     <!-- Feed -->
     <div class="mc-feed-header">
         <div class="mc-feed-title">Meme Token Feed</div>
@@ -933,7 +970,43 @@
             });
         }
 
+        // Tag row with filter data
+        row.setAttribute('data-status', isLaunched ? 'launched' : 'queued');
+
         return row;
+    }
+
+    // ── Tab filtering ──
+    var allItems = [];
+    var currentFilter = 'all';
+
+    document.getElementById('mcTabs').addEventListener('click', function(e) {
+        var tab = e.target.closest('.mc-tab');
+        if (!tab) return;
+        document.querySelectorAll('.mc-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        currentFilter = tab.getAttribute('data-filter');
+        filterFeed();
+    });
+
+    function filterFeed() {
+        var items = feedEl.querySelectorAll('.mc-item');
+        items.forEach(function(item) {
+            var status = item.getAttribute('data-status');
+            if (currentFilter === 'all' || status === currentFilter) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function updateTabCounts(queue) {
+        var launched = queue.filter(function(q) { return q.tokenAddress; }).length;
+        var queued = queue.length - launched;
+        document.getElementById('mcCountAll').textContent = ' (' + queue.length + ')';
+        document.getElementById('mcCountLaunched').textContent = ' (' + launched + ')';
+        document.getElementById('mcCountQueued').textContent = ' (' + queued + ')';
     }
 
     // ── Load feed ──
@@ -957,9 +1030,16 @@
         .then(function(data) {
             if (!data.queue || data.queue.length === 0) return;
             feedEl.innerHTML = '';
-            data.queue.reverse().forEach(function(item) {
+            // Sort: launched first, then queued
+            var sorted = data.queue.reverse().sort(function(a, b) {
+                var aL = a.tokenAddress ? 1 : 0;
+                var bL = b.tokenAddress ? 1 : 0;
+                return bL - aL;
+            });
+            sorted.forEach(function(item) {
                 feedEl.appendChild(renderMemeItem(item));
             });
+            updateTabCounts(data.queue);
         })
         .catch(function() {
             statusEl.textContent = 'Service not deployed yet';
