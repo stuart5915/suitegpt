@@ -75,7 +75,8 @@ export default async function handler(req, res) {
 
         // Generate unique path
         const safeName = file_name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
-        const storagePath = `messages/${user.sub}/${Date.now()}_${safeName}`;
+        const userId = user ? user.sub : (directWallet || 'anon');
+        const storagePath = `messages/${userId}/${Date.now()}_${safeName}`;
 
         const { error: uploadError } = await supabase.storage
             .from('inclawbate-attachments')
