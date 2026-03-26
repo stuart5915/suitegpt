@@ -2930,10 +2930,6 @@ function init() {
         return;
     }
 
-    // Show quick actions for authenticated users
-    var qa = document.getElementById('quickActions');
-    if (qa) qa.style.display = '';
-
     // Fetch fresh profile
     const profile = auth.profile;
     fetch(`/api/inclawbate/humans?handle=${profile.x_handle}`)
