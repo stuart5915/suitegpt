@@ -447,6 +447,139 @@
         }
         .eco-badge:hover { border-color: var(--border-bright); text-decoration: none; }
 
+        /* ── Staking Widget ── */
+        .staking-widget {
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .staking-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 24px;
+        }
+        .staking-card .section-label { margin-bottom: 18px; }
+        .staking-balances {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .staking-bal-item {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 14px;
+            text-align: center;
+        }
+        .staking-bal-label {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-3);
+            margin-bottom: 6px;
+        }
+        .staking-bal-value {
+            font-family: var(--mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .staking-bal-value.reward { color: var(--accent); }
+        .staking-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .staking-input {
+            flex: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 12px 16px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            outline: none;
+        }
+        .staking-input:focus { border-color: var(--accent); }
+        .staking-input::placeholder { color: var(--text-3); }
+        .staking-action-btn {
+            padding: 12px 20px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font);
+            font-size: 0.82rem;
+            font-weight: 800;
+            border: none;
+            border-radius: var(--r-md);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .staking-action-btn:hover { filter: brightness(1.1); }
+        .staking-action-btn:disabled { opacity: 0.4; cursor: default; }
+        .staking-action-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-2);
+        }
+        .staking-action-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .staking-btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        .staking-btn-row .staking-action-btn { flex: 1; }
+        .staking-connect-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font);
+            font-size: 0.92rem;
+            font-weight: 800;
+            border: none;
+            border-radius: var(--r-md);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .staking-connect-btn:hover { filter: brightness(1.1); }
+        .staking-soon {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-3);
+            font-size: 0.85rem;
+        }
+        .staking-status {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: var(--text-3);
+            text-align: center;
+            min-height: 1.2em;
+        }
+        .staking-status.error { color: #ef4444; }
+        .staking-status.success { color: #22c55e; }
+        .staking-max-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            color: var(--text-3);
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            align-self: center;
+        }
+        .staking-max-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        @media (max-width: 560px) {
+            .staking-balances { grid-template-columns: 1fr; }
+        }
+
         /* ── Toast ── */
         .toast {
             position: fixed;
@@ -650,6 +783,21 @@
         <a class="link-chip" href="https://inclawbate.app/stake" target="_blank" rel="noopener"><span class="link-chip-icon">&#129438;</span> Stake</a>
     </div>
 
+    <!-- Buy Section -->
+    <div class="token-section">
+        <div class="section-label">Buy {{TOKEN_SYMBOL}}</div>
+        <div style="border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);">
+            <iframe
+                src="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base&theme=dark"
+                width="100%"
+                height="380"
+                style="border:none;background:var(--bg-card);"
+                allow="clipboard-write"
+                loading="lazy">
+            </iframe>
+        </div>
+    </div>
+
     <!-- Token Info -->
     <div class="token-section">
         <div class="section-label">Token</div>
@@ -680,6 +828,17 @@
             <div class="staking-title">Stake {{TOKEN_SYMBOL}}, Earn $CLAWS</div>
             <div class="staking-desc">Stake your tokens and earn CLAWS rewards from the Inclawbate ecosystem. LP fees auto-fund the rewards pool.</div>
             <a class="staking-btn" href="https://inclawbate.app/stake" target="_blank" rel="noopener">Stake Now</a>
+        </div>
+    </div>
+
+    <!-- Staking Widget -->
+    <div class="staking-widget" id="stakingWidget">
+        <div class="staking-card">
+            <div class="section-label">Stake {{TOKEN_SYMBOL}}</div>
+            <div id="stakingContent">
+                <!-- Filled by JS: connect button, staking UI, or "coming soon" -->
+            </div>
+            <div class="staking-status" id="stakingStatus"></div>
         </div>
     </div>
 
@@ -785,7 +944,12 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script>
+var STAKING_ADDRESS = '{{STAKING_ADDRESS}}';
+var TOKEN_ADDRESS = '{{TOKEN_ADDRESS}}';
+var TOKEN_SYMBOL = '{{TOKEN_SYMBOL}}';
+
 (function() {
     var SLUG = '{{SLUG}}';
     var API = 'https://www.inclawbate.app/api/inclawbate/memeclaw-vote';
@@ -853,6 +1017,223 @@
             updateMilestones(vol);
         })
         .catch(function(){ updateMilestones(0); });
+})();
+
+// ── Staking Widget ──
+(function() {
+    var ZERO = '0x0000000000000000000000000000000000000000';
+    var BASE_CHAIN_ID = '0x2105'; // 8453
+    var stakingEl = document.getElementById('stakingContent');
+    var statusEl = document.getElementById('stakingStatus');
+
+    // Check if staking is available
+    var hasStaking = STAKING_ADDRESS && STAKING_ADDRESS !== '{{STAKING_ADDRESS}}' && STAKING_ADDRESS !== '' && STAKING_ADDRESS !== ZERO;
+
+    if (!hasStaking) {
+        stakingEl.innerHTML = '<div class="staking-soon">Staking pool coming soon</div>';
+        return;
+    }
+
+    var provider = null;
+    var signer = null;
+    var userAddress = null;
+    var stakingContract = null;
+    var tokenContract = null;
+
+    var STAKING_ABI = [
+        'function stake(uint256 amount) external',
+        'function withdraw(uint256 amount) external',
+        'function earned(address account) external view returns (uint256)',
+        'function getReward() external',
+        'function balanceOf(address account) external view returns (uint256)'
+    ];
+
+    var ERC20_ABI = [
+        'function approve(address spender, uint256 amount) external returns (bool)',
+        'function allowance(address owner, address spender) external view returns (uint256)',
+        'function balanceOf(address account) external view returns (uint256)',
+        'function decimals() external view returns (uint8)'
+    ];
+
+    var tokenDecimals = 18;
+
+    function setStatus(msg, type) {
+        statusEl.textContent = msg;
+        statusEl.className = 'staking-status' + (type ? ' ' + type : '');
+    }
+
+    function renderConnect() {
+        stakingEl.innerHTML = '<button class="staking-connect-btn" id="stakingConnectBtn">Connect Wallet</button>';
+        document.getElementById('stakingConnectBtn').onclick = connectWallet;
+    }
+
+    function renderStakingUI() {
+        stakingEl.innerHTML =
+            '<div class="staking-balances">' +
+                '<div class="staking-bal-item">' +
+                    '<div class="staking-bal-label">Your Balance</div>' +
+                    '<div class="staking-bal-value" id="stakeBal">--</div>' +
+                '</div>' +
+                '<div class="staking-bal-item">' +
+                    '<div class="staking-bal-label">Staked</div>' +
+                    '<div class="staking-bal-value" id="stakeStaked">--</div>' +
+                '</div>' +
+                '<div class="staking-bal-item">' +
+                    '<div class="staking-bal-label">Rewards</div>' +
+                    '<div class="staking-bal-value reward" id="stakeRewards">--</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="staking-input-row">' +
+                '<input type="number" class="staking-input" id="stakeAmountInput" placeholder="Amount to stake" min="0" step="any">' +
+                '<button class="staking-max-btn" id="stakeMaxBtn">MAX</button>' +
+                '<button class="staking-action-btn" id="stakeBtn">Stake</button>' +
+            '</div>' +
+            '<div class="staking-btn-row">' +
+                '<button class="staking-action-btn secondary" id="unstakeBtn">Unstake All</button>' +
+                '<button class="staking-action-btn" id="claimBtn">Claim Rewards</button>' +
+            '</div>';
+
+        document.getElementById('stakeBtn').onclick = doStake;
+        document.getElementById('unstakeBtn').onclick = doUnstake;
+        document.getElementById('claimBtn').onclick = doClaim;
+        document.getElementById('stakeMaxBtn').onclick = function() {
+            var balEl = document.getElementById('stakeBal');
+            if (balEl && balEl.textContent !== '--') {
+                document.getElementById('stakeAmountInput').value = balEl.textContent;
+            }
+        };
+
+        refreshBalances();
+    }
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            setStatus('No wallet detected. Install MetaMask.', 'error');
+            return;
+        }
+        try {
+            setStatus('Connecting...');
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAddress = accounts[0];
+
+            // Switch to Base if needed
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: BASE_CHAIN_ID,
+                            chainName: 'Base',
+                            rpcUrls: ['https://mainnet.base.org'],
+                            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                            blockExplorerUrls: ['https://basescan.org']
+                        }]
+                    });
+                }
+            }
+
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner();
+            stakingContract = new ethers.Contract(STAKING_ADDRESS, STAKING_ABI, signer);
+            tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+
+            try { tokenDecimals = await tokenContract.decimals(); } catch(e) { tokenDecimals = 18; }
+
+            setStatus('');
+            renderStakingUI();
+
+            // Listen for account/chain changes
+            window.ethereum.on('accountsChanged', function(accs) {
+                if (accs.length === 0) { renderConnect(); return; }
+                userAddress = accs[0];
+                signer = provider.getSigner();
+                stakingContract = new ethers.Contract(STAKING_ADDRESS, STAKING_ABI, signer);
+                tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+                refreshBalances();
+            });
+            window.ethereum.on('chainChanged', function() { window.location.reload(); });
+        } catch (err) {
+            setStatus('Connection failed: ' + (err.message || err), 'error');
+        }
+    }
+
+    async function refreshBalances() {
+        if (!userAddress || !tokenContract || !stakingContract) return;
+        try {
+            var [bal, staked, earned] = await Promise.all([
+                tokenContract.balanceOf(userAddress),
+                stakingContract.balanceOf(userAddress),
+                stakingContract.earned(userAddress)
+            ]);
+            document.getElementById('stakeBal').textContent = parseFloat(ethers.utils.formatUnits(bal, tokenDecimals)).toFixed(2);
+            document.getElementById('stakeStaked').textContent = parseFloat(ethers.utils.formatUnits(staked, tokenDecimals)).toFixed(2);
+            document.getElementById('stakeRewards').textContent = parseFloat(ethers.utils.formatUnits(earned, tokenDecimals)).toFixed(2);
+        } catch(e) {
+            console.error('Balance refresh error:', e);
+        }
+    }
+
+    async function doStake() {
+        var amtStr = document.getElementById('stakeAmountInput').value;
+        if (!amtStr || parseFloat(amtStr) <= 0) { setStatus('Enter an amount', 'error'); return; }
+        var amt = ethers.utils.parseUnits(amtStr, tokenDecimals);
+        try {
+            setStatus('Checking allowance...');
+            var allowance = await tokenContract.allowance(userAddress, STAKING_ADDRESS);
+            if (allowance.lt(amt)) {
+                setStatus('Approving tokens...');
+                var approveTx = await tokenContract.approve(STAKING_ADDRESS, ethers.constants.MaxUint256);
+                await approveTx.wait();
+            }
+            setStatus('Staking...');
+            var tx = await stakingContract.stake(amt);
+            setStatus('Confirming...');
+            await tx.wait();
+            setStatus('Staked successfully!', 'success');
+            document.getElementById('stakeAmountInput').value = '';
+            refreshBalances();
+        } catch(e) {
+            setStatus('Stake failed: ' + (e.reason || e.message || e), 'error');
+        }
+    }
+
+    async function doUnstake() {
+        try {
+            var staked = await stakingContract.balanceOf(userAddress);
+            if (staked.isZero()) { setStatus('Nothing staked', 'error'); return; }
+            setStatus('Unstaking...');
+            var tx = await stakingContract.withdraw(staked);
+            setStatus('Confirming...');
+            await tx.wait();
+            setStatus('Unstaked successfully!', 'success');
+            refreshBalances();
+        } catch(e) {
+            setStatus('Unstake failed: ' + (e.reason || e.message || e), 'error');
+        }
+    }
+
+    async function doClaim() {
+        try {
+            var earned = await stakingContract.earned(userAddress);
+            if (earned.isZero()) { setStatus('No rewards to claim', 'error'); return; }
+            setStatus('Claiming...');
+            var tx = await stakingContract.getReward();
+            setStatus('Confirming...');
+            await tx.wait();
+            setStatus('Rewards claimed!', 'success');
+            refreshBalances();
+        } catch(e) {
+            setStatus('Claim failed: ' + (e.reason || e.message || e), 'error');
+        }
+    }
+
+    // Auto-refresh balances every 30s
+    setInterval(function() { if (userAddress) refreshBalances(); }, 30000);
+
+    // Initial render
+    renderConnect();
 })();
 
 // ── Meme Chat ──
