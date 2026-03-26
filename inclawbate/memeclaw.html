@@ -1124,6 +1124,7 @@
                 + '<input class="mc-buy-input" type="text" placeholder="0.01 ETH" data-token="' + item.tokenAddress + '">'
                 + '<button class="mc-buy-btn" onclick="buyToken(this, \'' + item.tokenAddress + '\')">Buy</button>'
                 + '<a class="mc-stake-btn" href="' + spawnUrl + '#stake" target="_blank">Stake</a>'
+                + '<button class="mc-action-btn" onclick="addToWallet(\'' + item.tokenAddress + '\', \'' + symbol.replace("$","") + '\', \'' + (item.imageUrl || '') + '\')">+ Wallet</button>'
                 + '<span class="mc-buy-status" style="font-size:0.65rem;color:var(--sm-text-3);display:none"></span>'
                 + '</div>';
         }
@@ -1258,6 +1259,25 @@
                 .catch(function() {});
         });
     }
+    // ── Add token to wallet ──
+    window.addToWallet = async function(address, symbol, imageUrl) {
+        if (!window.ethereum) return;
+        try {
+            await window.ethereum.request({
+                method: 'wallet_watchAsset',
+                params: {
+                    type: 'ERC20',
+                    options: {
+                        address: address,
+                        symbol: symbol.slice(0, 11),
+                        decimals: 18,
+                        image: imageUrl || ''
+                    }
+                }
+            });
+        } catch(e) {}
+    };
+
     // ── Buy token on-page via 0x swap ──
     window.buyToken = async function(btn, tokenAddress) {
         var input = btn.previousElementSibling;
