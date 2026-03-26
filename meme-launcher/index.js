@@ -361,7 +361,7 @@ async function launchMemeToken(meme) {
 
     const imageUrl = extractImage(meme.description || '');
     const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
-    const siteUrl = `https://inclawbate.app/s/${slug}`;
+    const siteUrl = `https://spawnmemes.fun/${slug}`;
 
     // Step 1: Build & publish template site FIRST (so we have the URL for token metadata)
     let siteResult = { slug: null, url: null, ideas: [] };
@@ -437,7 +437,7 @@ async function launchMemeToken(meme) {
     // Step 4: Auto-announce on @inclawbator X account
     if (tokenAddress) {
         try {
-            const siteLink = siteResult.url || `https://inclawbate.app/s/${meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            const siteLink = siteResult.url || `https://spawnmemes.fun/${meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-token`;
             const tweetText = `🤔 ${meme.title} (${symbol}) just spawned!\n\nNew meme → living AI agent on Base. Token, site, staking — all live.\n\n${siteLink}\n\nSpawnMemes.fun × Inclawbate`;
             const announceUrl = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/announce');
             await fetch(announceUrl, {
