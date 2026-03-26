@@ -549,7 +549,7 @@ export default async function handler(req, res) {
         const isAutoFix = /fix these errors|runtime.*errors|blank page|renders? a blank|corrected HTML|output was truncated|code is incomplete|missing closing tags/i.test(message);
         const isFundamentalAsk = /add the .*(pieces|board|grid|cells|items|content|elements|layout)|make it (work|functional|playable|interactive)|it('s| is) (broken|empty|blank|not working)/i.test(message);
         // Only Sonnet and Opus are reliable enough for search/replace edit mode — Haiku is too weak
-        const supportsEditMode = tier.provider === 'anthropic' && selectedModel !== 'fast';
+        const supportsEditMode = tier.provider === 'anthropic' && tierKey !== 'fast';
         const isEditMode = supportsEditMode && !!existingCode && message.length < 1500 && !isAutoFix && !isFundamentalAsk;
 
         // Fetch last 20 messages for context
