@@ -878,6 +878,7 @@
         };
 
         // ---------- One-click launch project ----------
+        var LAUNCH_SERVICE = 'https://memeclaw.inclawbate.app';
         var AGENT_CHAT = '/api/inclawbate/agent-chat';
         var INCLAWBATE_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 
@@ -1023,7 +1024,7 @@
             document.getElementById('launchProgress').style.display = '';
             var statusEl = document.getElementById('launchStatus');
             var stepEl = document.getElementById('launchStep');
-            var session = 'factory-' + Date.now().toString(36);
+            var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
             try {
                 // Step 0: Upload image if provided
@@ -1033,44 +1034,59 @@
                     imageUrl = await uploadImage(imageFile);
                 }
 
-                // Step 1: Launch token with 30% to Inclawbate wallet
-                stepEl.textContent = 'Step 1/3: Launching $' + symbol + ' on Base via Clanker...';
-                var launchMsg = 'Launch a token called "' + name + '" with symbol ' + symbol + ' to wallet ' + wallet + '. Description: "' + desc + '"';
-                if (imageUrl) launchMsg += '. Image: ' + imageUrl;
-                launchMsg += '. Website: https://inclawbate.app/s/' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                // Request 30% pre-allocation to Inclawbate treasury
-                launchMsg += '. Pre-allocate 30% of supply to ' + INCLAWBATE_WALLET;
+                // Step 1: Send to Railway backend — it handles token + staking + site
+                stepEl.textContent = 'Launching $' + symbol + ' — token + staking + site (this takes ~60s)...';
+                var resp = await fetch(LAUNCH_SERVICE + '/launch-custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        symbol: symbol,
+                        description: desc,
+                        imageUrl: imageUrl,
+                        wallet: wallet
+                    })
+                });
+                var launchData = await resp.json();
 
-                var tokenReply = await agentChat(launchMsg, session);
-                var tokenAddr = null;
-                var addrMatch = (tokenReply.reply || '').match(/0x[a-fA-F0-9]{40}/);
-                if (addrMatch) tokenAddr = addrMatch[0];
-
-                // Step 2: Deploy staking pool
-                stepEl.textContent = 'Step 2/3: Deploying staking pool...';
-                if (tokenAddr) {
-                    await agentChat(
-                        'Deploy a staking pool for token address ' + tokenAddr + ' with creator wallet ' + wallet,
-                        session
-                    );
+                if (launchData.error) {
+                    throw new Error(launchData.error);
                 }
 
-                // Step 3: Build site
-                stepEl.textContent = 'Step 3/3: Building landing page...';
-                var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                var siteReply = await agentChat(
-                    'Build me an app called "' + slug + '". It should be a landing page for ' + name + '. ' + desc + '. Dark theme, professional. '
-                    + (tokenAddr ? 'Token address: ' + tokenAddr + '. Add a buy button linking to Uniswap. ' : '')
-                    + (imageUrl ? 'Use this image as the hero/logo: ' + imageUrl + '. ' : '')
-                    + 'Add a staking section linking to inclawbate.app/stake. '
-                    + 'Footer: "Powered by Inclawbate App Factory".',
-                    session
-                );
-                var siteUrl = null;
-                var siteMatch = (siteReply.reply || '').match(/inclawbate\.app\/s\/[\w-]+/);
-                if (siteMatch) siteUrl = 'https://' + siteMatch[0];
+                // Backend returns 202 and processes in background — poll for completion
+                stepEl.textContent = 'Processing — token + staking pool + site building...';
+                var pollCount = 0;
+                var pollInterval = setInterval(async function() {
+                    pollCount++;
+                    if (pollCount > 30) { // 2.5 minutes max
+                        clearInterval(pollInterval);
+                        // Show result with whatever we have
+                        showLaunchResult(name, slug, null);
+                        return;
+                    }
+                    try {
+                        var qResp = await fetch(LAUNCH_SERVICE + '/queue');
+                        var qData = await qResp.json();
+                        var launched = (qData.queue || []).find(function(q) {
+                            return q.meme === name && q.status === 'launched';
+                        });
+                        if (launched) {
+                            clearInterval(pollInterval);
+                            showLaunchResult(name, slug, launched.tokenAddress, launched.siteUrl);
+                            return;
+                        }
+                        var failed = (qData.queue || []).find(function(q) {
+                            return q.meme === name && q.status === 'failed';
+                        });
+                        if (failed) {
+                            clearInterval(pollInterval);
+                            showLaunchResult(name, slug, null);
+                            return;
+                        }
+                    } catch(e) {}
+                }, 5000);
 
-                // Also create in factory DB
+                // Also save to factory DB
                 try {
                     await fetch(API, {
                         method: 'POST',
@@ -1080,35 +1096,35 @@
                             app_description: desc,
                             token_symbol: '$' + symbol,
                             wallet: wallet,
-                            token_address: tokenAddr,
                             app_slug: slug,
                             step_app: true,
-                            step_token: !!tokenAddr,
-                            step_pool: !!tokenAddr
+                            step_token: true,
+                            step_pool: true
                         })
                     });
                 } catch(e) {}
 
-                // Show result
-                document.getElementById('launchProgress').style.display = 'none';
-                document.getElementById('launchResult').style.display = '';
-                document.getElementById('launchResultTitle').textContent = name + ' Launched!';
-                document.getElementById('resultToken').textContent = tokenAddr ? tokenAddr.slice(0, 10) + '...' + tokenAddr.slice(-6) : 'Pending...';
-                if (siteUrl) {
-                    var siteEl = document.getElementById('resultSite');
-                    siteEl.textContent = siteUrl.replace('https://', '');
-                    siteEl.href = siteUrl;
-                } else {
-                    document.getElementById('resultSite').textContent = 'inclawbate.app/s/' + slug;
-                    document.getElementById('resultSite').href = 'https://inclawbate.app/s/' + slug;
-                }
-
             } catch(err) {
                 statusEl.textContent = 'Error';
                 stepEl.textContent = err.message;
-                setTimeout(function() { resetLaunchForm(); }, 3000);
+                setTimeout(function() { resetLaunchForm(); }, 5000);
             }
         };
+
+        function showLaunchResult(name, slug, tokenAddr, siteUrl) {
+            document.getElementById('launchProgress').style.display = 'none';
+            document.getElementById('launchResult').style.display = '';
+            document.getElementById('launchResultTitle').textContent = name + ' Launched!';
+            document.getElementById('resultToken').textContent = tokenAddr ? tokenAddr.slice(0, 10) + '...' + tokenAddr.slice(-6) : 'Processing...';
+            var siteEl = document.getElementById('resultSite');
+            if (siteUrl) {
+                siteEl.textContent = siteUrl.replace('https://', '');
+                siteEl.href = siteUrl;
+            } else {
+                siteEl.textContent = 'inclawbate.app/s/' + slug + '-token';
+                siteEl.href = 'https://inclawbate.app/s/' + slug + '-token';
+            }
+        }
 
         window.resetLaunchForm = function() {
             document.getElementById('launchForm').style.display = '';

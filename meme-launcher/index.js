@@ -351,7 +351,7 @@ async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
 // ── Inclawbator Integration ──
 
 async function launchMemeToken(meme) {
-    const symbol = generateSymbol(meme.title);
+    const symbol = meme._customSymbol ? '$' + meme._customSymbol : generateSymbol(meme.title);
     const sessionId = `memeclaw-${meme.guid}-${Date.now().toString(36)}`;
 
     console.log(`[MemeClaw] Launching: ${meme.title} (${symbol})`);
@@ -359,7 +359,7 @@ async function launchMemeToken(meme) {
     // Mark as launching in DB
     await updateMemeStatus(meme.guid, { status: 'launching', symbol });
 
-    const imageUrl = extractImage(meme.description || '');
+    const imageUrl = meme._customImage || extractImage(meme.description || '');
     const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
     const siteUrl = `https://spawnmemes.fun/${slug}`;
 
@@ -382,8 +382,8 @@ async function launchMemeToken(meme) {
             body: JSON.stringify({
                 name: meme.title,
                 symbol: symbol.replace('$', ''),
-                creator_wallet: CREATOR_WALLET,
-                description: `${meme.title}. Powered by SpawnMemes.fun × Inclawbate.`,
+                creator_wallet: meme._customWallet || CREATOR_WALLET,
+                description: meme.description || `${meme.title}. Powered by SpawnMemes.fun × Inclawbate.`,
                 image_url: imageUrl || '',
                 website_url: siteResult.url || siteUrl,
                 reward_recipients: [CREATOR_WALLET, INCLAWBATE_TREASURY],
@@ -732,9 +732,55 @@ http.createServer(async (req, res) => {
             res.writeHead(500);
             res.end(JSON.stringify({ error: err.message }));
         }
+    } else if (req.url === '/launch-custom' && req.method === 'POST') {
+        // Factory launch: POST { name, symbol, description, imageUrl, wallet }
+        // Launches token + staking + site via the same pipeline as meme launches
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
+                const { name, symbol, description, imageUrl, wallet } = data;
+                if (!name || !symbol) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({ error: 'name and symbol required' }));
+                    return;
+                }
+
+                res.writeHead(202);
+                res.end(JSON.stringify({ status: 'launching', name, symbol }));
+
+                // Build meme-compatible object and launch
+                const memeData = {
+                    title: name,
+                    link: '',
+                    guid: 'factory-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    description: description || '',
+                    _customSymbol: symbol,
+                    _customImage: imageUrl || null,
+                    _customWallet: wallet || CREATOR_WALLET,
+                };
+
+                // Upsert to DB
+                await upsertMeme(memeData, { status: 'launching', symbol: '$' + symbol });
+
+                try {
+                    const result = await launchMemeToken(memeData);
+                    console.log(`[Factory] Custom launch done: ${name} (${symbol})`, result.tokenAddress || 'no address');
+                } catch (err) {
+                    console.error(`[Factory] Custom launch failed: ${name}`, err.message);
+                    await updateMemeStatus(memeData.guid, { status: 'failed', error_message: err.message });
+                }
+            } catch (err) {
+                if (!res.writableEnded) {
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ error: err.message }));
+                }
+            }
+        });
     } else {
         res.writeHead(200);
-        res.end(JSON.stringify({ service: 'SpawnMemes — Automated Meme Token Launcher', docs: '/health, /queue, POST /launch-next' }));
+        res.end(JSON.stringify({ service: 'SpawnMemes — Automated Meme Token Launcher', docs: '/health, /queue, POST /launch-next, POST /launch-custom' }));
     }
 }).listen(PORT, () => console.log(`[MemeClaw] Health check on :${PORT}`));
 
