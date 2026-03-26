@@ -936,26 +936,62 @@
         };
 
         // Image preview
-        window.previewImage = function(input) {
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var img = document.getElementById('imagePreview');
-                    img.src = e.target.result;
-                    img.style.display = '';
-                    document.getElementById('imagePreviewText').style.display = 'none';
+        // Resize image to 512x512 for Clanker compatibility
+        function resizeImage(file, maxSize) {
+            return new Promise(function(resolve) {
+                var img = new Image();
+                img.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    var size = Math.min(img.width, img.height, maxSize || 512);
+                    canvas.width = size;
+                    canvas.height = size;
+                    var ctx = canvas.getContext('2d');
+                    // Center crop to square
+                    var sx = (img.width - Math.min(img.width, img.height)) / 2;
+                    var sy = (img.height - Math.min(img.width, img.height)) / 2;
+                    var sSize = Math.min(img.width, img.height);
+                    ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, size, size);
+                    canvas.toBlob(function(blob) {
+                        resolve(blob);
+                    }, 'image/png', 0.9);
                 };
-                reader.readAsDataURL(input.files[0]);
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        window._resizedBlob = null;
+
+        window.previewImage = async function(input) {
+            if (input.files && input.files[0]) {
+                // Resize to 512x512 square
+                var blob = await resizeImage(input.files[0], 512);
+                window._resizedBlob = blob;
+                var url = URL.createObjectURL(blob);
+                var img = document.getElementById('imagePreview');
+                img.src = url;
+                img.style.display = '';
+                document.getElementById('imagePreviewText').style.display = 'none';
             }
         };
 
         // Upload image and get URL
         async function uploadImage(file) {
-            if (!file) return null;
+            // Use resized blob if available, otherwise original file
+            var toUpload = window._resizedBlob || file;
+            if (!toUpload) return null;
             try {
-                var formData = new FormData();
-                formData.append('file', file);
-                var r = await fetch('/api/inclawbate/upload', { method: 'POST', body: formData });
+                // Convert blob to base64 for the upload API
+                var base64 = await new Promise(function(resolve) {
+                    var reader = new FileReader();
+                    reader.onload = function() { resolve(reader.result); };
+                    reader.readAsDataURL(toUpload);
+                });
+                var wallet = document.getElementById('launchWallet').value || '';
+                var r = await fetch('/api/inclawbate/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Wallet': wallet },
+                    body: JSON.stringify({ file_data: base64, file_name: 'token-icon.png', file_type: 'image/png' })
+                });
                 var d = await r.json();
                 return d.url || null;
             } catch(e) { console.error('Image upload failed:', e); return null; }
