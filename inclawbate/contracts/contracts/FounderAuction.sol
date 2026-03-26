@@ -74,6 +74,7 @@ contract FounderAuction is ReentrancyGuard {
         Auction storage existing = auctions[token];
         require(existing.endTime == 0 || existing.settled || existing.cancelled, "Auction still active");
         require(duration > 0 && duration <= 7 days, "Invalid duration");
+        require(minBid >= MIN_BID_INCREMENT, "Min bid too low");
         require(IERC20(token).balanceOf(address(this)) > 0, "No tokens to auction");
 
         auctions[token] = Auction({
