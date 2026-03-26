@@ -1,6 +1,8 @@
 // Inclawbate — Dashboard Controller (Single Overview Page)
 
 const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+let _cachedClawsPrice = 0;
 
 function getStoredAuth() {
     try {
@@ -84,19 +86,14 @@ async function loadOverview() {
     if (profile.wallet_address) appParams.set('creator_wallet', profile.wallet_address);
     if (profile.x_handle) appParams.set('creator_x_handle', profile.x_handle);
 
-    const [credits, apps] = await Promise.allSettled([
-        fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-        appParams.toString()
-            ? fetch(`${API_BASE}/apps?${appParams}`).then(r => {
-                if (!r.ok) { console.warn('[dash] apps fetch status:', r.status); return null; }
-                return r.json();
-            })
-            : Promise.resolve(null)
-    ]);
-
-    const creditsData = credits.status === 'fulfilled' ? credits.value : null;
-    let appsData = apps.status === 'fulfilled' ? apps.value : null;
-    if (apps.status === 'rejected') console.warn('[dash] apps fetch rejected:', apps.reason);
+    let appsData = null;
+    if (appParams.toString()) {
+        try {
+            const r = await fetch(`${API_BASE}/apps?${appParams}`);
+            if (r.ok) appsData = await r.json();
+            else console.warn('[dash] apps fetch status:', r.status);
+        } catch (e) { console.warn('[dash] apps fetch error:', e); }
+    }
 
     // Fallback: if no apps found, try by handle and/or wallet separately
     if (!appsData?.apps?.length) {
@@ -115,19 +112,8 @@ async function loadOverview() {
     }
 
     // Update stat cards
-    const creditCount = creditsData?.credits ?? 0;
-    const ovCreditsEl = document.getElementById('ovCredits');
-    if (ovCreditsEl) ovCreditsEl.textContent = creditCount;
     const ovAppsEl = document.getElementById('ovApps');
     if (ovAppsEl) ovAppsEl.textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
-
-    // Update buy panel balance
-    const balEl = document.getElementById('dashBuyBalance');
-    if (balEl) balEl.textContent = creditCount + ' credits';
-
-    // Update profile card credits
-    const profileCreditsEl = document.getElementById('profileCredits');
-    if (profileCreditsEl) profileCreditsEl.textContent = creditCount.toLocaleString();
 
     _cachedUserApps = appsData?.apps || [];
     renderAppCards(_cachedUserApps);
@@ -135,23 +121,6 @@ async function loadOverview() {
     loadSavedApps();
 }
 
-async function refreshCredits() {
-    const btn = document.getElementById('profileCreditsRefresh');
-    if (btn) { btn.classList.add('spinning'); btn.disabled = true; }
-    try {
-        const resp = await fetch(`${API_BASE}/credits`, { headers: authHeaders() });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const count = data?.credits ?? 0;
-        const el = document.getElementById('profileCredits');
-        if (el) el.textContent = count.toLocaleString();
-        const balEl = document.getElementById('dashBuyBalance');
-        if (balEl) balEl.textContent = count + ' credits';
-    } catch (e) { /* silent */ }
-    finally {
-        if (btn) { btn.classList.remove('spinning'); btn.disabled = false; }
-    }
-}
 
 function shortWallet(addr) {
     if (!addr) return '';
@@ -190,21 +159,6 @@ function renderProfileCard(profile) {
             </div>
             ${privyInfo ? '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">This wallet was created when you signed in. Tokens and rewards are sent here automatically.</div>' : ''}
         </div>` : ''}
-        <div class="profile-credits-area">
-            <div class="profile-sub-row">
-                <span class="profile-sub-badge" id="profileSubBadge">Free</span>
-                <a href="#" class="profile-sub-upgrade" id="profileSubUpgrade">Get a plan</a>
-            </div>
-            <div class="profile-credits-row">
-                <span class="profile-credits-count" id="profileCredits">--</span>
-                <span class="profile-credits-label">credits</span>
-                <button type="button" class="profile-credits-refresh" id="profileCreditsRefresh" title="Refresh balance">&#x21bb;</button>
-                <span class="profile-credits-info" id="profileCreditsInfo" tabindex="0">i
-                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (10), Sonnet (50), Opus (100).</span>
-                </span>
-            </div>
-            <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
-        </div>
         <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" class="overview-profile-link" id="dashEditProfile" style="color:var(--lobster-300);border-color:var(--lobster-300);">Edit Profile</button>
             <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
@@ -224,17 +178,6 @@ function renderProfileCard(profile) {
             </div>
         </div>
     `;
-
-    document.getElementById('profileBuyBtn')?.addEventListener('click', () => {
-        openBuyModal('credits');
-    });
-
-    document.getElementById('profileCreditsRefresh')?.addEventListener('click', refreshCredits);
-
-    document.getElementById('profileSubUpgrade')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        openBuyModal('subscribe');
-    });
 
     document.getElementById('dashCopyWallet')?.addEventListener('click', function() {
         navigator.clipboard.writeText(profile.wallet_address).then(() => {
@@ -2012,7 +1955,7 @@ async function openFundModal(poolAddr, poolName, projectId) {
 
     // Fetch CLAWS balance — try provider first (works in wallet browsers), then public RPCs
     let clawsBalance = 0;
-    let clawsPrice = buyState.clawsPrice || 0;
+    let clawsPrice = _cachedClawsPrice || 0;
     const balData = STAKING_USER_SEL.balanceOf + pad32(wallet);
     let _dbgSource = 'none';
     let _dbgRaw = '?';
@@ -2038,7 +1981,7 @@ async function openFundModal(poolAddr, poolName, projectId) {
             const data = await resp.json();
             if (data.pairs && data.pairs.length > 0) {
                 clawsPrice = parseFloat(data.pairs[0].priceUsd) || 0;
-                buyState.clawsPrice = clawsPrice;
+                _cachedClawsPrice = clawsPrice;
             }
         }
     } catch (e) { /* proceed with 0 */ }
@@ -2608,579 +2551,6 @@ async function deleteApplication(projectId, projectName) {
     }
 }
 
-// ── Buy Credits ──
-const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
-const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
-const BASE_CHAIN_ID = '0x2105';
-const buyState = { clawsPerCredit: 0, selectedAmount: 250, clawsPrice: 0 };
-
-function openBuyModal(tab) {
-    const modal = document.getElementById('buyCreditsModal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    // Switch to requested tab
-    if (tab) {
-        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-        document.getElementById('dashBuyCredits').classList.toggle('active', tab === 'credits');
-        document.getElementById('dashBuySubscribe').classList.toggle('active', tab === 'subscribe');
-    }
-}
-
-function closeBuyModal() {
-    const modal = document.getElementById('buyCreditsModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-function initBuyCredits() {
-    // Modal close handlers
-    document.getElementById('buyModalClose')?.addEventListener('click', closeBuyModal);
-    document.querySelector('.buy-modal-backdrop')?.addEventListener('click', closeBuyModal);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeBuyModal();
-    });
-    // Tab switching
-    document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab;
-            document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-            document.getElementById('dashBuyCredits').classList.toggle('active', tab === 'credits');
-            document.getElementById('dashBuySubscribe').classList.toggle('active', tab === 'subscribe');
-        });
-    });
-
-    // Presets
-    document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(btn => {
-        btn.addEventListener('click', () => {
-            buyState.selectedAmount = parseInt(btn.dataset.amount);
-            const custom = document.getElementById('dashBuyCustom');
-            if (custom) custom.value = '';
-            document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(b => b.classList.toggle('active', b === btn));
-            updateDashBuyCost();
-        });
-    });
-
-    // Custom amount
-    document.getElementById('dashBuyCustom')?.addEventListener('input', () => {
-        const val = parseInt(document.getElementById('dashBuyCustom').value) || 0;
-        if (val > 0) {
-            buyState.selectedAmount = val;
-            document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(b => b.classList.remove('active'));
-        }
-        updateDashBuyCost();
-    });
-
-    // Pay with card
-    document.getElementById('dashBuyCardBtn')?.addEventListener('click', dashBuyWithCard);
-
-    // Pay with CLAWS
-    document.getElementById('dashBuySendBtn')?.addEventListener('click', dashSendClawsTx);
-
-    // Subscription tier cards in the picker view → subscription checkout
-    document.querySelectorAll('#subPickerView .sub-tier-card').forEach(card => {
-        card.addEventListener('click', () => dashSubscribeTier(card));
-    });
-
-    // Subscription action buttons
-    document.getElementById('subChangeBtn')?.addEventListener('click', toggleChangeTiers);
-    document.getElementById('subCancelBtn')?.addEventListener('click', cancelSubscription);
-
-    // Load subscription status
-    loadSubscriptionStatus();
-
-    // Fetch price
-    fetchClawsPrice();
-}
-
-async function fetchClawsPrice() {
-    const rateEl = document.getElementById('dashBuyRate');
-    try {
-        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
-        const data = await resp.json();
-        if (data.pairs && data.pairs.length > 0) {
-            const price = parseFloat(data.pairs[0].priceUsd) || 0;
-            if (price > 0) {
-                buyState.clawsPrice = price;
-                buyState.clawsPerCredit = Math.ceil(0.005 / price);
-                if (rateEl) rateEl.textContent = '~' + buyState.clawsPerCredit.toLocaleString() + ' CLAWS / credit';
-                updateDashBuyCost();
-                return;
-            }
-        }
-        if (rateEl) rateEl.textContent = 'Price unavailable';
-    } catch (e) {
-        if (rateEl) rateEl.textContent = 'Price unavailable';
-    }
-}
-
-function updateDashBuyCost() {
-    const amount = buyState.selectedAmount;
-    const costEl = document.getElementById('dashBuyCost');
-    const sendBtn = document.getElementById('dashBuySendBtn');
-    const cardBtn = document.getElementById('dashBuyCardBtn');
-    const bH = document.getElementById('dashBrkHaiku');
-    const bS = document.getElementById('dashBrkSonnet');
-    const bO = document.getElementById('dashBrkOpus');
-    const cardIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
-
-    if (!amount || !buyState.clawsPerCredit) {
-        if (costEl) costEl.textContent = '--';
-        if (sendBtn) sendBtn.disabled = true;
-        if (cardBtn) { cardBtn.disabled = true; cardBtn.innerHTML = cardIcon + 'Pay with Card'; }
-        if (bH) bH.textContent = '--';
-        if (bS) bS.textContent = '--';
-        if (bO) bO.textContent = '--';
-        return;
-    }
-
-    const totalClaws = amount * buyState.clawsPerCredit;
-    const totalUsd = (amount * 0.005).toFixed(2);
-    if (costEl) costEl.textContent = totalClaws.toLocaleString() + ' CLAWS (~$' + totalUsd + ')';
-    if (sendBtn) sendBtn.disabled = false;
-    if (cardBtn) {
-        if (amount >= 100) {
-            cardBtn.disabled = false;
-            cardBtn.innerHTML = cardIcon + 'Pay with Card — $' + totalUsd;
-        } else {
-            cardBtn.disabled = true;
-            cardBtn.innerHTML = cardIcon + 'Card min $0.50 (100 credits)';
-        }
-    }
-    if (bH) bH.textContent = Math.floor(amount / 10) + ' msgs';
-    if (bS) bS.textContent = Math.floor(amount / 50) + ' msgs';
-    if (bO) bO.textContent = Math.floor(amount / 100) + ' msgs';
-}
-
-async function dashSendClawsTx() {
-    const resultEl = document.getElementById('dashBuyResult');
-    const sendBtn = document.getElementById('dashBuySendBtn');
-
-    if (!window.ethereum) {
-        resultEl.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
-        resultEl.className = 'buy-result error';
-        return;
-    }
-
-    const amount = buyState.selectedAmount;
-    if (!amount || !buyState.clawsPerCredit) return;
-
-    sendBtn.disabled = true;
-    resultEl.innerHTML = '';
-
-    try {
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== BASE_CHAIN_ID) {
-            try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
-            } catch (e) {
-                resultEl.textContent = 'Please switch to Base network in your wallet.';
-                resultEl.className = 'buy-result error';
-                sendBtn.disabled = false;
-                return;
-            }
-        }
-
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const from = accounts[0];
-
-        const totalTokens = BigInt(amount) * BigInt(buyState.clawsPerCredit);
-        const amountWei = totalTokens * BigInt('1000000000000000000');
-        const selector = '0xa9059cbb';
-        const paddedAddr = PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0');
-        const paddedAmt = amountWei.toString(16).padStart(64, '0');
-        const data = selector + paddedAddr + paddedAmt;
-
-        resultEl.textContent = 'Confirm in your wallet...';
-        resultEl.className = 'buy-result';
-
-        const txHash = await window.ethereum.request({
-            method: 'eth_sendTransaction',
-            params: [{ from, to: CLAWS_ADDRESS, data }]
-        });
-
-        resultEl.textContent = 'Transaction sent! Waiting for confirmation...';
-
-        // Verify deposit (backend now polls for receipt)
-        const resp = await fetch(`${API_BASE}/credits`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
-        });
-        const result = await resp.json();
-
-        if (resp.ok) {
-            resultEl.textContent = '+' + result.credits_added + ' credits added! New balance: ' + result.credits_total;
-            resultEl.className = 'buy-result success';
-            const ovEl = document.getElementById('ovCredits');
-            if (ovEl) ovEl.textContent = result.credits_total;
-            const balEl = document.getElementById('dashBuyBalance');
-            if (balEl) balEl.textContent = result.credits_total + ' credits';
-            const pcEl = document.getElementById('profileCredits');
-            if (pcEl) pcEl.textContent = result.credits_total.toLocaleString();
-        } else {
-            resultEl.innerHTML = (result.error || 'Verification failed.') +
-                ' <a href="#" onclick="dashScanDeposits();return false;" style="color:#6366f1;text-decoration:underline;">Scan for uncredited deposits</a>';
-            resultEl.className = 'buy-result error';
-            sendBtn.disabled = false;
-        }
-    } catch (e) {
-        if (e.code === 4001) {
-            resultEl.textContent = 'Transaction cancelled.';
-        } else {
-            resultEl.textContent = e.message || 'Transaction failed.';
-        }
-        resultEl.className = 'buy-result error';
-        sendBtn.disabled = false;
-    }
-}
-
-async function dashScanDeposits() {
-    const resultEl = document.getElementById('dashBuyResult');
-    const scanLink = document.getElementById('scanDepositsLink');
-
-    if (!window.ethereum) {
-        resultEl.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
-        resultEl.className = 'buy-result error';
-        return;
-    }
-
-    if (scanLink) scanLink.style.pointerEvents = 'none';
-    resultEl.textContent = 'Scanning chain for uncredited deposits...';
-    resultEl.className = 'buy-result';
-
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const wallet = accounts[0];
-
-        const resp = await fetch(`${API_BASE}/credits`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'scan-deposits', wallet })
-        });
-        const result = await resp.json();
-
-        if (!resp.ok) {
-            resultEl.textContent = result.error || 'Scan failed.';
-            resultEl.className = 'buy-result error';
-        } else if (result.credited > 0) {
-            resultEl.textContent = 'Found ' + result.new_deposits + ' uncredited deposit(s) — +' + result.credited + ' credits added! Balance: ' + result.credits_total;
-            resultEl.className = 'buy-result success';
-            const ovEl = document.getElementById('ovCredits');
-            if (ovEl) ovEl.textContent = result.credits_total;
-            const balEl = document.getElementById('dashBuyBalance');
-            if (balEl) balEl.textContent = result.credits_total + ' credits';
-            const pcEl = document.getElementById('profileCredits');
-            if (pcEl) pcEl.textContent = result.credits_total.toLocaleString();
-        } else if (result.found > 0) {
-            resultEl.textContent = 'Found ' + result.found + ' deposit(s), all already credited. No new credits to add.';
-            resultEl.className = 'buy-result';
-        } else {
-            resultEl.textContent = 'No CLAWS deposits found from this wallet in the last ~3 hours.';
-            resultEl.className = 'buy-result';
-        }
-    } catch (e) {
-        resultEl.textContent = e.message || 'Scan failed.';
-        resultEl.className = 'buy-result error';
-    } finally {
-        if (scanLink) scanLink.style.pointerEvents = '';
-    }
-}
-
-async function dashBuyWithCard() {
-    const amount = buyState.selectedAmount;
-    if (!amount || amount < 100) return;
-
-    const cardBtn = document.getElementById('dashBuyCardBtn');
-    const resultEl = document.getElementById('dashBuyResult');
-    cardBtn.disabled = true;
-    resultEl.innerHTML = '';
-
-    try {
-        const resp = await fetch(`${API_BASE}/create-checkout`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ credits: amount, return_path: '/dashboard' })
-        });
-        const data = await resp.json();
-
-        if (resp.ok && data.url) {
-            window.location.href = data.url;
-        } else {
-            resultEl.textContent = data.error || 'Failed to start checkout.';
-            resultEl.className = 'buy-result error';
-            cardBtn.disabled = false;
-        }
-    } catch (e) {
-        resultEl.textContent = 'Network error. Try again.';
-        resultEl.className = 'buy-result error';
-        cardBtn.disabled = false;
-    }
-}
-
-// ── Subscription Management ──
-const SUB_TIERS = {
-    spark:   { credits: 1500,  price: '$6',  label: 'Spark'   },
-    builder: { credits: 5000,  price: '$19', label: 'Builder' },
-    studio:  { credits: 15000, price: '$55', label: 'Studio'  },
-};
-
-let currentSub = { tier: null, status: 'none', current_period_end: null };
-
-async function loadSubscriptionStatus() {
-    const auth = getStoredAuth();
-    if (!auth) return;
-
-    try {
-        const resp = await fetch(`${API_BASE}/subscription`, { headers: authHeaders() });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        currentSub = data;
-
-        const activeView = document.getElementById('subActiveView');
-        const pickerView = document.getElementById('subPickerView');
-
-        // Update profile badge
-        const profileBadge = document.getElementById('profileSubBadge');
-
-        if (data.status === 'active' || data.status === 'canceled' || data.status === 'past_due') {
-            // Show active subscription view
-            activeView.style.display = '';
-            pickerView.style.display = 'none';
-
-            const t = SUB_TIERS[data.tier] || { credits: 0, price: '?', label: data.tier || '?' };
-            if (profileBadge) {
-                profileBadge.textContent = t.label;
-                profileBadge.classList.add('active');
-            }
-            const upgradeLink = document.getElementById('profileSubUpgrade');
-            if (upgradeLink) upgradeLink.textContent = 'Manage';
-
-            document.getElementById('subTierName').textContent = t.label + ' Plan';
-            const badge = document.getElementById('subStatusBadge');
-            badge.className = 'sub-status-badge ' + data.status;
-            badge.textContent = data.status === 'active' ? 'Active' :
-                                data.status === 'canceled' ? 'Cancels at period end' :
-                                'Past due';
-
-            document.getElementById('subCreditsMonth').textContent = t.credits.toLocaleString();
-            document.getElementById('subMonthlyCost').textContent = t.price + '/mo';
-
-            const periodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
-            document.getElementById('subRenewalDate').textContent = periodEnd
-                ? periodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : '--';
-
-            // Toggle cancel vs reactivate button
-            const cancelBtn = document.getElementById('subCancelBtn');
-            if (data.status === 'canceled') {
-                cancelBtn.className = 'sub-reactivate-btn';
-                cancelBtn.textContent = 'Reactivate';
-                cancelBtn.onclick = reactivateSubscription;
-            } else {
-                cancelBtn.className = 'sub-cancel-btn';
-                cancelBtn.textContent = 'Cancel';
-                cancelBtn.onclick = cancelSubscription;
-            }
-
-            // Hide change tiers on refresh
-            document.getElementById('subChangeTiers').style.display = 'none';
-        } else {
-            // Show tier picker
-            activeView.style.display = 'none';
-            pickerView.style.display = '';
-        }
-    } catch (e) {
-        // Silently fail, picker stays visible
-    }
-}
-
-async function dashSubscribeTier(card) {
-    const tier = card.dataset.tier;
-    const btn = card.querySelector('.sub-tier-btn');
-    const resultEl = document.getElementById('subResult') || document.getElementById('dashBuyResult');
-    if (!tier || !btn) return;
-
-    btn.disabled = true;
-    btn.textContent = 'Redirecting...';
-    if (resultEl) resultEl.innerHTML = '';
-
-    try {
-        const resp = await fetch(`${API_BASE}/subscription`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'create', tier })
-        });
-        const data = await resp.json();
-
-        if (resp.ok && data.url) {
-            window.location.href = data.url;
-        } else {
-            if (resultEl) {
-                resultEl.textContent = data.error || 'Failed to start checkout.';
-                resultEl.className = 'sub-result error';
-            }
-            btn.disabled = false;
-            btn.textContent = 'Subscribe to ' + (SUB_TIERS[tier]?.label || tier);
-        }
-    } catch (e) {
-        if (resultEl) {
-            resultEl.textContent = 'Network error. Try again.';
-            resultEl.className = 'sub-result error';
-        }
-        btn.disabled = false;
-        btn.textContent = 'Subscribe to ' + (SUB_TIERS[tier]?.label || tier);
-    }
-}
-
-function toggleChangeTiers() {
-    const panel = document.getElementById('subChangeTiers');
-    if (panel.style.display === 'none') {
-        panel.style.display = '';
-        renderChangeTierCards();
-    } else {
-        panel.style.display = 'none';
-    }
-}
-
-function renderChangeTierCards() {
-    const container = document.getElementById('subChangeTierCards');
-    container.innerHTML = '';
-
-    for (const [key, t] of Object.entries(SUB_TIERS)) {
-        const isCurrent = key === currentSub.tier;
-        const card = document.createElement('div');
-        card.className = 'sub-tier-card' + (isCurrent ? ' current' : '');
-        card.innerHTML = `
-            <div class="sub-tier-name">${t.label}</div>
-            <div class="sub-tier-price">${t.price}<span>/mo</span></div>
-            <div class="sub-tier-credits">${t.credits.toLocaleString()} cr/mo</div>
-            <button class="sub-tier-btn">${isCurrent ? 'Current Plan' : 'Switch to ' + t.label}</button>
-        `;
-        if (!isCurrent) {
-            card.addEventListener('click', () => changeTier(key, card));
-        }
-        container.appendChild(card);
-    }
-}
-
-async function changeTier(newTier, card) {
-    const btn = card.querySelector('.sub-tier-btn');
-    const resultEl = document.getElementById('subResult');
-    btn.disabled = true;
-    btn.textContent = 'Switching...';
-    if (resultEl) resultEl.innerHTML = '';
-
-    try {
-        const resp = await fetch(`${API_BASE}/subscription`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'change', tier: newTier })
-        });
-        const data = await resp.json();
-
-        if (resp.ok && data.ok) {
-            if (resultEl) {
-                resultEl.textContent = 'Switched to ' + (SUB_TIERS[newTier]?.label || newTier) + '!';
-                resultEl.className = 'sub-result success';
-            }
-            loadSubscriptionStatus();
-        } else {
-            if (resultEl) {
-                resultEl.textContent = data.error || 'Failed to change plan.';
-                resultEl.className = 'sub-result error';
-            }
-            btn.disabled = false;
-            btn.textContent = 'Switch to ' + (SUB_TIERS[newTier]?.label || newTier);
-        }
-    } catch (e) {
-        if (resultEl) {
-            resultEl.textContent = 'Network error. Try again.';
-            resultEl.className = 'sub-result error';
-        }
-        btn.disabled = false;
-        btn.textContent = 'Switch to ' + (SUB_TIERS[newTier]?.label || newTier);
-    }
-}
-
-async function cancelSubscription() {
-    if (!confirm('Cancel your subscription? You\'ll keep access until the current period ends.')) return;
-
-    const cancelBtn = document.getElementById('subCancelBtn');
-    const resultEl = document.getElementById('subResult');
-    cancelBtn.disabled = true;
-    cancelBtn.textContent = 'Cancelling...';
-    if (resultEl) resultEl.innerHTML = '';
-
-    try {
-        const resp = await fetch(`${API_BASE}/subscription`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'cancel' })
-        });
-        const data = await resp.json();
-
-        if (resp.ok && data.ok) {
-            if (resultEl) {
-                resultEl.textContent = 'Subscription cancelled. You\'ll keep access until the period ends.';
-                resultEl.className = 'sub-result success';
-            }
-            loadSubscriptionStatus();
-        } else {
-            if (resultEl) {
-                resultEl.textContent = data.error || 'Failed to cancel.';
-                resultEl.className = 'sub-result error';
-            }
-            cancelBtn.disabled = false;
-            cancelBtn.textContent = 'Cancel';
-        }
-    } catch (e) {
-        if (resultEl) {
-            resultEl.textContent = 'Network error. Try again.';
-            resultEl.className = 'sub-result error';
-        }
-        cancelBtn.disabled = false;
-        cancelBtn.textContent = 'Cancel';
-    }
-}
-
-async function reactivateSubscription() {
-    const btn = document.getElementById('subCancelBtn');
-    const resultEl = document.getElementById('subResult');
-    btn.disabled = true;
-    btn.textContent = 'Reactivating...';
-    if (resultEl) resultEl.innerHTML = '';
-
-    try {
-        const resp = await fetch(`${API_BASE}/subscription`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ action: 'reactivate' })
-        });
-        const data = await resp.json();
-
-        if (resp.ok && data.ok) {
-            if (resultEl) {
-                resultEl.textContent = 'Subscription reactivated!';
-                resultEl.className = 'sub-result success';
-            }
-            loadSubscriptionStatus();
-        } else {
-            if (resultEl) {
-                resultEl.textContent = data.error || 'Failed to reactivate.';
-                resultEl.className = 'sub-result error';
-            }
-            btn.disabled = false;
-            btn.textContent = 'Reactivate';
-        }
-    } catch (e) {
-        if (resultEl) {
-            resultEl.textContent = 'Network error. Try again.';
-            resultEl.className = 'sub-result error';
-        }
-        btn.disabled = false;
-        btn.textContent = 'Reactivate';
-    }
-}
-
 // ── User Projects ──
 async function deleteUserProject(projectId, projectName) {
     if (!confirm(`Delete "${projectName}"? This cannot be undone.`)) return;
@@ -3552,44 +2922,11 @@ async function discoverClankerTokens(wallet, knownAddrs) {
 
 // ── Init ──
 function init() {
-    // Handle Stripe payment return
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
-        openBuyModal('credits');
-        const cr = params.get('credits');
-        const resultEl = document.getElementById('dashBuyResult');
-        if (resultEl) {
-            resultEl.textContent = (cr ? cr + ' credits' : 'Credits') + ' added! Refreshing balance...';
-            resultEl.className = 'buy-result success';
-        }
-        window.history.replaceState({}, '', '/dashboard');
-    } else if (params.get('payment') === 'cancelled') {
-        openBuyModal('credits');
-        const resultEl = document.getElementById('dashBuyResult');
-        if (resultEl) {
-            resultEl.textContent = 'Payment cancelled.';
-            resultEl.className = 'buy-result error';
-        }
-        window.history.replaceState({}, '', '/dashboard');
-    } else if (params.get('subscription') === 'success') {
-        openBuyModal('subscribe');
-        const resultEl = document.getElementById('subResult');
-        if (resultEl) {
-            resultEl.textContent = 'Subscribed! Your credits have been added.';
-            resultEl.className = 'sub-result success';
-        }
-        window.history.replaceState({}, '', '/dashboard');
-    } else if (params.get('subscription') === 'cancelled') {
-        openBuyModal('subscribe');
-        window.history.replaceState({}, '', '/dashboard');
-    }
-
     const auth = getStoredAuth();
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
         document.getElementById('overviewProfileCard')?.classList.add('hidden');
         loadMyStakingPositions();
-        initBuyCredits();
         return;
     }
 
@@ -3607,9 +2944,6 @@ function init() {
             }
         })
         .catch(() => {});
-
-    // Init buy credits panel
-    initBuyCredits();
 
     loadOverview().then(function() { loadInsights(); });
     loadProjects();
@@ -3805,12 +3139,6 @@ async function loadInsights() {
     if (el) el.textContent = apps.length;
     el = document.getElementById('insUpvotes');
     if (el) el.textContent = totalUpvotes;
-
-    // Credits
-    var creditsEl = document.getElementById('profileCredits');
-    var credits = creditsEl ? creditsEl.textContent.replace(/,/g, '') : '0';
-    el = document.getElementById('insCredits');
-    if (el) el.textContent = Number(credits).toLocaleString();
 
     // Saved apps count
     try {
