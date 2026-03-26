@@ -1241,9 +1241,41 @@
                                 <div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;cursor:pointer;" onclick="defiChat('Show me perps markets')"><span style="font-weight:700;">Browse all markets</span></div>
                             </div>
                         </div>
-                        <!-- DISPERSE — embedded airdrop tool -->
+                        <!-- DISPERSE — inline token disperser -->
                         <div class="defi-sub" data-sub="trade-disperse">
-                            <iframe src="/airdrop" style="width:100%;border:none;background:#0a0a0f;min-height:200px;" id="disperseIframe" scrolling="no"></iframe>
+                            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;">Send any token to multiple wallets in one transaction.</div>
+
+                            <!-- Token address -->
+                            <div style="margin-bottom:12px;">
+                                <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;">TOKEN</div>
+                                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                                    <button class="swap-freq-btn active" onclick="setDisperseToken(this,'0x7ca47B141639B893C6782823C0b219f872056379','CLAWS',18)">CLAWS</button>
+                                    <button class="swap-freq-btn" onclick="setDisperseToken(this,'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913','USDC',6)">USDC</button>
+                                    <button class="swap-freq-btn" onclick="setDisperseToken(this,'','Custom',0)">Custom</button>
+                                </div>
+                                <input type="text" id="disperseTokenAddr" placeholder="Token contract address (0x...)" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.78rem;outline:none;" value="0x7ca47B141639B893C6782823C0b219f872056379">
+                            </div>
+
+                            <!-- Recipients -->
+                            <div style="margin-bottom:12px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                                    <span style="font-size:0.68rem;color:var(--text-dim);">RECIPIENTS</span>
+                                    <span style="font-size:0.65rem;color:var(--text-dim);" id="disperseCount">0 addresses</span>
+                                </div>
+                                <textarea id="disperseList" rows="6" placeholder="One per line: address,amount&#10;0xABC...,1000&#10;0xDEF...,2000&#10;&#10;Or paste a CSV" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-family:var(--font-mono);font-size:0.75rem;outline:none;resize:vertical;" oninput="updateDisperseCount()"></textarea>
+                            </div>
+
+                            <!-- Total -->
+                            <div style="display:flex;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:12px;font-size:0.82rem;">
+                                <span style="color:var(--text-dim);">Total to send</span>
+                                <span id="disperseTotal" style="font-weight:700;font-family:var(--font-mono);">0</span>
+                            </div>
+
+                            <!-- Send button -->
+                            <button id="disperseBtn" onclick="executeDisperse()" style="width:100%;padding:14px;background:var(--accent-gradient);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.9rem;cursor:pointer;">Approve &amp; Send</button>
+
+                            <div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--text-dim);">Uses disperse.app contract &mdash; 1 approve + 1 send tx</div>
+                            <div id="disperseStatus" style="margin-top:8px;font-size:0.78rem;text-align:center;display:none;"></div>
                         </div>
                     </div>
                     <!-- EARN panel -->
@@ -3378,6 +3410,129 @@ function executeSwapFromUI() {
         msg = 'Set up DCA: buy ' + amount + ' ' + recToken + ' with ' + payToken + ' ' + freq;
     }
     defiChat(msg);
+}
+
+// ── Disperse Tool ──
+var DISPERSE_CONTRACT = '0xD152f549545093347A162Dce210e7293f1452150'; // disperse.app on Base
+var _disperseDecimals = 18;
+var _disperseSymbol = 'CLAWS';
+
+function setDisperseToken(btn, addr, symbol, decimals) {
+    btn.parentNode.querySelectorAll('.swap-freq-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _disperseDecimals = decimals;
+    _disperseSymbol = symbol;
+    document.getElementById('disperseTokenAddr').value = addr;
+    if (symbol === 'Custom') {
+        document.getElementById('disperseTokenAddr').focus();
+        _disperseDecimals = 18; // default, user should verify
+    }
+    updateDisperseCount();
+}
+
+function parseDisperseList() {
+    var raw = document.getElementById('disperseList').value.trim();
+    if (!raw) return [];
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    var entries = [];
+    for (var i = 0; i < lines.length; i++) {
+        var parts = lines[i].split(/[,\t\s]+/);
+        if (parts.length >= 2 && /^0x[a-fA-F0-9]{40}$/.test(parts[0])) {
+            var amt = parseFloat(parts[1]);
+            if (amt > 0) entries.push({ address: parts[0], amount: amt });
+        }
+    }
+    return entries;
+}
+
+function updateDisperseCount() {
+    var entries = parseDisperseList();
+    document.getElementById('disperseCount').textContent = entries.length + ' address' + (entries.length !== 1 ? 'es' : '');
+    var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
+    document.getElementById('disperseTotal').textContent = total.toLocaleString() + ' ' + _disperseSymbol;
+}
+
+async function executeDisperse() {
+    if (!window.ethereum) { alert('Connect wallet first'); return; }
+    var tokenAddr = document.getElementById('disperseTokenAddr').value.trim();
+    if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddr)) { alert('Enter a valid token address'); return; }
+    var entries = parseDisperseList();
+    if (entries.length === 0) { alert('Add at least one recipient'); return; }
+
+    var btn = document.getElementById('disperseBtn');
+    var status = document.getElementById('disperseStatus');
+    status.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+        // Ensure Base chain
+        var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        }
+
+        var addresses = entries.map(function(e) { return e.address; });
+        var amounts = entries.map(function(e) {
+            return '0x' + BigInt(Math.round(e.amount * (10 ** _disperseDecimals))).toString(16);
+        });
+        var totalRaw = entries.reduce(function(s, e) { return s + BigInt(Math.round(e.amount * (10 ** _disperseDecimals))); }, 0n);
+
+        // Step 1: Approve token spending
+        status.textContent = 'Approving token...';
+        status.style.color = 'var(--text-secondary)';
+        var approveData = '0x095ea7b3' +
+            DISPERSE_CONTRACT.toLowerCase().replace('0x', '').padStart(64, '0') +
+            totalRaw.toString(16).padStart(64, '0');
+
+        await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: WalletKit.getAddress(), to: tokenAddr, data: approveData }]
+        });
+
+        // Small delay for approval to confirm
+        status.textContent = 'Waiting for approval...';
+        await new Promise(function(r) { setTimeout(r, 3000); });
+
+        // Step 2: Disperse
+        status.textContent = 'Sending to ' + entries.length + ' addresses...';
+
+        // Encode disperseToken(address token, address[] recipients, uint256[] values)
+        // Selector: 0xc73a2d60
+        var encoded = '0xc73a2d60';
+        // token address
+        encoded += tokenAddr.toLowerCase().replace('0x', '').padStart(64, '0');
+        // offset to recipients array
+        encoded += (96).toString(16).padStart(64, '0'); // 0x60
+        // offset to values array
+        var recipientsLen = addresses.length;
+        var valuesOffset = 96 + 32 + recipientsLen * 32;
+        encoded += valuesOffset.toString(16).padStart(64, '0');
+        // recipients array
+        encoded += recipientsLen.toString(16).padStart(64, '0');
+        for (var i = 0; i < addresses.length; i++) {
+            encoded += addresses[i].toLowerCase().replace('0x', '').padStart(64, '0');
+        }
+        // values array
+        encoded += recipientsLen.toString(16).padStart(64, '0');
+        for (var j = 0; j < amounts.length; j++) {
+            encoded += BigInt(amounts[j]).toString(16).padStart(64, '0');
+        }
+
+        var txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: WalletKit.getAddress(), to: DISPERSE_CONTRACT, data: encoded }]
+        });
+
+        status.textContent = 'Sent! Tx: ' + txHash.slice(0, 10) + '...';
+        status.style.color = '#4ade80';
+        status.innerHTML = 'Sent! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:#4ade80;">View on Basescan</a>';
+    } catch (e) {
+        var msg = e.code === 4001 ? 'Cancelled' : (e.message || '').slice(0, 100);
+        status.textContent = msg;
+        status.style.color = '#ef4444';
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 function switchDefiSection(sectionId) {
