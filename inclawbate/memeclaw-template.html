@@ -466,11 +466,155 @@
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+        /* ── Meme Chat Widget ── */
+        .meme-chat-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            z-index: 50;
+            transition: transform 0.2s;
+        }
+        .meme-chat-fab:hover { transform: scale(1.08); }
+        .meme-chat-fab.open { display: none; }
+
+        .meme-chat-panel {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 360px;
+            max-width: calc(100vw - 32px);
+            height: 480px;
+            max-height: calc(100vh - 48px);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-xl);
+            z-index: 50;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+        .meme-chat-panel.open { display: flex; }
+
+        .meme-chat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        .meme-chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--bg-deep);
+        }
+        .meme-chat-name {
+            font-weight: 800;
+            font-size: 0.88rem;
+            flex: 1;
+        }
+        .meme-chat-close {
+            background: none;
+            border: none;
+            color: var(--text-3);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .meme-chat-close:hover { color: var(--text); }
+
+        .meme-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .meme-chat-msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: var(--r-md);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .meme-chat-msg.bot {
+            background: var(--bg-card);
+            color: var(--text-2);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .meme-chat-msg.user {
+            background: var(--accent);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .meme-chat-msg.typing {
+            color: var(--text-3);
+            font-style: italic;
+        }
+
+        .meme-chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .meme-chat-input input {
+            flex: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 10px 16px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.82rem;
+            outline: none;
+        }
+        .meme-chat-input input:focus { border-color: var(--accent); }
+        .meme-chat-input button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+        .meme-chat-input button:hover { opacity: 0.85; }
+        .meme-chat-input button:disabled { opacity: 0.4; cursor: default; }
+
         @media (max-width: 560px) {
             .hero-img { width: 120px; height: 120px; }
             .vote-grid { grid-template-columns: 1fr; }
             .links-bar { gap: 6px; }
             .link-chip { padding: 6px 10px; font-size: 0.7rem; }
+            .meme-chat-panel { width: 100%; right: 0; bottom: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; height: 60vh; }
+            .meme-chat-fab { bottom: 16px; right: 16px; }
         }
     </style>
 </head>
@@ -622,6 +766,23 @@
     <a class="eco-badge" href="https://inclawbate.app" target="_blank">&#129438; Part of the Inclawbate ecosystem</a>
 </div>
 
+<!-- Meme Chat Widget -->
+<button class="meme-chat-fab" id="chatFab" onclick="toggleChat()">&#128172;</button>
+<div class="meme-chat-panel" id="chatPanel">
+    <div class="meme-chat-header">
+        <img class="meme-chat-avatar" src="{{MEME_IMAGE}}" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%2315151e%22 width=%2240%22 height=%2240%22/><text y=%22.85em%22 x=%2250%25%22 text-anchor=%22middle%22 font-size=%2224%22>🤔</text></svg>'">
+        <span class="meme-chat-name">{{MEME_NAME}}</span>
+        <button class="meme-chat-close" onclick="toggleChat()">&times;</button>
+    </div>
+    <div class="meme-chat-messages" id="chatMessages">
+        <div class="meme-chat-msg bot">Hey! I'm the {{MEME_NAME}} meme. Ask me anything — how I became a meme, my lore, or what this token is about.</div>
+    </div>
+    <div class="meme-chat-input">
+        <input type="text" id="chatInput" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')sendMemeChat()">
+        <button onclick="sendMemeChat()" id="chatSendBtn">&#9654;</button>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -693,6 +854,61 @@
         })
         .catch(function(){ updateMilestones(0); });
 })();
+
+// ── Meme Chat ──
+var CHAT_API = 'https://www.inclawbate.app/api/inclawbate/agent-chat';
+var CHAT_SESSION = 'memeclaw-chat-{{SLUG}}';
+var chatSending = false;
+
+window.toggleChat = function() {
+    var fab = document.getElementById('chatFab');
+    var panel = document.getElementById('chatPanel');
+    var isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open');
+    fab.classList.toggle('open');
+    if (!isOpen) document.getElementById('chatInput').focus();
+};
+
+window.sendMemeChat = function() {
+    if (chatSending) return;
+    var input = document.getElementById('chatInput');
+    var msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+
+    var msgs = document.getElementById('chatMessages');
+    msgs.innerHTML += '<div class="meme-chat-msg user">' + msg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+    msgs.innerHTML += '<div class="meme-chat-msg bot typing" id="chatTyping">Thinking...</div>';
+    msgs.scrollTop = msgs.scrollHeight;
+
+    chatSending = true;
+    document.getElementById('chatSendBtn').disabled = true;
+
+    var persona = '[Meme persona: You ARE the "{{MEME_NAME}}" meme. Stay in character as this meme. You know your origin from Know Your Meme. Your lore: {{MEME_DESCRIPTION}}. You are also a token ({{TOKEN_SYMBOL}}) on Base at {{TOKEN_ADDRESS}}. Be fun, in-character, and knowledgeable about meme culture. Keep responses short — 2-3 sentences max.]: ';
+
+    fetch(CHAT_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: persona + msg, session_id: CHAT_SESSION })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var typing = document.getElementById('chatTyping');
+        if (typing) typing.remove();
+        var reply = (d.reply || 'Hmm, I got nothing.').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        msgs.innerHTML += '<div class="meme-chat-msg bot">' + reply + '</div>';
+        msgs.scrollTop = msgs.scrollHeight;
+    })
+    .catch(function() {
+        var typing = document.getElementById('chatTyping');
+        if (typing) typing.remove();
+        msgs.innerHTML += '<div class="meme-chat-msg bot">Something went wrong. Try again.</div>';
+    })
+    .finally(function() {
+        chatSending = false;
+        document.getElementById('chatSendBtn').disabled = false;
+    });
+};
 </script>
 
 </body>
