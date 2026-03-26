@@ -35,29 +35,11 @@ export default async function handler(req, res) {
             reward_bps
         });
 
-        // Return token address IMMEDIATELY — don't wait for staking/linking
-        // This prevents Vercel 60s timeout
+        // Return token address IMMEDIATELY
+        // Staking pool is deployed by Railway (meme-launcher) after this returns
         res.status(200).json(result);
 
-        // Background: deploy staking pool + link app (after response sent)
-        if (deploy_staking !== false && result.token_address) {
-            try {
-                const stakingResult = await deployStakingPool({
-                    token_address: result.token_address,
-                    creator_wallet
-                });
-                console.log('Staking pool deployed:', stakingResult.pool_address);
-
-                await supabase
-                    .from('inclawbator_projects')
-                    .update({ staking_address: stakingResult.pool_address })
-                    .eq('token_address', result.token_address.toLowerCase());
-            } catch (stakingErr) {
-                console.error('Auto-staking deploy failed (non-fatal):', stakingErr.message);
-            }
-        }
-
-        // Background: link app to project
+        // Link app to project
         if (result.token_address) {
             try {
                 const { data: app } = await supabase

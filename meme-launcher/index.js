@@ -399,6 +399,28 @@ async function launchMemeToken(meme) {
         console.error(`[MemeClaw] Launch API call failed:`, err.message);
     }
 
+    // Step 2b: Deploy staking pool from Railway (Vercel can't do background tasks)
+    if (tokenAddress && !stakingAddress) {
+        try {
+            console.log(`[MemeClaw] Deploying staking pool for ${tokenAddress}...`);
+            const STAKING_API = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/launch-token');
+            const stakingResp = await fetch(STAKING_API.replace('/launch-token', '/deploy-staking'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token_address: tokenAddress, creator_wallet: CREATOR_WALLET })
+            });
+            const stakingData = await stakingResp.json();
+            if (stakingData.pool_address) {
+                stakingAddress = stakingData.pool_address;
+                console.log(`[MemeClaw] Staking pool deployed: ${stakingAddress}`);
+            } else {
+                console.error(`[MemeClaw] Staking deploy failed:`, stakingData.error || 'no pool address');
+            }
+        } catch (err) {
+            console.error(`[MemeClaw] Staking deploy error:`, err.message);
+        }
+    }
+
     // Step 3: Re-publish site with the actual token address + staking address
     if (tokenAddress) {
         try {
