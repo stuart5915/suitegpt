@@ -610,36 +610,60 @@
 
             <div id="launchForm">
                 <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-                    One click does it all: launches the token on Base, deploys a staking pool, and builds a landing page. Then refine the site in the Inclawbator chat.
+                    Start with a rough idea. AI generates the rest. Then launch with one click.
                 </div>
                 <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+                    <!-- Step 1: Your idea -->
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Project Name</label>
-                        <input type="text" id="launchName" placeholder="e.g. Flip Cards" maxlength="60" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body)">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Your Idea</label>
+                        <div style="display:flex;gap:6px">
+                            <input type="text" id="launchIdea" placeholder="e.g. card flipping game, AI fitness tracker, prediction market for sports" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body)">
+                            <button class="btn-primary" onclick="generateDescription()" id="genDescBtn" style="padding:10px 16px;font-size:0.78rem;white-space:nowrap">Generate</button>
+                        </div>
                     </div>
+
+                    <!-- Step 2: Generated description -->
                     <div>
                         <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Description</label>
-                        <textarea id="launchDesc" placeholder="What does the app do? What's the token for? One paragraph is enough." maxlength="500" rows="3" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body);resize:vertical"></textarea>
+                        <textarea id="launchDesc" placeholder="Click Generate above, or write your own." maxlength="800" rows="4" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body);resize:vertical"></textarea>
                     </div>
+
+                    <!-- Step 3: Generate name + symbol + image prompts -->
+                    <div>
+                        <button class="btn-secondary" onclick="generateDetails()" id="genDetailsBtn" style="width:100%;padding:10px;font-size:0.82rem">Generate Name, Symbol &amp; Image Prompts</button>
+                    </div>
+
                     <div style="display:flex;gap:10px">
+                        <div style="flex:1">
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Project Name</label>
+                            <input type="text" id="launchName" placeholder="Generated or type your own" maxlength="60" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-body)">
+                        </div>
                         <div style="flex:1">
                             <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Token Symbol</label>
                             <input type="text" id="launchSymbol" placeholder="e.g. FLIP" maxlength="10" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-mono);text-transform:uppercase">
                         </div>
+                    </div>
+
+                    <!-- Image prompts -->
+                    <div id="imagePromptsWrap" style="display:none">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Image Prompt Suggestions</label>
+                        <div id="imagePrompts" style="display:flex;flex-direction:column;gap:4px"></div>
+                        <div style="font-size:0.68rem;color:var(--text-dim);margin-top:4px">Copy a prompt into your image generator (Midjourney, DALL-E, etc.) then upload the result below.</div>
+                    </div>
+
+                    <!-- Wallet + Image upload -->
+                    <div style="display:flex;gap:10px;align-items:flex-end">
                         <div style="flex:1">
                             <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Your Wallet</label>
                             <input type="text" id="launchWallet" placeholder="0x..." maxlength="42" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.8rem;font-family:var(--font-mono)" readonly>
                         </div>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Token Image</label>
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <label style="display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:var(--radius-md);background:var(--bg-elevated);border:1px dashed var(--border-default);cursor:pointer;flex-shrink:0;overflow:hidden" id="imagePreviewWrap">
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Token Image</label>
+                            <label style="display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:var(--radius-md);background:var(--bg-elevated);border:1px dashed var(--border-default);cursor:pointer;flex-shrink:0;overflow:hidden" id="imagePreviewWrap">
                                 <input type="file" id="launchImage" accept="image/*" style="display:none" onchange="previewImage(this)">
-                                <span id="imagePreviewText" style="font-size:0.65rem;color:var(--text-dim);text-align:center">Click to upload</span>
+                                <span id="imagePreviewText" style="font-size:0.55rem;color:var(--text-dim);text-align:center">Upload</span>
                                 <img id="imagePreview" style="width:100%;height:100%;object-fit:cover;display:none">
                             </label>
-                            <div style="font-size:0.72rem;color:var(--text-dim);line-height:1.4">Logo for the token. Shows on DexScreener, Basescan, wallets. Square, any size.</div>
                         </div>
                     </div>
                 </div>
@@ -995,6 +1019,72 @@
                 if (p && p.wallet_address) document.getElementById('launchWallet').value = p.wallet_address;
             } catch(e) {}
         })();
+
+        // ── AI Generate helpers (use Groq via agent-chat) ──
+
+        async function groqGenerate(prompt) {
+            var r = await fetch(AGENT_CHAT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: prompt, session_id: 'factory-gen-' + Date.now().toString(36) })
+            });
+            var d = await r.json();
+            return d.reply || '';
+        }
+
+        window.generateDescription = async function() {
+            var idea = document.getElementById('launchIdea').value.trim();
+            if (!idea) { alert('Type your idea first'); return; }
+            var btn = document.getElementById('genDescBtn');
+            btn.disabled = true; btn.textContent = 'Generating...';
+            try {
+                var reply = await groqGenerate(
+                    'I need you to write a project description for this app idea: "' + idea + '". '
+                    + 'Write 2-3 sentences that explain: what the app does, who it\'s for, and what makes it unique. '
+                    + 'Also explain that it has a token that powers the ecosystem — staking, rewards, and governance. '
+                    + 'Make it sound exciting but real, not hype-y. Output ONLY the description, nothing else.'
+                );
+                document.getElementById('launchDesc').value = reply;
+            } catch(e) { alert('Failed to generate'); }
+            btn.disabled = false; btn.textContent = 'Generate';
+        };
+
+        window.generateDetails = async function() {
+            var desc = document.getElementById('launchDesc').value.trim();
+            if (!desc) { alert('Generate or write a description first'); return; }
+            var btn = document.getElementById('genDetailsBtn');
+            btn.disabled = true; btn.textContent = 'Generating...';
+            try {
+                var reply = await groqGenerate(
+                    'Based on this app description, generate: a catchy project name (2-3 words max), a token symbol (3-5 uppercase letters), and 3 text-to-image prompt suggestions for a token logo. '
+                    + 'The image prompts should describe a clean, minimal, dark-background icon/logo suitable for a crypto token. '
+                    + 'Description: "' + desc + '"\n\n'
+                    + 'Output EXACTLY this JSON format, nothing else:\n'
+                    + '{"name":"Project Name","symbol":"SYMBL","imagePrompts":["prompt 1","prompt 2","prompt 3"]}'
+                );
+                // Parse JSON from reply
+                var json = reply.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+                var data = JSON.parse(json);
+                if (data.name) document.getElementById('launchName').value = data.name;
+                if (data.symbol) document.getElementById('launchSymbol').value = data.symbol;
+                if (data.imagePrompts && data.imagePrompts.length) {
+                    var wrap = document.getElementById('imagePromptsWrap');
+                    var list = document.getElementById('imagePrompts');
+                    wrap.style.display = '';
+                    list.innerHTML = '';
+                    data.imagePrompts.forEach(function(p, i) {
+                        var div = document.createElement('div');
+                        div.style.cssText = 'display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-secondary);line-height:1.4;cursor:pointer';
+                        div.innerHTML = '<span style="flex:1">' + p.replace(/</g, '&lt;') + '</span><span style="font-size:0.65rem;color:var(--lobster-300);font-weight:700;flex-shrink:0" onclick="navigator.clipboard.writeText(\'' + p.replace(/'/g, "\\'") + '\');this.textContent=\'Copied!\';setTimeout(function(){this.textContent=\'Copy\'},1500)">Copy</span>';
+                        list.appendChild(div);
+                    });
+                }
+            } catch(e) {
+                console.error('Generate details error:', e);
+                alert('Failed to parse — try again');
+            }
+            btn.disabled = false; btn.textContent = 'Generate Name, Symbol & Image Prompts';
+        };
 
         // Image preview
         window.previewImage = function(input) {
