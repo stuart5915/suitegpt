@@ -108,9 +108,9 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
   const coder = ethers.AbiCoder.defaultAbiCoder();
   const sniperMevData = coder.encode(['uint256', 'uint256', 'uint256'], [666777, 41673, 15]);
 
-  // Reward recipients: custom split if provided, otherwise 100% to creator
-  const rewardRecipients = reward_recipients || [creator_wallet];
-  const rewardBps = reward_bps || [10000];
+  // Reward recipients: custom split if provided, otherwise 80% creator / 20% Inclawbate
+  const rewardRecipients = reward_recipients || [creator_wallet, INCLAWBATE_TREASURY];
+  const rewardBps = reward_bps || [8000, 2000];
 
   const deploymentConfig = {
     tokenConfig: {
