@@ -329,6 +329,78 @@
             text-decoration: none;
         }
 
+        /* Expanded feed item for launched tokens */
+        .mc-item-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .mc-item-stat {
+            font-family: var(--sm-mono);
+            font-size: 0.65rem;
+        }
+        .mc-item-stat-label {
+            color: var(--sm-text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.55rem;
+            margin-bottom: 1px;
+        }
+        .mc-item-stat-val {
+            color: var(--sm-text);
+            font-weight: 600;
+        }
+        .mc-item-stat-val.green { color: var(--sm-green); }
+        .mc-item-stat-val.red { color: #ef4444; }
+
+        /* Buy/Stake inline controls */
+        .mc-item-controls {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .mc-buy-input {
+            width: 80px;
+            padding: 6px 10px;
+            background: var(--sm-bg);
+            border: 1px solid var(--sm-border);
+            border-radius: var(--sm-r-sm);
+            color: var(--sm-text);
+            font-family: var(--sm-mono);
+            font-size: 0.72rem;
+            outline: none;
+        }
+        .mc-buy-input:focus { border-color: var(--sm-accent); }
+        .mc-buy-input::placeholder { color: var(--sm-text-3); }
+
+        .mc-buy-btn, .mc-stake-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: var(--sm-r-sm);
+            font-family: var(--sm-font);
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .mc-buy-btn {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+        }
+        .mc-stake-btn {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .mc-buy-btn:hover, .mc-stake-btn:hover { opacity: 0.85; text-decoration: none; }
+
         /* Claim rewards bar */
         .mc-rewards {
             display: flex;
@@ -1042,6 +1114,16 @@
                 + '<a class="mc-action-btn" href="https://basescan.org/token/' + item.tokenAddress + '" target="_blank">&#128270; BaseScan</a>'
                 + '<a class="mc-action-btn" href="https://dexscreener.com/base/' + item.tokenAddress + '" target="_blank">&#128200; DexScreener</a>'
                 + '<a class="mc-action-btn" href="' + spawnUrl + '" target="_blank">&#127760; Site</a>'
+                + '</div>'
+                + '<div class="mc-item-stats" data-token="' + item.tokenAddress + '">'
+                + '<div class="mc-item-stat"><div class="mc-item-stat-label">Price</div><div class="mc-item-stat-val" data-stat="price">--</div></div>'
+                + '<div class="mc-item-stat"><div class="mc-item-stat-label">24h Vol</div><div class="mc-item-stat-val" data-stat="volume">--</div></div>'
+                + '<div class="mc-item-stat"><div class="mc-item-stat-label">24h</div><div class="mc-item-stat-val" data-stat="change">--</div></div>'
+                + '</div>'
+                + '<div class="mc-item-controls">'
+                + '<input class="mc-buy-input" type="text" placeholder="0.01 ETH" data-token="' + item.tokenAddress + '">'
+                + '<a class="mc-buy-btn" href="https://app.uniswap.org/swap?outputCurrency=' + item.tokenAddress + '&chain=base" target="_blank" onclick="var v=this.previousElementSibling.value;if(v)this.href+=\'&exactAmount=\'+encodeURIComponent(v)">Buy</a>'
+                + '<a class="mc-stake-btn" href="' + spawnUrl + '#stake" target="_blank">Stake</a>'
                 + '</div>';
         }
 
@@ -1138,11 +1220,43 @@
                 feedEl.appendChild(renderMemeItem(item));
             });
             updateTabCounts(data.queue);
+            loadTokenStats();
         })
         .catch(function() {
             statusEl.textContent = 'Service not deployed yet';
             statusEl.style.color = 'var(--sm-text-3)';
         });
+
+    // Fetch stats for launched tokens
+    function loadTokenStats() {
+        var statEls = document.querySelectorAll('.mc-item-stats[data-token]');
+        statEls.forEach(function(el) {
+            var token = el.getAttribute('data-token');
+            fetch('https://api.dexscreener.com/latest/dex/tokens/' + token)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (!d.pairs || !d.pairs.length) return;
+                    var p = d.pairs[0];
+                    var priceEl = el.querySelector('[data-stat="price"]');
+                    var volEl = el.querySelector('[data-stat="volume"]');
+                    var changeEl = el.querySelector('[data-stat="change"]');
+                    if (priceEl) {
+                        var price = parseFloat(p.priceUsd || 0);
+                        priceEl.textContent = price >= 0.01 ? '$' + price.toFixed(4) : '$' + price.toFixed(8);
+                    }
+                    if (volEl) {
+                        var vol = p.volume && p.volume.h24 ? p.volume.h24 : 0;
+                        volEl.textContent = vol >= 1000 ? '$' + (vol/1000).toFixed(1) + 'K' : '$' + Math.round(vol);
+                    }
+                    if (changeEl) {
+                        var change = p.priceChange && p.priceChange.h24 ? parseFloat(p.priceChange.h24) : 0;
+                        changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+                        changeEl.className = 'mc-item-stat-val ' + (change >= 0 ? 'green' : 'red');
+                    }
+                })
+                .catch(function() {});
+        });
+    }
 })();
 </script>
 
