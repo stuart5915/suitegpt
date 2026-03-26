@@ -1,4 +1,4 @@
-// MemeClaw — Automated meme token launcher
+// SpawnMemes — Automated meme token launcher (formerly MemeClaw)
 // Polls Know Your Meme RSS for newly certified memes
 // Launches token via agent-chat + publishes template site with voting
 // By 0xGrantE × Inclawbate
@@ -317,13 +317,13 @@ async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
         name: `${meme.title} Token`,
         slug,
         code: html,
-        email: 'memeclaw@inclawbate.app',
+        email: 'spawnmemes@inclawbate.app',
         description: `Community token for the certified meme: ${meme.title}. Vote on what it becomes.`,
-        source: 'memeclaw',
+        source: 'spawnmemes',
         category: 'finance',
         creator_wallet: CREATOR_WALLET,
         creator_x_handle: 'inclawbate',
-        tags: ['memeclaw', 'meme-token', 'voting'],
+        tags: ['spawnmemes', 'meme-token', 'voting'],
         is_listed: true
     };
 
@@ -383,7 +383,7 @@ async function launchMemeToken(meme) {
                 name: meme.title,
                 symbol: symbol.replace('$', ''),
                 creator_wallet: CREATOR_WALLET,
-                description: `Certified meme token for ${meme.title}. Community votes on what it becomes. Powered by MemeClaw × Inclawbate.`,
+                description: `${meme.title}. Powered by SpawnMemes.fun × Inclawbate.`,
                 image_url: imageUrl || '',
                 website_url: siteResult.url || siteUrl,
                 reward_recipients: [CREATOR_WALLET, INCLAWBATE_TREASURY],
@@ -438,7 +438,7 @@ async function launchMemeToken(meme) {
     if (tokenAddress) {
         try {
             const siteLink = siteResult.url || `https://inclawbate.app/s/${meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-            const tweetText = `🦞 New MemeClaw launch: ${meme.title} (${symbol})\n\nCertified meme → real token on Base. Community votes on what it becomes.\n\n${siteLink}`;
+            const tweetText = `🤔 ${meme.title} (${symbol}) just spawned!\n\nNew meme → living AI agent on Base. Token, site, staking — all live.\n\n${siteLink}\n\nSpawnMemes.fun × Inclawbate`;
             const announceUrl = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/announce');
             await fetch(announceUrl, {
                 method: 'POST',
@@ -712,7 +712,7 @@ http.createServer(async (req, res) => {
         }
     } else {
         res.writeHead(200);
-        res.end(JSON.stringify({ service: 'MemeClaw — Automated Meme Token Launcher', docs: '/health, /queue, POST /launch-next' }));
+        res.end(JSON.stringify({ service: 'SpawnMemes — Automated Meme Token Launcher', docs: '/health, /queue, POST /launch-next' }));
     }
 }).listen(PORT, () => console.log(`[MemeClaw] Health check on :${PORT}`));
 
