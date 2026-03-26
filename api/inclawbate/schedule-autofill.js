@@ -944,12 +944,14 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
 
                 // Upload image if present
                 let mediaIds = null;
+                let imageError = null;
                 if (slotOpts.image_url) {
                     try {
                         const mediaId = await uploadMediaToX(slotOpts.image_url, slotAccount);
                         mediaIds = [mediaId];
                     } catch(imgErr) {
-                        // Continue without image
+                        imageError = imgErr.message;
+                        console.error('[post_now] Image upload failed:', imgErr.message, 'url:', slotOpts.image_url);
                     }
                 }
 
@@ -963,11 +965,12 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
                     .update({ status: 'posted', tweet_id: tweetId })
                     .eq('id', slot_id);
 
-                const handle = slotAccount === 'inclawbate' ? 'inclawbate' : 'inclawbator';
+                const handle = slotAccount === 'inclawbate' ? 'inclawbate' : (slotAccount === 'publicgoodstech' ? 'publicgoodstech' : 'inclawbator');
                 return res.json({
                     ok: true,
                     tweet_id: tweetId,
-                    tweet_url: tweetId ? `https://x.com/${handle}/status/${tweetId}` : null
+                    tweet_url: tweetId ? `https://x.com/${handle}/status/${tweetId}` : null,
+                    image_error: imageError || undefined
                 });
             } catch(e) {
                 return res.status(500).json({ error: 'Post failed: ' + e.message });
