@@ -674,7 +674,7 @@ function getIncubationInfo() {
 
 const isValidAddr = (a) => /^0x[a-fA-F0-9]{40}$/.test(a);
 
-async function deployTokenAction(args) {
+async function deployTokenAction(args, extraOpts = {}) {
   const missing = [];
   if (!args.token_name) missing.push('token name');
   if (!args.token_symbol) missing.push('ticker/symbol');
@@ -691,8 +691,8 @@ async function deployTokenAction(args) {
       website_url: args.website_url,
       x_handle: args.x_handle,
       telegram_url: args.telegram_url,
-      reward_recipients,
-      reward_bps
+      reward_recipients: extraOpts.reward_recipients,
+      reward_bps: extraOpts.reward_bps
     });
     return JSON.stringify(result);
   } catch (err) {
@@ -1391,7 +1391,7 @@ async function executeTool(name, args) {
   switch (name) {
     case 'get_ecosystem_info': return getEcosystemInfo();
     case 'get_incubation_info': return getIncubationInfo();
-    case 'deploy_token': return await deployTokenAction(args);
+    case 'deploy_token': return await deployTokenAction(args, args._rewardOpts || {});
     case 'create_agent_info': return createAgentInfo();
     case 'get_token_analytics': return await getTokenAnalytics(args);
     case 'get_staking_stats': return await getStakingStats(args);
@@ -2756,6 +2756,7 @@ export default async function handler(req, res) {
         }
         args._clientIp = clientIp; // for per-tool rate limiting (not sent to LLM)
         args._sessionId = sid; // for council request session tracking
+        if (reward_recipients) args._rewardOpts = { reward_recipients, reward_bps };
         toolArgs = args;
         const result = await executeTool(tc.function.name, args);
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
