@@ -273,7 +273,7 @@ async function generateVotingIdeas(memeName) {
 
 // ── Build & Publish Template Site ──
 
-async function publishTemplateSite(meme, symbol, tokenAddress) {
+async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
     const template = await getTemplate();
     const imageUrl = extractImage(meme.description || '') || '';
     const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
@@ -308,7 +308,8 @@ async function publishTemplateSite(meme, symbol, tokenAddress) {
         .replace(/\{\{IDEA_3_TITLE\}\}/g, esc(ideas[2].title))
         .replace(/\{\{IDEA_3_DESC\}\}/g, esc(ideas[2].desc))
         .replace(/\{\{IDEA_4_TITLE\}\}/g, esc(ideas[3].title))
-        .replace(/\{\{IDEA_4_DESC\}\}/g, esc(ideas[3].desc));
+        .replace(/\{\{IDEA_4_DESC\}\}/g, esc(ideas[3].desc))
+        .replace(/\{\{STAKING_ADDRESS\}\}/g, esc(stakingAddress || ''));
 
     // Publish via publish-site API
     const publishResp = await fetch(PUBLISH_API_URL, {
@@ -361,6 +362,7 @@ async function launchMemeToken(meme) {
     // Step 2: Launch the token via direct API (no AI parsing — structured JSON)
     const LAUNCH_API = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/launch-token');
     let tokenAddress = null;
+    let stakingAddress = null;
     try {
         const launchResp = await fetch(LAUNCH_API, {
             method: 'POST',
@@ -379,16 +381,17 @@ async function launchMemeToken(meme) {
         const launchData = await launchResp.json();
         console.log(`[MemeClaw] Token launch response:`, JSON.stringify(launchData).slice(0, 300));
         tokenAddress = launchData.token_address || null;
+        stakingAddress = launchData.staking_address || null;
         if (launchData.error) console.error(`[MemeClaw] Launch error:`, launchData.error);
     } catch (err) {
         console.error(`[MemeClaw] Launch API call failed:`, err.message);
     }
 
-    // Step 3: Re-publish site with the actual token address
+    // Step 3: Re-publish site with the actual token address + staking address
     if (tokenAddress) {
         try {
-            console.log(`[MemeClaw] Re-publishing site with token address: ${tokenAddress}`);
-            siteResult = await publishTemplateSite(meme, symbol, tokenAddress);
+            console.log(`[MemeClaw] Re-publishing site with token: ${tokenAddress}, staking: ${stakingAddress || 'none'}`);
+            siteResult = await publishTemplateSite(meme, symbol, tokenAddress, stakingAddress);
             console.log(`[MemeClaw] Site re-published:`, siteResult.url);
         } catch (err) {
             console.error(`[MemeClaw] Site re-publish failed:`, err.message);
