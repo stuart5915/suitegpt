@@ -1051,7 +1051,14 @@
 
         window.generateDetails = async function() {
             var desc = document.getElementById('launchDesc').value.trim();
-            if (!desc) { alert('Generate or write a description first'); return; }
+            // If no description yet, generate it first from the idea
+            if (!desc) {
+                var idea = document.getElementById('launchIdea').value.trim();
+                if (!idea) { alert('Type your idea first'); return; }
+                await window.generateDescription();
+                desc = document.getElementById('launchDesc').value.trim();
+                if (!desc) return;
+            }
             var btn = document.getElementById('genDetailsBtn');
             btn.disabled = true; btn.textContent = 'Generating...';
             try {
