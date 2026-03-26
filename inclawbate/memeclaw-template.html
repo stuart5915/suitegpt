@@ -424,6 +424,18 @@
         }
         .staking-btn:hover { filter: brightness(1.1); text-decoration: none; color: #fff; }
 
+        /* ── Claim This App ── */
+        .claim-section {
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .claim-box {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--bg-card)), var(--bg-card));
+            border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+            border-radius: var(--r-lg);
+            padding: 24px;
+        }
+
         /* ── Footer ── */
         .footer {
             text-align: center;
@@ -842,6 +854,28 @@
         </div>
     </div>
 
+    <!-- Claim This App -->
+    <div class="claim-section">
+        <div class="claim-box">
+            <div style="text-align:center;margin-bottom:16px">
+                <div style="font-size:1.8rem;margin-bottom:6px">&#129438;</div>
+                <div style="font-size:1.2rem;font-weight:900;color:var(--text)">Want to own this?</div>
+                <div style="font-size:0.82rem;color:var(--text-2);margin-top:4px;line-height:1.5;max-width:400px;margin-left:auto;margin-right:auto">Tell us why you want to lead this project. Best answer gets 30% of the token supply + full incubation support from Inclawbate.</div>
+            </div>
+            <div id="claimForm">
+                <textarea id="claimPitch" placeholder="Why do you want to own this app? What would you build with it? What's your vision?" rows="4" style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);padding:12px;font-size:0.85rem;font-family:inherit;resize:vertical;line-height:1.5;margin-bottom:8px"></textarea>
+                <input id="claimContact" type="text" placeholder="Your @telegram or @x handle" style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);padding:12px;font-size:0.85rem;font-family:inherit;margin-bottom:10px">
+                <button id="claimBtn" onclick="submitClaim()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-md);font-size:0.92rem;font-weight:800;cursor:pointer;font-family:inherit;transition:opacity 0.15s">Submit My Pitch</button>
+                <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-3)">No wallet needed. No money needed. Just the will.</div>
+            </div>
+            <div id="claimSent" style="display:none;text-align:center;padding:20px 0">
+                <div style="font-size:1.5rem;margin-bottom:6px">&#9989;</div>
+                <div style="font-size:0.92rem;font-weight:800;color:var(--text)">Pitch submitted!</div>
+                <div style="font-size:0.78rem;color:var(--text-2);margin-top:4px;line-height:1.5">The council will review pitches and reach out to the winner. Keep an eye on your DMs.</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Vote -->
     <div class="vote-section">
         <div class="section-label">Community Vote</div>
@@ -989,6 +1023,35 @@ var TOKEN_SYMBOL = '{{TOKEN_SYMBOL}}';
 
     window.copyAddress = function() {
         navigator.clipboard.writeText('{{TOKEN_ADDRESS}}').then(function(){showToast('Copied!')}).catch(function(){});
+    };
+
+    // ── Claim This App ──
+    window.submitClaim = function() {
+        var pitch = document.getElementById('claimPitch').value.trim();
+        var contact = document.getElementById('claimContact').value.trim();
+        var btn = document.getElementById('claimBtn');
+        if (!pitch) { alert('Tell us why you want this!'); return; }
+        if (!contact) { alert('We need your handle so we can reach you'); return; }
+        btn.disabled = true; btn.textContent = 'Submitting...'; btn.style.opacity = '0.6';
+        fetch('https://www.inclawbate.app/api/inclawbate/hire-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                description: '[FOUNDER CLAIM — {{MEME_NAME}}] ' + pitch,
+                contact: contact
+            })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.success) {
+                document.getElementById('claimForm').style.display = 'none';
+                document.getElementById('claimSent').style.display = '';
+            } else {
+                alert(d.error || 'Something went wrong');
+                btn.disabled = false; btn.textContent = 'Submit My Pitch'; btn.style.opacity = '';
+            }
+        }).catch(function() {
+            alert('Failed to submit — try again');
+            btn.disabled = false; btn.textContent = 'Submit My Pitch'; btn.style.opacity = '';
+        });
     };
 
     function showToast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
