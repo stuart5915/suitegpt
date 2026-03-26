@@ -76,7 +76,25 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .sm-nav-links { display: flex; gap: 16px; }
+        .sm-nav-links { display: flex; gap: 16px; align-items: center; }
+        .sm-wallet-btn {
+            padding: 7px 16px;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            font-family: var(--sm-font);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .sm-wallet-btn:hover { opacity: 0.85; }
+        .sm-wallet-btn.connected {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
         .sm-nav-link {
             font-size: 0.82rem; font-weight: 600;
             color: var(--sm-text-2); text-decoration: none;
@@ -784,8 +802,8 @@
         <span class="sm-nav-name">SpawnMemes</span>
     </a>
     <div class="sm-nav-links">
-        <a href="https://inclawbate.app" class="sm-nav-link">Inclawbate</a>
         <a href="https://knowyourmeme.com" target="_blank" class="sm-nav-link">KYM</a>
+        <button class="sm-wallet-btn" id="smWalletBtn" onclick="smConnectWallet()">Connect Wallet</button>
     </div>
 </nav>
 
@@ -1443,6 +1461,58 @@
         toast('Claiming LP fee rewards... (coming soon — rewards accumulate on Clanker)');
         // TODO: integrate Clanker reward claim contract call
     };
+</script>
+
+<script>
+    // ── SpawnMemes Wallet Connect ──
+    var smWalletBtn = document.getElementById('smWalletBtn');
+    var smConnectedAddr = null;
+
+    window.smConnectWallet = async function() {
+        if (!window.ethereum) {
+            window.open('https://metamask.io/download/', '_blank');
+            return;
+        }
+        try {
+            if (smConnectedAddr) {
+                // Disconnect
+                smConnectedAddr = null;
+                smWalletBtn.textContent = 'Connect Wallet';
+                smWalletBtn.classList.remove('connected');
+                localStorage.removeItem('connectedWallet');
+                return;
+            }
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts[0]) {
+                smConnectedAddr = accounts[0].toLowerCase();
+                smWalletBtn.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+                smWalletBtn.classList.add('connected');
+                localStorage.setItem('connectedWallet', smConnectedAddr);
+
+                // Check admin
+                var ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd', '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'];
+                if (ADMIN_WALLETS.indexOf(smConnectedAddr) !== -1) {
+                    document.body.classList.add('mc-admin');
+                    var bar = document.getElementById('mcAdminBar');
+                    if (bar) bar.style.display = '';
+                }
+            }
+        } catch(e) {}
+    };
+
+    // Auto-reconnect
+    (function() {
+        var saved = localStorage.getItem('connectedWallet');
+        if (saved && window.ethereum) {
+            window.ethereum.request({ method: 'eth_accounts' }).then(function(accounts) {
+                if (accounts && accounts[0] && accounts[0].toLowerCase() === saved) {
+                    smConnectedAddr = saved;
+                    smWalletBtn.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+                    smWalletBtn.classList.add('connected');
+                }
+            }).catch(function() {});
+        }
+    })();
 </script>
 
 </body>
