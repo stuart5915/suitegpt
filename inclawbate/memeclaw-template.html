@@ -800,15 +800,13 @@
     <!-- Buy Section -->
     <div class="token-section">
         <div class="section-label">Buy {{TOKEN_SYMBOL}}</div>
-        <div style="border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);">
-            <iframe
-                src="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base&theme=dark"
-                width="100%"
-                height="380"
-                style="border:none;background:var(--bg-card);"
-                allow="clipboard-write"
-                loading="lazy">
-            </iframe>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="buyAmountInput" placeholder="0.01" style="flex:1;padding:12px 16px;background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--mono);font-size:0.9rem;outline:none;">
+                <span style="color:var(--text-3);font-size:0.85rem;font-weight:700;">ETH</span>
+                <button id="buyBtn" onclick="buyOnPage()" style="padding:12px 24px;background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;border:none;border-radius:var(--r-md);font-weight:800;font-size:0.88rem;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;">Buy {{TOKEN_SYMBOL}}</button>
+            </div>
+            <div id="buyStatus" style="margin-top:8px;font-size:0.75rem;color:var(--text-3);min-height:18px;"></div>
         </div>
     </div>
 
@@ -832,7 +830,7 @@
                 <span class="token-key">Contract</span>
                 <span class="token-val" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><span id="tokenAddr">{{TOKEN_ADDRESS}}</span><button class="copy-btn" onclick="copyAddress()">Copy</button></span>
             </div>
-            <a class="buy-btn" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">Buy {{TOKEN_SYMBOL}} on Uniswap</a>
+            <button class="buy-btn" onclick="buyOnPage()" style="width:100%;cursor:pointer;">Buy {{TOKEN_SYMBOL}}</button>
         </div>
     </div>
 
@@ -1091,13 +1089,37 @@ var TOKEN_SYMBOL = '{{TOKEN_SYMBOL}}';
     var stakingEl = document.getElementById('stakingContent');
     var statusEl = document.getElementById('stakingStatus');
 
-    // Check if staking is available
+    // Check if staking is available — if not in template, try fetching from API
     var hasStaking = STAKING_ADDRESS && STAKING_ADDRESS !== '{{STAKING_ADDRESS}}' && STAKING_ADDRESS !== '' && STAKING_ADDRESS !== ZERO;
+
+    if (!hasStaking && TOKEN_ADDRESS && TOKEN_ADDRESS !== ZERO) {
+        // Try to fetch staking address from inclawbator projects API
+        fetch('https://www.inclawbate.app/api/inclawbate/inclawbator')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var projects = d.projects || [];
+                for (var i = 0; i < projects.length; i++) {
+                    if (projects[i].token_address && projects[i].token_address.toLowerCase() === TOKEN_ADDRESS.toLowerCase() && projects[i].staking_address) {
+                        STAKING_ADDRESS = projects[i].staking_address;
+                        initStaking();
+                        return;
+                    }
+                }
+                stakingEl.innerHTML = '<div class="staking-soon">Staking pool coming soon</div>';
+            })
+            .catch(function() {
+                stakingEl.innerHTML = '<div class="staking-soon">Staking pool coming soon</div>';
+            });
+        return;
+    }
 
     if (!hasStaking) {
         stakingEl.innerHTML = '<div class="staking-soon">Staking pool coming soon</div>';
         return;
     }
+
+    initStaking();
+    function initStaking() {
 
     var provider = null;
     var signer = null;
@@ -1299,7 +1321,71 @@ var TOKEN_SYMBOL = '{{TOKEN_SYMBOL}}';
 
     // Initial render
     renderConnect();
+    } // end initStaking
 })();
+
+// ── Buy on page via 0x ──
+window.buyOnPage = async function() {
+    var input = document.getElementById('buyAmountInput');
+    var status = document.getElementById('buyStatus');
+    var btn = document.getElementById('buyBtn');
+    var ethAmount = parseFloat(input.value);
+
+    if (!ethAmount || ethAmount <= 0) {
+        status.textContent = 'Enter an ETH amount';
+        status.style.color = '#ef4444';
+        return;
+    }
+    if (!window.ethereum) {
+        status.textContent = 'No wallet detected — install MetaMask';
+        status.style.color = '#ef4444';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Getting quote...';
+    status.textContent = '';
+    status.style.color = 'var(--text-3)';
+
+    try {
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        var taker = accounts[0];
+        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] }); } catch(e) {}
+
+        var wei = BigInt(Math.floor(ethAmount * 1e18)).toString();
+        var resp = await fetch('https://www.inclawbate.app/api/inclawbate/swap-quote?sellToken=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&buyToken=' + TOKEN_ADDRESS + '&sellAmount=' + wei + '&taker=' + taker + '&chainId=8453');
+        var quote = await resp.json();
+        if (quote.error) throw new Error(quote.error);
+        if (!quote.transaction) throw new Error('No transaction data');
+
+        btn.textContent = 'Confirm in wallet...';
+        status.textContent = 'Swapping ' + ethAmount + ' ETH → ' + TOKEN_SYMBOL;
+
+        var txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: taker,
+                to: quote.transaction.to,
+                data: quote.transaction.data,
+                value: quote.transaction.value ? ('0x' + BigInt(quote.transaction.value).toString(16)) : '0x0',
+                gas: quote.transaction.gas ? ('0x' + BigInt(quote.transaction.gas).toString(16)) : undefined
+            }]
+        });
+
+        btn.textContent = 'Bought!';
+        btn.style.background = 'rgba(74,222,128,0.3)';
+        status.textContent = 'TX: ' + txHash.slice(0, 14) + '...';
+        status.style.color = '#4ade80';
+        input.value = '';
+        setTimeout(function() { btn.textContent = 'Buy ' + TOKEN_SYMBOL; btn.style.background = ''; btn.disabled = false; }, 5000);
+    } catch(e) {
+        btn.textContent = 'Buy ' + TOKEN_SYMBOL;
+        btn.disabled = false;
+        status.textContent = e.message.slice(0, 60);
+        status.style.color = '#ef4444';
+        setTimeout(function() { status.textContent = ''; }, 5000);
+    }
+};
 
 // ── Meme Chat ──
 var CHAT_API = 'https://www.inclawbate.app/api/inclawbate/agent-chat';
