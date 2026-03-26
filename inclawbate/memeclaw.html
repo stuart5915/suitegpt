@@ -1122,8 +1122,9 @@
                 + '</div>'
                 + '<div class="mc-item-controls">'
                 + '<input class="mc-buy-input" type="text" placeholder="0.01 ETH" data-token="' + item.tokenAddress + '">'
-                + '<a class="mc-buy-btn" href="https://app.uniswap.org/swap?outputCurrency=' + item.tokenAddress + '&chain=base" target="_blank" onclick="var v=this.previousElementSibling.value;if(v)this.href+=\'&exactAmount=\'+encodeURIComponent(v)">Buy</a>'
+                + '<button class="mc-buy-btn" onclick="buyToken(this, \'' + item.tokenAddress + '\')">Buy</button>'
                 + '<a class="mc-stake-btn" href="' + spawnUrl + '#stake" target="_blank">Stake</a>'
+                + '<span class="mc-buy-status" style="font-size:0.65rem;color:var(--sm-text-3);display:none"></span>'
                 + '</div>';
         }
 
@@ -1257,6 +1258,100 @@
                 .catch(function() {});
         });
     }
+    // ── Buy token on-page via 0x swap ──
+    window.buyToken = async function(btn, tokenAddress) {
+        var input = btn.previousElementSibling;
+        var statusEl = btn.parentElement.querySelector('.mc-buy-status');
+        var ethAmount = parseFloat(input.value);
+
+        if (!ethAmount || ethAmount <= 0) {
+            statusEl.style.display = 'inline';
+            statusEl.textContent = 'Enter ETH amount';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+
+        // Check wallet
+        if (!window.ethereum) {
+            statusEl.style.display = 'inline';
+            statusEl.textContent = 'No wallet detected';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Getting quote...';
+        statusEl.style.display = 'inline';
+        statusEl.textContent = '';
+        statusEl.style.color = 'var(--sm-text-3)';
+
+        try {
+            // Connect wallet
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var taker = accounts[0];
+
+            // Switch to Base if needed
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x2105' }]
+                });
+            } catch(e) {}
+
+            // Convert ETH to wei
+            var sellAmountWei = BigInt(Math.floor(ethAmount * 1e18)).toString();
+
+            // Get quote from 0x via our proxy
+            var quoteUrl = 'https://www.inclawbate.app/api/inclawbate/swap-quote?sellToken=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&buyToken=' + tokenAddress + '&sellAmount=' + sellAmountWei + '&taker=' + taker + '&chainId=8453';
+            var quoteResp = await fetch(quoteUrl);
+            var quote = await quoteResp.json();
+
+            if (quote.error) {
+                throw new Error(quote.error);
+            }
+
+            if (!quote.transaction) {
+                throw new Error('No transaction data in quote');
+            }
+
+            btn.textContent = 'Confirm in wallet...';
+            statusEl.textContent = 'Buying ' + ethAmount + ' ETH worth';
+
+            // Send the swap transaction
+            var txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: taker,
+                    to: quote.transaction.to,
+                    data: quote.transaction.data,
+                    value: quote.transaction.value ? ('0x' + BigInt(quote.transaction.value).toString(16)) : '0x0',
+                    gas: quote.transaction.gas ? ('0x' + BigInt(quote.transaction.gas).toString(16)) : undefined
+                }]
+            });
+
+            btn.textContent = 'Bought!';
+            btn.style.background = 'rgba(74, 222, 128, 0.2)';
+            btn.style.color = '#4ade80';
+            statusEl.textContent = 'TX: ' + txHash.slice(0, 10) + '...';
+            statusEl.style.color = 'var(--sm-green)';
+            input.value = '';
+
+            setTimeout(function() {
+                btn.textContent = 'Buy';
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.disabled = false;
+            }, 5000);
+
+        } catch(e) {
+            btn.textContent = 'Buy';
+            btn.disabled = false;
+            statusEl.textContent = e.message.slice(0, 50);
+            statusEl.style.color = '#ef4444';
+            setTimeout(function() { statusEl.style.display = 'none'; }, 5000);
+        }
+    };
+
 })();
 </script>
 
