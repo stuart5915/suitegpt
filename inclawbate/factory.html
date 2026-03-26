@@ -1314,9 +1314,10 @@
 
         window.generatePrompt = function() {
             // Gather user inputs
-            var direction = (document.getElementById('ideaDirection').value || '').trim();
+            var dirEl = document.getElementById('ideaDirection');
+            var direction = dirEl ? dirEl.value.trim() : '';
             var audiences = [];
-            document.querySelectorAll('.audience-chip.active').forEach(function(c) { audiences.push(c.dataset.audience); });
+            document.querySelectorAll('.audience-chip.active').forEach(function(c) { if (c.dataset.audience) audiences.push(c.dataset.audience); });
 
             // Build rich app list with descriptions, categories, tokens
             var appList = _existingApps.map(function(a) {
@@ -1697,6 +1698,7 @@
 
         function renderResearchLogs() {
             var wrap = document.getElementById('researchLogList');
+            if (!wrap) return;
             if (_researchLogs.length === 0) {
                 wrap.innerHTML = '<div class="empty-state">No research logged yet. Run your research, paste results here.</div>';
                 return;
@@ -1723,6 +1725,7 @@
             var log = _researchLogs.find(function(l) { return l.id === id; });
             if (!log) return;
             var wrap = document.getElementById('researchLogList');
+            if (!wrap) return;
             var date = new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
             var html = '<div style="margin-bottom:var(--space-sm);">';
             html += '<button class="btn-secondary" onclick="renderResearchLogs()" style="font-size:0.8rem;">\u2190 Back to list</button>';
