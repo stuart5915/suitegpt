@@ -152,7 +152,7 @@ export default async function handler(req, res) {
             post += '\n\n';
         }
 
-        post += `<code>${commits.length} commits</code> · inclawbate.app`;
+        post += `<code>${commits.length} commits</code> · <a href="https://inclawbate.app">inclawbate.app</a> · <a href="https://t.me/inclawbator">t.me/inclawbator</a>`;
 
         // Generate X post — narrative style, shows value not just changelog
         let tweet = '';
@@ -180,7 +180,7 @@ Rules:
 - Start with 🦞 Dev Daily — [date]
 - 3-6 bullet points with emoji, each 1-2 short sentences max
 - Each bullet: what was built/fixed and what it does. Technical and specific
-- End with commit count and inclawbate.app
+- End with commit count, inclawbate.app, and t.me/inclawbator
 - No hashtags, no @mentions
 - Tone: engineer's changelog that happens to be readable by humans
 - Example bullet: "📱 Rebuilt mobile nav — full-screen dark overlay, 2-col grid for sub-pages, proper touch targets"
@@ -211,7 +211,7 @@ Rules:
                     tweet += `${g.emoji} ${g.name} (${g.count}) — ${g.summary}\n`;
                 }
             }
-            tweet += `\n${commits.length} commits shipped\ninclawbate.app`;
+            tweet += `\n${commits.length} commits shipped\ninclawbate.app · t.me/inclawbator`;
         }
 
         return res.status(200).json({ post, tweet, commitCount: commits.length });
