@@ -273,6 +273,23 @@ async function launchMemeToken(meme) {
 
     totalLaunched++;
 
+    // Step 4: Auto-announce on @inclawbator X account
+    if (tokenAddress) {
+        try {
+            const siteLink = siteResult.url || `https://inclawbate.app/s/${meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            const tweetText = `🦞 New MemeClaw launch: ${meme.title} (${symbol})\n\nCertified meme → real token on Base. Community votes on what it becomes.\n\n${siteLink}`;
+            const announceUrl = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/announce');
+            await fetch(announceUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: tweetText })
+            });
+            console.log(`[MemeClaw] Announcement tweeted for ${meme.title}`);
+        } catch (e) {
+            console.error(`[MemeClaw] Announcement tweet failed:`, e.message);
+        }
+    }
+
     return {
         meme: meme.title,
         symbol,
