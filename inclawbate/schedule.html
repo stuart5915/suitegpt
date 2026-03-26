@@ -1151,7 +1151,6 @@
         <div class="nav-group">
             <a href="#" class="nav-link" onclick="return false">Explore</a>
             <div class="nav-group-menu">
-                <a href="/build">Build</a>
                 <a href="/apps">Apps</a>
                 <a href="/tokens">Tokens</a>
                 <a href="/nfts">NFTs</a>
@@ -1498,6 +1497,16 @@
     </section>
 
     <!-- ═══ Research Database (Admin/Editor Only) — ABOVE X Feed ═══ -->
+    <!-- Partnership Tracker (inclawbate only) -->
+    <section id="partnershipTracker" style="display:none;margin-bottom:var(--space-lg)">
+        <div onclick="var f=document.getElementById('partnershipFrame');var a=document.getElementById('ptArrow');if(f.style.display==='none'){f.style.display='block';a.textContent='▼'}else{f.style.display='none';a.textContent='▶'}" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:10px;cursor:pointer;margin-bottom:8px">
+            <span id="ptArrow" style="font-size:0.7rem;color:var(--text-dim)">▶</span>
+            <span style="font-family:var(--font-display);font-size:0.88rem;font-weight:700;color:var(--text-primary)">📊 Partnership Tracker</span>
+            <span style="font-size:0.68rem;color:var(--text-dim);margin-left:auto">Google Sheets</span>
+        </div>
+        <iframe id="partnershipFrame" src="https://docs.google.com/spreadsheets/d/1-d8BdpuDTjD_1v8u3aA-DKo2QXDg-B6JSred41gtcU0/edit?usp=sharing&rm=minimal&widget=true&headers=false" style="display:none;width:100%;height:500px;border:1px solid var(--border-default);border-radius:10px;background:var(--bg-card)" loading="lazy"></iframe>
+    </section>
+
     <section id="researchPanel" style="display:none;margin-bottom:var(--space-lg)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);flex-wrap:wrap;gap:10px">
             <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px">
@@ -2022,7 +2031,12 @@
     }
 
     // Show panels after auth
-    setTimeout(function() { _showResearchPanel(); _renderDailyTasks(); }, 2000);
+    function _showPartnershipTracker() {
+        var el = document.getElementById('partnershipTracker');
+        if (el) el.style.display = (_activeAccount === 'inclawbate' && _hasEditAccess()) ? '' : 'none';
+    }
+
+    setTimeout(function() { _showResearchPanel(); _renderDailyTasks(); _showPartnershipTracker(); }, 2000);
 
     window._switchAccount = function(account) {
         if (account === _activeAccount) return;
@@ -2085,6 +2099,7 @@
         loadFeed().catch(function(e) { console.error('Feed switch error:', e); });
         _showResearchPanel(); // Refresh research tabs for this account
         _renderDailyTasks(); // Update daily tasks for this account
+        _showPartnershipTracker(); // Show/hide partnership tracker
     };
 
     function getAuth() {
