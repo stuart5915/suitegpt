@@ -3634,7 +3634,7 @@
         ctx.fillStyle = hg;
         ctx.fillRect(0, 0, size, size * 0.12);
 
-        ctx.font = '800 ' + (size * 0.032) + 'px "Nunito", sans-serif';
+        ctx.font = '900 ' + (size * 0.04) + 'px "Nunito", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
@@ -3840,14 +3840,14 @@
             ctx.fillStyle = orbG;
             ctx.fillRect(centerX - size * 0.05, centerY - size * 0.05, size * 0.1, size * 0.1);
 
-            // Layout: 2-column, 3-row grid
+            // Layout: 2-column, 3-row grid — BIGGER cards for readability
             var cols = 2;
-            var cardW = size * 0.42;
-            var cardH = size * 0.22;
+            var cardW = size * 0.44;
+            var cardH = size * 0.25;
             var gapX = size * 0.04;
-            var gapY = size * 0.05;
-            var startY = size * 0.13;
-            var leftX = size * 0.06;
+            var gapY = size * 0.03;
+            var startY = size * 0.12;
+            var leftX = size * 0.04;
             var rightX = size * 0.52;
 
             catNames.forEach(function(catName, ci) {
@@ -3872,32 +3872,38 @@
                 ctx.fillRect(bx + size * 0.02, by, cardW - size * 0.04, 2);
                 ctx.globalAlpha = 1;
 
-                // Category label with count
-                ctx.font = '700 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+                // Category label with count — bigger, bolder
+                ctx.font = '800 ' + (size * 0.026) + 'px "Nunito", sans-serif';
                 ctx.fillStyle = accent;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-                ctx.fillText(catName, bx + size * 0.02, by + size * 0.018);
+                ctx.fillText(catName.toUpperCase(), bx + size * 0.02, by + size * 0.015);
 
-                ctx.font = '500 ' + (size * 0.013) + 'px "Nunito", sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.font = '600 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
                 ctx.textAlign = 'right';
-                ctx.fillText(cats[catName].length + ' agents', bx + cardW - size * 0.02, by + size * 0.022);
+                ctx.fillText(cats[catName].length + ' agents', bx + cardW - size * 0.02, by + size * 0.02);
                 ctx.textAlign = 'left';
 
-                // Logos row with names beneath
-                var logoSize = size * 0.065;
-                var logoGap = size * 0.015;
+                // Logos row with names beneath — MUCH BIGGER
+                var logoSize = size * 0.085;
+                var logoGap = size * 0.02;
                 var totalW = catItems.length * logoSize + (catItems.length - 1) * logoGap;
                 var lx = bx + (cardW - totalW) / 2;
-                var ly = by + size * 0.06;
+                var ly = by + size * 0.065;
                 catItems.forEach(function(item) {
                     _pgtDrawLogoCircle(ctx, logoMap[item.id], lx, ly, logoSize / 2);
-                    // Name below logo
-                    ctx.font = '500 ' + (size * 0.011) + 'px "Nunito", sans-serif';
-                    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+                    // Name below logo — bigger, more readable
+                    ctx.font = '700 ' + (size * 0.016) + 'px "Nunito", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
                     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                    var n = item.name.length > 10 ? item.name.substring(0, 9) + '..' : item.name;
-                    ctx.fillText(n, lx + logoSize / 2, ly + logoSize + size * 0.008);
+                    var n = item.name.length > 12 ? item.name.substring(0, 11) + '..' : item.name;
+                    ctx.fillText(n, lx + logoSize / 2, ly + logoSize + size * 0.01);
+                    // X handle below name
+                    if (item.x_handle) {
+                        ctx.font = '400 ' + (size * 0.012) + 'px "Nunito", sans-serif';
+                        ctx.fillStyle = 'rgba(52,211,153,0.5)';
+                        ctx.fillText('@' + item.x_handle, lx + logoSize / 2, ly + logoSize + size * 0.03);
+                    }
                     ctx.textAlign = 'left';
                     lx += logoSize + logoGap;
                 });
