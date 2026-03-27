@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TOKEN_SYMBOL}} — {{MEME_NAME}} | Inclawbate Drops</title>
+    <meta name="description" content="{{MEME_NAME}} — a fully built project ready to be owned. App, token, staking — all live. Claim it.">
+    <meta property="og:title" content="{{TOKEN_SYMBOL}} — {{MEME_NAME}} | Inclawbate Drops">
+    <meta property="og:description" content="A fully built project ready to be owned and operated. Claim it.">
+    <meta property="og:image" content="{{MEME_IMAGE}}">
+    <meta property="og:url" content="https://inclawbate.app/s/{{SLUG}}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent: {{ACCENT_COLOR}};
+            --bg-deep: #06060b;
+            --bg-surface: #0a0a11;
+            --bg-card: #12121c;
+            --border: hsl(240, 4%, 15%);
+            --border-bright: hsl(240, 4%, 22%);
+            --text: #f0f0f5;
+            --text-2: #a0a0b8;
+            --text-3: #606078;
+            --font: 'Nunito', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+            --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+        }
+
+        body { background: var(--bg-deep); color: var(--text); font-family: var(--font); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .page { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+        /* ── Overlay ── */
+        .drop-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(4,4,8,0.92); backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .drop-modal {
+            max-width: 440px; width: 100%; background: #12121c;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 18px;
+            padding: 32px 28px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .drop-modal-title { font-size: 1.3rem; font-weight: 900; color: #f0f0f5; margin-bottom: 6px; }
+        .drop-modal-desc { font-size: 0.85rem; color: #a0a0b8; line-height: 1.6; margin-bottom: 20px; }
+        .drop-what-box {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: left;
+        }
+        .drop-what-label { font-size: 0.72rem; font-weight: 700; color: #606078; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+        .drop-what-item { font-size: 0.82rem; color: #a0a0b8; line-height: 1.5; margin-bottom: 6px; }
+        .drop-what-item strong { color: #f0f0f5; }
+        .drop-input { width: 100%; background: #0a0a11; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f0f0f5; padding: 10px 12px; font-size: 0.82rem; font-family: var(--font); resize: none; line-height: 1.5; }
+        .drop-btn-primary { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #a78bfa)); color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 800; cursor: pointer; font-family: var(--font); }
+        .drop-btn-row { display: flex; gap: 8px; }
+        .drop-btn-secondary { flex: 1; padding: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #f0f0f5; border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; font-family: var(--font); text-align: center; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center; padding: 60px 20px 40px; position: relative; overflow: hidden;
+            background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--bg-deep)) 0%, var(--bg-deep) 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
+            pointer-events: none;
+        }
+        .hero-img { width: 140px; height: 140px; border-radius: var(--r-xl); object-fit: cover; border: 3px solid color-mix(in srgb, var(--accent) 40%, var(--border)); box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 20%, transparent); margin-bottom: 20px; position: relative; z-index: 1; }
+        .hero h1 { font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px; position: relative; }
+        .hero-symbol { font-family: var(--mono); font-size: 1.1rem; font-weight: 600; color: var(--accent); display: block; margin-bottom: 12px; }
+        .hero-sub { font-size: 0.95rem; color: var(--text-2); max-width: 460px; margin: 0 auto; }
+
+        /* ── Sections ── */
+        .section { padding: 32px 0; border-bottom: 1px solid var(--border); }
+        .section-label { font-family: var(--mono); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 14px; }
+
+        /* ── Lore ── */
+        .lore-text { font-size: 0.92rem; color: var(--text-2); line-height: 1.7; }
+
+        /* ── Links Bar ── */
+        .links-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 20px 0; border-bottom: 1px solid var(--border); }
+        .link-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 100px; font-size: 0.75rem; font-weight: 700; color: var(--text-2); text-decoration: none; transition: all 0.15s; }
+        .link-chip:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+
+        /* ── Token Info ── */
+        .token-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+        .token-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); gap: 12px; }
+        .token-row:last-child { border-bottom: none; }
+        .token-key { font-size: 0.75rem; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+        .token-val { font-family: var(--mono); font-size: 0.8rem; color: var(--text-2); text-align: right; word-break: break-all; }
+        .copy-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text-2); font-size: 0.68rem; padding: 3px 8px; cursor: pointer; font-family: var(--mono); }
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .buy-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 16px; background: var(--accent); color: #fff; font-family: var(--font); font-size: 1rem; font-weight: 800; border: none; border-radius: 0 0 var(--r-lg) var(--r-lg); cursor: pointer; text-decoration: none; transition: all 0.2s; }
+        .buy-btn:hover { filter: brightness(1.1); text-decoration: none; color: #fff; }
+
+        /* ── Claim Section ── */
+        .claim-box { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--bg-card)), var(--bg-card)); border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border)); border-radius: var(--r-lg); padding: 24px; }
+
+        /* ── Staking CTA ── */
+        .staking-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; text-align: center; }
+        .staking-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+        .staking-desc { font-size: 0.82rem; color: var(--text-2); margin-bottom: 14px; }
+        .staking-btn { display: inline-flex; padding: 10px 24px; background: var(--accent); color: #fff; font-weight: 800; border-radius: 100px; font-size: 0.85rem; text-decoration: none; }
+        .staking-btn:hover { filter: brightness(1.1); text-decoration: none; color: #fff; }
+
+        /* ── Footer ── */
+        .footer { text-align: center; padding: 40px 20px; color: var(--text-3); font-size: 0.78rem; }
+        .footer a { color: var(--text-2); }
+        .eco-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 100px; font-size: 0.7rem; color: var(--text-3); text-decoration: none; }
+        .eco-badge:hover { border-color: var(--border-bright); text-decoration: none; }
+
+        /* ── Toast ── */
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--bg-card); border: 1px solid var(--accent); color: var(--text); padding: 10px 20px; border-radius: var(--r-md); font-size: 0.82rem; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 100; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 560px) {
+            .hero-img { width: 100px; height: 100px; }
+            .links-bar { gap: 6px; }
+            .link-chip { padding: 6px 10px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ Inclawbate Drops Overlay ══ -->
+<div class="drop-overlay" id="dropOverlay">
+    <div class="drop-modal">
+        <div style="font-size:2rem;margin-bottom:10px">&#129438;</div>
+        <a href="https://www.inclawbate.app/drops" class="drop-modal-title" style="text-decoration:none;display:block">Inclawbate Drops</a>
+        <div class="drop-modal-desc">
+            We build apps, launch tokens, and find founders. This is <strong style="color:#f0f0f5">{{MEME_NAME}}</strong> — a fully built project ready to be owned and operated.
+        </div>
+        <div class="drop-what-box">
+            <div class="drop-what-label">What you get</div>
+            <div class="drop-what-item">&#10003; <strong>30% token allocation</strong> — founder supply</div>
+            <div class="drop-what-item">&#10003; <strong>Full incubation support</strong> — dev, marketing, strategy</div>
+            <div class="drop-what-item">&#10003; <strong>A live app + token + staking</strong> — already deployed</div>
+        </div>
+        <div id="overlayClaimForm" style="display:flex;flex-direction:column;gap:8px">
+            <textarea id="overlayPitch" class="drop-input" placeholder="Why do you want to own {{MEME_NAME}}? What's your vision for it?" rows="3"></textarea>
+            <input id="overlayContact" type="text" class="drop-input" placeholder="Your @telegram or @x handle">
+            <button id="overlayClaimBtn" onclick="submitOverlayClaim()" class="drop-btn-primary">Submit My Pitch</button>
+            <div class="drop-btn-row">
+                <a href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" class="drop-btn-secondary">Buy {{TOKEN_SYMBOL}}</a>
+                <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_{{SLUG}}','1')}catch(e){}" class="drop-btn-secondary" style="border:none;color:#606078">View the app &rarr;</button>
+            </div>
+        </div>
+        <div id="overlayClaimSent" style="display:none;padding:16px 0">
+            <div style="font-size:1.3rem;margin-bottom:6px">&#9989;</div>
+            <div style="font-size:0.9rem;font-weight:800;color:#f0f0f5;margin-bottom:4px">Pitch submitted!</div>
+            <div style="font-size:0.78rem;color:#a0a0b8;line-height:1.5;margin-bottom:12px">A council member will review and reach out via your handle.</div>
+            <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_{{SLUG}}','1')}catch(e){}" class="drop-btn-secondary" style="border:none;color:#606078">View the app &rarr;</button>
+        </div>
+        <div style="margin-top:10px;font-size:0.68rem;color:#606078">No wallet needed. No money needed. Just the will to build.</div>
+        <a href="https://www.inclawbate.app/drops" style="display:inline-block;margin-top:10px;font-size:0.72rem;color:#a0a0b8;text-decoration:underline">See all Inclawbate Drops &rarr;</a>
+    </div>
+</div>
+<script>
+try{if(sessionStorage.getItem('drop_seen_{{SLUG}}'))document.getElementById('dropOverlay').style.display='none'}catch(e){}
+function submitOverlayClaim(){
+    var pitch=document.getElementById('overlayPitch').value.trim();
+    var contact=document.getElementById('overlayContact').value.trim();
+    var btn=document.getElementById('overlayClaimBtn');
+    if(!pitch){alert('Tell us why you want this!');return;}
+    if(!contact){alert('Add your handle so we can reach you');return;}
+    btn.disabled=true;btn.textContent='Submitting...';btn.style.opacity='0.6';
+    fetch('https://www.inclawbate.app/api/inclawbate/hire-request',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({description:'[FOUNDER CLAIM — {{MEME_NAME}}] '+pitch,contact:contact})
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){document.getElementById('overlayClaimForm').style.display='none';document.getElementById('overlayClaimSent').style.display='';}
+        else{alert(d.error||'Something went wrong');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';}
+    }).catch(function(){alert('Failed — try again');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';});
+}
+</script>
+
+<!-- ══ Page Content ══ -->
+
+<div class="hero">
+    <img class="hero-img" src="{{MEME_IMAGE}}" alt="{{MEME_NAME}}" onerror="this.style.display='none'">
+    <h1>{{MEME_NAME}}</h1>
+    <span class="hero-symbol">{{TOKEN_SYMBOL}}</span>
+    <p class="hero-sub">{{MEME_DESCRIPTION}}</p>
+</div>
+
+<div class="page">
+
+    <!-- Links -->
+    <div class="links-bar">
+        <a class="link-chip" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">Buy on Uniswap</a>
+        <a class="link-chip" href="https://basescan.org/token/{{TOKEN_ADDRESS}}" target="_blank" rel="noopener">BaseScan</a>
+        <a class="link-chip" href="https://dexscreener.com/base/{{TOKEN_ADDRESS}}" target="_blank" rel="noopener">DexScreener</a>
+        <a class="link-chip" href="https://inclawbate.app/stake" target="_blank" rel="noopener">Stake</a>
+        <a class="link-chip" href="https://inclawbate.app/drops" target="_blank" rel="noopener">All Drops</a>
+    </div>
+
+    <!-- Token Info -->
+    <div class="section">
+        <div class="section-label">Token</div>
+        <div class="token-card">
+            <div class="token-row">
+                <span class="token-key">Name</span>
+                <span class="token-val">{{MEME_NAME}}</span>
+            </div>
+            <div class="token-row">
+                <span class="token-key">Symbol</span>
+                <span class="token-val">{{TOKEN_SYMBOL}}</span>
+            </div>
+            <div class="token-row">
+                <span class="token-key">Chain</span>
+                <span class="token-val">Base</span>
+            </div>
+            <div class="token-row">
+                <span class="token-key">Contract</span>
+                <span class="token-val" style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><span id="tokenAddr">{{TOKEN_ADDRESS}}</span><button class="copy-btn" onclick="copyAddress()">Copy</button></span>
+            </div>
+            <a class="buy-btn" href="https://app.uniswap.org/swap?outputCurrency={{TOKEN_ADDRESS}}&chain=base" target="_blank" rel="noopener">Buy {{TOKEN_SYMBOL}} on Uniswap</a>
+        </div>
+    </div>
+
+    <!-- Claim This App -->
+    <div class="section">
+        <div class="claim-box">
+            <div style="text-align:center;margin-bottom:16px">
+                <div style="font-size:1.8rem;margin-bottom:6px">&#129438;</div>
+                <div style="font-size:1.2rem;font-weight:900;color:var(--text)">Want to own this?</div>
+                <div style="font-size:0.82rem;color:var(--text-2);margin-top:4px;line-height:1.5;max-width:400px;margin-left:auto;margin-right:auto">Tell us why you want to lead this project. Best answer gets 30% of the token supply + full incubation support from Inclawbate.</div>
+            </div>
+            <div id="claimForm">
+                <textarea id="claimPitch" class="drop-input" placeholder="Why do you want to own this app? What would you build with it?" rows="4" style="margin-bottom:8px"></textarea>
+                <input id="claimContact" type="text" class="drop-input" placeholder="Your @telegram or @x handle" style="margin-bottom:10px">
+                <button id="claimBtn" onclick="submitClaim()" class="drop-btn-primary">Submit My Pitch</button>
+                <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-3)">No wallet needed. No money needed. Just the will.</div>
+            </div>
+            <div id="claimSent" style="display:none;text-align:center;padding:20px 0">
+                <div style="font-size:1.5rem;margin-bottom:6px">&#9989;</div>
+                <div style="font-size:0.92rem;font-weight:800;color:var(--text)">Pitch submitted!</div>
+                <div style="font-size:0.78rem;color:var(--text-2);margin-top:4px;line-height:1.5">The council will review and reach out via your handle.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staking -->
+    <div class="section">
+        <div class="staking-box">
+            <div class="staking-title">Stake {{TOKEN_SYMBOL}}, Earn $CLAWS</div>
+            <div class="staking-desc">Stake your tokens and earn CLAWS rewards from the Inclawbate ecosystem.</div>
+            <a class="staking-btn" href="https://inclawbate.app/stake" target="_blank" rel="noopener">Stake Now</a>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">
+    <p>Launched by <a href="https://inclawbate.app/drops">Inclawbate Drops</a></p>
+    <a class="eco-badge" href="https://inclawbate.app" target="_blank">&#129438; Part of the Inclawbate ecosystem</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+    window.copyAddress = function() {
+        navigator.clipboard.writeText('{{TOKEN_ADDRESS}}').then(function(){showToast('Copied!')}).catch(function(){});
+    };
+
+    window.submitClaim = function() {
+        var pitch = document.getElementById('claimPitch').value.trim();
+        var contact = document.getElementById('claimContact').value.trim();
+        var btn = document.getElementById('claimBtn');
+        if (!pitch) { alert('Tell us why you want this!'); return; }
+        if (!contact) { alert('We need your handle so we can reach you'); return; }
+        btn.disabled = true; btn.textContent = 'Submitting...'; btn.style.opacity = '0.6';
+        fetch('https://www.inclawbate.app/api/inclawbate/hire-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: '[FOUNDER CLAIM — {{MEME_NAME}}] ' + pitch, contact: contact })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.success) {
+                document.getElementById('claimForm').style.display = 'none';
+                document.getElementById('claimSent').style.display = '';
+            } else {
+                alert(d.error || 'Something went wrong');
+                btn.disabled = false; btn.textContent = 'Submit My Pitch'; btn.style.opacity = '';
+            }
+        }).catch(function() {
+            alert('Failed to submit — try again');
+            btn.disabled = false; btn.textContent = 'Submit My Pitch'; btn.style.opacity = '';
+        });
+    };
+
+    function showToast(m) { var e = document.getElementById('toast'); e.textContent = m; e.classList.add('show'); setTimeout(function() { e.classList.remove('show'); }, 2500); }
+})();
+</script>
+
+</body>
+</html>

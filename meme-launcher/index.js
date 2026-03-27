@@ -19,6 +19,7 @@ const KYM_RSS = 'https://knowyourmeme.com/memes.rss';
 const AGENT_CHAT_URL = process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat';
 const PUBLISH_API_URL = process.env.PUBLISH_API_URL || 'https://www.inclawbate.app/api/publish-site';
 const TEMPLATE_URL = process.env.TEMPLATE_URL || 'https://raw.githubusercontent.com/stuart5915/suitegpt/master/inclawbate/memeclaw-template.html';
+const FACTORY_TEMPLATE_URL = process.env.FACTORY_TEMPLATE_URL || 'https://raw.githubusercontent.com/stuart5915/suitegpt/master/inclawbate/factory-template.html';
 const GROQ_KEYS = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
 const GROQ_API_KEY = GROQ_KEYS.length ? GROQ_KEYS[Math.floor(Math.random() * GROQ_KEYS.length)] : null;
 const CREATOR_WALLET = process.env.CREATOR_WALLET; // Grant's wallet — receives 80% LP fees
@@ -189,24 +190,25 @@ function generateSymbol(name) {
 
 // ── Template Cache ──
 
-let templateCache = null;
-let templateFetchedAt = 0;
-const TEMPLATE_CACHE_MS = 10 * 60 * 1000; // Re-fetch template every 10 min
+const templateCaches = {};
+const templateFetchedAt = {};
+const TEMPLATE_CACHE_MS = 10 * 60 * 1000;
 
-async function getTemplate() {
-    if (templateCache && Date.now() - templateFetchedAt < TEMPLATE_CACHE_MS) {
-        return templateCache;
+async function getTemplate(url) {
+    url = url || TEMPLATE_URL;
+    if (templateCaches[url] && Date.now() - (templateFetchedAt[url] || 0) < TEMPLATE_CACHE_MS) {
+        return templateCaches[url];
     }
     try {
-        const resp = await fetch(TEMPLATE_URL);
+        const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Template fetch failed: ${resp.status}`);
-        templateCache = await resp.text();
-        templateFetchedAt = Date.now();
-        console.log(`[MemeClaw] Template loaded (${templateCache.length} bytes)`);
-        return templateCache;
+        templateCaches[url] = await resp.text();
+        templateFetchedAt[url] = Date.now();
+        console.log(`[MemeClaw] Template loaded from ${url.split('/').pop()} (${templateCaches[url].length} bytes)`);
+        return templateCaches[url];
     } catch (err) {
         console.error('[MemeClaw] Template fetch error:', err.message);
-        if (templateCache) return templateCache; // Use stale cache
+        if (templateCaches[url]) return templateCaches[url];
         throw err;
     }
 }
@@ -275,9 +277,12 @@ async function generateVotingIdeas(memeName) {
 // ── Build & Publish Template Site ──
 
 async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
-    const template = await getTemplate();
-    const imageUrl = extractImage(meme.description || '') || '';
-    const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
+    // Factory launches use factory template (with Drops overlay), meme launches use SpawnMemes template
+    const templateUrl = meme._customSymbol ? FACTORY_TEMPLATE_URL : TEMPLATE_URL;
+    const template = await getTemplate(templateUrl);
+    const imageUrl = meme._customImage || extractImage(meme.description || '') || '';
+    const baseSlug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = meme._customSymbol ? baseSlug : baseSlug + '-token';
     const accent = ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)];
 
     // Generate voting ideas
