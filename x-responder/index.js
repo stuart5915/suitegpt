@@ -120,13 +120,13 @@ async function postReply(text, mentionTweetId) {
 
 // ── Log to @inclawbator feed channel ──
 
-const FEED_BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
+const FEED_BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const FEED_CHANNEL = '@inclawbator';
 
 function escFeed(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 async function logToFeed(authorUsername, mentionText, replyText, replyTweetId) {
-  if (!FEED_BOT_TOKEN) return;
+  if (!FEED_BOT_TOKEN) { console.warn('logToFeed: skipped — no INCLAWBATE_TELEGRAM_BOT_TOKEN'); return; }
 
   let text = `🐦 <b>X REPLY</b> · <b>@${escFeed(authorUsername)}</b>\n\n`;
   text += `<b>Mention:</b> ${escFeed((mentionText || '').slice(0, 300))}\n\n`;
@@ -367,6 +367,7 @@ const server = http.createServer((req, res) => {
       status: 'ok',
       mentions_processed: mentionsProcessed,
       last_error: lastError,
+      telegram_feed: FEED_BOT_TOKEN ? 'configured' : 'MISSING — set INCLAWBATE_TELEGRAM_BOT_TOKEN',
       uptime: Math.floor(process.uptime())
     }));
   } else {
@@ -378,6 +379,7 @@ const server = http.createServer((req, res) => {
 
 async function start() {
   console.log('Inclawbator X Responder starting...');
+  console.log(`Telegram feed: ${FEED_BOT_TOKEN ? 'configured → ' + FEED_CHANNEL : '⚠️ MISSING — replies will NOT be sent to Telegram'}`);
 
   if (!X_API_KEY || !X_ACCESS_TOKEN) {
     console.error('Missing X API credentials — exiting');
