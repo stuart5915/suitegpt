@@ -90,14 +90,26 @@ const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
 const TOKEN_TOTAL_SUPPLY = 100_000_000_000n; // 100B tokens
 
 // Build merkle tree for single-recipient airdrop
+// Returns root + tree dump for Clanker backend registration
 function buildAirdropMerkle(recipient, amountTokens) {
-  // Use keccak256(abi.encode(address, uint256)) double-hashed (OpenZeppelin standard)
   const amountWei = BigInt(amountTokens) * (10n ** 18n);
   const coder = ethers.AbiCoder.defaultAbiCoder();
   const innerHash = ethers.keccak256(coder.encode(['address', 'uint256'], [recipient, amountWei]));
   const leaf = ethers.keccak256(innerHash);
   // Single-leaf tree: root = leaf
-  return { root: leaf, amountWei: amountWei.toString() };
+
+  // Build OZ-compatible tree dump for Clanker backend
+  const treeDump = {
+    format: 'standard-v1',
+    tree: [leaf],
+    values: [{
+      value: [recipient, amountWei.toString()],
+      treeIndex: 0
+    }],
+    leafEncoding: ['address', 'uint256']
+  };
+
+  return { root: leaf, amountWei: amountWei.toString(), treeDump };
 }
 
 // LAUNCH TOKEN via Clanker V4
@@ -131,10 +143,14 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
 
   // Build airdrop extension if requested
   const extensionConfigs = [];
+  let _airdropTreeDump = null;
+  let _airdropRoot = null;
   if (airdrop_address && airdrop_pct > 0) {
     const airdropBps = Math.min(airdrop_pct * 100, 9000); // convert % to bps, cap at 90%
     const airdropAmount = TOKEN_TOTAL_SUPPLY * BigInt(airdrop_pct) / 100n;
-    const { root } = buildAirdropMerkle(airdrop_address, airdropAmount);
+    const { root, treeDump } = buildAirdropMerkle(airdrop_address, airdropAmount);
+    _airdropTreeDump = treeDump;
+    _airdropRoot = root;
 
     // Encode extensionData: (admin, merkleRoot, lockupDuration, vestingDuration)
     // 1 day lockup (minimum), instant vesting
@@ -245,6 +261,24 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
       });
     } catch (regErr) {
       console.error('Token registration failed (non-fatal):', regErr.message);
+    }
+
+    // Register airdrop merkle tree with Clanker backend (so users can claim via UI)
+    if (_airdropTreeDump && _airdropRoot) {
+      try {
+        await fetch('https://www.clanker.world/api/airdrops', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tokenAddress,
+            merkleRoot: _airdropRoot,
+            tree: _airdropTreeDump
+          })
+        });
+        console.log('[LaunchToken] Airdrop tree registered with Clanker backend');
+      } catch (airdropRegErr) {
+        console.error('[LaunchToken] Clanker airdrop registration failed (non-fatal):', airdropRegErr.message);
+      }
     }
   }
 
