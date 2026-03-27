@@ -1872,12 +1872,18 @@ function renderAppsAction(body,title,d){
     if(!d||!d.apps)return false;
     title.textContent='Your Apps ('+(d.total||d.apps.length)+')';
     if(!d.apps.length){body.innerHTML='<div class="action-empty"><div class="action-empty-icon">📱</div><div class="action-empty-text">No apps yet. Ask me to build one!</div></div>';return true;}
-    body.innerHTML='<div class="action-apps">'+d.apps.map(a=>
-        '<a class="action-app-card" href="'+esc(a.url)+'" target="_blank">'+
+    body.innerHTML='<div class="action-apps">'+d.apps.map(a=>{
+        const url=esc(a.url||'https://inclawbate.app/s/'+a.slug);
+        const slug=esc(a.slug);
+        return '<div class="action-app-card">'+
         '<div class="action-app-name">'+esc(a.name||a.slug)+'</div>'+
         (a.description?'<div class="action-app-desc">'+esc(a.description)+'</div>':'')+
-        '<div class="action-app-url">'+esc(a.url||'/s/'+a.slug)+'</div></a>'
-    ).join('')+'</div>';
+        '<div class="action-app-url">'+url+'</div>'+
+        '<div class="action-result-actions" style="margin-top:8px">'+
+        '<button class="btn btn-primary btn-sm" onclick="closeActionPanel();enterBuildMode(\''+url+'\');addBotMsg(\'Editing **'+esc(a.name||a.slug)+'**. Describe the changes you want to make.\',[\'Change the design\',\'Add features\',\'Update content\'])">Edit</button>'+
+        '<a class="btn btn-outline btn-sm" href="'+url+'" target="_blank">Open</a>'+
+        '</div></div>';
+    }).join('')+'</div>';
     return true;
 }
 function renderTokenResultAction(body,title,d,args){
