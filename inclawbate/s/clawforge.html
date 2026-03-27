@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClawForge — AI Content Creation Studio</title>
+    <meta name="description" content="ClawForge is an AI-powered content creation studio. Generate X threads, meme captions, newsletters, video scripts, and blog posts with AI co-creators on-chain.">
+    <meta property="og:title" content="ClawForge — AI Content Creation Studio">
+    <meta property="og:description" content="Your AI Co-Creators, On-Chain. Generate viral content in seconds.">
+    <meta property="og:url" content="https://inclawbate.app/s/clawforge">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ClawForge — AI Content Creation Studio">
+    <meta name="twitter:description" content="Your AI Co-Creators, On-Chain. Generate viral content in seconds.">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ========== RESET & BASE ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-base: #06060b;
+            --bg-surface: #0a0a11;
+            --bg-card: #12121c;
+            --bg-card-hover: #18182a;
+            --bg-input: #0e0e18;
+            --border: #1e1e30;
+            --border-focus: #8b5cf6;
+            --accent: #8b5cf6;
+            --accent-hover: #a78bfa;
+            --accent-dim: rgba(139, 92, 246, 0.15);
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --text-primary: #eae6e1;
+            --text-secondary: #8a8498;
+            --text-muted: #5a5670;
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --font-display: 'Nunito', system-ui, sans-serif;
+            --font-ui: 'JetBrains Mono', 'SF Mono', monospace;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 24px rgba(139, 92, 246, 0.15);
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ========== HEADER ========== */
+        .header {
+            padding: 24px 0 0 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent), #6d28d9);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .logo-text {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #c4b5fd, #8b5cf6, #6d28d9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* ========== TOKEN BAR ========== */
+        .token-bar {
+            margin: 16px auto 0;
+            max-width: 720px;
+            padding: 0 24px;
+        }
+
+        .token-bar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            flex-wrap: wrap;
+        }
+
+        .token-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .token-address {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+            word-break: break-all;
+        }
+
+        .token-address:hover {
+            color: var(--text-primary);
+        }
+
+        .token-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .token-link {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+            padding: 4px 10px;
+            border: 1px solid var(--accent-dim);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .token-link:hover {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+        }
+
+        /* ========== MAIN WORKSPACE ========== */
+        .workspace {
+            max-width: 1200px;
+            margin: 24px auto 0;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: calc(100vh - 260px);
+        }
+
+        /* ========== PANELS ========== */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-header-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .panel-header-icon.input-icon {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .panel-header-icon.output-icon {
+            background: rgba(74, 222, 128, 0.12);
+            color: var(--success);
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .panel-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .panel-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ========== FORM ELEMENTS ========== */
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* Content Type Selector */
+        .content-types {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .content-type-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 4px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-ui);
+            font-size: 0.6rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .content-type-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .content-type-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .content-type-btn .ct-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        /* Agent Style Selector */
+        .agent-styles {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .agent-style-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 6px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-ui);
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .agent-style-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .agent-style-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .agent-style-btn .as-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* Text Input */
+        .idea-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 0.82rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .idea-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .idea-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .char-count {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: -8px;
+        }
+
+        /* Generate Button */
+        .generate-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent), #6d28d9);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .generate-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .generate-btn .btn-shimmer {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            100% { left: 100%; }
+        }
+
+        .generate-btn.loading .btn-shimmer {
+            animation: shimmer 0.8s infinite;
+        }
+
+        /* ========== OUTPUT PANEL ========== */
+        .output-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 12px;
+            padding: 40px 20px;
+        }
+
+        .output-empty-icon {
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        .output-empty-text {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .output-empty-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            max-width: 260px;
+        }
+
+        /* Output Content */
+        .output-content {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .output-content.visible {
+            display: flex;
+        }
+
+        .output-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .toolbar-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .toolbar-btn.primary {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .toolbar-btn.primary:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .toolbar-btn.copied {
+            background: rgba(74, 222, 128, 0.12);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        .output-meta {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .output-textarea {
+            flex: 1;
+            min-height: 300px;
+            padding: 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            line-height: 1.7;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .output-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* Refine Row */
+        .refine-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .refine-btn {
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refine-btn:hover {
+            border-color: var(--warning);
+            color: var(--warning);
+            background: rgba(251, 191, 36, 0.08);
+        }
+
+        /* ========== LOADING STATE ========== */
+        .loading-indicator {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 40px;
+        }
+
+        .loading-indicator.visible {
+            display: flex;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: dotPulse 1.2s ease-in-out infinite;
+        }
+
+        .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+        }
+
+        .loading-text {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .loading-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* ========== ERROR STATE ========== */
+        .error-banner {
+            display: none;
+            padding: 12px 16px;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: var(--radius-md);
+            color: var(--error);
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .error-banner.visible {
+            display: block;
+        }
+
+        /* ========== FOOTER ========== */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            margin-top: 20px;
+        }
+
+        .footer a {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--accent);
+        }
+
+        /* ========== TOAST ========== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.78rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 860px) {
+            .workspace {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+
+            .content-types {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .agent-styles {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .logo-text {
+                font-size: 1.5rem;
+            }
+
+            .token-bar-inner {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .output-textarea {
+                min-height: 240px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content-types {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .agent-styles {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .panel-body {
+                padding: 16px;
+            }
+
+            .output-toolbar {
+                gap: 4px;
+            }
+
+            .toolbar-btn {
+                padding: 6px 8px;
+                font-size: 0.62rem;
+            }
+
+            .refine-btn {
+                font-size: 0.62rem;
+                padding: 5px 8px;
+            }
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .panel:nth-child(2) {
+            animation-delay: 0.08s;
+            animation-fill-mode: both;
+        }
+
+        /* ========== WORD COUNT BADGE ========== */
+        .word-count-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.62rem;
+            color: var(--text-muted);
+        }
+
+        /* ========== HISTORY ========== */
+        .history-section {
+            margin-top: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .history-header-text {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .history-toggle {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .history-list {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-list.open {
+            display: flex;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent);
+            background: var(--bg-card-hover);
+        }
+
+        .history-item-type {
+            font-size: 14px;
+        }
+
+        .history-item-text {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item-time {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Daily Drop Welcome Overlay -->
+<div id="dropOverlay" style="position:fixed;inset:0;z-index:10000;background:rgba(4,4,8,0.92);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="max-width:440px;width:100%;background:#12121c;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:32px 28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+        <div style="font-size:2rem;margin-bottom:10px">&#129438;</div>
+        <div style="font-size:1.3rem;font-weight:900;color:#f0f0f5;margin-bottom:6px;font-family:'Nunito',sans-serif">Inclawbate Daily Drop</div>
+        <div style="font-size:0.85rem;color:#a0a0b8;line-height:1.6;margin-bottom:20px">
+            Every day we build a new app, launch a token, and find a founder. This is <strong style="color:#f0f0f5">ClawForge</strong> — an AI content creation studio ready to be owned and operated.
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:20px;text-align:left">
+            <div style="font-size:0.72rem;font-weight:700;color:#606078;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">What you get</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:0.82rem;color:#a0a0b8;line-height:1.5">
+                <div>&#10003; <strong style="color:#f0f0f5">30% token allocation</strong> — founder supply</div>
+                <div>&#10003; <strong style="color:#f0f0f5">Full incubation support</strong> — dev, marketing, strategy</div>
+                <div>&#10003; <strong style="color:#f0f0f5">A live app + token + staking</strong> — already deployed</div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="https://inclawbate.app/inclawbations#drops" style="display:flex;align-items:center;justify-content:center;padding:12px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border-radius:10px;font-size:0.9rem;font-weight:800;text-decoration:none;font-family:'Nunito',sans-serif">Claim This Project</a>
+            <a href="https://app.uniswap.org/swap?outputCurrency=0x2344dfceed2e4ea42a771af8b584643764f7b5d5&chain=base" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border-radius:10px;font-size:0.85rem;font-weight:700;text-decoration:none;font-family:'Nunito',sans-serif">Buy $FORGE on Uniswap</a>
+            <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_clawforge','1')}catch(e){}" style="padding:10px;background:none;border:none;color:#606078;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">View the app &rarr;</button>
+        </div>
+        <div style="margin-top:14px;font-size:0.68rem;color:#606078">No wallet needed. No money needed. Just the will to build.</div>
+    </div>
+</div>
+<script>try{if(sessionStorage.getItem('drop_seen_clawforge'))document.getElementById('dropOverlay').style.display='none'}catch(e){}</script>
+
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo-row">
+                <div class="logo-icon">&#9889;</div>
+                <span class="logo-text">ClawForge</span>
+            </div>
+            <p class="tagline">Your AI Co-Creators, On-Chain</p>
+        </div>
+    </header>
+
+    <!-- ========== TOKEN BAR ========== -->
+    <div class="token-bar">
+        <div class="token-bar-inner">
+            <span class="token-label">$FORGE</span>
+            <span class="token-address" id="tokenAddr" onclick="copyTokenAddress()" title="Click to copy">0x2344dfceed2e4ea42a771af8b584643764f7b5d5</span>
+            <div class="token-links">
+                <a class="token-link" href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x2344dfceed2e4ea42a771af8b584643764f7b5d5&chain=base" target="_blank" rel="noopener">Buy</a>
+                <a class="token-link" href="https://inclawbate.app/stake" target="_blank" rel="noopener">Stake</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== WORKSPACE ========== -->
+    <main class="workspace">
+
+        <!-- INPUT PANEL -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-header-icon input-icon">&#9998;</div>
+                <span class="panel-title">Create</span>
+                <span class="panel-subtitle">Configure &amp; Generate</span>
+            </div>
+            <div class="panel-body">
+
+                <!-- Content Type -->
+                <div class="field-group">
+                    <label class="field-label">Content Type</label>
+                    <div class="content-types" id="contentTypes">
+                        <button class="content-type-btn active" data-type="thread" onclick="selectContentType(this)">
+                            <span class="ct-icon">&#128172;</span>
+                            X Thread
+                        </button>
+                        <button class="content-type-btn" data-type="meme" onclick="selectContentType(this)">
+                            <span class="ct-icon">&#128514;</span>
+                            Meme Caption
+                        </button>
+                        <button class="content-type-btn" data-type="newsletter" onclick="selectContentType(this)">
+                            <span class="ct-icon">&#128236;</span>
+                            Newsletter
+                        </button>
+                        <button class="content-type-btn" data-type="video" onclick="selectContentType(this)">
+                            <span class="ct-icon">&#127916;</span>
+                            Video Script
+                        </button>
+                        <button class="content-type-btn" data-type="blog" onclick="selectContentType(this)">
+                            <span class="ct-icon">&#128221;</span>
+                            Blog Post
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Agent Style -->
+                <div class="field-group">
+                    <label class="field-label">AI Agent Style</label>
+                    <div class="agent-styles" id="agentStyles">
+                        <button class="agent-style-btn active" data-style="viral" onclick="selectAgentStyle(this)">
+                            <span class="as-icon">&#128293;</span>
+                            Viral Writer
+                        </button>
+                        <button class="agent-style-btn" data-style="meme" onclick="selectAgentStyle(this)">
+                            <span class="as-icon">&#129313;</span>
+                            Meme Lord
+                        </button>
+                        <button class="agent-style-btn" data-style="professional" onclick="selectAgentStyle(this)">
+                            <span class="as-icon">&#128188;</span>
+                            Professional
+                        </button>
+                        <button class="agent-style-btn" data-style="storyteller" onclick="selectAgentStyle(this)">
+                            <span class="as-icon">&#128214;</span>
+                            Storyteller
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Idea Input -->
+                <div class="field-group">
+                    <label class="field-label">Your Idea / Topic</label>
+                    <textarea class="idea-input" id="ideaInput" placeholder="Describe what you want to create...&#10;&#10;e.g. &quot;AI agents taking over DeFi and why it's inevitable&quot;" maxlength="2000" oninput="updateCharCount()"></textarea>
+                    <span class="char-count" id="charCount">0 / 2,000</span>
+                </div>
+
+                <!-- Generate Button -->
+                <button class="generate-btn" id="generateBtn" onclick="generateContent()">
+                    <span class="btn-shimmer"></span>
+                    <span id="generateBtnText">Generate Content</span>
+                </button>
+
+                <!-- Error Banner -->
+                <div class="error-banner" id="errorBanner"></div>
+
+                <!-- History -->
+                <div class="history-section" id="historySection" style="display:none;">
+                    <div class="history-header" onclick="toggleHistory()">
+                        <span class="history-header-text">Recent Generations</span>
+                        <span class="history-toggle" id="historyToggle">&#9660;</span>
+                    </div>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- OUTPUT PANEL -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-header-icon output-icon">&#10003;</div>
+                <span class="panel-title">Output</span>
+                <span class="panel-subtitle" id="outputSubtitle">Preview &amp; Edit</span>
+            </div>
+            <div class="panel-body">
+
+                <!-- Empty State -->
+                <div class="output-empty" id="outputEmpty">
+                    <div class="output-empty-icon">&#9889;</div>
+                    <div class="output-empty-text">Nothing generated yet</div>
+                    <div class="output-empty-sub">Pick a content type, choose your AI style, describe your idea, and hit Generate.</div>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-indicator" id="loadingIndicator">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <div class="loading-text" id="loadingText">Generating...</div>
+                    <div class="loading-sub" id="loadingSub">Your AI co-creator is working on it</div>
+                </div>
+
+                <!-- Output Content -->
+                <div class="output-content" id="outputContent">
+                    <div class="output-toolbar">
+                        <button class="toolbar-btn primary" id="copyBtn" onclick="copyOutput()">
+                            &#128203; Copy
+                        </button>
+                        <button class="toolbar-btn" onclick="generateContent()">
+                            &#128260; Regenerate
+                        </button>
+                        <span class="toolbar-spacer"></span>
+                        <span class="word-count-badge" id="wordCount">0 words</span>
+                    </div>
+
+                    <textarea class="output-textarea" id="outputTextarea" oninput="updateWordCount()"></textarea>
+
+                    <div class="refine-row">
+                        <button class="refine-btn" onclick="refineContent('shorter')">&#9986; Make Shorter</button>
+                        <button class="refine-btn" onclick="refineContent('funnier')">&#128514; Make Funnier</button>
+                        <button class="refine-btn" onclick="refineContent('professional')">&#128188; More Professional</button>
+                        <button class="refine-btn" onclick="refineContent('engaging')">&#128293; More Engaging</button>
+                        <button class="refine-btn" onclick="refineContent('simpler')">&#128161; Simplify</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <div class="footer">
+        <a href="https://inclawbate.app" target="_blank" rel="noopener">Powered by Inclawbate</a>
+    </div>
+
+    <!-- ========== TOAST ========== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ========== JAVASCRIPT ========== -->
+    <script>
+        // ===== STATE =====
+        var state = {
+            contentType: 'thread',
+            agentStyle: 'viral',
+            isGenerating: false,
+            sessionId: 'clawforge-' + Date.now().toString(36),
+            history: [],
+            lastOutput: ''
+        };
+
+        // ===== CONTENT TYPE CONFIG =====
+        var contentTypeConfig = {
+            thread: {
+                name: 'X Thread',
+                icon: '\u{1F4AC}',
+                prompt: 'Write an X (Twitter) thread of 5-10 tweets about the following topic. Number each tweet (1/, 2/, etc). Make the first tweet a strong hook. End with a call to action. Each tweet should be under 280 characters. Separate tweets with a blank line.',
+                placeholder: 'e.g. "AI agents taking over DeFi and why it\'s inevitable"',
+                loadingText: 'Crafting your thread...'
+            },
+            meme: {
+                name: 'Meme Caption',
+                icon: '\u{1F602}',
+                prompt: 'Write 3 different meme captions for the following topic. For each, provide the TOP TEXT and BOTTOM TEXT clearly labeled. Keep them short, punchy, and funny. Use internet humor, irony, and relatable references. Format each as:\n\nMeme #1:\nTOP: [text]\nBOTTOM: [text]\n\nAlso suggest what image/template would work best for each.',
+                placeholder: 'e.g. "When your token does a 10x but you sold at 2x"',
+                loadingText: 'Cooking up meme magic...'
+            },
+            newsletter: {
+                name: 'Newsletter',
+                icon: '\u{1F4EC}',
+                prompt: 'Write a newsletter email about the following topic. Include:\n\n1. A compelling SUBJECT LINE (labeled clearly)\n2. An opening hook paragraph that grabs attention\n3. Three body paragraphs with valuable insights\n4. A closing paragraph with a clear call to action\n\nFormat with clear section breaks. Keep the tone conversational but informative.',
+                placeholder: 'e.g. "Weekly DeFi update: new yield farming strategies for 2026"',
+                loadingText: 'Writing your newsletter...'
+            },
+            video: {
+                name: 'Video Script',
+                icon: '\u{1F3AC}',
+                prompt: 'Write a video script about the following topic. Structure it as:\n\n[0:00 - HOOK] (first 5-10 seconds to grab attention)\n\n[0:10 - INTRO] (introduce the topic, set expectations)\n\n[0:30 - SECTION 1] (first main point)\n\n[1:30 - SECTION 2] (second main point)\n\n[2:30 - SECTION 3] (third main point, or story/example)\n\n[3:30 - CTA] (call to action, what to do next)\n\nInclude speaker directions in [brackets]. Write conversational dialogue, not bullet points.',
+                placeholder: 'e.g. "Explaining yield farming to beginners in 3 minutes"',
+                loadingText: 'Scripting your video...'
+            },
+            blog: {
+                name: 'Blog Post',
+                icon: '\u{1F4DD}',
+                prompt: 'Write a blog post about the following topic. Include:\n\n1. A compelling TITLE\n2. An engaging introduction paragraph (2-3 sentences)\n3. Three main sections, each with a subheading (##) and 2-3 paragraphs\n4. A conclusion paragraph that summarizes key points and includes a call to action\n\nUse markdown formatting. Make it SEO-friendly with clear structure.',
+                placeholder: 'e.g. "The future of on-chain AI agents and why every project needs one"',
+                loadingText: 'Drafting your blog post...'
+            }
+        };
+
+        // ===== AGENT STYLE CONFIG =====
+        var agentStyleConfig = {
+            viral: {
+                name: 'Viral Writer',
+                instruction: 'Write in a viral, engaging, shareable style. Use hooks, curiosity gaps, and strong CTAs. Start with something that makes people stop scrolling. Use power words and emotional triggers. Every sentence should make the reader want to read the next one.'
+            },
+            meme: {
+                name: 'Meme Lord',
+                instruction: 'Write in internet culture style. Funny, irreverent, uses meme references and internet slang. Short and punchy. Self-aware humor. Reference popular memes, crypto culture, and online trends. Don\'t take yourself too seriously.'
+            },
+            professional: {
+                name: 'Professional',
+                instruction: 'Write in a professional, polished tone. Data-driven, authoritative, trustworthy. Use precise language and credible framing. Structure ideas clearly. Avoid hype — let the facts speak. Suitable for executives and decision-makers.'
+            },
+            storyteller: {
+                name: 'Storyteller',
+                instruction: 'Write in narrative style. Use personal anecdotes, emotional hooks, and story arcs. Paint vivid scenes. Make the reader feel something. Use the classic storytelling structure: setup, tension, resolution. Connect abstract concepts to human experiences.'
+            }
+        };
+
+        // ===== LOADING MESSAGES =====
+        var loadingMessages = [
+            'Your AI co-creator is working on it',
+            'Analyzing the topic from all angles',
+            'Choosing the perfect words',
+            'Making it shareable',
+            'Adding the finishing touches',
+            'Almost there...',
+            'Polishing every sentence'
+        ];
+
+        // ===== UI FUNCTIONS =====
+
+        function selectContentType(btn) {
+            document.querySelectorAll('.content-type-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            state.contentType = btn.dataset.type;
+
+            var config = contentTypeConfig[state.contentType];
+            var input = document.getElementById('ideaInput');
+            input.placeholder = 'Describe what you want to create...\n\n' + config.placeholder;
+        }
+
+        function selectAgentStyle(btn) {
+            document.querySelectorAll('.agent-style-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            state.agentStyle = btn.dataset.style;
+        }
+
+        function updateCharCount() {
+            var input = document.getElementById('ideaInput');
+            var count = document.getElementById('charCount');
+            count.textContent = input.value.length.toLocaleString() + ' / 2,000';
+        }
+
+        function updateWordCount() {
+            var textarea = document.getElementById('outputTextarea');
+            var text = textarea.value.trim();
+            var words = text ? text.split(/\s+/).length : 0;
+            document.getElementById('wordCount').textContent = words.toLocaleString() + ' word' + (words !== 1 ? 's' : '');
+        }
+
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(function() {
+                toast.classList.remove('visible');
+            }, 2400);
+        }
+
+        function showError(message) {
+            var banner = document.getElementById('errorBanner');
+            banner.textContent = message;
+            banner.classList.add('visible');
+            setTimeout(function() {
+                banner.classList.remove('visible');
+            }, 6000);
+        }
+
+        function setOutputState(s) {
+            document.getElementById('outputEmpty').style.display = s === 'empty' ? 'flex' : 'none';
+            document.getElementById('loadingIndicator').className = 'loading-indicator' + (s === 'loading' ? ' visible' : '');
+            document.getElementById('outputContent').className = 'output-content' + (s === 'content' ? ' visible' : '');
+        }
+
+        function toggleHistory() {
+            var list = document.getElementById('historyList');
+            var toggle = document.getElementById('historyToggle');
+            if (list.classList.contains('open')) {
+                list.classList.remove('open');
+                toggle.innerHTML = '&#9660;';
+            } else {
+                list.classList.add('open');
+                toggle.innerHTML = '&#9650;';
+            }
+        }
+
+        function addToHistory(type, idea, output) {
+            var config = contentTypeConfig[type];
+            state.history.unshift({
+                type: type,
+                icon: config.icon,
+                name: config.name,
+                idea: idea,
+                output: output,
+                time: new Date()
+            });
+
+            if (state.history.length > 20) {
+                state.history = state.history.slice(0, 20);
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            var section = document.getElementById('historySection');
+            var list = document.getElementById('historyList');
+
+            if (state.history.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            list.innerHTML = '';
+
+            state.history.forEach(function(item, index) {
+                var el = document.createElement('div');
+                el.className = 'history-item';
+                el.onclick = function() { loadHistory(index); };
+
+                var now = new Date();
+                var diff = Math.floor((now - item.time) / 60000);
+                var timeStr = diff < 1 ? 'just now' : diff + 'm ago';
+
+                el.innerHTML = '<span class="history-item-type">' + item.icon + '</span>' +
+                    '<span class="history-item-text">' + escapeHtml(item.idea.slice(0, 60)) + '</span>' +
+                    '<span class="history-item-time">' + timeStr + '</span>';
+
+                list.appendChild(el);
+            });
+        }
+
+        function loadHistory(index) {
+            var item = state.history[index];
+            document.getElementById('outputTextarea').value = item.output;
+            setOutputState('content');
+            updateWordCount();
+            showToast('Loaded from history');
+        }
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ===== COPY FUNCTIONS =====
+
+        function copyTokenAddress() {
+            var addr = '0x2344dfceed2e4ea42a771af8b584643764f7b5d5';
+            navigator.clipboard.writeText(addr).then(function() {
+                showToast('Token address copied');
+            });
+        }
+
+        function copyOutput() {
+            var textarea = document.getElementById('outputTextarea');
+            var btn = document.getElementById('copyBtn');
+
+            navigator.clipboard.writeText(textarea.value).then(function() {
+                btn.innerHTML = '&#10003; Copied';
+                btn.classList.add('copied');
+                showToast('Content copied to clipboard');
+
+                setTimeout(function() {
+                    btn.innerHTML = '&#128203; Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(function() {
+                textarea.select();
+                document.execCommand('copy');
+                showToast('Content copied');
+            });
+        }
+
+        // ===== GENERATION =====
+
+        function buildPrompt(idea, refinement) {
+            var contentConfig = contentTypeConfig[state.contentType];
+            var styleConfig = agentStyleConfig[state.agentStyle];
+
+            var prompt = '';
+
+            if (refinement) {
+                var refineInstructions = {
+                    shorter: 'Rewrite the following content to be significantly shorter and more concise. Cut the fluff, keep the impact. Maintain the same format and structure.',
+                    funnier: 'Rewrite the following content to be funnier and more entertaining. Add humor, wit, and personality while keeping the core message.',
+                    professional: 'Rewrite the following content in a more professional and polished tone. Remove casual language, add credibility, and make it suitable for business audiences.',
+                    engaging: 'Rewrite the following content to be more engaging and attention-grabbing. Add stronger hooks, better transitions, and more compelling language.',
+                    simpler: 'Rewrite the following content in simpler, easier-to-understand language. Use shorter sentences, common words, and clear explanations. Make it accessible to everyone.'
+                };
+
+                prompt = refineInstructions[refinement] + '\n\nOriginal content:\n\n' + state.lastOutput;
+            } else {
+                prompt = styleConfig.instruction + '\n\n' + contentConfig.prompt + '\n\nTopic/Idea: ' + idea;
+            }
+
+            return prompt;
+        }
+
+        var loadingInterval = null;
+
+        function cycleLoadingText() {
+            var index = 0;
+            var textEl = document.getElementById('loadingSub');
+            loadingInterval = setInterval(function() {
+                index = (index + 1) % loadingMessages.length;
+                textEl.textContent = loadingMessages[index];
+            }, 2500);
+        }
+
+        function stopLoadingCycle() {
+            if (loadingInterval) {
+                clearInterval(loadingInterval);
+                loadingInterval = null;
+            }
+        }
+
+        async function generateContent(refinement) {
+            var idea = document.getElementById('ideaInput').value.trim();
+
+            if (!idea && !refinement) {
+                showError('Please describe what you want to create before generating.');
+                document.getElementById('ideaInput').focus();
+                return;
+            }
+
+            if (refinement && !state.lastOutput) {
+                showError('Generate content first, then use refinement options.');
+                return;
+            }
+
+            if (state.isGenerating) return;
+            state.isGenerating = true;
+
+            var btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.classList.add('loading');
+            document.getElementById('generateBtnText').textContent = refinement ? 'Refining...' : 'Generating...';
+
+            var contentConfig = contentTypeConfig[state.contentType];
+            document.getElementById('loadingText').textContent = refinement ? 'Refining your content...' : contentConfig.loadingText;
+            document.getElementById('loadingSub').textContent = loadingMessages[0];
+
+            setOutputState('loading');
+            cycleLoadingText();
+
+            var errorBanner = document.getElementById('errorBanner');
+            errorBanner.classList.remove('visible');
+
+            var prompt = buildPrompt(idea, refinement);
+
+            try {
+                var response = await fetch('https://www.inclawbate.app/api/inclawbate/agent-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: prompt,
+                        session_id: state.sessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API returned ' + response.status);
+                }
+
+                var data = await response.json();
+                var reply = data.reply || data.message || '';
+
+                if (!reply) {
+                    throw new Error('Empty response from AI agent');
+                }
+
+                // Clean up response
+                reply = reply.trim();
+
+                state.lastOutput = reply;
+                document.getElementById('outputTextarea').value = reply;
+                document.getElementById('outputSubtitle').textContent = contentConfig.name + ' \u00b7 ' + agentStyleConfig[state.agentStyle].name;
+
+                setOutputState('content');
+                updateWordCount();
+
+                if (!refinement) {
+                    addToHistory(state.contentType, idea, reply);
+                }
+
+                // New session for next generation to avoid context bleed
+                state.sessionId = 'clawforge-' + Date.now().toString(36);
+
+            } catch (err) {
+                console.error('Generation error:', err);
+                setOutputState(state.lastOutput ? 'content' : 'empty');
+                showError('Generation failed: ' + (err.message || 'Unknown error') + '. Please try again.');
+            } finally {
+                stopLoadingCycle();
+                state.isGenerating = false;
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                document.getElementById('generateBtnText').textContent = 'Generate Content';
+            }
+        }
+
+        function refineContent(type) {
+            generateContent(type);
+        }
+
+        // ===== KEYBOARD SHORTCUT =====
+        document.addEventListener('keydown', function(e) {
+            // Cmd/Ctrl + Enter to generate
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (!state.isGenerating) {
+                    generateContent();
+                }
+            }
+        });
+
+        // ===== INIT =====
+        (function init() {
+            updateCharCount();
+
+            // Set initial placeholder
+            var config = contentTypeConfig[state.contentType];
+            var input = document.getElementById('ideaInput');
+            input.placeholder = 'Describe what you want to create...\n\n' + config.placeholder;
+        })();
+    </script>
+
+</body>
+</html>
