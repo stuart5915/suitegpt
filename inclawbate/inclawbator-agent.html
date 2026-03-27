@@ -2143,18 +2143,20 @@ function submitTokenFormBuild(){
         const d=data.action?.data;
         if(d&&d.success&&d.token_address){
             addBotMsg('Token deployed! Now injecting into your site...',['Cancel']);
+            const buyUrl='https://app.uniswap.org/swap?outputCurrency='+d.token_address+'&chain=base';
             // Build the instruction for the build AI to inject token info
-            const injectMsg='Add this token information to the page. Make it look great — show the token name, symbol, contract address, and links as a prominent section. '+
+            const injectMsg='Add this token to the page with a prominent token section. Include: '+
                 'Token: '+name+' ($'+symbol+'). '+
                 'Contract address: '+d.token_address+'. '+
+                'Buy/swap link: '+buyUrl+' (label it "Buy $'+symbol+'", make it a standout button). '+
                 (d.basescan_url?'Basescan: '+d.basescan_url+'. ':'')+
-                (d.clanker_url?'Clanker: '+d.clanker_url+'. ':'')+
+                (d.clanker_url?'Clanker page: '+d.clanker_url+'. ':'')+
                 (desc?'Description: '+desc+'. ':'')+
-                (img?'Logo image: '+img+'. ':'')+
+                (img?'Logo image (use as token icon): '+img+'. ':'')+
                 (web?'Website: '+web+'. ':'')+
                 (xh?'X/Twitter: '+xh+'. ':'')+
                 (tg?'Telegram: '+tg+'. ':'')+
-                'Add a copy-to-clipboard button for the contract address. Include any links as buttons. Make the section match the existing page style.';
+                'Add a copy-to-clipboard button for the contract address. Add the Buy button prominently. Include all provided links as buttons/icons. Match the existing page style.';
             await sendBuildMsg(injectMsg);
         }else{
             addBotMsg(data.reply||'Token deployment failed.',data.suggestions||['Try again']);
