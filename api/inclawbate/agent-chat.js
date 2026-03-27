@@ -2775,9 +2775,11 @@ export default async function handler(req, res) {
         // Extract extra data from tool results for frontend rendering
         let appUrl = null;
         let txData = null;
+        let toolResultData = null;
         if (lastToolResult?.content) {
           try {
             const tr = typeof lastToolResult.content === 'string' ? JSON.parse(lastToolResult.content) : lastToolResult.content;
+            toolResultData = tr;
             if (tr.url && functionCalled === 'build_app') appUrl = tr.url;
             if (tr.needs_wallet_action) txData = tr; // Pass deposit/withdraw data to frontend
             // DeFi actions — pass tx/txs data for user to sign
@@ -2785,7 +2787,9 @@ export default async function handler(req, res) {
             if (tr.txs) txData = { txs: tr.txs };
           } catch (_) {}
         }
-        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }), ...(councilRequestId && { council_request_id: councilRequestId }) });
+        // Build action payload for rich panel rendering on client
+        const action = functionCalled ? { type: functionCalled, ...(toolResultData && { data: toolResultData }), ...(toolArgs && { args: toolArgs }) } : null;
+        return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }), ...(councilRequestId && { council_request_id: councilRequestId }), ...(action && { action }) });
       }
 
       // Complex tools (health_check) — use LLM to interpret
