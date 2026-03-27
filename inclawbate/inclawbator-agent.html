@@ -2018,39 +2018,93 @@ function renderMyTokensAction(body,title,d){
 function renderTokenForm(body,title){
     title.textContent='Launch Token';
     body.innerHTML='<div class="action-form">'+
-        '<div class="action-hint">Deploy an ERC-20 token on Base with automatic Clanker liquidity.</div>'+
+        '<div class="action-hint">Deploy an ERC-20 token on Base via Clanker with automatic liquidity. Your wallet receives 80% of LP fee rewards.</div>'+
         '<div class="action-field-row">'+
-        '<div class="action-field"><label>Token Name</label><input id="af_tokenName" placeholder="e.g. Lobster Coin"></div>'+
-        '<div class="action-field"><label>Symbol</label><input id="af_tokenSymbol" placeholder="e.g. LOBSTER" maxlength="10"></div></div>'+
-        '<div class="action-field"><label>Description (optional)</label><textarea id="af_tokenDesc" placeholder="What is this token about?" rows="2"></textarea></div>'+
-        '<button class="action-deploy-btn" onclick="submitTokenForm()">🚀 Deploy Token</button>'+
-        '<div class="action-hint">Tokens are deployed via Clanker on Base with automatic LP. No cost — just connect your wallet.</div></div>';
+        '<div class="action-field"><label>Token Name *</label><input id="af_tokenName" placeholder="e.g. Lobster Coin"></div>'+
+        '<div class="action-field"><label>Symbol *</label><input id="af_tokenSymbol" placeholder="e.g. LOBSTER" maxlength="10" style="text-transform:uppercase"></div></div>'+
+        '<div class="action-field"><label>Description</label><textarea id="af_tokenDesc" placeholder="What is this token about? (max 280 chars)" rows="2" maxlength="280"></textarea></div>'+
+        '<div class="action-field"><label>Logo Image URL</label><input id="af_tokenImage" placeholder="https://... (direct link to logo image)"></div>'+
+        '<div class="action-field"><label>Website</label><input id="af_tokenWebsite" placeholder="https://yourproject.com"></div>'+
+        '<div class="action-field-row">'+
+        '<div class="action-field"><label>X Handle</label><input id="af_tokenX" placeholder="@yourproject"></div>'+
+        '<div class="action-field"><label>Telegram</label><input id="af_tokenTG" placeholder="https://t.me/yourgroup"></div></div>'+
+        '<button class="action-deploy-btn" id="af_deployBtn" onclick="submitTokenForm()">🚀 Deploy Token</button>'+
+        '<div class="action-hint">Launches on Base with automatic Clanker LP. Your connected wallet is the creator.</div></div>';
     return true;
 }
 function submitTokenForm(){
     const name=($('af_tokenName')?.value||'').trim();
-    const symbol=($('af_tokenSymbol')?.value||'').trim();
-    const desc=($('af_tokenDesc')?.value||'').trim();
+    const symbol=($('af_tokenSymbol')?.value||'').trim().toUpperCase();
     if(!name||!symbol){addBotMsg('Please fill in both the token name and symbol.');return;}
-    let msg='Deploy a token called "'+name+'" with symbol "'+symbol+'"';
-    if(desc)msg+=' — '+desc;
-    closeActionPanel();
-    sendMessage(msg);
+    if(!S.wallet){addBotMsg('Connect your wallet first — it receives 80% of LP fee rewards.');return;}
+    const params={token_name:name,token_symbol:symbol};
+    const desc=($('af_tokenDesc')?.value||'').trim();
+    const img=($('af_tokenImage')?.value||'').trim();
+    const web=($('af_tokenWebsite')?.value||'').trim();
+    const xh=($('af_tokenX')?.value||'').trim();
+    const tg=($('af_tokenTG')?.value||'').trim();
+    if(desc)params.description=desc;
+    if(img)params.image_url=img;
+    if(web)params.website_url=web;
+    if(xh)params.x_handle=xh;
+    if(tg)params.telegram_url=tg;
+    // Send structured deploy — server intercepts this directly (no LLM needed)
+    const btn=$('af_deployBtn');
+    if(btn){btn.disabled=true;btn.textContent='Deploying...';}
+    addUserMsg('Deploy token: '+name+' ($'+symbol+')');
+    S.sending=true;syncChat();
+    fetch(API.chat,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'[DEPLOY_TOKEN] '+JSON.stringify(params),session_id:S.sessionId,wallet:S.wallet,client_history:S.msgs.slice(-10).map(m=>({role:m.role,content:m.content}))})
+    }).then(r=>r.json()).then(data=>{
+        S.sending=false;
+        if(data.session_id)S.sessionId=data.session_id;
+        addBotMsg(data.reply||'Something went wrong.',data.suggestions||[]);
+        if(data.action)handleAction(data.action);
+        if(data.app_url)enterBuildMode(data.app_url);
+        if(data.tx_data)S.pendingTx=data.tx_data;
+        closeActionPanel();
+    }).catch(e=>{
+        S.sending=false;
+        addBotMsg("Couldn't reach the server. Please try again.");
+        if(btn){btn.disabled=false;btn.textContent='🚀 Deploy Token';}
+        console.error('Deploy error:',e);
+    });
 }
 function renderStakingForm(body,title){
     title.textContent='Deploy Staking Pool';
     body.innerHTML='<div class="action-form">'+
         '<div class="action-hint">Create a staking contract where holders lock tokens and earn CLAWS rewards.</div>'+
-        '<div class="action-field"><label>Token Address</label><input id="af_stakeToken" placeholder="0x... (the token to be staked)"></div>'+
-        '<button class="action-deploy-btn" onclick="submitStakingForm()">🔒 Deploy Staking Pool</button>'+
+        '<div class="action-field"><label>Token Address *</label><input id="af_stakeToken" placeholder="0x... (the token to be staked)"></div>'+
+        '<button class="action-deploy-btn" id="af_stakeBtn" onclick="submitStakingForm()">🔒 Deploy Staking Pool</button>'+
         '<div class="action-hint">Stakers earn CLAWS. You\'ll need to fund rewards after deployment.</div></div>';
     return true;
 }
 function submitStakingForm(){
     const token=($('af_stakeToken')?.value||'').trim();
-    if(!token){addBotMsg('Please enter the token address to stake.');return;}
-    closeActionPanel();
-    sendMessage('Deploy a staking pool for token '+token);
+    if(!token||!token.startsWith('0x')){addBotMsg('Please enter a valid token address (0x...).');return;}
+    if(!S.wallet){addBotMsg('Connect your wallet first.');return;}
+    const btn=$('af_stakeBtn');
+    if(btn){btn.disabled=true;btn.textContent='Deploying...';}
+    addUserMsg('Deploy staking pool for '+token);
+    S.sending=true;syncChat();
+    fetch(API.chat,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'[DEPLOY_STAKING] '+JSON.stringify({staking_token:token}),session_id:S.sessionId,wallet:S.wallet,client_history:S.msgs.slice(-10).map(m=>({role:m.role,content:m.content}))})
+    }).then(r=>r.json()).then(data=>{
+        S.sending=false;
+        if(data.session_id)S.sessionId=data.session_id;
+        addBotMsg(data.reply||'Something went wrong.',data.suggestions||[]);
+        if(data.action)handleAction(data.action);
+        closeActionPanel();
+    }).catch(e=>{
+        S.sending=false;
+        addBotMsg("Couldn't reach the server. Please try again.");
+        if(btn){btn.disabled=false;btn.textContent='🔒 Deploy Staking Pool';}
+        console.error('Staking deploy error:',e);
+    });
 }
 
 // ═══ BOOT ═══

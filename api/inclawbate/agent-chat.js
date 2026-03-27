@@ -2390,6 +2390,54 @@ export default async function handler(req, res) {
   // Sanitize wallet early — needed by intercepts below
   const sanitizedWallet = (typeof wallet === 'string' && /^0x[a-fA-F0-9]{40}$/.test(wallet.trim())) ? wallet.trim() : '';
 
+  // ── Server-side intercept: structured token deploy from form [DEPLOY_TOKEN] ──
+  const tokenDeployMatch = sanitizedMessage.match(/^\[DEPLOY_TOKEN\]\s*(.+)/);
+  if (tokenDeployMatch && sanitizedWallet) {
+    try {
+      const params = JSON.parse(tokenDeployMatch[1]);
+      params.creator_wallet = sanitizedWallet;
+      const resultJson = await deployTokenAction(params);
+      const d = JSON.parse(resultJson);
+      if (d.needs_info) {
+        return res.status(200).json({ reply: d.message, session_id: sid, suggestions: d.suggestions || ['Try again'] });
+      }
+      if (d.error) {
+        return res.status(200).json({ reply: 'Token deployment failed: ' + d.error, session_id: sid, suggestions: ['Try again', 'Do something else'] });
+      }
+      const reply = 'Token deployed!\n\n' +
+        '• **' + (params.token_name) + '** ($' + (params.token_symbol) + ')\n' +
+        '• Contract: `' + (d.token_address || '') + '`\n' +
+        (d.clanker_url ? '• Clanker: ' + d.clanker_url + '\n' : '') +
+        (d.basescan_url ? '• Tx: ' + d.basescan_url + '\n' : '') +
+        '\nYour token is live on Base with automatic liquidity. What\'s next?';
+      const action = { type: 'deploy_token', data: d, args: params };
+      return res.status(200).json({ reply, session_id: sid, function_called: 'deploy_token', suggestions: ['Deploy staking for this token', 'Set up X marketing agent', 'Airdrop tokens', 'Do something else'], action });
+    } catch (e) {
+      console.error('Token deploy intercept error:', e.message);
+      return res.status(200).json({ reply: 'Token deployment failed: ' + e.message, session_id: sid, suggestions: ['Try again', 'Do something else'] });
+    }
+  }
+
+  // ── Server-side intercept: structured staking deploy from form [DEPLOY_STAKING] ──
+  const stakingDeployMatch = sanitizedMessage.match(/^\[DEPLOY_STAKING\]\s*(.+)/);
+  if (stakingDeployMatch && sanitizedWallet) {
+    try {
+      const params = JSON.parse(stakingDeployMatch[1]);
+      params.token_address = params.staking_token || params.token_address;
+      params.creator_wallet = sanitizedWallet;
+      const resultJson = await deployStakingAction(params);
+      const d = JSON.parse(resultJson);
+      if (d.needs_info) return res.status(200).json({ reply: d.message, session_id: sid, suggestions: ['Try again'] });
+      if (d.error) return res.status(200).json({ reply: 'Staking deployment failed: ' + d.error, session_id: sid, suggestions: ['Try again', 'Do something else'] });
+      const reply = 'Staking pool deployed!\n\n• Pool: `' + (d.pool_address || '') + '`\n• Token: ' + (d.staking_token || params.token_address) + '\n• Admin: `' + (d.admin || sanitizedWallet) + '`\n' + (d.basescan_url ? '• Tx: ' + d.basescan_url + '\n' : '') + '\nNext step: deposit CLAWS rewards so stakers can earn.';
+      const action = { type: 'deploy_staking', data: d };
+      return res.status(200).json({ reply, session_id: sid, function_called: 'deploy_staking', suggestions: ['Fund staking pool', 'Set up X marketing', 'Do something else'], action });
+    } catch (e) {
+      console.error('Staking deploy intercept error:', e.message);
+      return res.status(200).json({ reply: 'Staking deployment failed: ' + e.message, session_id: sid, suggestions: ['Try again'] });
+    }
+  }
+
   // ── Server-side intercept: "staking stats" / "staking info" ──
   if (/^(?:staking\s+(?:stats|info|data|status)|(?:show|check|get)\s+staking|how\s+(?:is|are)\s+staking|claws\s+staking)$/i.test(sanitizedMessage.trim())) {
     try {
