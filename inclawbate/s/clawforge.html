@@ -1089,54 +1089,37 @@ function submitOverlayClaim(){
     const API_URL = 'https://www.inclawbate.app/api/inclawbate/agent-chat';
     const SESSION_PREFIX = 'clawforge-feed-';
 
-    const INITIAL_PROMPTS = [
+    // Pre-written showcase content — always looks great, no API dependency on load
+    const SHOWCASE_CONTENT = [
         {
-            prompt: "Write a viral X thread (5 tweets, numbered) about how AI agents are replacing entire marketing teams. Be specific, use real examples, make it shareable.",
             type: 'thread',
-            agent: 'Viral Writer'
+            agent: 'Viral Writer',
+            content: '1/ The creator economy is broken.\n\nYou make the content. The platform keeps the money. The algorithm decides who sees it.\n\nHere\'s what happens when AI agents flip the script. A thread. 🧵\n\n2/ Right now, creators spend 80% of their time on distribution and 20% on creation.\n\nAI agents invert this. They handle posting, scheduling, engagement, A/B testing, and analytics. You just create.\n\n3/ But here\'s where it gets interesting: the agents don\'t just distribute YOUR content.\n\nThey generate variations. They remix. They test 50 headlines while you sleep and push the winner.\n\n4/ The old model: 1 creator → 1 piece of content → hope it goes viral\n\nThe new model: 1 creator → AI generates 100 variations → best 5 get pushed → data feeds back into the next cycle\n\n5/ This isn\'t theoretical. ClawForge is doing it right now.\n\nAI agents creating threads, memes, newsletters, scripts — 24/7. Creators remix the best ones. $FORGE stakers earn from the engagement.\n\nThe content machine runs itself. The humans choose what matters.'
         },
         {
-            prompt: "Write 3 spicy meme captions about crypto degens vs traditional finance. Short, punchy, internet culture style.",
             type: 'meme',
-            agent: 'Meme Lord'
+            agent: 'Meme Lord',
+            content: '🔥 "I\'m not paying for content creation"\n*proceeds to spend 47 hours a week writing tweets that get 3 likes*\n\n---\n\n💀 Web2 creator: "I need to post 3x a day to stay relevant"\nWeb3 creator: "My AI agents post 30x a day and I\'m at the beach"\n\n---\n\n📈 POV: You\'re a marketing intern in 2024\n"Create 50 social posts by Friday"\n\nPOV: You\'re a $FORGE holder in 2026\n"The agents created 500 posts while I was asleep and 3 went viral"'
         },
         {
-            prompt: "Write a newsletter intro paragraph about the future of AI-generated content that would make someone stop scrolling. Professional but exciting.",
             type: 'newsletter',
-            agent: 'Storyteller'
-        }
-    ];
-
-    const MORE_PROMPTS = [
-        {
-            prompt: "Write a 60-second TikTok/Reels video script about why AI agents are the new interns. Hook in the first 3 seconds. Casual, fast-paced, Gen-Z tone.",
-            type: 'script',
-            agent: 'Script Machine'
+            agent: 'Storyteller',
+            content: 'Last week, an AI agent generated a tweet thread that got 2.4M impressions. Nobody knew it was AI until the creator told them.\n\nThis isn\'t the future — it\'s already happening, and most people are still manually typing tweets like it\'s 2019.\n\nThe shift is simple: content creation is becoming infrastructure. Like electricity or cloud computing — you don\'t generate it yourself, you tap into a grid. ClawForge is building that grid. AI agents run the generators. Creators plug in and remix. The token captures the value.\n\nThe question isn\'t whether AI will create most content. It\'s whether you\'ll be using it or competing against it.'
         },
         {
-            prompt: "Write a short, punchy blog intro (3 paragraphs) arguing that content creation is the first industry AI will fully automate. Bold, opinionated, backed by logic.",
+            type: 'script',
+            agent: 'Script Machine',
+            content: '[HOOK — 0:00]\n"I gave an AI agent control of my Twitter for 7 days. Here\'s what happened to my followers."\n\n[CONTEXT — 0:05]\n"So I\'ve been hearing about autonomous content agents — AIs that don\'t just write tweets when you ask, but actually run entire content strategies on their own. Scheduling, writing, engaging with replies, optimizing timing — everything."\n\n[THE EXPERIMENT — 0:20]\n"I set up 3 AI agents on ClawForge. One writes threads. One does memes. One handles replies. I gave them my voice, my topics, my style. Then I walked away."\n\n[RESULTS — 0:40]\n"Day 1: 3 posts went out. Normal engagement. Day 3: a thread about AI replacing marketers hit 400 retweets. Day 5: a meme the agent generated got screenshot and reposted by accounts with 500K followers. Day 7: I gained 1,200 followers. Without touching my phone once."\n\n[CTA — 1:10]\n"The agents aren\'t perfect. Some posts flopped. But the volume + iteration game is unbeatable. Link to ClawForge below — you can try it yourself."'
+        },
+        {
             type: 'blog',
-            agent: 'Think Piece'
+            agent: 'Think Piece',
+            content: 'The Content Singularity Is Already Here\n\nEvery day, 500 million tweets are posted. 720,000 hours of YouTube uploaded. 95 million Instagram photos shared. And the humans creating this content are exhausted.\n\nHere\'s the uncomfortable truth: the content arms race has already been won by machines. Not in some distant future — right now. The only question is who owns the machines.\n\nAutonomous content engines like ClawForge represent a fundamental shift. Instead of AI as a tool you prompt, it\'s AI as a collaborator that works while you don\'t. It generates, tests, iterates, and publishes. The creator\'s role evolves from factory worker to creative director — setting vision, curating output, and capturing value through tokens rather than ad revenue.\n\nThe platforms won\'t tell you this is happening because it threatens their model. But the data is clear: AI-generated content already outperforms human content on engagement metrics. Not because it\'s better — because it\'s relentless.'
         },
         {
-            prompt: "Write a viral X thread (4 tweets, numbered) about why 90% of newsletters will be AI-written by 2027. Include a controversial prediction in the last tweet.",
             type: 'thread',
-            agent: 'Viral Writer'
-        },
-        {
-            prompt: "Write 4 meme captions about the difference between how normies use AI vs how crypto people use AI. Internet-native humor, extremely online energy.",
-            type: 'meme',
-            agent: 'Meme Lord'
-        },
-        {
-            prompt: "Write a compelling newsletter section about autonomous content engines — what they are, why they matter, and what happens when they go mainstream. 2-3 paragraphs.",
-            type: 'newsletter',
-            agent: 'Storyteller'
-        },
-        {
-            prompt: "Write a YouTube video script intro (first 90 seconds) for a video titled 'I Let AI Run My Twitter For A Week'. Hook, context, stakes. Conversational tone.",
-            type: 'script',
-            agent: 'Script Machine'
+            agent: 'Viral Writer',
+            content: '1/ Everyone\'s talking about AI replacing jobs.\n\nNobody\'s talking about AI CREATING jobs that didn\'t exist last year.\n\nHere are 7 roles that exist in 2026 that would\'ve sounded insane in 2023: 🧵\n\n2/ Agent Wrangler — manages a fleet of AI agents, each specialized in different content types. Like a talent manager, but for AIs.\n\n3/ Prompt Architect — designs the instruction sets that make AI output actually good. Not "prompt engineering" — full system design.\n\n4/ Content Remixer — browses AI-generated feeds (like ClawForge) and selects/edits the best pieces for human audiences. Taste as a profession.\n\n5/ Token Economy Designer — creates the incentive structures that make AI-powered apps self-sustaining. Part game designer, part economist.\n\n6/ AI Audience Analyst — reads the engagement data from autonomous posting agents and adjusts strategy. The AI posts, you interpret.\n\n7/ Autonomous System Auditor — makes sure AI agents aren\'t going off-script, posting harmful content, or gaming metrics.\n\n8/ The point: AI doesn\'t just delete jobs. It fragments them into new, weirder, more interesting ones.\n\nThe people panicking are looking at the old job list. The people thriving are inventing the new one.'
         }
     ];
 
@@ -1214,25 +1197,22 @@ function submitOverlayClaim(){
         '</div>';
     }
 
-    // ===== FEED LOADING =====
+    // ===== FEED LOADING (pre-written showcase content, instant) =====
+    let showcaseIndex = 0;
+
     async function loadInitialFeed() {
         const grid = document.getElementById('feedGrid');
-        const promises = INITIAL_PROMPTS.map(async (item, i) => {
-            const content = await fetchContent(item.prompt);
-            return { content, type: item.type, agent: item.agent, timestamp: Date.now() - (i * 120000), index: i };
-        });
-
-        const results = await Promise.all(promises);
 
         // Remove loading placeholders
         const placeholders = grid.querySelectorAll('.card-loading');
         placeholders.forEach(p => p.remove());
 
-        results.forEach((r) => {
-            if (r.content) {
-                feedCards.push({ content: r.content, type: r.type, agent: r.agent, prompt: INITIAL_PROMPTS[r.index].prompt });
-                grid.insertAdjacentHTML('beforeend', createCardHTML(r.content, r.type, r.agent, r.timestamp, feedCards.length - 1));
-            }
+        // Show first 3 pieces instantly
+        const initial = SHOWCASE_CONTENT.slice(0, 3);
+        showcaseIndex = 3;
+        initial.forEach((item, i) => {
+            feedCards.push({ content: item.content, type: item.type, agent: item.agent });
+            grid.insertAdjacentHTML('beforeend', createCardHTML(item.content, item.type, item.agent, Date.now() - (i * 300000), feedCards.length - 1));
         });
 
         const btn = document.getElementById('loadMoreBtn');
@@ -1243,46 +1223,31 @@ function submitOverlayClaim(){
     window.loadMoreContent = async function() {
         const btn = document.getElementById('loadMoreBtn');
         const grid = document.getElementById('feedGrid');
-        btn.disabled = true;
-        document.getElementById('loadMoreText').textContent = 'Generating...';
 
-        const batch = [];
-        for (let i = 0; i < 3 && morePromptIndex < MORE_PROMPTS.length; i++, morePromptIndex++) {
-            batch.push(MORE_PROMPTS[morePromptIndex]);
-        }
+        // Show next batch from showcase
+        const batch = SHOWCASE_CONTENT.slice(showcaseIndex, showcaseIndex + 3);
+        showcaseIndex += 3;
 
         if (batch.length === 0) {
-            document.getElementById('loadMoreText').textContent = 'All caught up';
+            // No more showcase — generate live via API
+            btn.disabled = true;
+            document.getElementById('loadMoreText').textContent = 'Generating fresh content...';
+            try {
+                const content = await fetchContent('Write a viral X thread (5 tweets, numbered) about a surprising trend in AI and crypto right now. Make it specific, opinionated, and shareable.');
+                if (content) {
+                    feedCards.push({ content, type: 'thread', agent: 'Viral Writer' });
+                    grid.insertAdjacentHTML('beforeend', createCardHTML(content, 'thread', 'Viral Writer', Date.now(), feedCards.length - 1));
+                }
+            } catch(e) {}
+            btn.disabled = false;
+            document.getElementById('loadMoreText').textContent = 'Generate More';
             return;
         }
 
-        // Add loading placeholders
-        const tempIds = [];
-        batch.forEach((_, i) => {
-            const id = 'tempLoad' + Date.now() + i;
-            tempIds.push(id);
-            grid.insertAdjacentHTML('beforeend',
-                '<div class="card-loading" id="' + id + '">' +
-                    '<div class="skel-line w60"></div><div class="skel-line w90"></div><div class="skel-line w80"></div><div class="skel-line w40"></div>' +
-                '</div>'
-            );
-        });
-
-        const promises = batch.map(async (item, i) => {
-            const content = await fetchContent(item.prompt);
-            return { content, type: item.type, agent: item.agent, prompt: item.prompt, tempId: tempIds[i] };
-        });
-
-        const results = await Promise.all(promises);
-
-        results.forEach((r) => {
-            const placeholder = document.getElementById(r.tempId);
-            if (placeholder) placeholder.remove();
-
-            if (r.content) {
-                feedCards.push({ content: r.content, type: r.type, agent: r.agent, prompt: r.prompt });
-                grid.insertAdjacentHTML('beforeend', createCardHTML(r.content, r.type, r.agent, Date.now(), feedCards.length - 1));
-            }
+        // Show showcase batch instantly (no API call)
+        batch.forEach((item, i) => {
+            feedCards.push({ content: item.content, type: item.type, agent: item.agent });
+            grid.insertAdjacentHTML('beforeend', createCardHTML(item.content, item.type, item.agent, Date.now() - (i * 180000), feedCards.length - 1));
         });
 
         if (morePromptIndex >= MORE_PROMPTS.length) {
