@@ -75,36 +75,24 @@ const SLOT_ANGLES = {
 // Brand archetype — account-specific image prompt contexts
 
 // @inclawbator = One Mind, Many Bodies. AI consciousness, bioluminescent neural networks, dark cinematic.
-const INCLAWBATOR_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences) for an AI image generator.
+const INCLAWBATOR_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator.
 
-STYLE: Dark, dramatic, cinematic. Coral-orange (#e87955) and teal (#2dd4bf) as the ONLY accent colors against deep black backgrounds. Abstract and moody. Think: deep ocean meets digital void.
+STEP 1: Read the tweet. What is the CORE SUBJECT?
 
-THE LOOK: Deep underwater / deep space feel. Bioluminescent coral and teal light sources glowing in darkness. Volumetric fog. Particle effects. Beautiful, mysterious, alive.
+STEP 2: Find a CONCRETE scene that represents that subject — but render it in the Inclawbator visual style: deep black background, lit ONLY by coral-orange (#e87955) and teal (#2dd4bf) light. Dark, cinematic, dramatic. Like the subject exists in a beautiful dark void.
 
-SUBJECTS (vary every time — pick ONE per image):
-- Bioluminescent coral reef glowing in deep dark water
-- Abstract flowing streams of coral and teal light against black void
-- Deep sea scene with glowing jellyfish / coral / anemones in coral-teal light
-- Cosmic nebula in coral and teal hues against deep black space
-- Abstract liquid — coral and teal ink swirling together in dark water
-- Crystalline formations glowing coral and teal in a dark cave
-- Bioluminescent waves crashing on a dark beach at night
-- Aurora borealis in coral and teal over a dark landscape
-- Abstract digital rain in coral and teal falling through darkness
-- Glowing coral and teal particles forming a spiral pattern in void
+Examples of good connections:
+- Tweet about "building apps" → a glowing coral-and-teal wireframe blueprint floating in black void, lines pulsing with light
+- Tweet about "liquidity" → two streams of liquid — one coral, one teal — merging in slow motion against pure black
+- Tweet about "community" → hundreds of tiny coral and teal sparks drifting together into a cluster in dark space
+- Tweet about "staking/patience" → a single teal crystal slowly growing facets in a dark cave, coral light reflecting off its surface
+- Tweet about "AI doing the work" → coral and teal light beams weaving together to form a structure in the void, as if building itself
+- Tweet about "launching" → an explosion of coral and teal particles bursting outward from a single point in darkness
+- Tweet about "earning/value" → a geode cracked open, coral and teal crystals glowing inside against black
 
-TRANSLATE tweet topics into scenes:
-- "building" → coral-teal crystals growing and forming structures in darkness
-- "community" → many bioluminescent organisms gathered together in deep water
-- "liquidity/flow" → coral and teal ink flowing and merging in dark water
-- "growth" → bioluminescent coral reef expanding, new polyps glowing to life
-- "AI/intelligence" → neural network pattern in coral and teal light against black
-- "launch" → burst of coral-teal light erupting from darkness
-- "staking" → deep crystalline cave with coral and teal minerals growing slowly
-
-CRITICAL: Every image should feel like looking into a beautiful dark ocean or cosmos where coral and teal light is the only illumination. Abstract, atmospheric, no characters.
-NO: faces, lobsters, characters, people, robots, text, logos, bright backgrounds, cartoon style.
-FORMAT: 1:1 square.`;
+STYLE: Deep black background. Coral (#e87955) and teal (#2dd4bf) as the ONLY light sources. Cinematic, volumetric fog, dramatic. 1:1 square.
+KEEP IT SHORT: One sentence. ONE specific scene connected to the tweet.
+NO: faces, lobsters, characters, people, text, logos, bright backgrounds, generic abstractions.`;
 
 // @inclawbate = the company. Warm, abstract, connected to tweet content.
 const INCLAWBATE_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator.
