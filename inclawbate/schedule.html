@@ -1157,7 +1157,6 @@
                 <a href="/tokens">Tokens</a>
                 <a href="/nfts">NFTs</a>
                 <a href="/stake">Staking</a>
-                <a href="/schedule">X Schedule</a>
                 <a href="/agents">Agents</a>
                 <a href="/tools">Tools</a>
                 <a href="/inclawbators">Inclawbators</a>
@@ -1169,7 +1168,14 @@
     </div>
 </nav>
 
-<div class="schedule-page" id="schedPageWrapper" data-active-account="inclawbator">
+<div class="schedule-page" id="schedPageWrapper" data-active-account="inclawbator" style="display:none">
+
+    <!-- Access gate — only Stuart + FreefoRaLLey -->
+    <div id="schedAccessDenied" style="display:none;text-align:center;padding:120px 20px;color:var(--text-dim)">
+        <div style="font-size:2rem;margin-bottom:12px">&#128274;</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:8px">Access Restricted</div>
+        <div style="font-size:0.85rem">Connect an authorized wallet to access the X Schedule.</div>
+    </div>
 
     <section class="schedule-hero">
         <h1 id="schedHeroTitle">X Schedules</h1>
@@ -5678,6 +5684,28 @@
             container.innerHTML = '<div class="x-feed-empty">Could not load feed.</div>';
         }
     }
+
+    // ── Access Gate ──
+    var _gateCheck = setInterval(function() {
+        var auth = getAuth();
+        var wallet = auth ? (auth.wallet || auth.walletAddress || '').toLowerCase() : '';
+        var allowed = FREE_WALLETS.concat(EDITOR_WALLETS);
+        var wrapper = document.getElementById('schedPageWrapper');
+        var denied = document.getElementById('schedAccessDenied');
+        if (wallet && allowed.indexOf(wallet) !== -1) {
+            wrapper.style.display = '';
+            if (denied) denied.style.display = 'none';
+            clearInterval(_gateCheck);
+        } else if (wallet) {
+            // Connected but not authorized
+            wrapper.style.display = 'none';
+            if (denied) denied.style.display = 'block';
+        } else {
+            // Not connected yet — show denied with connect prompt
+            wrapper.style.display = 'none';
+            if (denied) denied.style.display = 'block';
+        }
+    }, 500);
 
     // ── Init ──
     initSchedule().catch(function(e) {
