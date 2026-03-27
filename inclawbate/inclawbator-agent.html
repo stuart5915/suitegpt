@@ -959,6 +959,7 @@ const S={
     swapFrom:0, // index in TOKENS
     swapTo:2,
     activeAction:false,
+    buildHistory:[], // previous code snapshots for undo
 };
 
 // ═══ INIT ═══
@@ -1159,7 +1160,9 @@ function clickPill(el){
 
 function renderLaunchGrid(){
     $('launchGrid').innerHTML=LAUNCH_CARDS.map(c=>{
-        const click=c.action?`handleAction({type:'${c.action}'})`:`sendMessage('${esc(c.msg)}')`;
+        // If in build mode, route token_form to token_form_build so it deploys + injects into site
+        const actionType=(c.action==='token_form'&&S.building)?'token_form_build':c.action;
+        const click=actionType?`handleAction({type:'${actionType}'})`:`sendMessage('${esc(c.msg)}')`;
         return `<div class="launch-card" data-tip="${esc(c.tip)}" onclick="${click}"><div class="lc-icon">${c.icon}</div><div class="lc-title">${c.title}</div><div class="lc-sub">${c.sub}</div></div>`;
     }).join('');
 }
@@ -1285,7 +1288,32 @@ function sendMobile(){
 }
 
 // ═══ BUILD MODE (SSE) ═══
+async function undoBuild(){
+    if(!S.buildHistory.length){addBotMsg("Nothing to undo — this is the original version.");S.sending=false;return;}
+    const prev=S.buildHistory.pop();
+    S.buildCode=prev;
+    updatePreview(prev);
+    // Re-publish the reverted code
+    if(S.buildSlug){
+        try{await fetch(API.publish,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({slug:S.buildSlug,code:prev,email:'inclawbator@inclawbate.app',source:'inclawbator-build',update:true,creator_wallet:S.wallet||''})});}catch(e){}
+    }
+    S.sending=false;
+    addBotMsg("Reverted to the previous version."+(S.buildHistory.length?' ('+S.buildHistory.length+' more undo'+(S.buildHistory.length>1?'s':'')+' available)':''),['Undo again','Change the design','Add features','Exit editing']);
+}
 async function sendBuildMsg(text){
+    // Intercept undo/revert commands
+    if(/^(undo|go\s*back|revert|undo\s*(that|last|it)|remove\s+what\s+you\s+did|put\s+it\s+back|restore)/i.test(text.trim())){
+        await undoBuild();
+        return;
+    }
+    // Intercept token launch in build mode → show form, deploy, then inject into site
+    if(/^(launch|deploy|create|make)\s*(a\s+)?(new\s+)?(token|coin|erc.?20)/i.test(text.trim())){
+        S.sending=false;syncChat();
+        addBotMsg("Fill out the token details — once deployed, I'll add the contract address, links, and branding to your site automatically.",['Cancel']);
+        handleAction({type:'token_form_build'});
+        return;
+    }
     try{
         const modelMap={'gemini-flash':'gemini','llama-70b':'llama','kimi':'kimi','haiku':'fast','sonnet':'standard','opus':'pro'};
         const studioModel=modelMap[$('modelPicker').value]||'gemini';
@@ -1344,6 +1372,9 @@ async function sendBuildMsg(text){
             }
             // Ensure DOCTYPE exists
             if(!/<!DOCTYPE/i.test(code))code='<!DOCTYPE html>'+code;
+            // Save previous code for undo (max 20 snapshots)
+            if(S.buildCode)S.buildHistory.push(S.buildCode);
+            if(S.buildHistory.length>20)S.buildHistory.shift();
             S.buildCode=code;
             updatePreview(code);
             // Auto-publish
@@ -1363,6 +1394,8 @@ async function sendBuildMsg(text){
             if(dt>=0||ht>=0){
                 let extracted=codeInReply.slice(Math.max(dt,ht));
                 if(!/<!DOCTYPE/i.test(extracted))extracted='<!DOCTYPE html>'+extracted;
+                if(S.buildCode)S.buildHistory.push(S.buildCode);
+                if(S.buildHistory.length>20)S.buildHistory.shift();
                 S.buildCode=extracted;
                 updatePreview(extracted);
                 if(S.buildSlug){
@@ -1375,7 +1408,7 @@ async function sendBuildMsg(text){
             }
         }
 
-        const suggs=S.building?['Change the design','Add features','Looks good!','Exit editing']:[];
+        const suggs=S.building?['Change the design','Add features','Undo','Exit editing']:[];
         addBotMsg(reply||'Done! Check the preview.',suggs);
 
     }catch(e){
@@ -1393,6 +1426,7 @@ function enterBuildMode(url){
     $('buildBar').classList.remove('hidden');
     $('buildDefault').classList.add('hidden');
     $('buildPreview').classList.remove('hidden');
+    renderLaunchGrid(); // Re-render so cards are build-mode-aware
 
     // Fetch current code
     fetch(API.serve+'?slug='+encodeURIComponent(slug)+'&raw=1')
@@ -1407,6 +1441,7 @@ function enterBuildMode(url){
 
 function exitBuildMode(){
     S.building=false;
+    renderLaunchGrid(); // Re-render so cards revert to normal mode
     S.buildSlug='';
     S.buildCode='';
     $('buildBar').classList.add('hidden');
@@ -1431,7 +1466,7 @@ async function publishApp(){
         });
         const data=await res.json();
         toast('Published!');
-        addBotMsg(`Published! Your app is live at [inclawbate.app/s/${S.buildSlug}](https://inclawbate.app/s/${S.buildSlug})`,['Change the design','Add features','Exit editing']);
+        addBotMsg(`Published! Your app is live at [inclawbate.app/s/${S.buildSlug}](https://inclawbate.app/s/${S.buildSlug})`,['Change the design','Add features','Undo','Exit editing']);
     }catch(e){
         toast('Publish failed');
         console.error(e);
@@ -1851,6 +1886,7 @@ function handleAction(action){
         case 'get_my_balances': ok=renderBalancesAction(body,title,action.data);break;
         case 'get_my_tokens': ok=renderMyTokensAction(body,title,action.data);break;
         case 'token_form': ok=renderTokenForm(body,title);break;
+        case 'token_form_build': ok=renderTokenForm(body,title,true);break;
         case 'staking_form': ok=renderStakingForm(body,title);break;
     }
     if(ok)showActionPanel();
@@ -2015,10 +2051,13 @@ function renderMyTokensAction(body,title,d){
 }
 
 // ── Form renderers ──
-function renderTokenForm(body,title){
-    title.textContent='Launch Token';
+function renderTokenForm(body,title,buildMode){
+    title.textContent=buildMode?'Launch Token + Add to Site':'Launch Token';
+    const submitFn=buildMode?'submitTokenFormBuild()':'submitTokenForm()';
+    const btnLabel=buildMode?'🚀 Deploy & Add to Site':'🚀 Deploy Token';
+    const hint=buildMode?'Deploy on Base via Clanker — then the contract address, links, and token info will be injected into your site automatically.':'Deploy an ERC-20 token on Base via Clanker with automatic liquidity. Your wallet receives 80% of LP fee rewards.';
     body.innerHTML='<div class="action-form">'+
-        '<div class="action-hint">Deploy an ERC-20 token on Base via Clanker with automatic liquidity. Your wallet receives 80% of LP fee rewards.</div>'+
+        '<div class="action-hint">'+hint+'</div>'+
         '<div class="action-field-row">'+
         '<div class="action-field"><label>Token Name *</label><input id="af_tokenName" placeholder="e.g. Lobster Coin"></div>'+
         '<div class="action-field"><label>Symbol *</label><input id="af_tokenSymbol" placeholder="e.g. LOBSTER" maxlength="10" style="text-transform:uppercase"></div></div>'+
@@ -2028,7 +2067,7 @@ function renderTokenForm(body,title){
         '<div class="action-field-row">'+
         '<div class="action-field"><label>X Handle</label><input id="af_tokenX" placeholder="@yourproject"></div>'+
         '<div class="action-field"><label>Telegram</label><input id="af_tokenTG" placeholder="https://t.me/yourgroup"></div></div>'+
-        '<button class="action-deploy-btn" id="af_deployBtn" onclick="submitTokenForm()">🚀 Deploy Token</button>'+
+        '<button class="action-deploy-btn" id="af_deployBtn" onclick="'+submitFn+'">'+btnLabel+'</button>'+
         '<div class="action-hint">Launches on Base with automatic Clanker LP. Your connected wallet is the creator.</div></div>';
     return true;
 }
@@ -2069,6 +2108,61 @@ function submitTokenForm(){
         S.sending=false;
         addBotMsg("Couldn't reach the server. Please try again.");
         if(btn){btn.disabled=false;btn.textContent='🚀 Deploy Token';}
+        console.error('Deploy error:',e);
+    });
+}
+function submitTokenFormBuild(){
+    const name=($('af_tokenName')?.value||'').trim();
+    const symbol=($('af_tokenSymbol')?.value||'').trim().toUpperCase();
+    if(!name||!symbol){addBotMsg('Please fill in both the token name and symbol.');return;}
+    if(!S.wallet){addBotMsg('Connect your wallet first — it receives 80% of LP fee rewards.');return;}
+    const params={token_name:name,token_symbol:symbol};
+    const desc=($('af_tokenDesc')?.value||'').trim();
+    const img=($('af_tokenImage')?.value||'').trim();
+    const web=($('af_tokenWebsite')?.value||'').trim();
+    const xh=($('af_tokenX')?.value||'').trim();
+    const tg=($('af_tokenTG')?.value||'').trim();
+    if(desc)params.description=desc;
+    if(img)params.image_url=img;
+    if(web)params.website_url=web;
+    if(xh)params.x_handle=xh;
+    if(tg)params.telegram_url=tg;
+    const btn=$('af_deployBtn');
+    if(btn){btn.disabled=true;btn.textContent='Deploying token...';}
+    addUserMsg('Deploy token: '+name+' ($'+symbol+') and add to site');
+    S.sending=true;syncChat();
+    fetch(API.chat,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'[DEPLOY_TOKEN] '+JSON.stringify(params),session_id:S.sessionId,wallet:S.wallet,client_history:S.msgs.slice(-10).map(m=>({role:m.role,content:m.content}))})
+    }).then(r=>r.json()).then(async data=>{
+        S.sending=false;
+        if(data.session_id)S.sessionId=data.session_id;
+        if(data.action)handleAction(data.action);
+        closeActionPanel();
+        const d=data.action?.data;
+        if(d&&d.success&&d.token_address){
+            addBotMsg('Token deployed! Now injecting into your site...',['Cancel']);
+            // Build the instruction for the build AI to inject token info
+            const injectMsg='Add this token information to the page. Make it look great — show the token name, symbol, contract address, and links as a prominent section. '+
+                'Token: '+name+' ($'+symbol+'). '+
+                'Contract address: '+d.token_address+'. '+
+                (d.basescan_url?'Basescan: '+d.basescan_url+'. ':'')+
+                (d.clanker_url?'Clanker: '+d.clanker_url+'. ':'')+
+                (desc?'Description: '+desc+'. ':'')+
+                (img?'Logo image: '+img+'. ':'')+
+                (web?'Website: '+web+'. ':'')+
+                (xh?'X/Twitter: '+xh+'. ':'')+
+                (tg?'Telegram: '+tg+'. ':'')+
+                'Add a copy-to-clipboard button for the contract address. Include any links as buttons. Make the section match the existing page style.';
+            await sendBuildMsg(injectMsg);
+        }else{
+            addBotMsg(data.reply||'Token deployment failed.',data.suggestions||['Try again']);
+        }
+    }).catch(e=>{
+        S.sending=false;
+        addBotMsg("Couldn't reach the server. Please try again.");
+        if(btn){btn.disabled=false;btn.textContent='🚀 Deploy & Add to Site';}
         console.error('Deploy error:',e);
     });
 }
