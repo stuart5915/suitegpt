@@ -614,6 +614,13 @@
                             </label>
                         </div>
                     </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Founder Allocation %</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input type="number" id="launchAllocation" value="30" min="0" max="50" step="5" style="width:80px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;color:var(--text-primary);font-size:0.9rem;font-family:var(--font-mono);text-align:center">
+                            <span style="font-size:0.72rem;color:var(--text-dim);line-height:1.4">% of supply airdropped to inclawbate.base.eth. Held until founder claims it.</span>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn-primary" id="launchBtn" onclick="launchProject()" style="width:100%;padding:14px;font-size:1rem">Launch Project</button>
             </div>
@@ -643,8 +650,18 @@
                         <a style="font-family:var(--font-mono);font-size:0.78rem;color:var(--lobster-300)" id="resultSite" href="#" target="_blank">--</a>
                     </div>
                 </div>
+                <div id="airdropSection" style="display:none;margin-bottom:14px">
+                    <div style="padding:12px;background:var(--bg-elevated);border:1px solid var(--lobster-400);border-radius:var(--radius-md)">
+                        <div style="font-size:0.75rem;font-weight:700;color:var(--lobster-300);text-transform:uppercase;margin-bottom:6px">Airdrop <span id="airdropPctLabel">30</span>% to your wallet</div>
+                        <div style="font-size:0.72rem;color:var(--text-dim);line-height:1.4;margin-bottom:10px">Download the CSV below and upload it on the Clanker token page.</div>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn-primary" onclick="downloadAirdropCSV()" style="flex:1;padding:8px;font-size:0.78rem">Download CSV</button>
+                            <a id="clankerLink" href="#" target="_blank" class="btn-secondary" style="flex:1;padding:8px;font-size:0.78rem;text-align:center;display:flex;align-items:center;justify-content:center">Open Clanker</a>
+                        </div>
+                    </div>
+                </div>
                 <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;padding:10px;background:var(--bg-elevated);border-radius:var(--radius-md)">
-                    <strong>Next steps:</strong> Go to <a href="/inclawbator" style="color:var(--lobster-300)">the Inclawbator</a> and say "edit the site at [your site URL]" to customize it. You can also buy the token, stake it, fund the pool with CLAWS, and schedule tweets from there.
+                    <strong>Next steps:</strong> Upload the airdrop CSV on Clanker, then go to <a href="/inclawbator" style="color:var(--lobster-300)">the Inclawbator</a> to customize the site.
                 </div>
                 <button class="btn-primary" onclick="resetLaunchForm()" style="width:100%">Launch Another</button>
             </div>
@@ -1137,6 +1154,9 @@
             }
         };
 
+        var _lastTokenAddr = null;
+        var _lastAllocationPct = 30;
+
         function showLaunchResult(name, slug, tokenAddr, siteUrl) {
             document.getElementById('launchProgress').style.display = 'none';
             document.getElementById('launchResult').style.display = '';
@@ -1150,7 +1170,33 @@
                 siteEl.textContent = 'inclawbate.app/s/' + slug;
                 siteEl.href = 'https://inclawbate.app/s/' + slug;
             }
+
+            // Show airdrop section if allocation > 0 and we have a token address
+            _lastTokenAddr = tokenAddr;
+            _lastAllocationPct = parseInt(document.getElementById('launchAllocation').value) || 30;
+            if (_lastAllocationPct > 0 && tokenAddr) {
+                document.getElementById('airdropSection').style.display = '';
+                document.getElementById('airdropPctLabel').textContent = _lastAllocationPct;
+                document.getElementById('clankerLink').href = 'https://www.clanker.world/clanker/' + tokenAddr;
+            }
         }
+
+        window.downloadAirdropCSV = function() {
+            if (!_lastTokenAddr) return;
+            // Total supply = 100,000,000,000 tokens (100B with 18 decimals)
+            // Calculate allocation amount
+            var totalSupply = 100000000000; // 100B tokens (human readable)
+            var amount = totalSupply * (_lastAllocationPct / 100);
+            // CSV format: address,amount (in token units, not wei)
+            var csv = INCLAWBATE_WALLET + ',' + amount.toFixed(0);
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'airdrop-' + _lastAllocationPct + 'pct.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
 
         window.resetLaunchForm = function() {
             document.getElementById('launchForm').style.display = '';
