@@ -540,6 +540,13 @@
             var siteUrl = rawUrl.replace('-token', ''); // factory launches don't use -token slug
             var tokenAddr = today.tokenAddress || today.token_address || '';
             var imgUrl = today.imageUrl || today.image_url || '';
+            // Fallback images for known drops (in case backend URL is broken)
+            var dropImages = {
+                'ClawForge': 'https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/inclawbate-attachments/messages/0x91b5c0d07859cfeafeb67d9694121cd741f049bd/1774630359440_clawforge-logo.jpg'
+            };
+            if (!imgUrl || imgUrl.includes('\n') || imgUrl.includes('\r')) {
+                imgUrl = dropImages[today.meme] || '';
+            }
 
             // Set background image on the card
             if (imgUrl) {
