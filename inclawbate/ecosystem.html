@@ -515,7 +515,8 @@
             // Today's drop = most recent launched
             var today = items[0];
             var symbol = today.symbol || '';
-            var siteUrl = today.siteUrl || today.site_url || '#';
+            var rawUrl = today.siteUrl || today.site_url || '#';
+            var siteUrl = rawUrl.replace('-token', ''); // factory launches don't use -token slug
             var tokenAddr = today.tokenAddress || today.token_address || '';
             var imgUrl = today.imageUrl || today.image_url || '';
 
@@ -535,7 +536,7 @@
             if (archive.length > 0) {
                 var html = '';
                 archive.forEach(function(item) {
-                    var url = item.siteUrl || item.site_url || '#';
+                    var url = (item.siteUrl || item.site_url || '#').replace('-token', '');
                     var sym = item.symbol || '';
                     var date = item.launchedAt || item.timestamp || '';
                     if (date) date = new Date(date).toLocaleDateString();
