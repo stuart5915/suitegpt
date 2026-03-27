@@ -2922,6 +2922,7 @@ async function discoverClankerTokens(wallet, knownAddrs) {
 
 // ── Init ──
 function init() {
+    document.body.style.opacity = '1';
     const auth = getStoredAuth();
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
