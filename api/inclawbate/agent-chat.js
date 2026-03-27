@@ -2390,6 +2390,38 @@ export default async function handler(req, res) {
   // Sanitize wallet early — needed by intercepts below
   const sanitizedWallet = (typeof wallet === 'string' && /^0x[a-fA-F0-9]{40}$/.test(wallet.trim())) ? wallet.trim() : '';
 
+  // ── Server-side intercept: "staking stats" / "staking info" ──
+  if (/^(?:staking\s+(?:stats|info|data|status)|(?:show|check|get)\s+staking|how\s+(?:is|are)\s+staking|claws\s+staking)$/i.test(sanitizedMessage.trim())) {
+    try {
+      const resultJson = await getStakingStats({ wallet: sanitizedWallet || undefined });
+      const d = JSON.parse(resultJson);
+      const reply = d.error ? d.error : 'Staking stats:\n• Total stakers: ' + d.total_stakers + '\n• TVL: ' + d.tvl_usd + '\n• APY: ' + (d.estimated_apy || 'N/A') + '\n• Total distributed: ' + (d.total_distributed_usd || d.total_distributed) + '\n\nStake at: ' + (d.staking_url || 'inclawbate.app/stake') + (d.wallet_position ? '\n\nYour position: ' + d.wallet_position.staked + ' staked (' + d.wallet_position.share + ' share)' : '');
+      const suggestions = d.wallet_position ? ['Stake more CLAWS', 'Claim my rewards', 'Unstake CLAWS', 'Do something else'] : ['Stake CLAWS', 'Buy CLAWS first', 'Do something else'];
+      return res.status(200).json({ reply, session_id: sid, function_called: 'get_staking_stats', suggestions, action: { type: 'get_staking_stats', data: d } });
+    } catch (e) { console.error('staking intercept error:', e.message); }
+  }
+
+  // ── Server-side intercept: "show my apps" / "my apps" / "list my apps" ──
+  if (/(?:show\s+(?:me\s+)?my\s+apps|my\s+apps|list\s+(?:my\s+)?apps|what\s+(?:have\s+i|did\s+i)\s+built|my\s+projects)/i.test(sanitizedMessage)) {
+    if (!sanitizedWallet) {
+      return res.status(200).json({ reply: 'Connect your wallet so I can look up your apps!', session_id: sid, suggestions: ['Build me an app', 'What can you do?'] });
+    }
+    try {
+      const resultJson = await listMyApps({ wallet: sanitizedWallet });
+      const d = JSON.parse(resultJson);
+      if (d.error) {
+        return res.status(200).json({ reply: d.error, session_id: sid });
+      }
+      const reply = (!d.apps || !d.apps.length)
+        ? "You haven't built any apps yet. Want to create one?"
+        : '**Your apps** (' + d.total + '):\n\n' + d.apps.map((a, i) => (i + 1) + '. **' + a.name + '** — ' + a.url + (a.description ? '\n   ' + a.description : '')).join('\n') + '\n\nWhich one do you want to work on, or want to build something new?';
+      const suggestions = (!d.apps || !d.apps.length)
+        ? ['Build me an app', 'What can you build?', 'Do something else']
+        : ['Build something new', 'Work on ' + (d.apps[d.apps.length - 1]?.name || 'an app'), 'Do something else'];
+      return res.status(200).json({ reply, session_id: sid, function_called: 'list_my_apps', suggestions, action: { type: 'list_my_apps', data: d } });
+    } catch (e) { console.error('list_my_apps intercept error:', e.message); /* fall through to LLM */ }
+  }
+
   // ── Server-side intercept: "work on [app]" / "edit [app]" / "I want to work on [app]" ──
   const workOnMatch = sanitizedMessage.match(/(?:(?:i\s+want\s+to\s+|i\s+wanna\s+|let'?s\s+|can\s+(?:you|we)\s+|please\s+)?(?:work on|edit|update|open|load|modify|change|fix|improve))\s+(.+)/i);
   if (workOnMatch && sanitizedWallet) {
