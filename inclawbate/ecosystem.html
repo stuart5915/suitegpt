@@ -265,15 +265,28 @@
         <div class="inc-count" id="incCount"></div>
     </section>
 
-    <!-- ══ Daily Drop ══ -->
-    <div id="drops" style="margin-bottom:var(--space-xl)">
-        <div id="todayDrop" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);overflow:hidden;margin-bottom:var(--space-md)">
-            <div style="padding:var(--space-lg)">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-md)">
-                    <span style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--lobster-300);background:rgba(232,121,85,0.1);padding:3px 10px;border-radius:var(--radius-full);border:1px solid rgba(232,121,85,0.2)">Today's Drop</span>
+    <!-- ══ DROPS ══ -->
+    <div id="drops" style="margin-bottom:var(--space-3xl)">
+        <!-- Drops heading -->
+        <div style="margin-bottom:var(--space-lg)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;background:var(--title-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0">Inclawbate Drops</h2>
+                <span style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--lobster-300);background:rgba(232,121,85,0.1);padding:3px 10px;border-radius:var(--radius-full);border:1px solid rgba(232,121,85,0.2)">New</span>
+            </div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;max-width:520px">We build apps, launch tokens, and find founders. Each drop is a fully built project — app, token, staking — ready to be claimed and operated. No money needed. Just the will.</p>
+        </div>
+
+        <!-- Today's Drop (featured card) -->
+        <div id="todayDrop" style="position:relative;border-radius:var(--radius-xl);overflow:hidden;margin-bottom:var(--space-md);border:1px solid rgba(232,121,85,0.25)">
+            <!-- Background image (set dynamically) -->
+            <div id="dropBg" style="position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.12"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,6,11,0.92),rgba(6,6,11,0.75))"></div>
+            <div style="position:relative;padding:var(--space-xl) var(--space-lg)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-sm)">
+                    <span style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#4ade80;background:rgba(74,222,128,0.1);padding:3px 10px;border-radius:var(--radius-full);border:1px solid rgba(74,222,128,0.2)">Latest Drop</span>
                 </div>
                 <div id="dropContent" style="text-align:center;padding:var(--space-md) 0">
-                    <div style="color:var(--text-dim);font-size:0.85rem">Loading today's drop...</div>
+                    <div style="color:var(--text-dim);font-size:0.85rem">Loading...</div>
                 </div>
             </div>
         </div>
@@ -289,6 +302,15 @@
                 <div id="archiveList"></div>
             </div>
         </div>
+    </div>
+
+    <!-- ══ DIVIDER ══ -->
+    <div style="height:1px;background:linear-gradient(90deg,transparent,var(--border-default),transparent);margin-bottom:var(--space-2xl)"></div>
+
+    <!-- ══ INCLAWBATIONS ══ -->
+    <div style="margin-bottom:var(--space-lg)">
+        <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--text-primary);margin:0 0 4px">Inclawbations</h2>
+        <p style="font-size:0.82rem;color:var(--text-dim);line-height:1.5">Products, projects, and causes connected to the ecosystem.</p>
     </div>
 
     <div class="inc-list" id="incList">
@@ -519,14 +541,24 @@
             var tokenAddr = today.tokenAddress || today.token_address || '';
             var imgUrl = today.imageUrl || today.image_url || '';
 
+            // Set background image on the card
+            if (imgUrl) {
+                document.getElementById('dropBg').style.backgroundImage = 'url(' + esc(imgUrl) + ')';
+            }
+
             document.getElementById('dropContent').innerHTML =
-                (imgUrl ? '<img src="' + esc(imgUrl) + '" alt="" style="width:80px;height:80px;border-radius:var(--radius-lg);object-fit:cover;margin-bottom:12px;border:2px solid var(--border-default)">' : '') +
-                '<div style="font-size:1.8rem;font-weight:900;color:var(--text-primary);margin-bottom:4px">' + esc(today.meme) + '</div>' +
-                (symbol ? '<div style="font-family:var(--font-mono);font-size:0.9rem;color:var(--lobster-300);margin-bottom:12px">' + esc(symbol) + '</div>' : '') +
-                (tokenAddr ? '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim);margin-bottom:16px">' + tokenAddr.slice(0,10) + '...' + tokenAddr.slice(-6) + '</div>' : '') +
+                '<div style="display:flex;align-items:center;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">' +
+                    (imgUrl ? '<img src="' + esc(imgUrl) + '" alt="" style="width:72px;height:72px;border-radius:var(--radius-lg);object-fit:cover;border:2px solid rgba(232,121,85,0.3);box-shadow:0 0 20px rgba(232,121,85,0.15)">' : '') +
+                    '<div style="text-align:left">' +
+                        '<div style="font-size:1.6rem;font-weight:900;color:#fff;line-height:1.1">' + esc(today.meme) + '</div>' +
+                        (symbol ? '<div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--lobster-300);margin-top:4px">' + esc(symbol) + '</div>' : '') +
+                        (tokenAddr ? '<div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);margin-top:2px">' + tokenAddr.slice(0,10) + '...' + tokenAddr.slice(-6) + '</div>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:16px;max-width:440px;margin-left:auto;margin-right:auto">A fully built project with a live app, token, and staking pool. Claim it and make it yours.</div>' +
                 '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">' +
-                    '<a href="' + esc(siteUrl) + '" target="_blank" style="display:inline-flex;padding:10px 24px;background:var(--accent-gradient);color:#fff;border-radius:var(--radius-full);font-size:0.85rem;font-weight:800;text-decoration:none;font-family:var(--font-display)">View Project</a>' +
-                    '<a href="' + esc(siteUrl) + '#claimForm" target="_blank" style="display:inline-flex;padding:10px 24px;background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-primary);border-radius:var(--radius-full);font-size:0.85rem;font-weight:700;text-decoration:none;font-family:var(--font-display)">Claim This App</a>' +
+                    '<a href="' + esc(siteUrl) + '" target="_blank" style="display:inline-flex;padding:11px 28px;background:var(--accent-gradient);color:#fff;border-radius:var(--radius-full);font-size:0.88rem;font-weight:800;text-decoration:none;font-family:var(--font-display);box-shadow:0 4px 16px rgba(232,121,85,0.25)">View Project</a>' +
+                    '<a href="' + esc(siteUrl) + '" target="_blank" style="display:inline-flex;padding:11px 28px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:var(--radius-full);font-size:0.88rem;font-weight:700;text-decoration:none;font-family:var(--font-display)">Claim This App</a>' +
                 '</div>';
 
             // Archive (older drops)
