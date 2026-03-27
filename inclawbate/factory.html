@@ -725,12 +725,38 @@
         async function loadAll() {
             try {
                 await Promise.all([loadPipelines(), loadApps(), loadResearchLogs()]);
+                // Also load factory launches from MemeClaw backend
+                await loadDropLaunches();
             } catch (e) {
                 console.error('loadAll error:', e);
             }
             renderToday();
             renderIncubations();
             renderStats();
+        }
+
+        async function loadDropLaunches() {
+            try {
+                var r = await fetch('https://memeclaw.inclawbate.app/queue');
+                var d = await r.json();
+                var factoryItems = (d.queue || []).filter(function(q) { return !q.link && q.status === 'launched'; });
+                factoryItems.forEach(function(item) {
+                    // Don't duplicate if already in _pipelines
+                    var exists = _pipelines.some(function(p) { return p.app_name === item.meme; });
+                    if (!exists) {
+                        _pipelines.unshift({
+                            app_name: item.meme,
+                            token_symbol: item.symbol,
+                            token_address: item.tokenAddress,
+                            app_slug: (item.siteSlug || '').replace('-token', ''),
+                            created_at: item.timestamp,
+                            step_app: true,
+                            step_token: !!item.tokenAddress,
+                            step_pool: true
+                        });
+                    }
+                });
+            } catch(e) { /* MemeClaw might be down, that's fine */ }
         }
 
         async function loadPipelines() {
