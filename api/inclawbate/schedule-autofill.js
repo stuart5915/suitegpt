@@ -106,18 +106,25 @@ CRITICAL: Every image should feel like looking into a beautiful dark ocean or co
 NO: faces, lobsters, characters, people, robots, text, logos, bright backgrounds, cartoon style.
 FORMAT: 1:1 square.`;
 
-// @inclawbate = the company. Warm, abstract, open to interpretation.
-const INCLAWBATE_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator. Be CREATIVE and SURPRISING — never default to obvious metaphors.
+// @inclawbate = the company. Warm, abstract, connected to tweet content.
+const INCLAWBATE_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator.
 
-ONLY RULES:
-- Warm color palette (coral, amber, gold, teal accents)
-- Dark or muted background
-- Abstract or fine art style
-- Must feel warm, hopeful, alive
-- NO text, NO logos, NO people, NO faces, NO lobsters, NO tech imagery
-- 1:1 square
+STEP 1: Read the tweet. What is the CORE SUBJECT? (e.g. "app building made easy", "liquidity matters", "staking rewards", "community growing")
 
-BE WILDLY CREATIVE. Do NOT use seedlings, soil, sprouting, honey, or rivers unless the tweet is literally about those things. Think like an abstract artist — surprise us. Use unexpected subjects: glass sculptures, molten metal, aurora, underwater light, smoke patterns, geological cross-sections, macro crystals, celestial events, volcanic glass, desert dunes at golden hour, frozen bubbles, bioluminescent caves, sand mandalas, meteor trails, cloud formations. ANYTHING beautiful and warm. Never repeat yourself.`;
+STEP 2: Find a REAL-WORLD OBJECT or SCENE that visually represents that subject. NOT an abstract aurora or generic glow — something CONCRETE and SPECIFIC that a viewer would look at and think "oh that's about [the tweet topic]."
+
+Examples of good connections:
+- Tweet about "building apps easily" → a clean workbench with simple tools neatly arranged, warm overhead light
+- Tweet about "liquidity" → mercury pooling on a dark surface, reflecting warm light
+- Tweet about "staking/patience" → amber with an insect preserved inside, warm backlight
+- Tweet about "community" → dozens of paper lanterns floating into a dark sky
+- Tweet about "launching something" → a match head the instant it ignites, macro shot
+- Tweet about "earning/value" → a gold nugget sitting in a dark riverbed, caught by light
+- Tweet about "AI building for you" → a pottery wheel spinning with wet clay taking shape by itself
+
+STYLE: Warm palette (coral, amber, gold, teal). Dark background. Fine art photography or concept art. 1:1 square.
+KEEP IT SHORT: One sentence, max two. Describe ONE specific scene.
+NO: text, logos, people, faces, lobsters, generic glowing abstractions, auroras unless relevant.`;
 
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
