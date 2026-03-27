@@ -266,6 +266,32 @@
         <div class="inc-count" id="incCount"></div>
     </section>
 
+    <!-- ══ Daily Drop ══ -->
+    <div id="drops" style="margin-bottom:var(--space-xl)">
+        <div id="todayDrop" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);overflow:hidden;margin-bottom:var(--space-md)">
+            <div style="padding:var(--space-lg)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-md)">
+                    <span style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--lobster-300);background:rgba(232,121,85,0.1);padding:3px 10px;border-radius:var(--radius-full);border:1px solid rgba(232,121,85,0.2)">Today's Drop</span>
+                </div>
+                <div id="dropContent" style="text-align:center;padding:var(--space-md) 0">
+                    <div style="color:var(--text-dim);font-size:0.85rem">Loading today's drop...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archive (collapsed) -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);overflow:hidden">
+            <div onclick="var b=document.getElementById('archiveBody');var a=document.getElementById('archiveArrow');if(b.style.display==='none'){b.style.display='';a.textContent='\u25BC'}else{b.style.display='none';a.textContent='\u25B6'}" style="display:flex;align-items:center;gap:8px;padding:var(--space-md) var(--space-lg);cursor:pointer">
+                <span id="archiveArrow" style="font-size:0.65rem;color:var(--text-dim)">&#9654;</span>
+                <span style="font-family:var(--font-display);font-size:0.88rem;font-weight:700;color:var(--text-primary)">Previous Drops</span>
+                <span id="archiveCount" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);margin-left:auto"></span>
+            </div>
+            <div id="archiveBody" style="display:none;border-top:1px solid var(--border-subtle)">
+                <div id="archiveList"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="inc-list" id="incList">
 
         <!-- ── Products (built by Inclawbate) ── -->
@@ -469,6 +495,64 @@
 (function(){
     var count = document.querySelectorAll('.inc-row').length;
     document.getElementById('incCount').textContent = count + ' projects and counting';
+
+    // Load Daily Drops from MemeClaw backend
+    var SERVICE = 'https://memeclaw.inclawbate.app';
+    fetch(SERVICE + '/queue')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var items = (data.queue || []).filter(function(q) { return q.status === 'launched'; });
+            if (items.length === 0) {
+                document.getElementById('dropContent').innerHTML =
+                    '<div style="font-size:1.5rem;margin-bottom:8px">&#129438;</div>' +
+                    '<div style="font-size:1rem;font-weight:800;color:var(--text-primary)">First drop coming soon</div>' +
+                    '<div style="font-size:0.82rem;color:var(--text-dim);margin-top:4px">Every day we build an app, launch a token, and find a founder.</div>';
+                document.getElementById('archiveCount').textContent = '0 drops';
+                return;
+            }
+
+            // Today's drop = most recent launched
+            var today = items[0];
+            var symbol = today.symbol || '';
+            var siteUrl = today.siteUrl || today.site_url || '#';
+            var tokenAddr = today.tokenAddress || today.token_address || '';
+
+            document.getElementById('dropContent').innerHTML =
+                '<div style="font-size:1.8rem;font-weight:900;color:var(--text-primary);margin-bottom:4px">' + esc(today.meme) + '</div>' +
+                (symbol ? '<div style="font-family:var(--font-mono);font-size:0.9rem;color:var(--lobster-300);margin-bottom:12px">' + esc(symbol) + '</div>' : '') +
+                (tokenAddr ? '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim);margin-bottom:16px">' + tokenAddr.slice(0,10) + '...' + tokenAddr.slice(-6) + '</div>' : '') +
+                '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">' +
+                    '<a href="' + esc(siteUrl) + '" target="_blank" style="display:inline-flex;padding:10px 24px;background:var(--accent-gradient);color:#fff;border-radius:var(--radius-full);font-size:0.85rem;font-weight:800;text-decoration:none;font-family:var(--font-display)">View Project</a>' +
+                    '<a href="' + esc(siteUrl) + '#claimForm" target="_blank" style="display:inline-flex;padding:10px 24px;background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-primary);border-radius:var(--radius-full);font-size:0.85rem;font-weight:700;text-decoration:none;font-family:var(--font-display)">Claim This App</a>' +
+                '</div>';
+
+            // Archive (older drops)
+            var archive = items.slice(1);
+            document.getElementById('archiveCount').textContent = archive.length + ' previous';
+            if (archive.length > 0) {
+                var html = '';
+                archive.forEach(function(item) {
+                    var url = item.siteUrl || item.site_url || '#';
+                    var sym = item.symbol || '';
+                    var date = item.launchedAt || item.timestamp || '';
+                    if (date) date = new Date(date).toLocaleDateString();
+                    html += '<a href="' + esc(url) + '" target="_blank" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border-subtle);text-decoration:none;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-elevated)\'" onmouseout="this.style.background=\'\'">';
+                    html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:0.88rem;color:var(--text-primary)">' + esc(item.meme) + '</div>';
+                    if (sym) html += '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300)">' + esc(sym) + '</div>';
+                    html += '</div>';
+                    if (date) html += '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim)">' + date + '</div>';
+                    html += '<span style="color:var(--text-dim);font-size:0.85rem">&rarr;</span>';
+                    html += '</a>';
+                });
+                document.getElementById('archiveList').innerHTML = html;
+            }
+        })
+        .catch(function() {
+            document.getElementById('dropContent').innerHTML =
+                '<div style="font-size:0.82rem;color:var(--text-dim)">Daily drops loading...</div>';
+        });
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 })();
 </script>
 
