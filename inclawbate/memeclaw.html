@@ -1278,6 +1278,9 @@
         .then(function(data) {
             if (!data.queue || data.queue.length === 0) return;
             feedEl.innerHTML = '';
+            // Filter out factory launches (no KYM link = factory project, not a meme)
+            data.queue = data.queue.filter(function(q) { return q.link; });
+            if (data.queue.length === 0) return;
             // Sort: launched first, then queued
             var sorted = data.queue.reverse().sort(function(a, b) {
                 var aL = a.tokenAddress ? 1 : 0;
