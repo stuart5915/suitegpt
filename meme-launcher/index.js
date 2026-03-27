@@ -387,8 +387,13 @@ async function launchMemeToken(meme) {
                 description: meme.description || `${meme.title}. Powered by SpawnMemes.fun × Inclawbate.`,
                 image_url: imageUrl || '',
                 website_url: siteResult.url || siteUrl,
-                reward_recipients: [CREATOR_WALLET, INCLAWBATE_TREASURY],
-                reward_bps: [8000, 2000]
+                // Factory launches (custom): 100% rewards to Inclawbate + 30% airdrop
+                // Meme launches: 80/20 split between creator and Inclawbate
+                reward_recipients: meme._customSymbol ? [INCLAWBATE_TREASURY] : [CREATOR_WALLET, INCLAWBATE_TREASURY],
+                reward_bps: meme._customSymbol ? [10000] : [8000, 2000],
+                // 30% airdrop to Inclawbate wallet for factory launches
+                airdrop_address: meme._customSymbol ? INCLAWBATE_TREASURY : undefined,
+                airdrop_pct: meme._customSymbol ? 30 : undefined
             })
         });
         const launchData = await launchResp.json();
