@@ -426,12 +426,17 @@ async function fetchAllPrices() {
         }
     });
 
-    var promises = tokenAddrs.map(function(addr) {
-        return fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr)
-            .then(function(r) { return r.json(); }).catch(function() { return null; });
-    });
-
-    var results = await Promise.all(promises);
+    // Batch DexScreener requests in groups of 5 to avoid rate limiting
+    var results = [];
+    for (var batch = 0; batch < tokenAddrs.length; batch += 5) {
+        var chunk = tokenAddrs.slice(batch, batch + 5);
+        var batchResults = await Promise.all(chunk.map(function(addr) {
+            return fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr)
+                .then(function(r) { return r.json(); }).catch(function() { return null; });
+        }));
+        results = results.concat(batchResults);
+        if (batch + 5 < tokenAddrs.length) await new Promise(function(r) { setTimeout(r, 500); });
+    }
 
     // Build address → price lookup
     var addrPrices = {};
@@ -2356,9 +2361,14 @@ async function init() {
         }
     } catch (e) {}
 
-    // Fetch prices + stats in parallel, then route
-    await Promise.all([fetchAllPrices(), fetchAllPoolStats()]).catch(function() {});
+    // Fetch pool stats first (needed for rendering), then route
+    await fetchAllPoolStats().catch(function() {});
     routeApp();
+
+    // Fetch prices in background (non-blocking)
+    fetchAllPrices().then(function() {
+        if (getCurrentPool() === null) renderOverview();
+    }).catch(function() {});
 
     // Delayed WalletKit check — Reown's subscribeProvider can fire after init
     // Gate on isConnected() to avoid using cached addresses from dead sessions
