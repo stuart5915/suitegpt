@@ -1079,8 +1079,52 @@ function submitOverlayClaim(){
     </div>
 </div>
 
+<!-- ========== STICKY CLAIM BAR ========== -->
+<div id="claimBar" style="position:fixed;bottom:0;left:0;right:0;z-index:9000;font-family:'Nunito',sans-serif">
+    <div id="claimBarCollapsed" onclick="document.getElementById('claimBarCollapsed').style.display='none';document.getElementById('claimBarExpanded').style.display=''" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);padding:14px 20px;cursor:pointer;text-align:center;box-shadow:0 -4px 20px rgba(0,0,0,0.4)">
+        <span style="color:#fff;font-size:0.92rem;font-weight:800">&#129438; Want to own ClawForge? Claim it here</span>
+    </div>
+    <div id="claimBarExpanded" style="display:none;background:#12121c;border-top:2px solid #8b5cf6;padding:20px;box-shadow:0 -8px 30px rgba(0,0,0,0.5)">
+        <div style="max-width:500px;margin:0 auto">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-size:0.92rem;font-weight:800;color:#eae6e1">&#129438; Claim ClawForge</span>
+                <button onclick="document.getElementById('claimBarExpanded').style.display='none';document.getElementById('claimBarCollapsed').style.display=''" style="background:none;border:none;color:#5a5670;font-size:1.2rem;cursor:pointer">&times;</button>
+            </div>
+            <div style="font-size:0.78rem;color:#8a8498;margin-bottom:10px;line-height:1.4">Tell us why you want to own this. Best pitch gets 30% token supply + full incubation.</div>
+            <div id="stickyClaimForm">
+                <textarea id="stickyPitch" style="width:100%;background:#06060b;border:1px solid #1e1e30;border-radius:12px;color:#eae6e1;padding:10px 12px;font-size:0.82rem;font-family:'Nunito',sans-serif;resize:none;line-height:1.5;margin-bottom:6px" rows="2" placeholder="Why do you want this? What's your vision?"></textarea>
+                <div style="display:flex;gap:6px">
+                    <input id="stickyContact" type="text" placeholder="@telegram or @x" style="flex:1;background:#06060b;border:1px solid #1e1e30;border-radius:12px;color:#eae6e1;padding:10px 12px;font-size:0.82rem;font-family:'Nunito',sans-serif">
+                    <button id="stickyClaimBtn" onclick="submitStickyClaim()" style="padding:10px 20px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap">Send</button>
+                </div>
+            </div>
+            <div id="stickyClaimSent" style="display:none;text-align:center;padding:10px 0">
+                <span style="font-size:0.88rem;color:#8b5cf6;font-weight:700">&#9989; Pitch sent! We'll reach out soon.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ========== TOAST ========== -->
 <div class="toast" id="toast"></div>
+
+<script>
+    function submitStickyClaim() {
+        var pitch = document.getElementById('stickyPitch').value.trim();
+        var contact = document.getElementById('stickyContact').value.trim();
+        var btn = document.getElementById('stickyClaimBtn');
+        if (!pitch) { alert('Tell us why you want this!'); return; }
+        if (!contact) { alert('Add your handle'); return; }
+        btn.disabled = true; btn.textContent = 'Sending...';
+        fetch('https://www.inclawbate.app/api/inclawbate/hire-request', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: '[FOUNDER CLAIM — ClawForge] ' + pitch, contact: contact })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.success) { document.getElementById('stickyClaimForm').style.display = 'none'; document.getElementById('stickyClaimSent').style.display = ''; }
+            else { alert(d.error || 'Error'); btn.disabled = false; btn.textContent = 'Send'; }
+        }).catch(function() { alert('Failed'); btn.disabled = false; btn.textContent = 'Send'; });
+    }
+</script>
 
 <script>
 (function() {
