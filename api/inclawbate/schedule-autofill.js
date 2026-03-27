@@ -106,31 +106,18 @@ CRITICAL: Every image should feel like looking into a beautiful dark ocean or co
 NO: faces, lobsters, characters, people, robots, text, logos, bright backgrounds, cartoon style.
 FORMAT: 1:1 square.`;
 
-// @inclawbate = the company. Simple, warm, conceptual images.
-const INCLAWBATE_IMAGE_CONTEXT = `Write a SHORT image prompt (1-2 sentences) for an AI image generator.
+// @inclawbate = the company. Warm, abstract, open to interpretation.
+const INCLAWBATE_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator. Be CREATIVE and SURPRISING — never default to obvious metaphors.
 
-STYLE: Abstract, warm, conceptual fine art photography. Visual metaphors that evoke the FEELING of the tweet. NO characters, NO mascots, NO people.
+ONLY RULES:
+- Warm color palette (coral, amber, gold, teal accents)
+- Dark or muted background
+- Abstract or fine art style
+- Must feel warm, hopeful, alive
+- NO text, NO logos, NO people, NO faces, NO lobsters, NO tech imagery
+- 1:1 square
 
-PALETTE: Warm coral (#e87955), golden amber, soft teal, cream whites, deep purples. Golden hour lighting. Dark or muted backgrounds.
-
-SUBJECTS TO USE (vary every time):
-- Nature: coral reefs, sprouting seeds, wheat fields, river stones, blooming flowers, tree rings, mycelium networks
-- Light: golden hour rays, stained glass, candlelight, prisms, light through water
-- Textures: honey flowing, silk fabric, molten gold, morning dew, sand ripples
-- Growth: time-lapse sprouts, expanding ripples, aurora borealis, opening petals
-- Flow: river meeting ocean, mercury drops merging, waterfall mist, ink in water
-
-TRANSLATE tweet concepts:
-- "building" → raw clay being shaped, architectural sketch, stone being carved
-- "community" → woven threads, mosaic pieces, choir of candles, flock in formation
-- "liquidity/flow" → honey pouring, river delta, tidal patterns, golden ink dispersing in water
-- "growth" → seedling breaking soil, dawn light spreading, crystals forming
-- "staking/patience" → deep tree roots cross-section, sediment layers, aging wine
-- "value" → geode revealing crystals, gold leaf, amber with light inside
-- "love/mission" → sunrise through clouds, warm light through a cathedral window, hands cupping light
-
-NEVER: text, logos, brand names, human faces, cartoon characters, lobsters, digital/tech imagery. This is the COMPANY account — warm, abstract, fine art.
-FORMAT: 1:1 square.`;
+BE WILDLY CREATIVE. Do NOT use seedlings, soil, sprouting, honey, or rivers unless the tweet is literally about those things. Think like an abstract artist — surprise us. Use unexpected subjects: glass sculptures, molten metal, aurora, underwater light, smoke patterns, geological cross-sections, macro crystals, celestial events, volcanic glass, desert dunes at golden hour, frozen bubbles, bioluminescent caves, sand mandalas, meteor trails, cloud formations. ANYTHING beautiful and warm. Never repeat yourself.`;
 
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
