@@ -266,16 +266,27 @@ async function contractRead(to, data) {
 }
 
 async function contractReadBatch(calls) {
-    var batch = calls.map(function(c, i) {
-        return { jsonrpc: '2.0', id: i + 1, method: 'eth_call',
-            params: [{ to: c.to, data: c.data }, 'latest'] };
-    });
-    var json = await rpcFetch(batch);
-    if (!json || !Array.isArray(json)) {
-        return calls.map(function() { return '0x0'; });
+    // Split into chunks of 50 to avoid RPC batch limits
+    var allResults = [];
+    for (var start = 0; start < calls.length; start += 50) {
+        var chunk = calls.slice(start, start + 50);
+        var batch = chunk.map(function(c, i) {
+            return { jsonrpc: '2.0', id: start + i + 1, method: 'eth_call',
+                params: [{ to: c.to, data: c.data }, 'latest'] };
+        });
+        try {
+            var json = await rpcFetch(batch);
+            if (!json || !Array.isArray(json)) {
+                allResults = allResults.concat(chunk.map(function() { return '0x0'; }));
+            } else {
+                json.sort(function(a, b) { return a.id - b.id; });
+                allResults = allResults.concat(json.map(function(r) { return safeHex(r.result); }));
+            }
+        } catch(e) {
+            allResults = allResults.concat(chunk.map(function() { return '0x0'; }));
+        }
     }
-    json.sort(function(a, b) { return a.id - b.id; });
-    return json.map(function(r) { return safeHex(r.result); });
+    return allResults;
 }
 
 async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
