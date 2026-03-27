@@ -818,15 +818,44 @@
                 <div>&#10003; <strong style="color:#f0f0f5">A live app + token + staking</strong> — already deployed</div>
             </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-            <a href="https://inclawbate.app/inclawbations#drops" style="display:flex;align-items:center;justify-content:center;padding:12px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border-radius:10px;font-size:0.9rem;font-weight:800;text-decoration:none;font-family:'Nunito',sans-serif">Claim This Project</a>
-            <a href="https://app.uniswap.org/swap?outputCurrency=0x2344dfceed2e4ea42a771af8b584643764f7b5d5&chain=base" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border-radius:10px;font-size:0.85rem;font-weight:700;text-decoration:none;font-family:'Nunito',sans-serif">Buy $FORGE on Uniswap</a>
-            <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_clawforge','1')}catch(e){}" style="padding:10px;background:none;border:none;color:#606078;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">View the app &rarr;</button>
+        <div id="overlayClaimForm" style="display:flex;flex-direction:column;gap:8px">
+            <textarea id="overlayPitch" placeholder="Why do you want to own ClawForge? What's your vision for it?" rows="3" style="width:100%;background:#0a0a11;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#f0f0f5;padding:10px 12px;font-size:0.82rem;font-family:'Nunito',sans-serif;resize:none;line-height:1.5"></textarea>
+            <input id="overlayContact" type="text" placeholder="Your @telegram or @x handle" style="width:100%;background:#0a0a11;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#f0f0f5;padding:10px 12px;font-size:0.82rem;font-family:'Nunito',sans-serif">
+            <button id="overlayClaimBtn" onclick="submitOverlayClaim()" style="padding:12px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">Submit My Pitch</button>
+            <div style="display:flex;gap:8px">
+                <a href="https://app.uniswap.org/swap?outputCurrency=0x2344dfceed2e4ea42a771af8b584643764f7b5d5&chain=base" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;font-family:'Nunito',sans-serif">Buy $FORGE</a>
+                <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_clawforge','1')}catch(e){}" style="flex:1;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#606078;border-radius:10px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">View the app &rarr;</button>
+            </div>
         </div>
-        <div style="margin-top:14px;font-size:0.68rem;color:#606078">No wallet needed. No money needed. Just the will to build.</div>
+        <div id="overlayClaimSent" style="display:none;padding:16px 0">
+            <div style="font-size:1.3rem;margin-bottom:6px">&#9989;</div>
+            <div style="font-size:0.9rem;font-weight:800;color:#f0f0f5;margin-bottom:4px">Pitch submitted!</div>
+            <div style="font-size:0.78rem;color:#a0a0b8;line-height:1.5;margin-bottom:12px">A council member will review and reach out via your handle.</div>
+            <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_clawforge','1')}catch(e){}" style="padding:10px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border:none;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">View the app &rarr;</button>
+        </div>
+        <div style="margin-top:10px;font-size:0.68rem;color:#606078">No wallet needed. No money needed. Just the will to build.</div>
     </div>
 </div>
-<script>try{if(sessionStorage.getItem('drop_seen_clawforge'))document.getElementById('dropOverlay').style.display='none'}catch(e){}</script>
+<script>
+try{if(sessionStorage.getItem('drop_seen_clawforge'))document.getElementById('dropOverlay').style.display='none'}catch(e){}
+function submitOverlayClaim(){
+    var pitch=document.getElementById('overlayPitch').value.trim();
+    var contact=document.getElementById('overlayContact').value.trim();
+    var btn=document.getElementById('overlayClaimBtn');
+    if(!pitch){alert('Tell us why you want this!');return;}
+    if(!contact){alert('Add your handle so we can reach you');return;}
+    btn.disabled=true;btn.textContent='Submitting...';btn.style.opacity='0.6';
+    fetch('https://www.inclawbate.app/api/inclawbate/hire-request',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({description:'[FOUNDER CLAIM — ClawForge] '+pitch,contact:contact})
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){
+            document.getElementById('overlayClaimForm').style.display='none';
+            document.getElementById('overlayClaimSent').style.display='';
+        }else{alert(d.error||'Something went wrong');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';}
+    }).catch(function(){alert('Failed — try again');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';});
+}
+</script>
 
 <!-- ========== HEADER ========== -->
 <header class="site-header">
