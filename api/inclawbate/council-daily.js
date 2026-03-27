@@ -414,8 +414,15 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
         if (stakerCount > 0) msg += ` · ${stakerCount} stakers`;
         msg += `\n`;
     }
-    if (tasks.incubations.length) {
-        msg += `🦞 ${tasks.incubations.length} incubations\n`;
+    // Active projects count from inclawbator_projects (same source as /tokens page)
+    try {
+        const { count: projectCount } = await supabase
+            .from('inclawbator_projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active');
+        if (projectCount) msg += `🦞 ${projectCount} active projects\n`;
+    } catch(e) {
+        if (tasks.incubations.length) msg += `🦞 ${tasks.incubations.length} incubations\n`;
     }
 
     // ── Expandable: Supply & Staking ──
@@ -537,15 +544,30 @@ function buildTelegramPost(claws, supply, tasks, treasury, allocation, yesterday
             tasks.focus.forEach(t => { msg += `→ ${esc(t)}\n`; });
             msg += `\n`;
         }
-        if (tasks.incubations.length) {
-            msg += `🦞 Incubations (${tasks.incubations.length})\n`;
-            for (const inc of tasks.incubations) {
-                const name = inc.content.replace(/\s*-\s*(?:inclawbate|@\w+)$/i, '').trim();
-                const author = inc.author || '';
-                const hasOwner = author && author !== 'admin' && author !== '@StuartDeFi';
-                msg += `• ${esc(name)}${hasOwner ? ' — ' + esc(author) : ''}\n`;
+        // Active projects from inclawbator_projects
+        try {
+            const { data: projects } = await supabase
+                .from('inclawbator_projects')
+                .select('token_name, creator_wallet, staking_address, status')
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (projects && projects.length) {
+                msg += `🦞 Active Projects (${projects.length})\n`;
+                for (const p of projects) {
+                    const hasStaking = p.staking_address ? ' ✓' : '';
+                    msg += `• ${esc(p.token_name)}${hasStaking}\n`;
+                }
+                msg += `\n`;
             }
-            msg += `\n`;
+        } catch(e) {
+            if (tasks.incubations.length) {
+                msg += `🦞 Incubations (${tasks.incubations.length})\n`;
+                for (const inc of tasks.incubations) {
+                    msg += `• ${esc(inc.content)}\n`;
+                }
+                msg += `\n`;
+            }
         }
         if (tasks.backlog.length) {
             msg += `📋 ${tasks.backlog.length} in backlog`;
@@ -607,8 +629,14 @@ function buildTweet(claws, supply, tasks, treasury, allocation, yesterday, stake
     if (treasury?.total) {
         tweet += `🏦 Treasury: ${formatUsd(treasury.total)}\n`;
     }
-    if (tasks.incubations.length) {
-        tweet += `🦞 ${tasks.incubations.length} active incubations\n`;
+    try {
+        const { count: tweetProjectCount } = await supabase
+            .from('inclawbator_projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active');
+        if (tweetProjectCount) tweet += `🦞 ${tweetProjectCount} active projects\n`;
+    } catch(e) {
+        if (tasks.incubations.length) tweet += `🦞 ${tasks.incubations.length} active projects\n`;
     }
     tweet += `https://www.inclawbate.app/claws\n`;
 
