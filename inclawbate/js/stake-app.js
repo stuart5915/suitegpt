@@ -225,9 +225,9 @@ function fmtUsd(n) {
 
 var BASE_RPCS = [
     'https://mainnet.base.org',
-    'https://base.drpc.org',
     'https://base-mainnet.public.blastapi.io',
-    'https://base.drpc.org'
+    'https://base.meowrpc.com',
+    'https://base-rpc.publicnode.com'
 ];
 
 async function rpcFetch(body) {
@@ -439,20 +439,7 @@ async function fetchAllPrices() {
         addrPrices[tokenAddrs[i].toLowerCase()] = bestPrice(results[i], tokenAddrs[i]);
     }
 
-    // GeckoTerminal fallback for tokens DexScreener missed
-    var missing = tokenAddrs.filter(function(a) { return !addrPrices[a.toLowerCase()]; });
-    for (var j = 0; j < missing.length; j++) {
-        try {
-            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/' + missing[j]);
-            if (gRes.ok) {
-                var gData = await gRes.json();
-                var attrs = gData.data && gData.data.attributes;
-                if (attrs && attrs.price_usd) {
-                    addrPrices[missing[j].toLowerCase()] = parseFloat(attrs.price_usd);
-                }
-            }
-        } catch (e) { /* GeckoTerminal unavailable */ }
-    }
+    // Skip GeckoTerminal fallback — causes CORS + rate limit issues with many pools
 
     // Apply to pools
     POOL_KEYS.forEach(function(key) {
