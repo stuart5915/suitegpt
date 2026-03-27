@@ -1175,17 +1175,14 @@
             var shown = _pipelines.slice(0, 20);
             shown.forEach(function(p) {
                 var dayNum = daysSince(p.created_at);
-                var stepsComplete = countSteps(p);
-                var statusColor = stepsComplete === 8 ? 'green' : 'yellow';
                 html += '<div class="incubation-card">';
                 html += '<div class="incubation-header">';
-                html += '<span class="incubation-name"><span class="status-dot ' + statusColor + '"></span>' + esc(p.app_name || 'Untitled') + '</span>';
+                html += '<span class="incubation-name">' + esc(p.app_name || 'Untitled') + '</span>';
                 html += '<span class="incubation-day">Day ' + dayNum + (p.token_symbol ? ' \u00b7 ' + esc(p.token_symbol) : '') + '</span>';
                 html += '</div>';
                 html += '<div class="incubation-meta">';
-                html += '<span>' + stepsComplete + '/8 steps</span>';
-                if (p.app_slug) html += '<span><a href="/s/' + esc(p.app_slug) + '" target="_blank" style="color:var(--lobster-300);">View App</a></span>';
-                if (p.poll_winner) html += '<span>Poll: "' + esc(p.poll_winner) + '"</span>';
+                if (p.token_address) html += '<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim)">' + p.token_address.slice(0,10) + '...</span>';
+                if (p.app_slug) html += '<span><a href="/s/' + esc(p.app_slug) + '" target="_blank" style="color:var(--lobster-300);">View Site</a></span>';
                 html += '</div>';
                 html += '</div>';
             });
