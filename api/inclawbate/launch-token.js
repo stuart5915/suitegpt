@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-    const { name, symbol, creator_wallet, description, image_url, website_url, reward_recipients, reward_bps, deploy_staking } = req.body || {};
+    const { name, symbol, creator_wallet, description, image_url, website_url, reward_recipients, reward_bps, deploy_staking, airdrop_address, airdrop_pct } = req.body || {};
 
     if (!name) return res.status(400).json({ error: 'name is required' });
     if (!symbol) return res.status(400).json({ error: 'symbol is required' });
@@ -32,7 +32,9 @@ export default async function handler(req, res) {
             image_url: image_url || '',
             website_url: website_url || '',
             reward_recipients,
-            reward_bps
+            reward_bps,
+            airdrop_address,
+            airdrop_pct: airdrop_pct ? parseInt(airdrop_pct) : 0
         });
 
         // Return token address IMMEDIATELY

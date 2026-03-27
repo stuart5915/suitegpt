@@ -391,9 +391,9 @@ async function launchMemeToken(meme) {
                 // Meme launches: 80/20 split between creator and Inclawbate
                 reward_recipients: meme._customSymbol ? [INCLAWBATE_TREASURY] : [CREATOR_WALLET, INCLAWBATE_TREASURY],
                 reward_bps: meme._customSymbol ? [10000] : [8000, 2000],
-                // 30% airdrop to Inclawbate wallet for factory launches
+                // Airdrop to Inclawbate wallet for factory launches (% from form)
                 airdrop_address: meme._customSymbol ? INCLAWBATE_TREASURY : undefined,
-                airdrop_pct: meme._customSymbol ? 30 : undefined
+                airdrop_pct: meme._customSymbol ? (meme._airdropPct || 30) : undefined
             })
         });
         const launchData = await launchResp.json();
@@ -747,7 +747,7 @@ http.createServer(async (req, res) => {
         req.on('end', async () => {
             try {
                 const data = JSON.parse(body);
-                const { name, symbol, description, imageUrl, wallet } = data;
+                const { name, symbol, description, imageUrl, wallet, airdropPct } = data;
                 if (!name || !symbol) {
                     res.writeHead(400);
                     res.end(JSON.stringify({ error: 'name and symbol required' }));
@@ -766,6 +766,7 @@ http.createServer(async (req, res) => {
                     _customSymbol: symbol,
                     _customImage: imageUrl || null,
                     _customWallet: wallet || CREATOR_WALLET,
+                    _airdropPct: parseInt(airdropPct) || 30,
                 };
 
                 // Upsert to DB

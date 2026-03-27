@@ -83,9 +83,24 @@ function getOperatorWallet() {
 }
 
 // ══════════════════════════════════════
+// ── Clanker Airdrop Extension V2 ──
+const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
+const TOKEN_TOTAL_SUPPLY = 100_000_000_000n; // 100B tokens
+
+// Build merkle tree for single-recipient airdrop
+function buildAirdropMerkle(recipient, amountTokens) {
+  // Use keccak256(abi.encode(address, uint256)) double-hashed (OpenZeppelin standard)
+  const amountWei = BigInt(amountTokens) * (10n ** 18n);
+  const coder = ethers.AbiCoder.defaultAbiCoder();
+  const innerHash = ethers.keccak256(coder.encode(['address', 'uint256'], [recipient, amountWei]));
+  const leaf = ethers.keccak256(innerHash);
+  // Single-leaf tree: root = leaf
+  return { root: leaf, amountWei: amountWei.toString() };
+}
+
 // LAUNCH TOKEN via Clanker V4
 // ══════════════════════════════════════
-export async function launchToken({ name, symbol, creator_wallet, description, image_url, website_url, x_handle, telegram_url, reward_recipients, reward_bps }) {
+export async function launchToken({ name, symbol, creator_wallet, description, image_url, website_url, x_handle, telegram_url, reward_recipients, reward_bps, airdrop_address, airdrop_pct }) {
   if (!name || !symbol) throw new Error('Token name and symbol are required');
   if (!creator_wallet) throw new Error('Creator wallet address is required');
 
@@ -111,6 +126,30 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
   // Reward recipients: custom split if provided, otherwise 80% creator / 20% Inclawbate
   const rewardRecipients = reward_recipients || [creator_wallet, INCLAWBATE_TREASURY];
   const rewardBps = reward_bps || [8000, 2000];
+
+  // Build airdrop extension if requested
+  const extensionConfigs = [];
+  if (airdrop_address && airdrop_pct > 0) {
+    const airdropBps = Math.min(airdrop_pct * 100, 9000); // convert % to bps, cap at 90%
+    const airdropAmount = TOKEN_TOTAL_SUPPLY * BigInt(airdrop_pct) / 100n;
+    const { root } = buildAirdropMerkle(airdrop_address, airdropAmount);
+
+    // Encode extensionData: (admin, merkleRoot, lockupDuration, vestingDuration)
+    // 1 day lockup (minimum), instant vesting
+    const extensionData = coder.encode(
+      ['address', 'bytes32', 'uint256', 'uint256'],
+      [airdrop_address, root, 86400, 0]
+    );
+
+    extensionConfigs.push({
+      extension: CLANKER_AIRDROP_V2,
+      msgValue: 0,
+      extensionBps: airdropBps,
+      extensionData
+    });
+
+    console.log(`[LaunchToken] Airdrop: ${airdrop_pct}% (${airdropBps} bps) to ${airdrop_address}`);
+  }
 
   const deploymentConfig = {
     tokenConfig: {
@@ -144,7 +183,7 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
       mevModule: CLANKER_SNIPER_AUCTION,
       mevModuleData: sniperMevData
     },
-    extensionConfigs: []
+    extensionConfigs
   };
 
   const data = iface.encodeFunctionData('deployToken', [deploymentConfig]);
