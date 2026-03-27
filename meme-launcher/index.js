@@ -360,8 +360,9 @@ async function launchMemeToken(meme) {
     await updateMemeStatus(meme.guid, { status: 'launching', symbol });
 
     const imageUrl = meme._customImage || extractImage(meme.description || '');
-    const slug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-token';
-    const siteUrl = `https://spawnmemes.fun/${slug}`;
+    const baseSlug = meme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = meme._customSymbol ? baseSlug : baseSlug + '-token'; // factory = no -token suffix
+    const siteUrl = meme._customSymbol ? `https://inclawbate.app/s/${slug}` : `https://spawnmemes.fun/${slug}`;
 
     // Step 1: Build & publish template site FIRST (so we have the URL for token metadata)
     let siteResult = { slug: null, url: null, ideas: [] };
