@@ -76,14 +76,42 @@ async function resolveOwnUserId() {
 
 // ── Agent chat ──
 
-async function getAgentReply(text, context, sessionId) {
+async function getConversationHistory(authorUsername) {
+  // Fetch recent replies to this user from our DB to rebuild context
+  try {
+    const { data: recent } = await supabase
+      .from('agent_replies')
+      .select('mention_text, reply_text, mention_author')
+      .eq('mention_author', authorUsername)
+      .eq('status', 'posted')
+      .order('created_at', { ascending: false })
+      .limit(4);
+    if (!recent || recent.length === 0) return [];
+
+    // Build client_history in chronological order (oldest first)
+    const history = [];
+    for (const r of recent.reverse()) {
+      if (r.mention_text) history.push({ role: 'user', content: r.mention_text.slice(0, 500) });
+      if (r.reply_text) history.push({ role: 'assistant', content: r.reply_text.slice(0, 500) });
+    }
+    return history;
+  } catch (e) {
+    return [];
+  }
+}
+
+async function getAgentReply(text, context, sessionId, authorUsername) {
   const cleaned = text.replace(/@inclawbator\b/gi, '').replace(/@inclawbate\b/gi, '').trim();
   const message = cleaned || 'What can you do?';
   const walletMatch = message.match(/0x[a-fA-F0-9]{40}/);
 
+  // Get conversation history from DB so the AI remembers prior exchanges
+  const priorHistory = await getConversationHistory(authorUsername);
+
   const body = {
     message: `[${context}]: ${message}`,
     session_id: sessionId,
+    client_history: priorHistory.length > 0 ? [...priorHistory, { role: 'user', content: message }] : undefined,
   };
   if (walletMatch) body.wallet = walletMatch[0];
 
@@ -301,7 +329,7 @@ async function handleMention(tweet, authors) {
   console.log(`Replying to @${authorUsername}: ${tweet.text?.slice(0, 80)}`);
 
   try {
-    const reply = await getAgentReply(tweet.text, `X mention from @${authorUsername}`, `x_mention_${authorUsername}`);
+    const reply = await getAgentReply(tweet.text, `X mention from @${authorUsername}`, `x_mention_${authorUsername}`, authorUsername);
     const prefix = `@${authorUsername} `;
     const maxLen = 280 - prefix.length;
 
