@@ -2653,8 +2653,10 @@ export default async function handler(req, res) {
       const result = await executeTool('build_app', { app_name: appName, description });
       const directReply = generateDirectReply('build_app', result, { app_name: appName, description });
       if (directReply) {
-        history.push({ role: 'assistant', content: directReply });
-        return sendReply({ reply: directReply, function_called: 'build_app', session_id: sid });
+        const replyText = typeof directReply === 'object' ? directReply.reply : directReply;
+        const replySuggestions = typeof directReply === 'object' ? directReply.suggestions : undefined;
+        history.push({ role: 'assistant', content: replyText || String(directReply) });
+        return sendReply({ reply: replyText || String(directReply), function_called: 'build_app', session_id: sid, suggestions: replySuggestions });
       }
     }
 
@@ -2666,8 +2668,10 @@ export default async function handler(req, res) {
       const result = await executeTool('build_app', { app_name: slug, description: desc });
       const directReply = generateDirectReply('build_app', result, { app_name: slug, description: desc });
       if (directReply) {
-        history.push({ role: 'assistant', content: directReply });
-        return sendReply({ reply: directReply, function_called: 'build_app', session_id: sid });
+        const replyText = typeof directReply === 'object' ? directReply.reply : directReply;
+        const replySuggestions = typeof directReply === 'object' ? directReply.suggestions : undefined;
+        history.push({ role: 'assistant', content: replyText || String(directReply) });
+        return sendReply({ reply: replyText || String(directReply), function_called: 'build_app', session_id: sid, suggestions: replySuggestions });
       }
     }
 
