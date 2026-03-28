@@ -2551,7 +2551,7 @@ export default async function handler(req, res) {
   // Must await logToFeed before res.json() — Vercel kills the function immediately after response
   const sendReply = async (body) => {
     // Auto-extract app_url from ANY reply — validate against real apps, fix LLM hallucinated slugs
-    if (!body.app_url && body.reply) {
+    if (!body.app_url && body.reply && typeof body.reply === 'string') {
       const urlMatch = body.reply.match(/inclawbate\.app\/s\/([\w-]+)/);
       if (urlMatch) {
         const claimedSlug = urlMatch[1];
