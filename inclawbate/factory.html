@@ -659,10 +659,18 @@
                         </div>
                     </div>
                 </div>
-                <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;padding:10px;background:var(--bg-elevated);border-radius:var(--radius-md)">
-                    <strong>Next steps:</strong> Upload the airdrop CSV on Clanker, then go to <a href="/inclawbator" style="color:var(--lobster-300)">the Inclawbator</a> to customize the site.
+                <div id="xPostSection" style="margin-bottom:14px">
+                    <div style="padding:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <span style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase">X Post</span>
+                            <button onclick="copyXPost()" style="font-family:var(--font-mono);font-size:0.68rem;color:var(--lobster-300);background:none;border:1px solid var(--border-subtle);border-radius:var(--radius-full);padding:4px 10px;cursor:pointer" id="copyXPostBtn">Copy</button>
+                        </div>
+                        <pre id="xPostText" style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin:0"></pre>
+                    </div>
                 </div>
-                <button class="btn-primary" onclick="resetLaunchForm()" style="width:100%">Launch Another</button>
+                <div style="display:flex;gap:8px">
+                    <button class="btn-primary" onclick="resetLaunchForm()" style="flex:1">Launch Another</button>
+                </div>
             </div>
 
             <!-- Legacy pipeline (existing incubations still use checkboxes) -->
@@ -1179,6 +1187,12 @@
                 document.getElementById('airdropPctLabel').textContent = _lastAllocationPct;
                 document.getElementById('clankerLink').href = 'https://www.clanker.world/clanker/' + tokenAddr;
             }
+
+            // Generate X post
+            var symbol = document.getElementById('launchSymbol').value.trim().toUpperCase();
+            var desc = document.getElementById('launchDesc').value.trim();
+            var xPost = generateXPost(name, symbol, siteUrl || 'https://www.inclawbate.app/s/' + slug, desc);
+            document.getElementById('xPostText').textContent = xPost;
         }
 
         window.downloadAirdropCSV = function() {
@@ -1196,6 +1210,38 @@
             a.download = 'airdrop-' + _lastAllocationPct + 'pct.csv';
             a.click();
             URL.revokeObjectURL(url);
+        };
+
+        // Track drop number
+        var _dropNumber = 0;
+
+        function generateXPost(name, symbol, siteUrl, desc) {
+            _dropNumber++;
+            var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            var url = siteUrl || 'https://www.inclawbate.app/s/' + slug;
+            var post = 'Inclawbate Drops #' + _dropNumber + '\n\n';
+            post += '$' + symbol + ' ' + name + '\n';
+            post += url + '\n\n';
+            post += (desc || name + ' — a fully built project ready to be owned and operated.') + '\n\n';
+            post += 'Want to own it? Tell us why.\n';
+            post += 'Best pitch gets 30% of the token supply + full incubation support: dev, marketing, strategy, everything. (70% token supply in LP on open market)\n\n';
+            post += 'No money needed. No wallet needed.\nJust the will.\n\n';
+            post += '—\n\n';
+            post += 'This is Inclawbate Drops.\n';
+            post += 'Where our AI @inclawbator generates an idea, builds a new app, launches a token, and finds a founder. The app comes with a live site, tokenomics, and staking. All it needs is someone to run it.\n\n';
+            post += 'We don\'t just help you launch — we launch it for you, and hand you the keys.\n\n';
+            post += 'Or if you have an idea you need help with, let\'s chat!\n\n';
+            post += 'https://www.inclawbate.app/drops';
+            return post;
+        }
+
+        window.copyXPost = function() {
+            var text = document.getElementById('xPostText').textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById('copyXPostBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+            });
         };
 
         window.resetLaunchForm = function() {
