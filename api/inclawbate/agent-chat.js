@@ -2637,6 +2637,57 @@ export default async function handler(req, res) {
   }
 
   try {
+    // FIRST: Intercept "launch [NAME]" — MUST be before any build/app intercepts
+    const launchMatch = message.match(/^(?:\[.*?\]:\s*)?launch\s+(.+)$/i);
+    if (launchMatch) {
+      let rawLaunch = launchMatch[1].trim();
+      rawLaunch = rawLaunch.replace(/\s+and\s+(build|make|create)\s+.+$/i, '').trim();
+      rawLaunch = rawLaunch.replace(/^(?:me\s+)?(?:a\s+)?(?:token\s+)?(?:called\s+)?/i, '').trim();
+      const tickerMatch = rawLaunch.match(/^(.+?)\s+(?:ticker|symbol)\s+\$?(\w+)$/i);
+      const tokenName = tickerMatch ? tickerMatch[1].trim() : rawLaunch;
+      const ticker = (tickerMatch ? tickerMatch[2] : tokenName.replace(/[^A-Z]/gi, '').slice(0, 5)).toUpperCase();
+      if (!sanitizedWallet) {
+        const reply = `Ready to launch **${tokenName}** ($${ticker}) on Base! I just need your wallet address to receive 80% of LP fee rewards.`;
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid, suggestions: ['Connect wallet first', 'What are LP fees?'] });
+      }
+      let functionCalled = null;
+      try {
+        const wantsPage = /landing\s*page|website|site|promo/i.test(message);
+        const result = await executeTool('deploy_token', {
+          token_name: tokenName, token_symbol: ticker, creator_wallet: sanitizedWallet,
+          description: `${tokenName} token. Launched via Inclawbate.`, wallet: sanitizedWallet,
+          _rewardOpts: reward_recipients ? { reward_recipients, reward_bps } : {}
+        });
+        const d = typeof result === 'string' ? JSON.parse(result) : result;
+        if (d.success && d.token_address) {
+          let reply = `Token deployed!\n\n• **${tokenName}** ($${ticker})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n\nLive on Base with automatic liquidity.`;
+          functionCalled = 'deploy_token';
+          if (wantsPage) {
+            try {
+              const buildResult = await executeTool('build_app', {
+                app_name: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-promo',
+                description: `Build a landing page to promote ${tokenName} ($${ticker}). Token contract: ${d.token_address}. Include: hero with buy button (https://app.uniswap.org/swap?outputCurrency=${d.token_address}&chain=base), features, how to buy, BaseScan and DexScreener links. Dark theme.`,
+                wallet: sanitizedWallet
+              });
+              const bd = typeof buildResult === 'string' ? JSON.parse(buildResult) : buildResult;
+              if (bd.url) { reply += `\n\nLanding page: ${bd.url}`; functionCalled = 'deploy_token+build_app'; }
+            } catch (e) { console.error('Auto-build failed:', e.message); }
+          }
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, function_called: functionCalled, session_id: sid, suggestions: ['Deploy staking for this token', 'Airdrop tokens', 'Set up X marketing'] });
+        } else {
+          const reply = d.error || 'Token deployment failed. Try again.';
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, session_id: sid });
+        }
+      } catch (e) {
+        const reply = 'Token deployment failed: ' + e.message;
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid });
+      }
+    }
+
     // Pre-LLM intercept: catch common phrases the LLM keeps mishandling
     const msgLower = message.toLowerCase().trim();
     if (/^(build something new|start something new|build a new app|make something new|create something new|i want to build|build me an app|make me an app|i want to build an app)$/i.test(msgLower)) {
@@ -2771,68 +2822,7 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions: [`Buy ${token} with 0.1 ETH`, `Buy ${token} with 100 USDC`, `Swap 0.1 ETH for ${token}`] });
     }
 
-    // Intercept "launch [NAME]" — token launch, not app building
-    const launchMatch = message.match(/^(?:\[.*?\]:\s*)?launch\s+(.+)$/i);
-    if (launchMatch) {
-      let rawLaunch = launchMatch[1].trim();
-      // Strip "and build/make..." suffix
-      rawLaunch = rawLaunch.replace(/\s+and\s+(build|make|create)\s+.+$/i, '').trim();
-      // Strip "a token called" prefix
-      rawLaunch = rawLaunch.replace(/^(?:me\s+)?(?:a\s+)?(?:token\s+)?(?:called\s+)?/i, '').trim();
-      // Extract ticker if present
-      const tickerMatch = rawLaunch.match(/^(.+?)\s+(?:ticker|symbol)\s+\$?(\w+)$/i);
-      const tokenName = tickerMatch ? tickerMatch[1].trim() : rawLaunch;
-      const ticker = (tickerMatch ? tickerMatch[2] : tokenName.replace(/[^A-Z]/gi, '').slice(0, 5)).toUpperCase();
-      if (!sanitizedWallet) {
-        const reply = `Ready to launch **${tokenName}** ($${ticker}) on Base! I just need your wallet address to receive 80% of LP fee rewards.`;
-        history.push({ role: 'assistant', content: reply });
-        return sendReply({ reply, session_id: sid, suggestions: ['Connect wallet first', 'What are LP fees?'] });
-      }
-      // Has wallet — deploy immediately
-      try {
-        const wantsPage = /landing\s*page|website|site|promo/i.test(message);
-        const result = await executeTool('deploy_token', {
-          token_name: tokenName,
-          token_symbol: ticker,
-          creator_wallet: sanitizedWallet,
-          description: `${tokenName} token. Launched via Inclawbate.`,
-          wallet: sanitizedWallet,
-          _rewardOpts: reward_recipients ? { reward_recipients, reward_bps } : {}
-        });
-        const d = typeof result === 'string' ? JSON.parse(result) : result;
-        if (d.success && d.token_address) {
-          let reply = `Token deployed!\n\n• **${tokenName}** ($${ticker})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n\nLive on Base with automatic liquidity.`;
-          functionCalled = 'deploy_token';
-
-          // Auto-build landing page if requested
-          if (wantsPage) {
-            try {
-              const buildResult = await executeTool('build_app', {
-                app_name: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-promo',
-                description: `Build a landing page to promote ${tokenName} ($${ticker}). Token contract: ${d.token_address}. Include: hero with token name and buy button (https://app.uniswap.org/swap?outputCurrency=${d.token_address}&chain=base), features, how to buy, links to BaseScan and DexScreener. Dark theme, professional.`,
-                wallet: sanitizedWallet
-              });
-              const bd = typeof buildResult === 'string' ? JSON.parse(buildResult) : buildResult;
-              if (bd.url) {
-                reply += `\n\nLanding page: ${bd.url}`;
-                functionCalled = 'deploy_token+build_app';
-              }
-            } catch (e) { console.error('Auto-build failed:', e.message); }
-          }
-
-          history.push({ role: 'assistant', content: reply });
-          return sendReply({ reply, function_called: functionCalled, session_id: sid, suggestions: ['Deploy staking for this token', 'Airdrop tokens', 'Set up X marketing agent'] });
-        } else {
-          const reply = d.error || 'Token deployment failed. Try again.';
-          history.push({ role: 'assistant', content: reply });
-          return sendReply({ reply, session_id: sid });
-        }
-      } catch (e) {
-        const reply = 'Token deployment failed: ' + e.message;
-        history.push({ role: 'assistant', content: reply });
-        return sendReply({ reply, session_id: sid });
-      }
-    }
+    // (launch intercept moved to top of try block)
 
     // Intercept "Stake my CLAWS" without amount
     if (/^stake\s+(my\s+)?claws$/i.test(msgLower)) {
