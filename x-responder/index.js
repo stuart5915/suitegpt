@@ -273,8 +273,8 @@ function recordReply(username, conversationId) {
 async function handleMention(tweet, authors) {
   const authorUsername = authors[tweet.author_id] || null;
 
-  // Skip self-mentions and @inclawbate (parent account mentions @inclawbator in promo tweets)
-  const skipUsers = ['inclawbator', 'inclawbate'];
+  // Skip self-mentions, parent account, and known bots that cause loops
+  const skipUsers = ['inclawbator', 'inclawbate', 'butler_agent', 'flaunchybot'];
   if (skipUsers.includes(authorUsername?.toLowerCase())) return;
 
   // Skip if rate limited (cooldown, daily max, or thread depth)
