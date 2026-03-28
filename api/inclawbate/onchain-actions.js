@@ -264,21 +264,42 @@ export async function launchToken({ name, symbol, creator_wallet, description, i
     }
 
     // Register airdrop merkle tree with Clanker backend (so users can claim via UI)
+    // Wait 15s for Clanker to index the new token, then retry up to 3 times
     if (_airdropTreeDump && _airdropRoot) {
-      try {
-        await fetch('https://www.clanker.world/api/airdrops', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tokenAddress,
-            merkleRoot: _airdropRoot,
-            tree: _airdropTreeDump
-          })
-        });
-        console.log('[LaunchToken] Airdrop tree registered with Clanker backend');
-      } catch (airdropRegErr) {
-        console.error('[LaunchToken] Clanker airdrop registration failed (non-fatal):', airdropRegErr.message);
-      }
+      const registerAirdrop = async (attempt) => {
+        try {
+          const resp = await fetch('https://www.clanker.world/api/airdrops', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tokenAddress,
+              merkleRoot: _airdropRoot,
+              tree: _airdropTreeDump
+            })
+          });
+          const text = await resp.text();
+          if (resp.ok && text.includes('success')) {
+            console.log('[LaunchToken] Airdrop tree registered with Clanker backend (attempt ' + attempt + ')');
+          } else if (attempt < 3) {
+            console.log('[LaunchToken] Airdrop registration attempt ' + attempt + ' returned: ' + text.slice(0, 200) + ' — retrying in 15s');
+            await new Promise(r => setTimeout(r, 15000));
+            await registerAirdrop(attempt + 1);
+          } else {
+            console.error('[LaunchToken] Airdrop registration failed after 3 attempts:', text.slice(0, 200));
+          }
+        } catch (err) {
+          if (attempt < 3) {
+            console.log('[LaunchToken] Airdrop registration error (attempt ' + attempt + '): ' + err.message + ' — retrying in 15s');
+            await new Promise(r => setTimeout(r, 15000));
+            await registerAirdrop(attempt + 1);
+          } else {
+            console.error('[LaunchToken] Airdrop registration failed after 3 attempts:', err.message);
+          }
+        }
+      };
+      // Wait 15s before first attempt to let Clanker index the token
+      await new Promise(r => setTimeout(r, 15000));
+      await registerAirdrop(1);
     }
   }
 
