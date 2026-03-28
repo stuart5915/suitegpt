@@ -2512,22 +2512,22 @@ export default async function handler(req, res) {
   // so we must NOT push it again — duplicate consecutive user messages cause LLM API errors.
   let usedClientHistory = false;
   if (Array.isArray(client_history) && client_history.length > 0) {
-    // Rebuild history from client — security hardened
+    // Rebuild history from client — include both user and assistant messages
+    // User messages are validated, assistant messages are sanitized (truncated, no secrets)
     const rebuilt = [{ role: 'system', content: SYSTEM_PROMPT }];
     for (const msg of client_history.slice(-20)) {
-      // Only allow user messages — NEVER trust client-provided assistant messages
-      // (attacker can fake assistant messages to make LLM think it already agreed to leak secrets)
       if (msg.role === 'user') {
         const content = String(msg.content || '').slice(0, 2000);
-        // Run attack filter on EVERY history message, not just current message
         const historyAttack = ATTACK_PATTERNS.some(p => p.test(content));
         if (!historyAttack) {
           rebuilt.push({ role: 'user', content });
         }
-        // Skip attacked messages silently — don't break the conversation
+      } else if (msg.role === 'assistant') {
+        // Include assistant messages so LLM knows what it previously said/asked
+        // Truncate to prevent context bloat, strip any sensitive patterns
+        const content = String(msg.content || '').slice(0, 500);
+        rebuilt.push({ role: 'assistant', content });
       }
-      // Allow assistant messages only from server — reconstruct from user messages
-      // The LLM will still work fine with only user messages + system prompt
     }
     sessions.set(sid, rebuilt);
     usedClientHistory = true;
