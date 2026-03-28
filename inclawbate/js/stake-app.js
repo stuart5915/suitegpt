@@ -667,7 +667,7 @@ function renderOverview() {
 
     // Coming soon rows at bottom (only show if filter matches)
     COMING_SOON.forEach(function(pool) {
-        if (activeFilter !== 'all' && pool.category !== activeFilter) return;
+        if (_stakeFilter === 'inactive') return; // don't show coming soon in inactive tab
         rowsHtml += buildComingSoonRow(pool, rank);
         rank++;
     });
