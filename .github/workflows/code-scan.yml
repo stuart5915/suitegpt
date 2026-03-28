@@ -1,0 +1,107 @@
+name: Code Safety Scan
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'inclawbate/**'
+      - 'api/**'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Scan for suspicious patterns
+        run: |
+          echo "=== Code Safety Scan ==="
+          FAILED=0
+
+          # Get changed files in this push
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'inclawbate/' 'api/' 2>/dev/null || echo "")
+          if [ -z "$CHANGED" ]; then
+            echo "No relevant files changed."
+            exit 0
+          fi
+          echo "Scanning: $CHANGED"
+
+          # --- Patterns that should NEVER appear ---
+
+          # Exfiltrating data to external servers
+          if grep -rn 'fetch\s*(\s*["\x27]https\?://[^inclawbate\|localhost\|vercel\|supabase\|uniswap\|basescan\|clanker\|coinbase\|ethereum\|app\.uniswap]' $CHANGED 2>/dev/null; then
+            echo "::warning::⚠️ External fetch detected — verify the URL is safe"
+          fi
+
+          # eval / Function constructor (code injection)
+          if grep -Prn '\beval\s*\(|new\s+Function\s*\(' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: eval() or new Function() detected — potential code injection"
+            FAILED=1
+          fi
+
+          # document.cookie theft
+          if grep -Prn 'document\.cookie' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: document.cookie access detected"
+            FAILED=1
+          fi
+
+          # Stealing localStorage/sessionStorage and sending externally
+          if grep -Prn '(localStorage|sessionStorage)\s*\.\s*(getItem|setItem).*fetch|fetch.*localStorage' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: Storage exfiltration pattern detected"
+            FAILED=1
+          fi
+
+          # Loading external scripts dynamically
+          if grep -Prn 'createElement\s*\(\s*["\x27]script["\x27]\s*\)' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: Dynamic script injection detected"
+            FAILED=1
+          fi
+
+          # Base64 obfuscation (long encoded strings)
+          if grep -Prn '[A-Za-z0-9+/]{80,}={0,2}' $CHANGED 2>/dev/null | grep -v 'svg\|font\|image\|data:image\|woff\|base64.*png\|background' ; then
+            echo "::warning::⚠️ Large base64 string detected — verify it's not obfuscated code"
+          fi
+
+          # Keylogger patterns (capturing keystrokes + sending)
+          if grep -Prn 'addEventListener\s*\(\s*["\x27](keydown|keypress|keyup)["\x27]' $CHANGED 2>/dev/null | grep -v 'Enter\|Escape\|Tab\|picker\|textarea\|input' ; then
+            echo "::warning::⚠️ Keyboard event listener detected — verify it's not a keylogger"
+          fi
+
+          # Accessing private keys or seed phrases
+          if grep -Prn '(private.?key|seed.?phrase|mnemonic)\s*[:=]' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: Private key / seed phrase reference detected"
+            FAILED=1
+          fi
+
+          # Hardcoded API keys or tokens
+          if grep -Prn '(api_key|apiKey|secret_key|secretKey)\s*[:=]\s*["\x27][A-Za-z0-9]{20,}' $CHANGED 2>/dev/null; then
+            echo "::error::🚨 BLOCKED: Hardcoded API key detected"
+            FAILED=1
+          fi
+
+          # Hidden iframes to external sites
+          if grep -Prn 'iframe.*src\s*=\s*["\x27]https?://' $CHANGED 2>/dev/null | grep -v 'inclawbate\|localhost\|vercel' ; then
+            echo "::warning::⚠️ External iframe detected — verify the source"
+          fi
+
+          # WebSocket to unknown servers
+          if grep -Prn 'new\s+WebSocket\s*\(\s*["\x27]wss?://[^inclawbate\|localhost]' $CHANGED 2>/dev/null; then
+            echo "::warning::⚠️ WebSocket to external server detected — verify the URL"
+          fi
+
+          # Redirect to external sites
+          if grep -Prn 'window\.location\s*=\s*["\x27]https?://' $CHANGED 2>/dev/null | grep -v 'inclawbate\|uniswap\|basescan\|clanker' ; then
+            echo "::warning::⚠️ Redirect to external URL detected — verify it's intentional"
+          fi
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "❌ Push BLOCKED — suspicious code patterns detected."
+            echo "If this is a false positive, Stuart needs to review and approve."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Scan passed — no malicious patterns detected."
