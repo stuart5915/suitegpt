@@ -2,6 +2,8 @@
 // POST { token_address, creator_wallet }
 // Deploys a staking pool (stake token, earn CLAWS) and registers it
 
+export const config = { maxDuration: 120 };
+
 import { deployStakingPool } from './onchain-actions.js';
 import { createClient } from '@supabase/supabase-js';
 

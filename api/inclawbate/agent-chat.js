@@ -1,6 +1,8 @@
 // Inclawbate Homepage Chat — Groq-powered (free, fast)
 // POST { message, session_id, wallet } → { reply, function_called, session_id }
 
+export const config = { maxDuration: 120 }; // 2 min timeout for on-chain deploys
+
 import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { logToFeed } from './notify.js';
 import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';

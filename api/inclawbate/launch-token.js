@@ -2,6 +2,8 @@
 // POST { name, symbol, creator_wallet, description, image_url, website_url, reward_recipients, reward_bps }
 // Bypasses agent-chat AI — calls launchToken directly with structured params
 
+export const config = { maxDuration: 120 };
+
 import { launchToken, deployStakingPool } from './onchain-actions.js';
 import { createClient } from '@supabase/supabase-js';
 
