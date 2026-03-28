@@ -125,11 +125,11 @@ export default async function handler(req, res) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 slug: pageSlug,
-                html,
-                creator_wallet: data.creator_wallet || '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-                creator_x_handle: data.creator_x_handle || '',
-                app_name: data.TOKEN_NAME || data.PROJECT_NAME || pageSlug,
+                code: html,
+                name: data.TOKEN_NAME || data.PROJECT_NAME || pageSlug,
                 description: data.TOKEN_DESCRIPTION || data.PROJECT_DESCRIPTION || '',
+                email: 'anonymous@inclawbate.app',
+                source: 'template',
             })
         });
         const publishData = await publishRes.json();
