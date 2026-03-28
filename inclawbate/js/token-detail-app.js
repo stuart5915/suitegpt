@@ -252,16 +252,18 @@ function render() {
         incubated: 'td-tier-incubated',
         permissionless: 'td-tier-permissionless',
         ecosystem: 'td-tier-ecosystem',
-        partner: 'td-tier-partner'
+        partner: 'td-tier-partner',
+        drops: 'td-tier-drops'
     };
     var tierLabels = {
         incubated: 'Incubated',
-        permissionless: 'Launched',
+        permissionless: '',
         ecosystem: 'Ecosystem',
-        partner: 'Partner'
+        partner: 'Partner',
+        drops: 'Drop'
     };
     var tierCls = tierMap[p.tier] || 'td-tier-permissionless';
-    var tierLabel = tierLabels[p.tier] || 'Launched';
+    var tierLabel = tierLabels[p.tier] || '';
 
     html += '<div class="td-hero">'
         + logoHtml
@@ -269,7 +271,7 @@ function render() {
         + '<div class="td-hero-row">'
         + '<span class="td-name">' + escapeHtml(p.token_name) + '</span>'
         + '<span class="td-symbol">$' + escapeHtml(p.token_symbol) + '</span>'
-        + '<span class="td-tier ' + tierCls + '">' + tierLabel + '</span>'
+        + (tierLabel ? '<span class="td-tier ' + tierCls + '">' + tierLabel + '</span>' : '')
         + '<span class="td-tier" style="background:' + (p.chain === 'solana' ? 'rgba(0,209,140,0.12);color:#00d18c' : 'rgba(56,133,255,0.15);color:#3885ff') + '">' + (p.chain === 'solana' ? 'Solana' : 'Base') + '</span>'
         + '</div>'
         + (p.description ? '<p class="td-desc">' + escapeHtml(p.description) + '</p>' : '')
