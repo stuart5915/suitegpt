@@ -139,19 +139,7 @@ var POOLS = {
 };
 
 // Coming soon pools (displayed as preview cards, not functional)
-var COMING_SOON = [
-    {
-        name: 'MirrorMind',
-        ticker: 'MIRROR',
-        logo: '',
-        color: 'hsl(280, 60%, 55%)',
-        colorDim: 'hsla(280, 60%, 55%, 0.12)',
-        glow: 'hsla(280, 60%, 55%, 0.18)',
-        description: 'Wellness brand powering mindful living. Trading fees buy CLAWS and flow back to stakers.',
-        platform: 'mirrormind.life',
-        category: 'inclawbator'
-    }
-];
+var COMING_SOON = [];
 
 var POOL_KEYS = Object.keys(POOLS);
 
@@ -217,6 +205,13 @@ function fmtUsd(n) {
     if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
     if (n >= 0.01) return '$' + n.toFixed(2);
     return '$0.00';
+}
+
+function fmtTokenAmount(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
 }
 
 // ══════════════════════════════════════
@@ -559,10 +554,16 @@ function buildPoolRow(key, pool, rank) {
     var stakers = stats.stakerCount || 0;
 
     var hasStats = poolStats[key] !== undefined;
+    var totalStaked = stats.totalStaked || 0;
     var apyStr = pool.retired ? '0%' : (apy ? Math.round(apy).toLocaleString('en-US') + '%' : (hasStats ? '0%' : '--'));
-    var tvlStr = hasStats ? (tvl > 0 ? fmtUsd(tvl) : '$0') : '--';
+    // Show token amount if price is 0 but tokens are staked
+    var tvlStr;
+    if (!hasStats) { tvlStr = '--'; }
+    else if (tvl > 0) { tvlStr = fmtUsd(tvl); }
+    else if (totalStaked > 0 && price === 0) { tvlStr = fmtTokenAmount(totalStaked) + ' ' + pool.ticker; }
+    else { tvlStr = '$0'; }
     var stakersStr = hasStats ? stakers.toLocaleString('en-US') : '--';
-    var isInactive = hasStats && stakers === 0 && tvl === 0 && apy === 0;
+    var isInactive = hasStats && stakers === 0 && totalStaked === 0 && apy === 0;
 
     var retiredBadge = pool.retired ? '<span class="stk-badge stk-badge--ended">Ended</span>' : '';
     if (isInactive && !pool.retired) retiredBadge = '<span class="stk-badge stk-badge--inactive" style="background:rgba(255,255,255,0.05);color:var(--text-dim);">No activity</span>';
