@@ -118,8 +118,28 @@ jobs:
           echo "message=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
           echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      - name: Wait for Vercel deploy
-        run: sleep 40
+      - name: Wait for Vercel deploy to go live
+        run: |
+          echo "Waiting for deploy to go live..."
+          for i in $(seq 1 20); do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://inclawbate.app/inclawbator?_=$(date +%s)")
+            if [ "$RESPONSE" == "200" ]; then
+              # Fetch the page and check if it was recently updated (Vercel adds x-vercel-cache header)
+              AGE=$(curl -s -I "https://inclawbate.app/inclawbator?_=$(date +%s)" | grep -i "age:" | awk '{print $2}' | tr -d '\r')
+              if [ -n "$AGE" ] && [ "$AGE" -lt 60 ] 2>/dev/null; then
+                echo "Deploy is live (age: ${AGE}s)"
+                break
+              fi
+              # If no age header or can't parse, just check that it's serving
+              if [ $i -ge 6 ]; then
+                echo "Site is responding (attempt $i) — deploy likely live"
+                break
+              fi
+            fi
+            echo "Attempt $i — waiting 10s..."
+            sleep 10
+          done
+          echo "Done waiting."
 
       - name: Notify Telegram
         if: env.HAS_TOKEN == 'true'
