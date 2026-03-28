@@ -861,6 +861,7 @@ const SUBCATS={
             {t:'Airdrop tokens',tip:'Distribute tokens to a list of wallets'},
             {t:'Deploy ERC-20',tip:'Standard ERC-20 with advanced settings'},
             {t:'Deploy NFT',tip:'Launch an ERC-721 NFT collection'},
+            {t:'Deploy smart contract',tip:'Deploy a custom smart contract to Base chain'},
             {t:'Payment splitter',tip:'Auto-split incoming payments between wallets'},
         ]},
         {id:'manage',label:'Manage',tip:'Manage your existing apps and deployments',pills:[
@@ -2148,7 +2149,6 @@ function stopIdeasTicker(){if(ideaTimer){clearInterval(ideaTimer);ideaTimer=null
 // ═══ MOBILE ═══
 function checkMobile(){
     const mob=window.innerWidth<=768;
-    // Advanced mode mobile adjustments
     if(S.mode==='advanced'&&mob){
         $('mobileBar')?.classList.remove('hidden');
     }else{
@@ -2166,9 +2166,11 @@ function toggleMobileCtx(){
     }else{
         overlay.classList.remove('hidden');
         overlay.classList.add('on');
-        // Clone active context panel content into mobile overlay
-        const active=document.querySelector('.ctx-panel.on');
-        if(active)$('mobCtxContent').innerHTML=active.innerHTML;
+        // Show the 6 preset feature cards as a quick menu
+        $('mobCtxContent').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 0;">'+
+            PRESETS.map(p=>'<div class="preset-card" style="padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;" onclick="toggleMobileCtx();selectPreset(\''+p.id+'\')">'+
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="color:var(--accent);">'+p.icon+'</span><strong style="font-size:13px;color:#fff;">'+p.title+'</strong></div>'+
+            '<div style="font-size:11px;color:var(--text2);">'+p.sub+'</div></div>').join('')+'</div>';
     }
 }
 
