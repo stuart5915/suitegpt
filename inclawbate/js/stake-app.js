@@ -609,7 +609,7 @@ function buildComingSoonRow(pool, rank) {
     '</tr>';
 }
 
-var _stakeFilter = 'active'; // 'active', 'inactive', 'all'
+var _stakeFilter = 'all'; // 'all', 'rewards', 'empty'
 
 function setStakeFilter(btn, filter) {
     _stakeFilter = filter;
@@ -618,12 +618,9 @@ function setStakeFilter(btn, filter) {
     renderOverview();
 }
 
-function isPoolActive(key) {
+function poolHasRewards(key) {
     var stats = poolStats[key] || {};
-    var pool = POOLS[key];
-    if (pool.retired) return false;
-    // Active = has stakers OR has rewards remaining OR has APY
-    return (stats.stakerCount > 0 || stats.rewardPool > 0 || stats.apy > 0);
+    return (stats.rewardPool > 0 || stats.apy > 0);
 }
 
 function renderOverview() {
@@ -633,11 +630,11 @@ function renderOverview() {
     var activeOpt = document.querySelector('#stakeSortDropdown .stake-sort-option.active');
     var sortBy = activeOpt ? activeOpt.dataset.sort : 'tvl';
 
-    // Filter pools by active/inactive
+    // Filter pools by rewards
     var filtered = POOL_KEYS.filter(function(key) {
         if (_stakeFilter === 'all') return true;
-        if (_stakeFilter === 'active') return isPoolActive(key);
-        if (_stakeFilter === 'inactive') return !isPoolActive(key);
+        if (_stakeFilter === 'rewards') return poolHasRewards(key);
+        if (_stakeFilter === 'empty') return !poolHasRewards(key);
         return true;
     });
 
