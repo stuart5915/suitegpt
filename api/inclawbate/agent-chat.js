@@ -3004,3 +3004,4 @@ export default async function handler(req, res) {
     return res.status(200).json({ reply: fallbackReply, session_id: sid || req.body?.session_id, suggestions: ['Build an app', 'Launch a token', 'Explore DeFi', 'What is Inclawbate?'] });
   }
 }
+// deploy trigger 1774713981
