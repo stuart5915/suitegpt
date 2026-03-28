@@ -2665,12 +2665,26 @@ export default async function handler(req, res) {
           functionCalled = 'deploy_token';
           if (wantsPage) {
             try {
-              const buildResult = await executeTool('build_app', {
-                app_name: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-promo',
-                description: `Build a landing page to promote ${tokenName} ($${ticker}). Token contract: ${d.token_address}. Include: hero with buy button (https://app.uniswap.org/swap?outputCurrency=${d.token_address}&chain=base), features, how to buy, BaseScan and DexScreener links. Dark theme.`,
-                wallet: sanitizedWallet
+              const tmplRes = await fetch('https://www.inclawbate.app/api/inclawbate/build-from-template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  template: 'token-landing',
+                  slug: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30),
+                  data: {
+                    TOKEN_NAME: tokenName,
+                    TOKEN_SYMBOL: '$' + ticker,
+                    TOKEN_ADDRESS: d.token_address,
+                    TOKEN_DESCRIPTION: description || `${tokenName} ($${ticker}) — launched on Base via Inclawbate.`,
+                    WEBSITE_URL: d.clanker_url || '#',
+                    WEBSITE_DISPLAY: 'Clanker',
+                    X_HANDLE: x_handle || '',
+                    TELEGRAM_URL: telegram_url || '#',
+                    creator_wallet: sanitizedWallet,
+                  }
+                })
               });
-              const bd = typeof buildResult === 'string' ? JSON.parse(buildResult) : buildResult;
+              const bd = await tmplRes.json();
               if (bd.url) { reply += `\n\nLanding page: ${bd.url}`; functionCalled = 'deploy_token+build_app'; }
             } catch (e) { console.error('Auto-build failed:', e.message); }
           }
@@ -2688,8 +2702,28 @@ export default async function handler(req, res) {
       }
     }
 
-    // Pre-LLM intercept: catch common phrases the LLM keeps mishandling
+    // Pre-LLM intercept: template-based page builds (presale, token landing, project page)
     const msgLower = message.toLowerCase().trim();
+
+    // Presale page request
+    const presaleMatch = msgLower.match(/presale.*(?:page|site|landing).*(?:for\s+)?(?:\$)?(\w+)/i) || msgLower.match(/(?:build|make|create).*presale.*(?:\$)?(\w+)/i);
+    if (presaleMatch || /presale\s+page/i.test(msgLower)) {
+      const tokenName = presaleMatch ? presaleMatch[1] : '';
+      if (!tokenName) {
+        const reply = "I can build a presale page! I need some info:\n\n• **Token name** (e.g. MyToken)\n• **Token symbol** (e.g. $MTK)\n• **Presale price** in ETH (e.g. 0.001)\n• **Hard cap** in ETH (e.g. 5)\n\nTell me these details and I'll generate a professional presale page.";
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid, suggestions: ['$MYTOKEN presale at 0.001 ETH, 5 ETH cap', 'Cancel'] });
+      }
+    }
+
+    // Token landing page request
+    const tokenPageMatch = msgLower.match(/(?:token|promo|landing)\s+(?:page|site).*(?:for\s+)?(?:\$)?(\w+)/i);
+    if (tokenPageMatch && !presaleMatch) {
+      const tokenRef = tokenPageMatch[1];
+      const reply = "I can build a token landing page! I need:\n\n• **Token name**\n• **Token symbol**\n• **Contract address** (0x...)\n• **Description** (what does it do?)\n\nShare these and I'll publish a professional page instantly.";
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Here are the details...', 'Cancel'] });
+    }
     if (/^(build something new|start something new|build a new app|make something new|create something new|i want to build|build me an app|make me an app|i want to build an app)$/i.test(msgLower)) {
       const reply = "What kind of app are you thinking? Describe what you want and I'll build it for you right here!";
       history.push({ role: 'assistant', content: reply });
