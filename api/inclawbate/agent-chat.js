@@ -2768,10 +2768,17 @@ export default async function handler(req, res) {
     }
 
     // Intercept "launch [NAME]" — token launch, not app building
-    const launchMatch = message.match(/^(?:\[.*?\]:\s*)?launch\s+(?:a\s+(?:token\s+(?:called\s+)?)?)?(\w[\w\s]*?)(?:\s+(?:ticker|symbol)\s+\$?(\w+))?\s*(?:and\s+(?:build|make|create)\s+(?:me\s+)?(?:a\s+)?(?:landing\s*page|website|site|promo))?/i);
+    const launchMatch = message.match(/^(?:\[.*?\]:\s*)?launch\s+(.+)$/i);
     if (launchMatch) {
-      const tokenName = launchMatch[1].trim();
-      const ticker = launchMatch[2] || tokenName.replace(/[^A-Z]/gi, '').slice(0, 5).toUpperCase();
+      let rawLaunch = launchMatch[1].trim();
+      // Strip "and build/make..." suffix
+      rawLaunch = rawLaunch.replace(/\s+and\s+(build|make|create)\s+.+$/i, '').trim();
+      // Strip "a token called" prefix
+      rawLaunch = rawLaunch.replace(/^(?:me\s+)?(?:a\s+)?(?:token\s+)?(?:called\s+)?/i, '').trim();
+      // Extract ticker if present
+      const tickerMatch = rawLaunch.match(/^(.+?)\s+(?:ticker|symbol)\s+\$?(\w+)$/i);
+      const tokenName = tickerMatch ? tickerMatch[1].trim() : rawLaunch;
+      const ticker = (tickerMatch ? tickerMatch[2] : tokenName.replace(/[^A-Z]/gi, '').slice(0, 5)).toUpperCase();
       if (!sanitizedWallet) {
         const reply = `Ready to launch **${tokenName}** ($${ticker}) on Base! I just need your wallet address to receive 80% of LP fee rewards.`;
         history.push({ role: 'assistant', content: reply });
