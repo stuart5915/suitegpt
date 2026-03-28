@@ -292,9 +292,10 @@ function renderTable() {
 
     var tierMap = {
         incubated: { cls: 'lp-tier-incubated', label: 'Incubated' },
-        permissionless: { cls: 'lp-tier-permissionless', label: 'Launched' },
+        permissionless: { cls: 'lp-tier-permissionless', label: '' },
         ecosystem: { cls: 'lp-tier-ecosystem', label: 'Ecosystem' },
-        partner: { cls: 'lp-tier-partner', label: 'Partner' }
+        partner: { cls: 'lp-tier-partner', label: 'Partner' },
+        drops: { cls: 'lp-tier-drops', label: 'Drop' }
     };
     var colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#8b5cf6','#ef4444','#06b6d4','#84cc16'];
 
@@ -330,7 +331,7 @@ function renderTable() {
             : isSolana
             ? '<span class="lp-badge-chain lp-chain-solana">Solana</span>'
             : '<span class="lp-badge-chain lp-chain-base">Base</span>';
-        var badges = chainBadge + '<span class="' + tier.cls + '">' + tier.label + '</span>';
+        var badges = chainBadge + (tier.label ? '<span class="' + tier.cls + '">' + tier.label + '</span>' : '');
         if (p.staking_address) badges += '<span class="lp-badge-staking">Staking</span>';
         if (p.agent_enabled) badges += '<span class="lp-badge-agent">Agent</span>';
 
