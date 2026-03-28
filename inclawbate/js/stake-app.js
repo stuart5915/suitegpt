@@ -609,19 +609,36 @@ function buildComingSoonRow(pool, rank) {
     '</tr>';
 }
 
+var _stakeFilter = 'active'; // 'active', 'inactive', 'all'
+
+function setStakeFilter(btn, filter) {
+    _stakeFilter = filter;
+    btn.parentNode.querySelectorAll('.stake-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderOverview();
+}
+
+function isPoolActive(key) {
+    var stats = poolStats[key] || {};
+    var pool = POOLS[key];
+    if (pool.retired) return false;
+    // Active = has stakers OR has rewards remaining OR has APY
+    return (stats.stakerCount > 0 || stats.rewardPool > 0 || stats.apy > 0);
+}
+
 function renderOverview() {
     var container = document.getElementById('stakeTableContainer');
     if (!container) return;
 
-    // Read current sort
-    var activeFilter = 'all';
     var activeOpt = document.querySelector('#stakeSortDropdown .stake-sort-option.active');
     var sortBy = activeOpt ? activeOpt.dataset.sort : 'tvl';
 
-    // Filter pools
+    // Filter pools by active/inactive
     var filtered = POOL_KEYS.filter(function(key) {
-        if (activeFilter === 'all') return true;
-        return POOLS[key].category === activeFilter;
+        if (_stakeFilter === 'all') return true;
+        if (_stakeFilter === 'active') return isPoolActive(key);
+        if (_stakeFilter === 'inactive') return !isPoolActive(key);
+        return true;
     });
 
     // Sort: featured first, then by selected metric
