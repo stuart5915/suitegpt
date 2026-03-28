@@ -2670,9 +2670,9 @@ export default async function handler(req, res) {
               const tmplData = {
                 TOKEN_NAME: tokenName, TOKEN_SYMBOL: '$' + ticker, TOKEN_ADDRESS: d.token_address,
                 TOKEN_EMOJI: '🪙', CHAIN: 'Base', LP_FEE_SPLIT: '80/20',
-                TOKEN_DESCRIPTION: description || `${tokenName} ($${ticker}) — launched on Base via Inclawbate.`,
+                TOKEN_DESCRIPTION: `${tokenName} ($${ticker}) — launched on Base via Inclawbate.`,
                 WEBSITE_URL: d.clanker_url || '#', WEBSITE_DISPLAY: 'Clanker',
-                X_HANDLE: x_handle || '', TELEGRAM_URL: telegram_url || '#',
+                X_HANDLE: '', TELEGRAM_URL: '#',
                 STAKING_BUTTON: '', ABOUT_SECTION: '',
               };
               const tmplHtml = fillTemplate(TOKEN_LANDING, tmplData);
