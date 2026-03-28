@@ -2766,10 +2766,42 @@ export default async function handler(req, res) {
     }
 
     // Intercept detailed app requests — has name + type, just build it directly
-    const appNameMatch = message.match(/^(?:a\s+)?(.+?)(?:\s+called\s+|\s+named\s+)(.+)$/i);
+    const appNameMatch = message.match(/^(?:(?:build|make|create)\s+(?:me\s+)?(?:a\s+)?)?(.+?)(?:\s+called\s+|\s+named\s+|\s+and\s+call\s+it\s+|\s+and\s+name\s+it\s+|\s+for\s+)(.+)$/i);
     if (appNameMatch && appNameMatch[1].length >= 3 && appNameMatch[2].length >= 2) {
       const description = appNameMatch[1].trim();
       const appName = appNameMatch[2].trim().replace(/[^a-zA-Z0-9\s-]/g, '');
+
+      // If name contains "token" or "coin", use the project-landing template instead of AI
+      if (/\b(token|coin)\b/i.test(appName)) {
+        try {
+          const { PROJECT_LANDING } = await import('./page-templates.js');
+          const pageSlug = appName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+          const tmplData = {
+            PROJECT_NAME: appName, PROJECT_EMOJI: '🪙',
+            PROJECT_TAGLINE: `The ${appName} ecosystem.`,
+            PROJECT_DESCRIPTION: `Welcome to ${appName}. Built on Inclawbate.`,
+            PRIMARY_CTA_URL: '#', PRIMARY_CTA_TEXT: 'Get Started',
+            SECONDARY_CTA_URL: '#', SECONDARY_CTA_TEXT: 'Learn More',
+            FEATURE_1_ICON: '⚡', FEATURE_1_TITLE: 'Fast', FEATURE_1_DESC: 'Lightning-fast transactions on Base.',
+            FEATURE_2_ICON: '🔒', FEATURE_2_TITLE: 'Secure', FEATURE_2_DESC: 'Audited smart contracts.',
+            FEATURE_3_ICON: '🌍', FEATURE_3_TITLE: 'Community', FEATURE_3_DESC: 'Built for everyone.',
+            ABOUT_SECTION: '', LINK_PILLS: '',
+          };
+          const tmplHtml = fillTemplate(PROJECT_LANDING, tmplData);
+          const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: appName, description: tmplData.PROJECT_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template', creator_wallet: sanitizedWallet || null })
+          });
+          const bd = await pubRes.json();
+          if (!bd.error) {
+            const pageUrl = `https://inclawbate.app/s/${pageSlug}`;
+            const reply = `Your **${appName}** page is live!\n\n${pageUrl}\n\nWant me to customize it? I can update the description, features, links, or anything else.`;
+            history.push({ role: 'assistant', content: reply });
+            return sendReply({ reply, function_called: 'build_app', session_id: sid, app_url: pageUrl, suggestions: ['Change the description', 'Add social links', 'Update the features', 'Looks great!'] });
+          }
+        } catch (e) { console.error('[Token page template] Build failed:', e.message); }
+      }
+
       const result = await executeTool('build_app', { app_name: appName, description });
       const directReply = generateDirectReply('build_app', result, { app_name: appName, description });
       if (directReply) {
