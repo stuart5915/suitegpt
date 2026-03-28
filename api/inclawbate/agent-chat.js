@@ -2678,7 +2678,7 @@ export default async function handler(req, res) {
               const tmplHtml = fillTemplate(TOKEN_LANDING, tmplData);
               const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template' })
+                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template', creator_wallet: sanitizedWallet || null })
               });
               const bd = await pubRes.json();
               console.log('[Template] Publish result:', JSON.stringify(bd).slice(0, 200));
@@ -3019,7 +3019,7 @@ export default async function handler(req, res) {
               const tmplHtml = fillTemplate(TOKEN_LANDING, tmplData);
               const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template' })
+                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template', creator_wallet: sanitizedWallet || null })
               });
               const bd = await pubRes.json();
               console.log('[AutoChain Template] Publish result:', JSON.stringify(bd).slice(0, 200));

@@ -77,7 +77,7 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { template, data, slug } = req.body;
+    const { template, data, slug, creator_wallet } = req.body;
     if (!template || !TEMPLATES[template]) {
         return res.status(400).json({ error: 'Invalid template. Available: ' + Object.keys(TEMPLATES).join(', ') });
     }
@@ -112,6 +112,7 @@ export default async function handler(req, res) {
                 description: data.TOKEN_DESCRIPTION || data.PROJECT_DESCRIPTION || '',
                 email: 'anonymous@inclawbate.app',
                 source: 'template',
+                creator_wallet: creator_wallet || null,
             })
         });
         const publishData = await publishRes.json();
