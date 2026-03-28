@@ -611,12 +611,12 @@ function buildComingSoonRow(pool, rank) {
 
 var _stakeFilter = 'all'; // 'all', 'rewards', 'empty'
 
-function setStakeFilter(btn, filter) {
+window.setStakeFilter = function(btn, filter) {
     _stakeFilter = filter;
     btn.parentNode.querySelectorAll('.stake-filter-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
     renderOverview();
-}
+};
 
 function poolHasRewards(key) {
     var stats = poolStats[key] || {};
