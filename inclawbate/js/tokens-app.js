@@ -316,6 +316,8 @@ function renderTable() {
         // All tokens navigate to detail page
         var href = p.token_address ? '/tokens/' + p.token_address : '/tokens';
 
+        // Clean logo URL (Supabase SQL editor sometimes inserts line breaks)
+        if (p.logo_url) p.logo_url = p.logo_url.replace(/[\r\n\s]+/g, '');
         var logoHtml = p.logo_url
             ? '<img class="tok-logo" src="' + p.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
               + '<div class="tok-logo-placeholder" style="display:none;background:' + logoColor + '">' + name[0].toUpperCase() + '</div>'
