@@ -1,11 +1,10 @@
 // Build a page from a pre-made template — no AI generation needed
 // POST { template, data, slug } → publishes to inclawbate.app/s/{slug}
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { TOKEN_LANDING, PRESALE, PROJECT_LANDING, fillTemplate } from './page-templates.js';
 
 const TEMPLATES = {
     'token-landing': {
-        file: 'token-landing.html',
+        html: TOKEN_LANDING,
         required: ['TOKEN_NAME', 'TOKEN_SYMBOL', 'TOKEN_ADDRESS'],
         defaults: {
             TOKEN_EMOJI: '🪙',
@@ -21,7 +20,7 @@ const TEMPLATES = {
         }
     },
     'presale': {
-        file: 'presale.html',
+        html: PRESALE,
         required: ['TOKEN_NAME', 'TOKEN_SYMBOL', 'PRESALE_PRICE', 'HARD_CAP'],
         defaults: {
             TOKEN_EMOJI: '🚀',
@@ -40,7 +39,7 @@ const TEMPLATES = {
         }
     },
     'project-landing': {
-        file: 'project-landing.html',
+        html: PROJECT_LANDING,
         required: ['PROJECT_NAME'],
         defaults: {
             PROJECT_EMOJI: '🚀',
@@ -94,26 +93,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing required fields: ' + missing.join(', ') });
     }
 
-    // Read template file
-    let html;
-    try {
-        const templatePath = join(process.cwd(), 'inclawbate', 'templates', tmpl.file);
-        html = readFileSync(templatePath, 'utf-8');
-    } catch (e) {
-        return res.status(500).json({ error: 'Template file not found: ' + tmpl.file });
-    }
-
-    // Merge defaults + user data
+    // Merge defaults + user data, fill template
     const merged = { ...tmpl.defaults, ...data };
-
-    // Replace all {{PLACEHOLDERS}}
-    for (const [key, value] of Object.entries(merged)) {
-        const regex = new RegExp('\\{\\{' + key + '\\}\\}', 'g');
-        html = html.replace(regex, String(value || ''));
-    }
-
-    // Clean up any remaining unreplaced placeholders
-    html = html.replace(/\{\{[A-Z_]+\}\}/g, '');
+    const html = fillTemplate(tmpl.html, merged);
 
     // Generate slug
     const pageSlug = slug || (data.TOKEN_NAME || data.PROJECT_NAME || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);

@@ -8,6 +8,7 @@ import { logToFeed } from './notify.js';
 import { getSwapQuote, stakeClaws, unstakeClaws, claimStakingRewards } from './defi-actions.js';
 import { openPerpPosition, getPerpsMarkets } from './perps-actions.js';
 import { track } from './track.js';
+import { TOKEN_LANDING, fillTemplate } from './page-templates.js';
 import crypto from 'crypto';
 
 // ── Rate limiter (in-memory, per Vercel instance — resets on cold start) ──
@@ -2665,10 +2666,6 @@ export default async function handler(req, res) {
           functionCalled = 'deploy_token';
           if (wantsPage) {
             try {
-              const { readFileSync } = await import('fs');
-              const { join } = await import('path');
-              const tmplPath = join(process.cwd(), 'inclawbate', 'templates', 'token-landing.html');
-              let tmplHtml = readFileSync(tmplPath, 'utf-8');
               const pageSlug = tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
               const tmplData = {
                 TOKEN_NAME: tokenName, TOKEN_SYMBOL: '$' + ticker, TOKEN_ADDRESS: d.token_address,
@@ -2678,10 +2675,7 @@ export default async function handler(req, res) {
                 X_HANDLE: x_handle || '', TELEGRAM_URL: telegram_url || '#',
                 STAKING_BUTTON: '', ABOUT_SECTION: '',
               };
-              for (const [k, v] of Object.entries(tmplData)) {
-                tmplHtml = tmplHtml.replace(new RegExp('\\{\\{' + k + '\\}\\}', 'g'), String(v || ''));
-              }
-              tmplHtml = tmplHtml.replace(/\{\{[A-Z_]+\}\}/g, '');
+              const tmplHtml = fillTemplate(TOKEN_LANDING, tmplData);
               const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template' })
@@ -2968,7 +2962,7 @@ export default async function handler(req, res) {
           } catch (_) {}
         }
 
-        // ── Auto-chain: token deployed + user asked for landing page → build it ──
+        // ── Auto-chain: token deployed + user asked for landing page → build it via template ──
         if (functionCalled === 'deploy_token' && toolResultData?.success && toolResultData?.token_address) {
           const wantsPage = /landing\s*page|website|site|page\s*(for|to)|promo/i.test(message);
           if (wantsPage) {
@@ -2976,17 +2970,29 @@ export default async function handler(req, res) {
               const tokenName = toolArgs?.token_name || 'Token';
               const tokenSymbol = toolArgs?.token_symbol || '';
               const tokenAddr = toolResultData.token_address;
-              const buildDesc = `Build a landing page to promote ${tokenName} ($${tokenSymbol}). Token contract: ${tokenAddr}. Include: hero section with token name and buy button (link to https://app.uniswap.org/swap?outputCurrency=${tokenAddr}&chain=base), key features/benefits, how to buy section, links to BaseScan and DexScreener. Make it look professional with a dark theme.`;
-              const buildResult = await executeTool('build_app', {
-                app_name: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-promo',
-                description: buildDesc,
-                wallet: sanitizedWallet
+              const pageSlug = tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+              const tmplData = {
+                TOKEN_NAME: tokenName, TOKEN_SYMBOL: '$' + tokenSymbol, TOKEN_ADDRESS: tokenAddr,
+                TOKEN_EMOJI: '🪙', CHAIN: 'Base', LP_FEE_SPLIT: '80/20',
+                TOKEN_DESCRIPTION: `${tokenName} ($${tokenSymbol}) — launched on Base via Inclawbate.`,
+                WEBSITE_URL: toolResultData.clanker_url || '#', WEBSITE_DISPLAY: 'Clanker',
+                X_HANDLE: '', TELEGRAM_URL: '#',
+                STAKING_BUTTON: '', ABOUT_SECTION: '',
+              };
+              const tmplHtml = fillTemplate(TOKEN_LANDING, tmplData);
+              const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template' })
               });
-              const buildData = typeof buildResult === 'string' ? JSON.parse(buildResult) : buildResult;
-              if (buildData?.url) {
-                directReply += `\n\nLanding page built: ${buildData.url}`;
-                appUrl = buildData.url;
+              const bd = await pubRes.json();
+              console.log('[AutoChain Template] Publish result:', JSON.stringify(bd).slice(0, 200));
+              if (!bd.error) {
+                const pageUrl = `https://inclawbate.app/s/${pageSlug}`;
+                directReply += `\n\nLanding page: ${pageUrl}`;
+                appUrl = pageUrl;
                 functionCalled = 'deploy_token+build_app';
+              } else {
+                directReply += `\n\n(Page build: ${bd.error})`;
               }
             } catch (buildErr) {
               console.error('Auto-build landing page failed:', buildErr.message);
