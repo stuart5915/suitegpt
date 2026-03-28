@@ -48,10 +48,7 @@ async function fetchTodaysCommits() {
 }
 
 async function groupCommitsWithAI(commits) {
-    if (!GROQ_KEYS.length) {
-        // Fallback: just list them
-        return null;
-    }
+    if (!GROQ_KEYS.length) return null;
 
     const commitList = commits.map(c => c.message).join('\n');
 
@@ -63,16 +60,30 @@ async function groupCommitsWithAI(commits) {
         },
         body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
-            temperature: 0.3,
-            max_tokens: 1000,
+            temperature: 0.4,
+            max_tokens: 800,
             messages: [
                 {
                     role: 'system',
-                    content: 'You group git commit messages into 4-7 themed categories. For each category, provide a short emoji, a category name, the count of commits, and a VERY SHORT summary (max 6 words). Output ONLY valid JSON array: [{"emoji":"📱","name":"Mobile UX","count":5,"summary":"nav, toasts, model picker"},...]. No markdown, no explanation, just the JSON array. Keep summaries punchy — just key nouns, no filler words.'
+                    content: `You summarize git commits into 4-7 plain-English bullet points for a Telegram dev update. Each bullet is 1-2 sentences max — what was built/fixed and why it matters to users. Write for a general audience, not developers.
+
+Output ONLY a JSON array of objects: [{"emoji":"📈","text":"Built a more reliable token deployment system"},...]
+
+Rules:
+- NO jargon (no "refactored", "migrated", "endpoint", "component", "CSS", "API")
+- NO commit-style language — translate into what the USER experiences
+- Each bullet should feel like telling a friend what you worked on today
+- Start each text with a verb: Built, Updated, Fixed, Added, Improved, Launched
+- If many small commits are related, merge them into one bullet
+- Pick a relevant emoji for each bullet
+- Good: "Fixed several issues with the launch process"
+- Good: "Updated templates to make it easier for users to create their own content — it includes new layouts and design options"
+- Bad: "Refactored nav component CSS media queries for mobile breakpoints"
+- Bad: "Fixed edge case in token vault contract interaction"`
                 },
                 {
                     role: 'user',
-                    content: `Group these ${commits.length} commits:\n\n${commitList}`
+                    content: `Summarize these ${commits.length} commits into 4-7 bullets:\n\n${commitList}`
                 }
             ]
         })
@@ -83,7 +94,6 @@ async function groupCommitsWithAI(commits) {
     const text = data.choices?.[0]?.message?.content || '';
 
     try {
-        // Extract JSON from response (handle potential markdown wrapping)
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         if (jsonMatch) return JSON.parse(jsonMatch[0]);
     } catch (e) {}
@@ -125,39 +135,25 @@ export default async function handler(req, res) {
         const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
 
         // Build Telegram post (HTML)
-        let post = `🦞 <b>Dev Daily — ${esc(dateStr)}</b>\n\n`;
+        let post = `🦞 <b>Dev Daily — ${esc(dateStr)}</b>\n`;
+        post += `${commits.length} commits shipped today.\n\n`;
 
         if (groups && groups.length > 0) {
-            post += '<b>What shipped</b>\n';
             for (const g of groups) {
-                post += `${g.emoji} <b>${esc(g.name)}</b> (${g.count})\n`;
-                post += `   ${esc(g.summary)}\n\n`;
+                post += `${g.emoji} ${esc(g.text)}\n`;
             }
         } else {
             // Fallback: just list commits
-            post += '<b>Commits</b>\n';
-            for (const c of commits.slice(0, 20)) {
+            for (const c of commits.slice(0, 15)) {
                 post += `• ${esc(c.message)}\n`;
             }
-            if (commits.length > 20) post += `<i>+${commits.length - 20} more</i>\n`;
-            post += '\n';
+            if (commits.length > 15) post += `<i>+${commits.length - 15} more</i>\n`;
         }
-
-        // API stats section
-        if (apiStats && apiStats.total_requests > 0) {
-            post += '<b>Platform Activity</b>\n';
-            post += `   ${apiStats.total_requests} API requests`;
-            if (apiStats.agent_chat > 0) post += ` · ${apiStats.agent_chat} chats`;
-            if (apiStats.build_app > 0) post += ` · ${apiStats.build_app} builds`;
-            post += '\n\n';
-        }
-
-        post += `<code>${commits.length} commits</code> · <a href="https://inclawbate.app">inclawbate.app</a> · <a href="https://t.me/inclawbator">t.me/inclawbator</a>`;
 
         // Generate X post — narrative style, shows value not just changelog
         let tweet = '';
         try {
-            const groupSummary = groups ? groups.map(g => `${g.name} (${g.count}): ${g.summary}`).join('\n') : commits.slice(0, 15).map(c => c.message).join('\n');
+            const groupSummary = groups ? groups.map(g => `${g.emoji} ${g.text}`).join('\n') : commits.slice(0, 15).map(c => c.message).join('\n');
 
             const xRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -207,13 +203,13 @@ Rules:
 
         // Fallback if AI fails
         if (!tweet) {
-            tweet = `🦞 Dev Daily — ${dateStr}\n\n`;
+            tweet = `🦞 Dev Daily — ${dateStr}\n${commits.length} commits shipped today.\n\n`;
             if (groups && groups.length > 0) {
                 for (const g of groups) {
-                    tweet += `${g.emoji} ${g.name} (${g.count}) — ${g.summary}\n`;
+                    tweet += `${g.emoji} ${g.text}\n`;
                 }
             }
-            tweet += `\n${commits.length} commits shipped\ninclawbate.app · t.me/inclawbator`;
+            tweet += `\ninclawbate.app · t.me/inclawbator`;
         }
 
         return res.status(200).json({ post, tweet, commitCount: commits.length });
