@@ -122,7 +122,7 @@ var POOLS = {
         token: '0x623a5cFC2e2E04957373A9F45B2b2BEEabf82B07',
         rewardToken: '0x7ca47B141639B893C6782823C0b219f872056379',
         rewardTicker: 'CLAWS',
-        staking: 'DEPLOY_ADDRESS_HERE',
+        staking: '0x0000000000000000000000000000000000000000', // Not deployed yet
         decimals: 18,
         logo: '/inclawbate/assets/pokerai-logo.png',
         color: 'hsl(263, 70%, 58%)',
@@ -476,8 +476,12 @@ var rewardsTickStart = 0;  // timestamp when we last fetched rewardPool
 
 async function fetchAllPoolStats() {
     var calls = [];
+    var validKeys = [];
     POOL_KEYS.forEach(function(key) {
         var staking = POOLS[key].staking;
+        // Skip pools with no valid staking address
+        if (!staking || staking === '0x0000000000000000000000000000000000000000' || staking.indexOf('DEPLOY') !== -1) return;
+        validKeys.push(key);
         calls.push({ to: staking, data: SEL.totalStaked });
         calls.push({ to: staking, data: SEL.stakerCount });
         calls.push({ to: staking, data: SEL.rewardRate });
@@ -487,11 +491,11 @@ async function fetchAllPoolStats() {
 
     var results = await contractReadBatch(calls);
 
-    for (var i = 0; i < POOL_KEYS.length; i++) {
+    for (var i = 0; i < validKeys.length; i++) {
         var base = i * 5;
         // Skip update if all 5 results are '0x0' (RPC failure — not real data)
         var allFailed = results[base] === '0x0' && results[base+1] === '0x0' && results[base+2] === '0x0' && results[base+3] === '0x0' && results[base+4] === '0x0';
-        if (allFailed && poolStats[POOL_KEYS[i]]) continue;
+        if (allFailed && poolStats[validKeys[i]]) continue;
 
         var totalStaked = fromWei(results[base]);
         var stakerCount = Number(safeBigInt(results[base + 1]));
@@ -503,14 +507,14 @@ async function fetchAllPoolStats() {
         if (totalStaked > 0 && rewardRate > 0 && rewardPool > 0 && periodEnd > now) {
             var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
             // For dual-token pools, adjust APY by price ratio (reward value / stake value)
-            var pk = POOL_KEYS[i];
+            var pk = validKeys[i];
             if (POOLS[pk].rewardToken && poolPrices[pk] > 0 && poolPrices[pk + '_reward'] > 0) {
                 apy = rawApy * (poolPrices[pk + '_reward'] / poolPrices[pk]);
             } else {
                 apy = rawApy;
             }
         }
-        poolStats[POOL_KEYS[i]] = {
+        poolStats[validKeys[i]] = {
             totalStaked: totalStaked,
             stakerCount: stakerCount,
             rewardRate: rewardRate,
