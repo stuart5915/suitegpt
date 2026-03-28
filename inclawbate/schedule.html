@@ -3510,111 +3510,223 @@
         var tagline = (document.getElementById('dropTagline') || {}).value || '';
         var dropNum = (document.getElementById('dropNumber') || {}).value || '1';
 
-        // Background — dark
-        ctx.fillStyle = '#0a0a0f';
+        // ── Background ──
+        ctx.fillStyle = '#08080d';
         ctx.fillRect(0, 0, size, size);
 
-        // Draw uploaded image if present (centered, cover)
+        // Uploaded image as background
         if (_dropImage) {
             var imgScale = Math.max(size / _dropImage.width, size / _dropImage.height);
             var iw = _dropImage.width * imgScale;
             var ih = _dropImage.height * imgScale;
-            ctx.globalAlpha = 0.3;
+            ctx.globalAlpha = 0.2;
             ctx.drawImage(_dropImage, (size - iw) / 2, (size - ih) / 2, iw, ih);
             ctx.globalAlpha = 1;
-            // Dark overlay for text readability
-            var imgOverlay = ctx.createLinearGradient(0, 0, 0, size);
-            imgOverlay.addColorStop(0, 'rgba(10,10,15,0.6)');
-            imgOverlay.addColorStop(0.4, 'rgba(10,10,15,0.3)');
-            imgOverlay.addColorStop(0.6, 'rgba(10,10,15,0.3)');
-            imgOverlay.addColorStop(1, 'rgba(10,10,15,0.8)');
-            ctx.fillStyle = imgOverlay;
+            // Heavy vignette
+            var vig = ctx.createRadialGradient(size/2, size/2, size*0.2, size/2, size/2, size*0.7);
+            vig.addColorStop(0, 'rgba(8,8,13,0)');
+            vig.addColorStop(1, 'rgba(8,8,13,0.9)');
+            ctx.fillStyle = vig;
             ctx.fillRect(0, 0, size, size);
         }
 
-        // Subtle radial glow
-        var glow = ctx.createRadialGradient(size * 0.5, size * 0.35, 0, size * 0.5, size * 0.35, size * 0.5);
-        glow.addColorStop(0, 'rgba(232,121,85,0.1)');
-        glow.addColorStop(0.5, 'rgba(45,212,191,0.05)');
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
+        // ── Ambient glow effects ──
+        // Large coral glow top-center
+        var g1 = ctx.createRadialGradient(size*0.5, size*0.15, 0, size*0.5, size*0.15, size*0.45);
+        g1.addColorStop(0, 'rgba(232,121,85,0.12)');
+        g1.addColorStop(0.5, 'rgba(232,121,85,0.03)');
+        g1.addColorStop(1, 'transparent');
+        ctx.fillStyle = g1;
         ctx.fillRect(0, 0, size, size);
 
-        // Grid lines (subtle)
-        ctx.strokeStyle = 'rgba(232,121,85,0.025)';
-        ctx.lineWidth = 0.5;
-        for (var x = 0; x < size; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke(); }
-        for (var y = 0; y < size; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke(); }
+        // Teal glow bottom
+        var g2 = ctx.createRadialGradient(size*0.5, size*0.85, 0, size*0.5, size*0.85, size*0.4);
+        g2.addColorStop(0, 'rgba(45,212,191,0.08)');
+        g2.addColorStop(0.6, 'rgba(45,212,191,0.02)');
+        g2.addColorStop(1, 'transparent');
+        ctx.fillStyle = g2;
+        ctx.fillRect(0, 0, size, size);
+
+        // ── Decorative elements ──
+        // Outer border frame with gradient
+        var borderGrad = ctx.createLinearGradient(0, 0, size, size);
+        borderGrad.addColorStop(0, 'rgba(232,121,85,0.3)');
+        borderGrad.addColorStop(0.5, 'rgba(45,212,191,0.3)');
+        borderGrad.addColorStop(1, 'rgba(232,121,85,0.3)');
+        ctx.strokeStyle = borderGrad;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(size*0.04, size*0.04, size*0.92, size*0.92, 24); ctx.stroke();
+
+        // Inner subtle frame
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(size*0.06, size*0.06, size*0.88, size*0.88, 18); ctx.stroke();
+
+        // Corner accents — small L-shaped brackets
+        ctx.strokeStyle = 'rgba(232,121,85,0.5)';
+        ctx.lineWidth = 2.5;
+        var cLen = size * 0.06;
+        var cOff = size * 0.04;
+        // Top-left
+        ctx.beginPath(); ctx.moveTo(cOff, cOff + cLen); ctx.lineTo(cOff, cOff); ctx.lineTo(cOff + cLen, cOff); ctx.stroke();
+        // Top-right
+        ctx.beginPath(); ctx.moveTo(size - cOff - cLen, cOff); ctx.lineTo(size - cOff, cOff); ctx.lineTo(size - cOff, cOff + cLen); ctx.stroke();
+        // Bottom-left
+        ctx.strokeStyle = 'rgba(45,212,191,0.5)';
+        ctx.beginPath(); ctx.moveTo(cOff, size - cOff - cLen); ctx.lineTo(cOff, size - cOff); ctx.lineTo(cOff + cLen, size - cOff); ctx.stroke();
+        // Bottom-right
+        ctx.beginPath(); ctx.moveTo(size - cOff - cLen, size - cOff); ctx.lineTo(size - cOff, size - cOff); ctx.lineTo(size - cOff, size - cOff - cLen); ctx.stroke();
+
+        // Floating particles
+        ctx.globalAlpha = 0.15;
+        for (var p = 0; p < 30; p++) {
+            var px = (Math.sin(p * 7.3 + 1.2) * 0.5 + 0.5) * size;
+            var py = (Math.cos(p * 5.1 + 0.8) * 0.5 + 0.5) * size;
+            var pr = 1 + (p % 3);
+            ctx.fillStyle = p % 2 === 0 ? '#e87955' : '#2dd4bf';
+            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
 
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-        // Top badge — "INCLAWBATE DROP #X"
-        var badgeY = size * 0.1;
-        ctx.font = '900 ' + (size * 0.016) + 'px "Nunito", sans-serif';
-        ctx.letterSpacing = (size * 0.006) + 'px';
+        // ── DROP # badge — top center ──
+        var badgeY = size * 0.095;
+        ctx.font = '800 ' + (size * 0.014) + 'px "Nunito", sans-serif';
+        ctx.letterSpacing = (size * 0.008) + 'px';
         var badgeText = 'INCLAWBATE DROP #' + dropNum;
-        var badgeW = ctx.measureText(badgeText).width + size * 0.05;
-        var badgeH = size * 0.04;
+        var badgeW = ctx.measureText(badgeText).width + size * 0.06;
+        var badgeH = size * 0.038;
         var badgeX = (size - badgeW) / 2;
-        ctx.fillStyle = 'rgba(232,121,85,0.15)';
-        ctx.strokeStyle = 'rgba(232,121,85,0.5)';
+        // Badge glow
+        var badgeGlow = ctx.createRadialGradient(size/2, badgeY + badgeH/2, 0, size/2, badgeY + badgeH/2, badgeW * 0.6);
+        badgeGlow.addColorStop(0, 'rgba(232,121,85,0.15)');
+        badgeGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = badgeGlow;
+        ctx.fillRect(badgeX - size*0.05, badgeY - size*0.02, badgeW + size*0.1, badgeH + size*0.04);
+        // Badge pill
+        ctx.fillStyle = 'rgba(232,121,85,0.1)';
+        ctx.strokeStyle = 'rgba(232,121,85,0.6)';
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#e87955';
         ctx.fillText(badgeText, size / 2, badgeY + badgeH / 2);
         ctx.letterSpacing = '0px';
 
-        // App name — BIG
-        ctx.font = '900 ' + (size * 0.1) + 'px "Nunito", sans-serif';
+        // ── App name — HERO TEXT ──
+        // Text glow behind
+        ctx.shadowColor = 'rgba(232,121,85,0.3)';
+        ctx.shadowBlur = 40;
+        ctx.font = '900 ' + (size * 0.11) + 'px "Nunito", sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 20;
-        ctx.fillText(appName, size / 2, size * 0.3);
+        ctx.fillText(appName, size / 2, size * 0.28);
         ctx.shadowBlur = 0;
 
-        // Token symbol
+        // Underline accent beneath name
+        var nameW = ctx.measureText(appName).width;
+        var ulGrad = ctx.createLinearGradient(size/2 - nameW/2, 0, size/2 + nameW/2, 0);
+        ulGrad.addColorStop(0, 'transparent');
+        ulGrad.addColorStop(0.2, '#e87955');
+        ulGrad.addColorStop(0.8, '#2dd4bf');
+        ulGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = ulGrad;
+        ctx.fillRect(size/2 - nameW/2, size * 0.335, nameW, 3);
+
+        // ── Token symbol ──
         if (token) {
-            ctx.font = '700 ' + (size * 0.045) + 'px "JetBrains Mono", monospace';
+            ctx.font = '700 ' + (size * 0.05) + 'px "JetBrains Mono", monospace';
+            // Gradient text effect (simulate with two passes)
             ctx.fillStyle = '#e87955';
+            ctx.shadowColor = 'rgba(232,121,85,0.4)';
+            ctx.shadowBlur = 15;
             ctx.fillText(token, size / 2, size * 0.4);
+            ctx.shadowBlur = 0;
         }
 
-        // Tagline
+        // ── Tagline ──
         if (tagline) {
-            ctx.font = '400 ' + (size * 0.026) + 'px "Nunito", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.65)';
-            ctx.fillText(tagline, size / 2, size * 0.48);
+            ctx.font = '400 ' + (size * 0.025) + 'px "Nunito", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.fillText(tagline, size / 2, size * 0.47);
         }
 
-        // Divider
-        var divGrad = ctx.createLinearGradient(size * 0.15, 0, size * 0.85, 0);
+        // ── Feature pills row ──
+        var pills = ['App', 'Token', 'Staking', 'Landing Page'];
+        var pillY = size * 0.54;
+        var pillH = size * 0.03;
+        var pillGap = size * 0.012;
+        ctx.font = '700 ' + (size * 0.013) + 'px "Nunito", sans-serif';
+        var totalPillW = 0;
+        pills.forEach(function(p) { totalPillW += ctx.measureText(p).width + size * 0.03 + pillGap; });
+        totalPillW -= pillGap;
+        var pillX = (size - totalPillW) / 2;
+        pills.forEach(function(p, i) {
+            var pw = ctx.measureText(p).width + size * 0.03;
+            var accent = i % 2 === 0 ? 'rgba(232,121,85,' : 'rgba(45,212,191,';
+            ctx.fillStyle = accent + '0.08)';
+            ctx.strokeStyle = accent + '0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(pillX, pillY, pw, pillH, pillH / 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = i % 2 === 0 ? 'rgba(232,121,85,0.8)' : 'rgba(45,212,191,0.8)';
+            ctx.fillText(p, pillX + pw / 2, pillY + pillH / 2);
+            pillX += pw + pillGap;
+        });
+
+        // ── Grand divider ──
+        var divY = size * 0.61;
+        // Horizontal line with diamond center
+        var divGrad = ctx.createLinearGradient(size * 0.1, 0, size * 0.9, 0);
         divGrad.addColorStop(0, 'transparent');
-        divGrad.addColorStop(0.3, 'rgba(232,121,85,0.5)');
-        divGrad.addColorStop(0.7, 'rgba(45,212,191,0.5)');
+        divGrad.addColorStop(0.3, 'rgba(232,121,85,0.4)');
+        divGrad.addColorStop(0.5, 'rgba(255,255,255,0.6)');
+        divGrad.addColorStop(0.7, 'rgba(45,212,191,0.4)');
         divGrad.addColorStop(1, 'transparent');
         ctx.fillStyle = divGrad;
-        ctx.fillRect(size * 0.15, size * 0.55, size * 0.7, 2);
+        ctx.fillRect(size * 0.1, divY, size * 0.8, 1.5);
+        // Diamond at center
+        ctx.save();
+        ctx.translate(size / 2, divY);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = '#e87955';
+        ctx.fillRect(-4, -4, 8, 8);
+        ctx.restore();
 
-        // "Looking for a founder" CTA
-        ctx.font = '600 ' + (size * 0.024) + 'px "Nunito", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillText('Looking for a founder', size / 2, size * 0.63);
+        // ── Looking for a founder CTA ──
+        ctx.font = '500 ' + (size * 0.02) + 'px "Nunito", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillText('LOOKING FOR A FOUNDER', size / 2, size * 0.67);
 
-        ctx.font = '800 ' + (size * 0.03) + 'px "Nunito", sans-serif';
+        // CTA button
+        var ctaText = 'Claim this app + token';
+        ctx.font = '800 ' + (size * 0.026) + 'px "Nunito", sans-serif';
+        var ctaW = ctx.measureText(ctaText).width + size * 0.08;
+        var ctaH = size * 0.05;
+        var ctaX = (size - ctaW) / 2;
+        var ctaY = size * 0.71;
+        // CTA gradient background
+        var ctaGrad = ctx.createLinearGradient(ctaX, 0, ctaX + ctaW, 0);
+        ctaGrad.addColorStop(0, 'rgba(45,212,191,0.2)');
+        ctaGrad.addColorStop(1, 'rgba(45,212,191,0.1)');
+        ctx.fillStyle = ctaGrad;
+        ctx.strokeStyle = 'rgba(45,212,191,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.roundRect(ctaX, ctaY, ctaW, ctaH, ctaH / 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#2dd4bf';
-        ctx.fillText('Claim this app + token', size / 2, size * 0.68);
+        ctx.shadowColor = 'rgba(45,212,191,0.3)';
+        ctx.shadowBlur = 10;
+        ctx.fillText(ctaText, size / 2, ctaY + ctaH / 2);
+        ctx.shadowBlur = 0;
 
-        // Bottom branding
-        ctx.font = '600 ' + (size * 0.018) + 'px "Nunito", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillText('Built with Inclawbate', size / 2, size * 0.82);
-
-        ctx.font = (size * 0.04) + 'px "Nunito"';
-        ctx.fillText('🦞', size / 2, size * 0.875);
-
-        ctx.font = '400 ' + (size * 0.015) + 'px "Nunito", sans-serif';
+        // ── Bottom section ──
+        // "Built with Inclawbate" with lobster
+        ctx.font = '600 ' + (size * 0.017) + 'px "Nunito", sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillText('inclawbate.app · @inclawbator', size / 2, size * 0.94);
+        ctx.fillText('🦞  Built with Inclawbate', size / 2, size * 0.84);
+
+        // URL bar
+        ctx.font = '400 ' + (size * 0.014) + 'px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillText('inclawbate.app  ·  @inclawbator  ·  t.me/inclawbator', size / 2, size * 0.9);
 
         ctx.textAlign = 'left';
     }
