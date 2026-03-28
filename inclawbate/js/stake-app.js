@@ -558,11 +558,14 @@ function buildPoolRow(key, pool, rank) {
     var apy = stats.apy || 0;
     var stakers = stats.stakerCount || 0;
 
-    var apyStr = pool.retired ? '0%' : (apy ? Math.round(apy).toLocaleString('en-US') + '%' : '--');
-    var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
-    var stakersStr = stakers > 0 ? stakers.toLocaleString('en-US') : '--';
+    var hasStats = poolStats[key] !== undefined;
+    var apyStr = pool.retired ? '0%' : (apy ? Math.round(apy).toLocaleString('en-US') + '%' : (hasStats ? '0%' : '--'));
+    var tvlStr = hasStats ? (tvl > 0 ? fmtUsd(tvl) : '$0') : '--';
+    var stakersStr = hasStats ? stakers.toLocaleString('en-US') : '--';
+    var isInactive = hasStats && stakers === 0 && tvl === 0 && apy === 0;
 
     var retiredBadge = pool.retired ? '<span class="stk-badge stk-badge--ended">Ended</span>' : '';
+    if (isInactive && !pool.retired) retiredBadge = '<span class="stk-badge stk-badge--inactive" style="background:rgba(255,255,255,0.05);color:var(--text-dim);">No activity</span>';
     var btnText = pool.retired ? 'Unstake' : 'Stake';
     var btnClass = pool.retired ? 'stk-action-btn ended' : 'stk-action-btn';
 
@@ -570,7 +573,7 @@ function buildPoolRow(key, pool, rank) {
         ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
         : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
-    var rowClass = pool.featured ? ' featured-row' : '';
+    var rowClass = pool.featured ? ' featured-row' : (isInactive ? ' inactive-row' : '');
     var earnTicker = pool.rewardTicker || pool.ticker;
     var earnTag = pool.retired ? '' : '<span class="stk-earn-tag">Earn $' + earnTicker + '</span>';
 
