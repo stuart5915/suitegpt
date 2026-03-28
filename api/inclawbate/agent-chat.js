@@ -42,7 +42,7 @@ You have capabilities to help users. Match the user's intent to the right action
 
 IMPORTANT: If your previous message asked the user for missing details (like a wallet address or token address), and the user's next message contains those details, call THE SAME TOOL AGAIN with the new information filled in. Do NOT switch to a different tool.
 
-LAUNCH A TOKEN — Use deploy_token when you have name, symbol, AND the user's wallet address. When ANY of these are missing, ask for ALL missing details in a SINGLE message — do NOT ask one at a time. Required: token name, ticker/symbol, wallet address. Optional: description, image, website, X handle, telegram. The user's wallet receives 80% of LP fee rewards, Inclawbate receives 20%. The token launches on Base via Clanker automatically. IMPORTANT: If the user asks you to GENERATE, SUGGEST, or COME UP WITH a token name/ticker, you MUST invent a short, catchy, creative name (1-3 words max) and a matching ticker symbol (3-5 letters). Pass YOUR invented name as token_name and YOUR invented ticker as token_symbol to deploy_token. NEVER use the user's full message as the token name. Example: if they say "make a token about dogs", you might use token_name="GoodBoi" and token_symbol="BORK".
+LAUNCH A TOKEN + BUILD A SITE — Use deploy_token when you have name, symbol, AND the user's wallet address. If the user ALSO asks for a landing page/website/site, after the token deploys successfully, AUTOMATICALLY call build_app to create a promotional landing page for the token. Use the token name as the app name and include the token address, buy links, and description in the build instructions. When ANY of these are missing, ask for ALL missing details in a SINGLE message — do NOT ask one at a time. Required: token name, ticker/symbol, wallet address. Optional: description, image, website, X handle, telegram. The user's wallet receives 80% of LP fee rewards, Inclawbate receives 20%. The token launches on Base via Clanker automatically. IMPORTANT: If the user asks you to GENERATE, SUGGEST, or COME UP WITH a token name/ticker, you MUST invent a short, catchy, creative name (1-3 words max) and a matching ticker symbol (3-5 letters). Pass YOUR invented name as token_name and YOUR invented ticker as token_symbol to deploy_token. NEVER use the user's full message as the token name. Example: if they say "make a token about dogs", you might use token_name="GoodBoi" and token_symbol="BORK".
 
 DEPLOY STAKING — Use deploy_staking when someone wants a staking pool for their token. Requires: token_address and creator_wallet. If the user hasn't provided their wallet address, ASK for it before deploying — their wallet becomes the pool admin so they can deposit rewards. If they haven't provided a token address, ASK for it too. The pool lets holders stake the token and earn CLAWS rewards. After deployment, tell them to go to inclawbate.app/dashboard to connect their wallet and deposit CLAWS rewards.
 
@@ -686,18 +686,20 @@ async function deployTokenAction(args, extraOpts = {}) {
       name: args.token_name,
       symbol: args.token_symbol,
       creator_wallet: args.creator_wallet,
-      description: args.description,
-      image_url: args.image_url,
-      website_url: args.website_url,
-      x_handle: args.x_handle,
-      telegram_url: args.telegram_url,
+      description: args.description || '',
+      image_url: args.image_url || '',
+      website_url: args.website_url || '',
+      x_handle: args.x_handle || '',
+      telegram_url: args.telegram_url || '',
       reward_recipients: extraOpts.reward_recipients,
-      reward_bps: extraOpts.reward_bps
+      reward_bps: extraOpts.reward_bps,
+      airdrop_address: args.airdrop_address,
+      airdrop_pct: args.airdrop_pct ? parseInt(args.airdrop_pct) : 0
     });
     return JSON.stringify(result);
   } catch (err) {
     console.error('deployToken error:', err);
-    return JSON.stringify({ error: 'Token deployment failed. Try again or contact the Council.' });
+    return JSON.stringify({ error: 'Token deployment failed: ' + (err.message || 'unknown error') });
   }
 }
 
@@ -1920,7 +1922,7 @@ function generateDirectReply(tool, resultJson, args) {
       case 'deploy_token':
         if (d.success) return {
           reply: `Token deployed!\n\n• **${args.token_name}** ($${args.token_symbol})\n• Contract: \`${d.token_address}\`\n• Clanker: ${d.clanker_url}\n• Tx: ${d.basescan_url}\n\nYour token is live on Base with automatic liquidity. What's the next move?`,
-          suggestions: ['Deploy staking for this token', 'Set up X marketing agent', 'Airdrop tokens', 'Start something new']
+          suggestions: ['Build a landing page for this token', 'Deploy staking for this token', 'Airdrop tokens', 'Set up X marketing agent']
         };
         return d.error || 'Token deployment failed. Try again.';
 
