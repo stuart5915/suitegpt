@@ -2793,7 +2793,7 @@ export default async function handler(req, res) {
         history.push({ role: 'assistant', content: fallback.reply });
         return sendReply({ reply: fallback.reply, session_id: sid });
       }
-      const defaultReply = "I'm the Inclawbator! I can launch tokens, deploy staking pools, airdrop tokens, check analytics, and more. What would you like to do?";
+      const defaultReply = "I'm the Inclawbator! I can build apps, launch tokens, deploy staking pools, airdrop tokens, check analytics, and more. What would you like to do?";
       history.push({ role: 'assistant', content: defaultReply });
       return sendReply({ reply: defaultReply, session_id: sid });
     }
@@ -2816,7 +2816,7 @@ export default async function handler(req, res) {
         history.push({ role: 'assistant', content: fallback.reply });
         return sendReply({ reply: fallback.reply, session_id: sid });
       }
-      const defaultReply = "I'm the Inclawbator! I can launch tokens, deploy staking pools, build apps, check analytics, manage DeFi positions, and more. What would you like to do?";
+      const defaultReply = "I'm the Inclawbator! I can build apps, launch tokens, deploy staking pools, airdrop tokens, check analytics, manage DeFi positions, and more. What would you like to do?";
       history.push({ role: 'assistant', content: defaultReply });
       return sendReply({ reply: defaultReply, session_id: sid, suggestions: ['Build an app', 'Launch a token', 'Check CLAWS price', 'Explore DeFi options'] });
     }
