@@ -243,6 +243,8 @@ function render() {
     var html = '';
 
     // ── Hero ──
+    // Clean logo URL (Supabase SQL editor sometimes inserts line breaks)
+    if (p.logo_url) p.logo_url = p.logo_url.replace(/[\r\n\s]+/g, '');
     var logoHtml = p.logo_url
         ? '<img class="td-logo" src="' + escapeHtml(p.logo_url) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
           + '<div class="td-logo-placeholder" style="display:none">' + escapeHtml((p.token_name || '?')[0]).toUpperCase() + '</div>'
