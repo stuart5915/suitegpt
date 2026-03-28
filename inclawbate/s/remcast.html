@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remcast — Dream Journal + AI Art + Social Feed</title>
+    <meta name="description" content="Remcast is a dream journal that turns your dreams into AI art. Log, generate, share. Powered by $REM on Base.">
+    <meta property="og:title" content="Remcast — Your dreams, rendered.">
+    <meta property="og:description" content="Dream journal + AI art generator + social feed. Log your dreams, generate stunning visuals, share with the world.">
+    <meta property="og:url" content="https://inclawbate.app/s/remcast">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Remcast — Your dreams, rendered.">
+    <meta name="twitter:description" content="Dream journal + AI art generator + social feed. Powered by $REM on Base.">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-base: #0a0010;
+            --bg-surface: #0e0618;
+            --bg-card: #12091e;
+            --bg-card-hover: #1a0f2a;
+            --border: #1e1230;
+            --border-glow: rgba(139, 92, 246, 0.2);
+            --accent-purple: #8b5cf6;
+            --accent-violet: #c084fc;
+            --accent-gold: #d4a06a;
+            --accent-dim: rgba(139, 92, 246, 0.12);
+            --text-primary: #eae6f0;
+            --text-secondary: #9a8eb8;
+            --text-muted: #5a4e70;
+            --font-serif: 'Playfair Display', Georgia, serif;
+            --font-sans: 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        a { color: var(--accent-purple); text-decoration: none; transition: all 0.6s ease; }
+        a:hover { color: var(--accent-violet); }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+        /* ========== FILM GRAIN OVERLAY ========== */
+        .grain-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 200px 200px;
+        }
+
+        .grain-overlay::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: inherit;
+            animation: grainShift 0.5s steps(4) infinite;
+        }
+
+        @keyframes grainShift {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-2px, 2px); }
+            50% { transform: translate(2px, -2px); }
+            75% { transform: translate(-1px, -1px); }
+            100% { transform: translate(1px, 1px); }
+        }
+
+        /* ========== HERO ========== */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 30% 70%, rgba(99, 50, 200, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 40% at 75% 60%, rgba(212, 160, 106, 0.06) 0%, transparent 50%),
+                linear-gradient(180deg, #0a0010 0%, #0f0520 30%, #12082a 60%, #0a0010 100%);
+        }
+
+        /* Stars */
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1.5px 1.5px at 45% 10%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 60% 25%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(1px 1px at 75% 45%, rgba(255,255,255,0.35), transparent),
+                radial-gradient(1.5px 1.5px at 85% 15%, rgba(255,255,255,0.45), transparent),
+                radial-gradient(1px 1px at 15% 60%, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 35% 75%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 55% 55%, rgba(255,255,255,0.15), transparent),
+                radial-gradient(1.5px 1.5px at 90% 70%, rgba(255,255,255,0.35), transparent),
+                radial-gradient(1px 1px at 5% 85%, rgba(255,255,255,0.25), transparent),
+                radial-gradient(1px 1px at 50% 90%, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1.5px 1.5px at 20% 50%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 80% 55%, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 40% 42%, rgba(192,132,252,0.3), transparent),
+                radial-gradient(1px 1px at 65% 38%, rgba(212,160,106,0.25), transparent),
+                radial-gradient(1.5px 1.5px at 30% 20%, rgba(192,132,252,0.35), transparent);
+            animation: starTwinkle 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes starTwinkle {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.75; }
+        }
+
+        /* Slow-moving nebula glow */
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: nebulaFloat 12s ease-in-out infinite alternate;
+            filter: blur(40px);
+        }
+
+        @keyframes nebulaFloat {
+            0% { transform: translateX(-50%) translateY(0) scale(1); }
+            100% { transform: translateX(-45%) translateY(-20px) scale(1.1); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            padding: 40px 20px;
+        }
+
+        .hero-title {
+            font-family: var(--font-serif);
+            font-size: clamp(3.2rem, 8vw, 5.5rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+            text-shadow:
+                0 0 40px rgba(139, 92, 246, 0.3),
+                0 0 80px rgba(139, 92, 246, 0.15),
+                0 0 120px rgba(192, 132, 252, 0.08);
+            animation: titleBreathe 6s ease-in-out infinite;
+        }
+
+        @keyframes titleBreathe {
+            0%, 100% { transform: translateY(0); text-shadow: 0 0 40px rgba(139, 92, 246, 0.3), 0 0 80px rgba(139, 92, 246, 0.15), 0 0 120px rgba(192, 132, 252, 0.08); }
+            50% { transform: translateY(-4px); text-shadow: 0 0 50px rgba(139, 92, 246, 0.4), 0 0 100px rgba(139, 92, 246, 0.2), 0 0 150px rgba(192, 132, 252, 0.12); }
+        }
+
+        .hero-tagline {
+            font-family: var(--font-serif);
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            opacity: 0.85;
+            animation: fadeInUp 1.2s ease 0.3s both;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 28px;
+            padding: 8px 18px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 100px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--accent-violet);
+            letter-spacing: 0.04em;
+            animation: fadeInUp 1.2s ease 0.6s both;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            box-shadow: 0 0 8px var(--accent-purple);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent-purple); }
+            50% { opacity: 0.5; box-shadow: 0 0 16px var(--accent-purple); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            animation: fadeInUp 1.2s ease 1s both;
+        }
+
+        .scroll-line {
+            width: 1px;
+            height: 32px;
+            background: linear-gradient(to bottom, rgba(139, 92, 246, 0.4), transparent);
+            animation: scrollPulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scrollPulse {
+            0%, 100% { opacity: 0.4; height: 32px; }
+            50% { opacity: 0.8; height: 40px; }
+        }
+
+        /* ========== SECTIONS (SHARED) ========== */
+        .section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 60px;
+            line-height: 1.7;
+        }
+
+        /* ========== HOW IT WORKS ========== */
+        .how-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .how-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 28px;
+            text-align: center;
+            transition: all 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .how-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .how-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.08), 0 0 60px rgba(139, 92, 246, 0.04);
+        }
+
+        .how-card:hover::before { opacity: 1; }
+
+        .how-icon {
+            font-size: 2.4rem;
+            margin-bottom: 20px;
+            display: block;
+            animation: iconFloat 5s ease-in-out infinite;
+        }
+
+        .how-card:nth-child(2) .how-icon { animation-delay: -1.5s; }
+        .how-card:nth-child(3) .how-icon { animation-delay: -3s; }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .how-card h3 {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .how-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        /* ========== DREAM FEED ========== */
+        .feed-section {
+            background:
+                radial-gradient(ellipse 50% 40% at 50% 0%, rgba(139, 92, 246, 0.06) 0%, transparent 60%),
+                var(--bg-base);
+        }
+
+        .feed-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .dream-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            transition: all 0.6s ease;
+            cursor: default;
+        }
+
+        .dream-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(139, 92, 246, 0.25);
+            box-shadow:
+                0 16px 48px rgba(0, 0, 0, 0.3),
+                0 0 40px rgba(139, 92, 246, 0.06);
+        }
+
+        .dream-card:nth-child(5) {
+            grid-column: 1 / -1;
+        }
+
+        .dream-image {
+            width: 100%;
+            height: 220px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dream-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+        }
+
+        /* Individual dream gradients */
+        .dream-1 .dream-image {
+            background: linear-gradient(135deg, #1a0a3e 0%, #2d1b69 30%, #0a0628 60%, rgba(139, 92, 246, 0.2) 100%);
+        }
+        .dream-1 .dream-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(192, 132, 252, 0.25), transparent 50%);
+        }
+
+        .dream-2 .dream-image {
+            background: linear-gradient(160deg, #0a0628 0%, #1a1040 40%, #0f1a3a 70%, #061028 100%);
+        }
+        .dream-2 .dream-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 40% 60%, rgba(100, 149, 237, 0.2), transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15), transparent 40%);
+        }
+
+        .dream-3 .dream-image {
+            background: linear-gradient(145deg, #0a0a10 0%, #1a1a10 30%, #0a1008 50%, #0a0a10 100%);
+        }
+        .dream-3 .dream-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 30% 50%, rgba(212, 160, 106, 0.2), transparent 50%),
+                radial-gradient(circle at 60% 70%, rgba(80, 160, 80, 0.1), transparent 40%);
+        }
+
+        .dream-4 .dream-image {
+            background: linear-gradient(130deg, #100818 0%, #1a0a2e 35%, #12081f 65%, #0a0010 100%);
+        }
+        .dream-4 .dream-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 40%, rgba(255, 100, 100, 0.08), transparent 40%),
+                radial-gradient(ellipse 80% 40% at 50% 80%, rgba(139, 92, 246, 0.12), transparent 60%);
+        }
+
+        .dream-5 .dream-image {
+            background: linear-gradient(140deg, #0f0520 0%, #1c0a3a 25%, #0a1028 50%, #06060f 100%);
+            height: 180px;
+        }
+        .dream-5 .dream-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 40%, rgba(212, 160, 106, 0.15), transparent 40%),
+                radial-gradient(circle at 70% 50%, rgba(192, 132, 252, 0.2), transparent 45%);
+        }
+
+        .dream-body {
+            padding: 20px 22px 22px;
+        }
+
+        .dream-title {
+            font-family: var(--font-serif);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .dream-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mood-tag {
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: lowercase;
+            letter-spacing: 0.04em;
+        }
+
+        .mood-surreal { background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); border: 1px solid rgba(139, 92, 246, 0.2); }
+        .mood-peaceful { background: rgba(100, 200, 150, 0.1); color: #6ec89a; border: 1px solid rgba(100, 200, 150, 0.15); }
+        .mood-dark { background: rgba(200, 100, 100, 0.1); color: #c87a7a; border: 1px solid rgba(200, 100, 100, 0.15); }
+        .mood-vivid { background: rgba(212, 160, 106, 0.12); color: var(--accent-gold); border: 1px solid rgba(212, 160, 106, 0.18); }
+        .mood-eerie { background: rgba(120, 130, 200, 0.1); color: #8a8fd0; border: 1px solid rgba(120, 130, 200, 0.15); }
+
+        .dream-rem {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dream-author {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        /* ========== PATTERNS ========== */
+        .patterns-section {
+            background: var(--bg-base);
+        }
+
+        .patterns-grid {
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pattern-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pattern-label {
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .pattern-bar-track {
+            flex: 1;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pattern-bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            padding-right: 12px;
+            justify-content: flex-end;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.7);
+            transition: width 1.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pattern-bar-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .bar-purple { background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.6)); }
+        .bar-violet { background: linear-gradient(90deg, rgba(192, 132, 252, 0.25), rgba(192, 132, 252, 0.5)); }
+        .bar-gold { background: linear-gradient(90deg, rgba(212, 160, 106, 0.25), rgba(212, 160, 106, 0.5)); }
+        .bar-indigo { background: linear-gradient(90deg, rgba(100, 100, 200, 0.25), rgba(100, 100, 200, 0.5)); }
+
+        .pattern-count {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            min-width: 60px;
+        }
+
+        .patterns-quote {
+            text-align: center;
+            margin-top: 48px;
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+            opacity: 0.85;
+        }
+
+        /* ========== TOKEN SECTION ========== */
+        .token-section {
+            background:
+                radial-gradient(ellipse 60% 40% at 50% 50%, rgba(212, 160, 106, 0.04) 0%, transparent 60%),
+                var(--bg-base);
+        }
+
+        .token-inner {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .token-mechanics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .token-mech {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px 20px;
+            text-align: left;
+            transition: all 0.6s ease;
+        }
+
+        .token-mech:hover {
+            border-color: rgba(212, 160, 106, 0.25);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .token-mech-icon {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .token-mech-label {
+            font-family: var(--font-serif);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .token-mech-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .token-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-violet));
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.6s ease;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: rgba(212, 160, 106, 0.08);
+            border: 1px solid rgba(212, 160, 106, 0.25);
+            color: var(--accent-gold);
+            border-radius: 14px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.6s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 160, 106, 0.14);
+            transform: translateY(-2px);
+            color: var(--accent-gold);
+        }
+
+        .token-address-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.6s ease;
+        }
+
+        .token-address-box:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .token-address-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        .token-address-value {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+
+        .copy-icon {
+            font-size: 0.85rem;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .token-address-box:hover .copy-icon { opacity: 1; }
+
+        /* ========== FOOTER ========== */
+        .site-footer {
+            text-align: center;
+            padding: 60px 20px 140px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-powered {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .footer-link {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .footer-owl {
+            font-size: 1.6rem;
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        /* ========== SECTION DIVIDERS ========== */
+        .divider {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+            margin: 0 auto 60px;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .how-cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .feed-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dream-card:nth-child(5) {
+                grid-column: auto;
+            }
+
+            .token-mechanics {
+                grid-template-columns: 1fr;
+            }
+
+            .section {
+                padding: 70px 0;
+            }
+
+            .pattern-label {
+                min-width: 60px;
+                font-size: 0.88rem;
+            }
+
+            .hero-scroll-hint {
+                bottom: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2.8rem;
+            }
+
+            .hero-tagline {
+                font-size: 1rem;
+            }
+
+            .how-card {
+                padding: 28px 20px;
+            }
+
+            .dream-image {
+                height: 180px;
+            }
+
+            .token-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-primary, .btn-secondary {
+                justify-content: center;
+            }
+        }
+
+        /* ========== INTERSECTION OBSERVER ANIMATIONS ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.9s ease, transform 0.9s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 { transition-delay: 0.15s; }
+        .reveal-delay-2 { transition-delay: 0.3s; }
+        .reveal-delay-3 { transition-delay: 0.45s; }
+        .reveal-delay-4 { transition-delay: 0.6s; }
+        .reveal-delay-5 { transition-delay: 0.75s; }
+    </style>
+</head>
+<body>
+
+<!-- ========== INCLAWBATE DROPS OVERLAY ========== -->
+<div id="dropOverlay" style="position:fixed;inset:0;z-index:10000;background:rgba(4,4,8,0.92);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="max-width:440px;width:100%;background:#12121c;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:32px 28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+        <div style="font-size:2rem;margin-bottom:10px">&#129438;</div>
+        <a href="https://www.inclawbate.app/drops" style="font-size:1.3rem;font-weight:900;color:#f0f0f5;margin-bottom:6px;font-family:'Inter',sans-serif;text-decoration:none;display:block">Inclawbate Drops</a>
+        <div style="font-size:0.85rem;color:#a0a0b8;line-height:1.6;margin-bottom:20px">
+            We build apps, launch tokens, and find founders. This is <strong style="color:#f0f0f5">Remcast</strong> — a dream journal and AI art platform ready to be owned and operated.
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:20px;text-align:left">
+            <div style="font-size:0.72rem;font-weight:700;color:#606078;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">What you get</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:0.82rem;color:#a0a0b8;line-height:1.5">
+                <div>&#10003; <strong style="color:#f0f0f5">30% token allocation</strong> — founder supply</div>
+                <div>&#10003; <strong style="color:#f0f0f5">Full incubation support</strong> — dev, marketing, strategy</div>
+                <div>&#10003; <strong style="color:#f0f0f5">A live app + token + staking</strong> — already deployed</div>
+            </div>
+        </div>
+        <div id="overlayClaimForm" style="display:flex;flex-direction:column;gap:8px">
+            <textarea id="overlayPitch" style="width:100%;background:#0a0a11;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#f0f0f5;padding:10px 12px;font-size:0.82rem;font-family:'Inter',sans-serif;resize:none;line-height:1.5" rows="3" placeholder="Why do you want to own Remcast? What's your vision for it?"></textarea>
+            <input id="overlayContact" type="text" style="width:100%;background:#0a0a11;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#f0f0f5;padding:10px 12px;font-size:0.82rem;font-family:'Inter',sans-serif" placeholder="Your @telegram or @x handle">
+            <button id="overlayClaimBtn" onclick="submitOverlayClaim()" style="padding:12px;background:linear-gradient(135deg,#8b5cf6,#c084fc);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">Submit My Pitch</button>
+            <div style="display:flex;gap:8px">
+                <a href="https://app.uniswap.org/swap?outputCurrency=0x0000000000000000000000000000000000000000&chain=base" target="_blank" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif">Buy $REM<span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:#606078;margin-top:2px">CA: 0x0000...0000</span></a>
+                <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_remcast','1')}catch(e){}" style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(192,132,252,0.15));border:1px solid rgba(139,92,246,0.3);color:#f0f0f5;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">View the app &rarr;</button>
+            </div>
+        </div>
+        <div id="overlayClaimSent" style="display:none;padding:16px 0">
+            <div style="font-size:1.3rem;margin-bottom:6px">&#9989;</div>
+            <div style="font-size:0.9rem;font-weight:800;color:#f0f0f5;margin-bottom:4px">Pitch submitted!</div>
+            <div style="font-size:0.78rem;color:#a0a0b8;line-height:1.5;margin-bottom:12px">A council member will review and reach out via your handle.</div>
+            <button onclick="document.getElementById('dropOverlay').style.display='none';try{sessionStorage.setItem('drop_seen_remcast','1')}catch(e){}" style="padding:10px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#f0f0f5;border:none;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">View the app &rarr;</button>
+        </div>
+        <div style="margin-top:10px;font-size:0.68rem;color:#606078">No wallet needed. No money needed. Just the will to build.</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:10px">
+            <a href="https://www.inclawbate.app/drops" style="font-size:0.72rem;color:#a0a0b8;text-decoration:underline;font-family:'Inter',sans-serif">See all Drops &rarr;</a>
+            <a href="https://www.inclawbate.app" style="font-size:0.72rem;color:#606078;text-decoration:none;font-family:'Inter',sans-serif">&#129438; inclawbate.app</a>
+        </div>
+    </div>
+</div>
+<script>
+try{if(sessionStorage.getItem('drop_seen_remcast'))document.getElementById('dropOverlay').style.display='none'}catch(e){}
+function submitOverlayClaim(){
+    var pitch=document.getElementById('overlayPitch').value.trim();
+    var contact=document.getElementById('overlayContact').value.trim();
+    var btn=document.getElementById('overlayClaimBtn');
+    if(!pitch){alert('Tell us why you want this!');return;}
+    if(!contact){alert('Add your handle so we can reach you');return;}
+    btn.disabled=true;btn.textContent='Submitting...';btn.style.opacity='0.6';
+    fetch('https://www.inclawbate.app/api/inclawbate/hire-request',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({description:'[FOUNDER CLAIM — Remcast] '+pitch,contact:contact})
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){document.getElementById('overlayClaimForm').style.display='none';document.getElementById('overlayClaimSent').style.display='';}
+        else{alert(d.error||'Something went wrong');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';}
+    }).catch(function(){alert('Failed — try again');btn.disabled=false;btn.textContent='Submit My Pitch';btn.style.opacity='';});
+}
+</script>
+
+<!-- ========== HERO ========== -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="grain-overlay"></div>
+    <div class="hero-content">
+        <h1 class="hero-title">Remcast</h1>
+        <p class="hero-tagline">Your dreams, rendered.</p>
+        <div class="hero-badge">
+            <span class="dot"></span>
+            $REM on Base
+        </div>
+    </div>
+    <div class="hero-scroll-hint">
+        <span>scroll</span>
+        <div class="scroll-line"></div>
+    </div>
+</section>
+
+<!-- ========== HOW IT WORKS ========== -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title reveal">How it works</h2>
+        <div class="divider reveal"></div>
+        <div class="how-cards">
+            <div class="how-card reveal reveal-delay-1">
+                <span class="how-icon">&#127769;</span>
+                <h3>Log</h3>
+                <p>Write or speak your dream each morning. Private by default. Your subconscious, your vault.</p>
+            </div>
+            <div class="how-card reveal reveal-delay-2">
+                <span class="how-icon">&#10024;</span>
+                <h3>Generate</h3>
+                <p>AI renders your dream as a still image or cinematic clip. Watch the invisible become visible.</p>
+            </div>
+            <div class="how-card reveal reveal-delay-3">
+                <span class="how-icon">&#127760;</span>
+                <h3>Share</h3>
+                <p>Publish to the feed. Others collect your dreams with $REM. Your unconscious mind, monetized.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== DREAM FEED PREVIEW ========== -->
+<section class="section feed-section">
+    <div class="container">
+        <h2 class="section-title reveal">The Feed</h2>
+        <p class="section-subtitle reveal">A gallery of the human subconscious. Every card is someone's night, rendered into art.</p>
+        <div class="feed-grid">
+            <div class="dream-card dream-1 reveal reveal-delay-1">
+                <div class="dream-image"></div>
+                <div class="dream-body">
+                    <div class="dream-title">The glass tower</div>
+                    <div class="dream-meta">
+                        <span class="mood-tag mood-surreal">surreal</span>
+                        <span class="dream-rem">&#9830; 24 $REM</span>
+                        <span class="dream-author">anon_7k2</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dream-card dream-2 reveal reveal-delay-2">
+                <div class="dream-image"></div>
+                <div class="dream-body">
+                    <div class="dream-title">Running through water</div>
+                    <div class="dream-meta">
+                        <span class="mood-tag mood-peaceful">peaceful</span>
+                        <span class="dream-rem">&#9830; 18 $REM</span>
+                        <span class="dream-author">dreamer_91</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dream-card dream-3 reveal reveal-delay-3">
+                <div class="dream-image"></div>
+                <div class="dream-body">
+                    <div class="dream-title">My grandmother's garden at night</div>
+                    <div class="dream-meta">
+                        <span class="mood-tag mood-vivid">vivid</span>
+                        <span class="dream-rem">&#9830; 41 $REM</span>
+                        <span class="dream-author">nocturn_x</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dream-card dream-4 reveal reveal-delay-4">
+                <div class="dream-image"></div>
+                <div class="dream-body">
+                    <div class="dream-title">The city that breathes</div>
+                    <div class="dream-meta">
+                        <span class="mood-tag mood-dark">dark</span>
+                        <span class="dream-rem">&#9830; 33 $REM</span>
+                        <span class="dream-author">void_sleeper</span>
+                    </div>
+                </div>
+            </div>
+            <div class="dream-card dream-5 reveal reveal-delay-5">
+                <div class="dream-image"></div>
+                <div class="dream-body">
+                    <div class="dream-title">Teeth falling into my hands like coins</div>
+                    <div class="dream-meta">
+                        <span class="mood-tag mood-eerie">eerie</span>
+                        <span class="dream-rem">&#9830; 57 $REM</span>
+                        <span class="dream-author">rem_catcher</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== PATTERN TRACKING ========== -->
+<section class="section patterns-section">
+    <div class="container">
+        <h2 class="section-title reveal">Your patterns</h2>
+        <p class="section-subtitle reveal">Remcast maps the recurring themes in your subconscious. The things you dream about again and again.</p>
+        <div class="patterns-grid">
+            <div class="pattern-row reveal reveal-delay-1">
+                <span class="pattern-label">Falling</span>
+                <div class="pattern-bar-track">
+                    <div class="pattern-bar-fill bar-purple" style="width: 85%;">12 times</div>
+                </div>
+            </div>
+            <div class="pattern-row reveal reveal-delay-2">
+                <span class="pattern-label">Water</span>
+                <div class="pattern-bar-track">
+                    <div class="pattern-bar-fill bar-violet" style="width: 58%;">8 times</div>
+                </div>
+            </div>
+            <div class="pattern-row reveal reveal-delay-3">
+                <span class="pattern-label">Flying</span>
+                <div class="pattern-bar-track">
+                    <div class="pattern-bar-fill bar-gold" style="width: 42%;">6 times</div>
+                </div>
+            </div>
+            <div class="pattern-row reveal reveal-delay-4">
+                <span class="pattern-label">Lost</span>
+                <div class="pattern-bar-track">
+                    <div class="pattern-bar-fill bar-indigo" style="width: 35%;">5 times</div>
+                </div>
+            </div>
+        </div>
+        <p class="patterns-quote reveal">
+            Remcast finds patterns in your subconscious you'd never notice alone.
+        </p>
+    </div>
+</section>
+
+<!-- ========== $REM TOKEN ========== -->
+<section class="section token-section">
+    <div class="container">
+        <div class="token-inner">
+            <h2 class="section-title reveal">$REM</h2>
+            <div class="divider reveal"></div>
+            <div class="token-mechanics reveal">
+                <div class="token-mech">
+                    <span class="token-mech-icon">&#128302;</span>
+                    <div class="token-mech-label">Spend to generate</div>
+                    <div class="token-mech-desc">Use $REM to turn your dream entries into AI-rendered art and cinematic clips.</div>
+                </div>
+                <div class="token-mech">
+                    <span class="token-mech-icon">&#128214;</span>
+                    <div class="token-mech-label">Earn by logging</div>
+                    <div class="token-mech-desc">Log your dreams daily and earn $REM. Consistency rewards the faithful dreamer.</div>
+                </div>
+                <div class="token-mech">
+                    <span class="token-mech-icon">&#10084;&#65039;</span>
+                    <div class="token-mech-label">Earn when collected</div>
+                    <div class="token-mech-desc">When others collect your dream art, you earn $REM. Beautiful dreams pay.</div>
+                </div>
+                <div class="token-mech">
+                    <span class="token-mech-icon">&#128200;</span>
+                    <div class="token-mech-label">Stake to earn</div>
+                    <div class="token-mech-desc">Stake $REM and earn from all platform activity. Passive income from the collective unconscious.</div>
+                </div>
+            </div>
+            <div class="token-actions reveal">
+                <a href="https://app.uniswap.org/swap?outputCurrency=0x0000000000000000000000000000000000000000&chain=base" target="_blank" class="btn-primary">
+                    Buy $REM on Uniswap
+                </a>
+                <a href="https://www.inclawbate.app/stake" target="_blank" class="btn-secondary">
+                    Stake $REM
+                </a>
+            </div>
+            <div class="reveal" style="margin-top: 8px;">
+                <div class="token-address-box" onclick="copyTokenAddress()" title="Click to copy">
+                    <div>
+                        <div class="token-address-label">Token Address (Base)</div>
+                        <div class="token-address-value" id="tokenAddr">0x0000000000000000000000000000000000000000</div>
+                    </div>
+                    <span class="copy-icon" id="copyIcon">&#128203;</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="site-footer">
+    <span class="footer-owl">&#129438;</span>
+    <div class="footer-powered">Powered by <a href="https://www.inclawbate.app/drops" target="_blank">Inclawbate Drops</a></div>
+    <a href="https://www.inclawbate.app" target="_blank" class="footer-link">inclawbate.app</a>
+</footer>
+
+<!-- ========== STICKY CLAIM BAR ========== -->
+<div id="claimBar" style="position:fixed;bottom:0;left:0;right:0;z-index:9000;font-family:'Inter',sans-serif">
+    <div id="claimBarCollapsed" style="background:linear-gradient(135deg,#8b5cf6,#c084fc);padding:14px 20px;text-align:center;box-shadow:0 -4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;gap:12px">
+        <span onclick="document.getElementById('claimBarCollapsed').style.display='none';document.getElementById('claimBarExpanded').style.display=''" style="color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;flex:1">&#129438; Want to own Remcast? Claim it here</span>
+        <button onclick="event.stopPropagation();document.getElementById('claimBar').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1rem;cursor:pointer;padding:0 4px">&times;</button>
+    </div>
+    <div id="claimBarExpanded" style="display:none;background:#12121c;border-top:2px solid #8b5cf6;padding:20px;box-shadow:0 -8px 30px rgba(0,0,0,0.5)">
+        <div style="max-width:500px;margin:0 auto">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-size:0.92rem;font-weight:800;color:#eae6e1">&#129438; Claim Remcast</span>
+                <button onclick="document.getElementById('claimBarExpanded').style.display='none';document.getElementById('claimBarCollapsed').style.display=''" style="background:none;border:none;color:#5a5670;font-size:1.2rem;cursor:pointer">&#8595;</button>
+            </div>
+            <div style="font-size:0.78rem;color:#8a8498;margin-bottom:10px;line-height:1.4">Tell us why you want to own this. Best pitch gets 30% token supply + full incubation.</div>
+            <div id="stickyClaimForm">
+                <textarea id="stickyPitch" style="width:100%;background:#0a0010;border:1px solid #1e1e30;border-radius:12px;color:#eae6e1;padding:10px 12px;font-size:0.82rem;font-family:'Inter',sans-serif;resize:none;line-height:1.5;margin-bottom:6px" rows="2" placeholder="Why do you want this? What's your vision?"></textarea>
+                <div style="display:flex;gap:6px">
+                    <input id="stickyContact" type="text" placeholder="@telegram or @x" style="flex:1;background:#0a0010;border:1px solid #1e1e30;border-radius:12px;color:#eae6e1;padding:10px 12px;font-size:0.82rem;font-family:'Inter',sans-serif">
+                    <button id="stickyClaimBtn" onclick="submitStickyClaim()" style="padding:10px 20px;background:#8b5cf6;color:#fff;border:none;border-radius:12px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Send</button>
+                </div>
+            </div>
+            <div id="stickyClaimSent" style="display:none;text-align:center;padding:10px 0">
+                <span style="font-size:0.88rem;color:#8b5cf6;font-weight:700">&#9989; Pitch sent! We'll reach out soon.</span>
+            </div>
+            <div style="text-align:center;margin-top:8px"><a href="https://www.inclawbate.app" target="_blank" style="font-size:0.68rem;color:#5a5670;text-decoration:none">&#129438; inclawbate.app</a></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* Sticky claim bar submit */
+function submitStickyClaim() {
+    var pitch = document.getElementById('stickyPitch').value.trim();
+    var contact = document.getElementById('stickyContact').value.trim();
+    var btn = document.getElementById('stickyClaimBtn');
+    if (!pitch) { alert('Tell us why you want this!'); return; }
+    if (!contact) { alert('Add your handle'); return; }
+    btn.disabled = true; btn.textContent = 'Sending...';
+    fetch('https://www.inclawbate.app/api/inclawbate/hire-request', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: '[FOUNDER CLAIM — Remcast] ' + pitch, contact: contact })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) { document.getElementById('stickyClaimForm').style.display = 'none'; document.getElementById('stickyClaimSent').style.display = ''; }
+        else { alert(d.error || 'Error'); btn.disabled = false; btn.textContent = 'Send'; }
+    }).catch(function() { alert('Failed'); btn.disabled = false; btn.textContent = 'Send'; });
+}
+
+/* Copy token address */
+function copyTokenAddress() {
+    var addr = document.getElementById('tokenAddr').textContent;
+    var icon = document.getElementById('copyIcon');
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(addr).then(function() {
+            icon.innerHTML = '&#10003;';
+            setTimeout(function() { icon.innerHTML = '&#128203;'; }, 2000);
+        });
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = addr;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        icon.innerHTML = '&#10003;';
+        setTimeout(function() { icon.innerHTML = '&#128203;'; }, 2000);
+    }
+}
+
+/* Intersection Observer for reveal animations */
+(function() {
+    var reveals = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(function(el) { observer.observe(el); });
+    } else {
+        /* Fallback: show everything */
+        reveals.forEach(function(el) { el.classList.add('visible'); });
+    }
+})();
+</script>
+
+</body>
+</html>
