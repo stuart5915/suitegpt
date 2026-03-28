@@ -2700,6 +2700,43 @@ export default async function handler(req, res) {
       }
     }
 
+    // Pre-LLM intercept: "deploy staking for [token address]" — execute directly
+    const stakingNLMatch = message.match(/(?:deploy|create|set\s*up|launch)\s+(?:a\s+)?staking\s+(?:pool\s+)?(?:for\s+)?(?:my\s+)?(?:token\s+)?(0x[a-fA-F0-9]{40})/i)
+      || message.match(/(0x[a-fA-F0-9]{40}).*(?:deploy|create|set\s*up)\s+staking/i)
+      || (/(deploy|create|set\s*up|launch)\s+staking/i.test(message) && message.match(/(0x[a-fA-F0-9]{40})/));
+    if (stakingNLMatch && sanitizedWallet) {
+      const tokenAddr = stakingNLMatch[1];
+      try {
+        const resultJson = await deployStakingAction({ token_address: tokenAddr, creator_wallet: sanitizedWallet });
+        const d = JSON.parse(resultJson);
+        if (d.needs_info) {
+          const reply = d.message;
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, session_id: sid, suggestions: ['Try again'] });
+        }
+        if (d.error) {
+          const reply = 'Staking deployment failed: ' + d.error;
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, session_id: sid, suggestions: ['Try again', 'Do something else'] });
+        }
+        const reply = `Staking pool deployed!\n\n• Pool: \`${d.pool_address || ''}\`\n• Token: ${d.staking_token || tokenAddr}\n• Admin: \`${d.admin || sanitizedWallet}\`\n${d.basescan_url ? '• Tx: ' + d.basescan_url + '\n' : ''}\nNext step: deposit CLAWS rewards so stakers can earn.`;
+        const action = { type: 'deploy_staking', data: d };
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid, function_called: 'deploy_staking', suggestions: ['Fund staking pool', 'Set up X marketing', 'Do something else'], action });
+      } catch (e) {
+        console.error('Staking NL intercept error:', e.message);
+        const reply = 'Staking deployment failed: ' + e.message;
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid, suggestions: ['Try again'] });
+      }
+    }
+    // If they ask to deploy staking but no address, ask for it
+    if (/(deploy|create|set\s*up|launch)\s+(?:a\s+)?staking/i.test(message) && !message.match(/0x[a-fA-F0-9]{40}/)) {
+      const reply = "I can deploy a staking pool! What's the token contract address? (0x...)";
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Paste token address', 'Cancel'] });
+    }
+
     // Pre-LLM intercept: template-based page builds (presale, token landing, project page)
     const msgLower = message.toLowerCase().trim();
 
