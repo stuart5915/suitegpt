@@ -547,11 +547,13 @@
             var imgUrl = today.imageUrl || today.image_url || '';
             // Fallback images for known drops (in case backend URL is broken)
             var dropImages = {
-                'ClawForge': 'https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/inclawbate-attachments/messages/0x91b5c0d07859cfeafeb67d9694121cd741f049bd/1774630359440_clawforge-logo.jpg'
+                'ClawForge': 'https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/inclawbate-attachments/messages/0x91b5c0d07859cfeafeb67d9694121cd741f049bd/1774630359440_clawforge-logo.jpg',
+                'REM Cast': 'https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/inclawbate-attachments/messages/0x91b5c0d07859cfeafeb67d9694121cd741f049bd/1774706143719_remcast-logo.jpg',
+                'Remcast': 'https://rdsmdywbdiskxknluiym.supabase.co/storage/v1/object/public/inclawbate-attachments/messages/0x91b5c0d07859cfeafeb67d9694121cd741f049bd/1774706143719_remcast-logo.jpg'
             };
-            if (!imgUrl || imgUrl.includes('\n') || imgUrl.includes('\r')) {
-                imgUrl = dropImages[today.meme] || '';
-            }
+            // Clean URL or use fallback
+            if (imgUrl) imgUrl = imgUrl.replace(/[\r\n\s]+/g, '');
+            if (!imgUrl) imgUrl = dropImages[today.meme] || '';
 
             // Set background image on the card
             if (imgUrl) {
@@ -583,13 +585,18 @@
                     var sym = item.symbol || '';
                     var date = item.launchedAt || item.timestamp || '';
                     if (date) date = new Date(date).toLocaleDateString();
-                    html += '<a href="' + esc(url) + '" target="_blank" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border-subtle);text-decoration:none;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-elevated)\'" onmouseout="this.style.background=\'\'">';
+                    var aImg = item.imageUrl || item.image_url || '';
+                    if (aImg) aImg = aImg.replace(/[\r\n\s]+/g, '');
+                    if (!aImg) aImg = dropImages[item.meme] || '';
+                    html += '<div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border-subtle)">';
+                    if (aImg) html += '<img src="' + esc(aImg) + '" alt="" style="width:40px;height:40px;border-radius:var(--radius-md);object-fit:cover;flex-shrink:0">';
                     html += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:0.88rem;color:var(--text-primary)">' + esc(item.meme) + '</div>';
                     if (sym) html += '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--lobster-300)">' + esc(sym) + '</div>';
                     html += '</div>';
-                    if (date) html += '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim)">' + date + '</div>';
-                    html += '<span style="color:var(--text-dim);font-size:0.85rem">&rarr;</span>';
-                    html += '</a>';
+                    if (date) html += '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim);flex-shrink:0">' + date + '</div>';
+                    html += '<a href="' + esc(url) + '" target="_blank" style="font-size:0.72rem;font-weight:700;color:var(--lobster-300);text-decoration:none;flex-shrink:0;padding:4px 10px;border:1px solid rgba(232,121,85,0.2);border-radius:var(--radius-full)">View</a>';
+                    html += '<a href="' + esc(url) + '" target="_blank" style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-decoration:none;flex-shrink:0;padding:4px 10px;border:1px solid var(--border-default);border-radius:var(--radius-full)">Claim</a>';
+                    html += '</div>';
                 });
                 document.getElementById('archiveList').innerHTML = html;
             }
