@@ -2665,28 +2665,32 @@ export default async function handler(req, res) {
           functionCalled = 'deploy_token';
           if (wantsPage) {
             try {
-              const tmplRes = await fetch('https://www.inclawbate.app/api/inclawbate/build-from-template', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  template: 'token-landing',
-                  slug: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30),
-                  data: {
-                    TOKEN_NAME: tokenName,
-                    TOKEN_SYMBOL: '$' + ticker,
-                    TOKEN_ADDRESS: d.token_address,
-                    TOKEN_DESCRIPTION: description || `${tokenName} ($${ticker}) — launched on Base via Inclawbate.`,
-                    WEBSITE_URL: d.clanker_url || '#',
-                    WEBSITE_DISPLAY: 'Clanker',
-                    X_HANDLE: x_handle || '',
-                    TELEGRAM_URL: telegram_url || '#',
-                    creator_wallet: sanitizedWallet,
-                  }
-                })
+              const { readFileSync } = await import('fs');
+              const { join } = await import('path');
+              const tmplPath = join(process.cwd(), 'inclawbate', 'templates', 'token-landing.html');
+              let tmplHtml = readFileSync(tmplPath, 'utf-8');
+              const pageSlug = tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+              const tmplData = {
+                TOKEN_NAME: tokenName, TOKEN_SYMBOL: '$' + ticker, TOKEN_ADDRESS: d.token_address,
+                TOKEN_EMOJI: '🪙', CHAIN: 'Base', LP_FEE_SPLIT: '80/20',
+                TOKEN_DESCRIPTION: description || `${tokenName} ($${ticker}) — launched on Base via Inclawbate.`,
+                WEBSITE_URL: d.clanker_url || '#', WEBSITE_DISPLAY: 'Clanker',
+                X_HANDLE: x_handle || '', TELEGRAM_URL: telegram_url || '#',
+                STAKING_BUTTON: '', ABOUT_SECTION: '',
+              };
+              for (const [k, v] of Object.entries(tmplData)) {
+                tmplHtml = tmplHtml.replace(new RegExp('\\{\\{' + k + '\\}\\}', 'g'), String(v || ''));
+              }
+              tmplHtml = tmplHtml.replace(/\{\{[A-Z_]+\}\}/g, '');
+              const pubRes = await fetch('https://www.inclawbate.app/api/publish-site', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: pageSlug, code: tmplHtml, name: tokenName, description: tmplData.TOKEN_DESCRIPTION, email: 'anonymous@inclawbate.app', source: 'template' })
               });
-              const bd = await tmplRes.json();
-              if (bd.url) { reply += `\n\nLanding page: ${bd.url}`; functionCalled = 'deploy_token+build_app'; }
-            } catch (e) { console.error('Auto-build failed:', e.message); }
+              const bd = await pubRes.json();
+              console.log('[Template] Publish result:', JSON.stringify(bd).slice(0, 200));
+              if (!bd.error) { reply += `\n\nLanding page: https://inclawbate.app/s/${pageSlug}`; functionCalled = 'deploy_token+build_app'; }
+              else { reply += `\n\n(Page: ${bd.error})`; }
+            } catch (e) { console.error('[Template] Build failed:', e.message); }
           }
           history.push({ role: 'assistant', content: reply });
           return sendReply({ reply, function_called: functionCalled, session_id: sid, suggestions: ['Deploy staking for this token', 'Airdrop tokens', 'Set up X marketing'] });
