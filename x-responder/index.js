@@ -203,6 +203,71 @@ function shouldReply(tweet) {
   return true;
 }
 
+// ── Per-user rate limiting ──
+const userCooldowns = new Map(); // username → last reply timestamp
+const userDailyCounts = new Map(); // username → { date, count }
+const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes between replies to same user
+const MAX_REPLIES_PER_DAY = 5; // max replies to any single user per day
+const MAX_THREAD_REPLIES = 3; // max replies in same conversation thread
+const threadReplyCounts = new Map(); // conversation_id → count
+
+function isRateLimited(username, conversationId) {
+  const now = Date.now();
+  const key = (username || '').toLowerCase();
+
+  // Cooldown check
+  const lastReply = userCooldowns.get(key);
+  if (lastReply && (now - lastReply) < COOLDOWN_MS) {
+    console.log(`Rate limited (cooldown): @${username} — ${Math.round((COOLDOWN_MS - (now - lastReply)) / 1000)}s remaining`);
+    return true;
+  }
+
+  // Daily limit check
+  const today = new Date().toISOString().slice(0, 10);
+  const daily = userDailyCounts.get(key);
+  if (daily && daily.date === today && daily.count >= MAX_REPLIES_PER_DAY) {
+    console.log(`Rate limited (daily max): @${username} — ${daily.count}/${MAX_REPLIES_PER_DAY} today`);
+    return true;
+  }
+
+  // Thread depth check
+  if (conversationId) {
+    const threadCount = threadReplyCounts.get(conversationId) || 0;
+    if (threadCount >= MAX_THREAD_REPLIES) {
+      console.log(`Rate limited (thread depth): conversation ${conversationId} — ${threadCount}/${MAX_THREAD_REPLIES} replies`);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function recordReply(username, conversationId) {
+  const now = Date.now();
+  const key = (username || '').toLowerCase();
+  const today = new Date().toISOString().slice(0, 10);
+
+  userCooldowns.set(key, now);
+
+  const daily = userDailyCounts.get(key);
+  if (daily && daily.date === today) {
+    daily.count++;
+  } else {
+    userDailyCounts.set(key, { date: today, count: 1 });
+  }
+
+  if (conversationId) {
+    threadReplyCounts.set(conversationId, (threadReplyCounts.get(conversationId) || 0) + 1);
+  }
+
+  // Clean up old entries periodically
+  if (userCooldowns.size > 500) {
+    for (const [k, v] of userCooldowns) {
+      if (now - v > COOLDOWN_MS * 2) userCooldowns.delete(k);
+    }
+  }
+}
+
 // ── Process a mention ──
 
 async function handleMention(tweet, authors) {
@@ -211,6 +276,9 @@ async function handleMention(tweet, authors) {
   // Skip self-mentions and @inclawbate (parent account mentions @inclawbator in promo tweets)
   const skipUsers = ['inclawbator', 'inclawbate'];
   if (skipUsers.includes(authorUsername?.toLowerCase())) return;
+
+  // Skip if rate limited (cooldown, daily max, or thread depth)
+  if (isRateLimited(authorUsername, tweet.conversation_id)) return;
 
   // Skip if already processed (in-memory dedup)
   if (processedMentionIds.has(tweet.id)) return;
@@ -286,6 +354,7 @@ async function handleMention(tweet, authors) {
     const tweetId = await postReply(replyText, tweet.id);
     await logMentionReply(tweet.id, tweet.text, authorUsername, replyText, 'posted', tweetId);
     logToFeed(authorUsername, tweet.text, replyText, tweetId).catch(() => {});
+    recordReply(authorUsername, tweet.conversation_id);
     mentionsProcessed++;
     console.log(`Replied to @${authorUsername} (tweet ${tweetId})`);
   } catch (e) {
