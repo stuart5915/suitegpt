@@ -1154,6 +1154,8 @@ function clickPill(el){
         councilJump('form');
     } else if(action==='telegram'){
         window.open('https://t.me/inclawbate','_blank');
+    } else if(S.tab==='defi' && handleDefiPill(el.textContent)){
+        // handled client-side
     } else {
         sendMessage(el.textContent);
     }
@@ -1167,6 +1169,115 @@ function clickPill(el){
         const ctx=$('mobileCtx');
         if(ctx&&ctx.classList.contains('on')){toggleMobileCtx();}
     }
+}
+
+function handleDefiPill(text){
+    const t=text.toLowerCase().trim();
+    // Ensure DeFi panel is visible if action panel was open
+    if(S.mode==='advanced'&&S.activeAction)closeActionPanel();
+
+    if(t==='swap tokens'){
+        if(!S.wallet){addBotMsg("Connect your wallet to start swapping tokens.",['Connect Wallet']);return true;}
+        addBotMsg("The **Swap** panel is ready — pick your tokens, enter an amount, and get a live quote from Uniswap V3 on Base.\n\nSupported: **ETH**, **USDC**, **CLAWS**\n\nOr tell me what you want to swap.",['Swap ETH for CLAWS','Swap USDC for ETH']);
+        return true;
+    }
+    if(t==='limit order'){
+        addBotMsg("Limit orders aren't available in-app yet. You can:\n\n• Use the **Swap** panel for instant trades\n• Set limit orders on [Uniswap](https://app.uniswap.org/?chain=base)\n• Or on [1inch](https://app.1inch.io/#/8453)",['Swap tokens','Best APY']);
+        return true;
+    }
+    if(t==='dca setup'){
+        addBotMsg("Dollar-cost averaging buys a token at regular intervals to smooth out volatility.\n\nTry [DCA.xyz](https://www.dca.xyz/) or [Mean Finance](https://mean.finance/) on Base.",['Swap tokens','Best APY']);
+        return true;
+    }
+    if(t==='perps'){
+        addBotMsg("Perpetual futures on Base:\n\n• [Synthetix Perps](https://synthetix.io/) — deep liquidity, up to 50x\n• [Kwenta](https://kwenta.io/) — Synthetix-powered UI\n• [BMX](https://bmx.trade/) — Base-native perps\n\n⚠️ Leverage trading carries significant risk.",['Swap tokens','Best APY']);
+        return true;
+    }
+    if(t==='disperse tokens'){
+        addBotMsg("Disperse lets you send tokens to multiple wallets in one transaction.\n\nTell me the **token**, **amounts**, and **wallet addresses** and I'll prepare it.",['Airdrop tokens']);
+        return true;
+    }
+    if(t==='stake claws'){
+        if(!S.wallet){addBotMsg("Connect your wallet first to stake CLAWS.",['Connect Wallet']);return true;}
+        const st=S.balances?.staking;
+        const info=st?'\n\nYour position: **'+fmtBal(st.staked,0)+' CLAWS** staked, **'+fmtBal(st.earned,2)+' CLAWS** earned.':'';
+        addBotMsg("Stake your **CLAWS** tokens to earn rewards from the ecosystem."+info+"\n\nUse the staking section in the DeFi panel, or tell me how much to stake.",['Claim rewards','Best APY']);
+        return true;
+    }
+    if(t==='liquid staking'){
+        addBotMsg("Liquid staking lets you stake ETH and get a receipt token usable in DeFi:\n\n• **Lido (stETH)** — ~3.4% APY, most liquid\n• **Coinbase (cbETH)** — ~3.2% APY, Base-native\n• **Rocket Pool (rETH)** — ~3.1% APY, decentralized\n\nYou can then lend your LST on Moonwell/Aave for extra yield.",['Balanced (5-8%)','Lend USDC','Stake CLAWS']);
+        return true;
+    }
+    if(t==='lp farming'){
+        addBotMsg("LP farming earns trading fees + reward tokens by providing liquidity:\n\n• **Aerodrome** — Largest DEX on Base, vote-locked rewards\n• **Uniswap V3** — Concentrated liquidity, higher capital efficiency\n• **Balancer** — Multi-asset pools\n\n⚠️ Watch out for impermanent loss on volatile pairs.",['Aggressive (15%+)','Best APY','Swap tokens']);
+        return true;
+    }
+    if(t==='auto-compound'){
+        addBotMsg("Auto-compounding reinvests your yield automatically:\n\n• **Beefy Finance** — Auto-compounds LP positions across protocols\n• **Yearn** — Vault strategies that optimize yield\n\nTypically adds 1-3% extra APY through compounding.",['Best APY','LP farming']);
+        return true;
+    }
+    if(t==='best apy'){
+        addBotMsg("Current best yields on Base:\n\n🟢 **Safe (3-5%)** — Lend USDC on Moonwell (4.2%) or Aave (3.8%)\n🔵 **Moderate (5-8%)** — ETH liquid staking + lending\n🔴 **Aggressive (15%+)** — Aerodrome LP farming\n\nHigher APY = higher risk.",['Conservative (~4%)','Balanced (5-8%)','Aggressive (15%+)']);
+        return true;
+    }
+    if(t==='lend usdc'){
+        addBotMsg("Lend USDC to earn passive interest:\n\n• **Moonwell** — 4.2% APY, Base-native\n• **Aave V3** — 3.8% APY, largest lending protocol\n• **Compound** — 3.5% APY, the OG\n\nAll low-risk — your USDC earns yield while remaining withdrawable.",['Compare protocols','Best APY']);
+        return true;
+    }
+    if(t==='borrow against eth'){
+        addBotMsg("Use ETH as collateral to borrow stablecoins:\n\n• **Moonwell** — Up to 80% LTV, competitive rates\n• **Aave V3** — Up to 82.5% LTV, flash loans available\n\n⚠️ Keep health factor above 1.5 to avoid liquidation.",['Lend USDC','Compare protocols']);
+        return true;
+    }
+    if(t==='compare protocols'){
+        addBotMsg("**Lending on Base — Protocol Comparison**\n\nMoonwell: USDC supply 4.2% | borrow 5.8%\nAave V3: USDC supply 3.8% | borrow 5.2%\nCompound: USDC supply 3.5% | borrow 4.9%\n\nMoonwell currently offers the best supply rates on Base.",['Lend USDC','Borrow against ETH','Best APY']);
+        return true;
+    }
+    if(t==='leverage loop'){
+        addBotMsg("A leverage loop multiplies yield by recursive lending/borrowing:\n\n1. Deposit ETH on Moonwell\n2. Borrow USDC against it\n3. Swap USDC → ETH\n4. Deposit again, repeat\n\n⚠️ **High risk** — amplifies gains AND losses. Liquidation risk increases with each loop. For experienced users only.",['Conservative (~4%)','Lend USDC']);
+        return true;
+    }
+    if(t.includes('conservative')){
+        addBotMsg("**Conservative Strategy (~4% APY)**\n\nLend stablecoins on battle-tested protocols:\n• Deposit USDC on **Moonwell** (4.2%) or **Aave** (3.8%)\n\n✅ Low risk — principal stays in stablecoins\n✅ Withdraw anytime\n✅ Predictable returns",['Lend USDC','Compare protocols','Balanced (5-8%)']);
+        return true;
+    }
+    if(t.includes('balanced')){
+        addBotMsg("**Balanced Strategy (5-8% APY)**\n\nCombine ETH staking with lending:\n1. Stake ETH via **Lido** → receive stETH (~3.4%)\n2. Lend stETH on **Aave** → extra ~1-2%\n3. Total: ~5-6% on your ETH\n\n✅ Moderate risk — exposed to ETH price\n✅ Liquid staking token remains usable",['Liquid staking','Conservative (~4%)','Aggressive (15%+)']);
+        return true;
+    }
+    if(t.includes('aggressive')){
+        addBotMsg("**Aggressive Strategy (15%+ APY)**\n\nLP farming + leverage:\n• Provide liquidity on **Aerodrome** (CLAWS/ETH, USDC/ETH)\n• Lock AERO for boosted rewards\n• Optional: leverage loop on lending protocols\n\n⚠️ Impermanent loss risk\n⚠️ Volatile rewards\n⚠️ Requires active management",['LP farming','Leverage loop','Conservative (~4%)']);
+        return true;
+    }
+    if(t==='my positions'){
+        if(!S.wallet){addBotMsg("Connect your wallet to view your positions.",['Connect Wallet']);return true;}
+        const st=S.balances?.staking;
+        const b=S.balances;
+        let msg="**Your DeFi Positions**\n\n";
+        if(b){
+            msg+="**Wallet:** "+fmtAddr(S.wallet)+"\n";
+            msg+="**ETH:** "+fmtBal(b.eth?.balance)+" ("+fmtUSD(b.eth?.usd)+")\n";
+            msg+="**USDC:** "+fmtBal(b.usdc?.balance,2)+" ("+fmtUSD(b.usdc?.usd)+")\n";
+            msg+="**CLAWS:** "+fmtBal(b.claws?.balance,0)+" ("+fmtUSD(b.claws?.usd)+")";
+        }
+        if(st&&(st.staked>0||st.earned>0)){
+            msg+="\n\n**Staking:** "+fmtBal(st.staked,0)+" CLAWS staked, "+fmtBal(st.earned,2)+" earned";
+        }else{
+            msg+="\n\nNo active staking position.";
+        }
+        addBotMsg(msg,['Stake CLAWS','Claim rewards','Best APY']);
+        return true;
+    }
+    if(t==='claim rewards'){
+        if(!S.wallet){addBotMsg("Connect your wallet to claim rewards.",['Connect Wallet']);return true;}
+        const st=S.balances?.staking;
+        if(st&&st.earned>0){
+            addBotMsg("You have **"+fmtBal(st.earned,2)+" CLAWS** in pending rewards.\n\nUse the **Claim** button in the staking section of the DeFi panel to collect.",['Stake CLAWS','My positions']);
+        }else{
+            addBotMsg("No pending rewards to claim. Stake CLAWS to start earning.",['Stake CLAWS','Best APY']);
+        }
+        return true;
+    }
+    return false;
 }
 
 function renderLaunchGrid(){
