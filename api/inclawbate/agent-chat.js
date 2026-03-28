@@ -2871,6 +2871,34 @@ export default async function handler(req, res) {
             if (tr.txs) txData = { txs: tr.txs };
           } catch (_) {}
         }
+
+        // ── Auto-chain: token deployed + user asked for landing page → build it ──
+        if (functionCalled === 'deploy_token' && toolResultData?.success && toolResultData?.token_address) {
+          const wantsPage = /landing\s*page|website|site|page\s*(for|to)|promo/i.test(message);
+          if (wantsPage) {
+            try {
+              const tokenName = toolArgs?.token_name || 'Token';
+              const tokenSymbol = toolArgs?.token_symbol || '';
+              const tokenAddr = toolResultData.token_address;
+              const buildDesc = `Build a landing page to promote ${tokenName} ($${tokenSymbol}). Token contract: ${tokenAddr}. Include: hero section with token name and buy button (link to https://app.uniswap.org/swap?outputCurrency=${tokenAddr}&chain=base), key features/benefits, how to buy section, links to BaseScan and DexScreener. Make it look professional with a dark theme.`;
+              const buildResult = await executeTool('build_app', {
+                app_name: tokenName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-promo',
+                description: buildDesc,
+                wallet: sanitizedWallet
+              });
+              const buildData = typeof buildResult === 'string' ? JSON.parse(buildResult) : buildResult;
+              if (buildData?.url) {
+                directReply += `\n\nLanding page built: ${buildData.url}`;
+                appUrl = buildData.url;
+                functionCalled = 'deploy_token+build_app';
+              }
+            } catch (buildErr) {
+              console.error('Auto-build landing page failed:', buildErr.message);
+              directReply += '\n\nLanding page build failed — you can try "build a landing page for this token" separately.';
+            }
+          }
+        }
+
         // Build action payload for rich panel rendering on client
         const action = functionCalled ? { type: functionCalled, ...(toolResultData && { data: toolResultData }), ...(toolArgs && { args: toolArgs }) } : null;
         return sendReply({ reply: directReply, function_called: functionCalled, tool_args: toolArgs, session_id: sid, ...(appUrl && { app_url: appUrl }), ...(txData && { tx_data: txData }), ...(directSuggestions && { suggestions: directSuggestions }), ...(councilRequestId && { council_request_id: councilRequestId }), ...(action && { action }) });
