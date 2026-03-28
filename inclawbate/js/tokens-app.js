@@ -249,7 +249,15 @@ async function fetchMarketCaps() {
 function getFilteredProjects() {
     var list = lpState.projects.slice();
 
-    if (lpState.filter === 'tokens') {
+    if (lpState.filter === 'traded') {
+        list = list.filter(function(p) {
+            return p.token_address && lpState.mcaps[(p.token_address || '').toLowerCase()] > 0;
+        });
+    } else if (lpState.filter === 'new') {
+        list = list.filter(function(p) {
+            return p.token_address && !lpState.mcaps[(p.token_address || '').toLowerCase()];
+        });
+    } else if (lpState.filter === 'tokens') {
         list = list.filter(function(p) { return !!p.token_address; });
     } else if (lpState.filter === 'staking') {
         list = list.filter(function(p) { return !!p.staking_address; });
@@ -286,7 +294,10 @@ function renderTable() {
 
     var list = getFilteredProjects();
     if (!list.length) {
-        container.innerHTML = '<div class="tokens-empty">No tokens match this filter.</div>';
+        var emptyMsg = lpState.filter === 'new' ? 'No new tokens waiting to be traded.'
+            : lpState.filter === 'traded' ? 'No traded tokens found.'
+            : 'No tokens match this filter.';
+        container.innerHTML = '<div class="tokens-empty">' + emptyMsg + '</div>';
         return;
     }
 
@@ -386,14 +397,20 @@ function renderTable() {
 }
 
 function initUI() {
-    var filtersEl = document.getElementById('lpFilters');
-    if (filtersEl) {
-        filtersEl.addEventListener('click', function(e) {
-            var btn = e.target.closest('.lp-filter-tab');
+    var tabsEl = document.getElementById('tokenTabs');
+    if (tabsEl) {
+        tabsEl.addEventListener('click', function(e) {
+            var btn = e.target.closest('.token-tab');
             if (!btn) return;
-            filtersEl.querySelectorAll('.lp-filter-tab').forEach(function(b) { b.classList.remove('active'); });
+            tabsEl.querySelectorAll('.token-tab').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             lpState.filter = btn.dataset.filter || 'all';
+            // Auto-switch sort when switching tabs
+            var sortEl = document.getElementById('lpSort');
+            if (lpState.filter === 'new') {
+                lpState.sort = 'newest';
+                if (sortEl) sortEl.value = 'newest';
+            }
             renderTable();
         });
     }
