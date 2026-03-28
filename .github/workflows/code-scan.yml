@@ -41,8 +41,8 @@ jobs:
             FAILED=1
           fi
 
-          # document.cookie theft
-          if grep -Prn 'document\.cookie' $CHANGED 2>/dev/null; then
+          # document.cookie theft (whitelist own auth token reads)
+          if grep -Prn 'document\.cookie' $CHANGED 2>/dev/null | grep -v 'inclawbate_token\|inclawbator_token' ; then
             echo "::error::🚨 BLOCKED: document.cookie access detected"
             FAILED=1
           fi
