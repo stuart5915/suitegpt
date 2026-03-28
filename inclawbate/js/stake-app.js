@@ -610,7 +610,7 @@ function buildComingSoonRow(pool, rank) {
     '</tr>';
 }
 
-var _stakeFilter = 'all'; // 'all', 'rewards', 'empty'
+var _stakeFilter = 'rewards'; // 'all', 'rewards', 'empty'
 
 window.setStakeFilter = function(btn, filter) {
     _stakeFilter = filter;
