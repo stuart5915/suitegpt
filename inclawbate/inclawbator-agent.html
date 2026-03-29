@@ -976,6 +976,7 @@ const S={
     activeAction:false,
     buildHistory:[], // previous code snapshots for undo
     pendingTokenBuild:false, // waiting for token name/symbol in build mode
+    pendingDelete:null, // waiting for delete confirmation {slug,name}
     picking:false, // element picker active
 };
 
@@ -1354,6 +1355,20 @@ async function sendMessage(text){
         return;
     }
 
+    // Check for pending app delete confirmation
+    if(S.pendingDelete){
+        if(/^(yes|delete|do it|go ahead|ok|yep|yeah|sure|yes.* delete)$/i.test(text.trim())){
+            S.sending=false;syncChat();
+            await executeDeleteApp();
+            return;
+        }else{
+            S.pendingDelete=null;
+            S.sending=false;syncChat();
+            addBotMsg('No worries, cancelled.',['Show me my apps']);
+            return;
+        }
+    }
+
     // Build mode uses studio API
     if(S.building&&S.tab==='build'){
         await sendBuildMsg(text.trim());
@@ -1640,8 +1655,15 @@ async function publishApp(){
     }
 }
 
-async function deleteApp(slug,name){
-    if(!confirm('Delete "'+name+'"? This cannot be undone.'))return;
+function deleteApp(slug,name){
+    closeActionPanel();
+    S.pendingDelete={slug,name};
+    addBotMsg("Are you sure you want to delete **"+name+"**? This can't be undone.",['Yes, delete it','Cancel']);
+}
+
+async function executeDeleteApp(){
+    const {slug,name}=S.pendingDelete;
+    S.pendingDelete=null;
     try{
         const res=await fetch(API.publish,{
             method:'DELETE',
@@ -1649,12 +1671,10 @@ async function deleteApp(slug,name){
             body:JSON.stringify({slug:slug,email:'inclawbator@inclawbate.app'})
         });
         const data=await res.json();
-        if(data.error){toast(data.error);return;}
-        toast(name+' deleted');
-        const card=document.getElementById('app-card-'+slug);
-        if(card)card.remove();
+        if(data.error){addBotMsg('Failed to delete: '+data.error);return;}
+        addBotMsg('**'+name+'** has been deleted.',['Show me my apps','Build an app']);
     }catch(e){
-        toast('Failed to delete');
+        addBotMsg('Something went wrong deleting that app. Try again.');
         console.error(e);
     }
 }
