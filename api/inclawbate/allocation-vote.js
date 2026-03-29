@@ -45,7 +45,7 @@ function computeSynthesis(votes) {
 
     // Round to integers, ensuring total = 100 and non-zero votes show at least 1%
     const rawTotal = rawPcts.reduce((a, b) => a + b, 0);
-    if (rawTotal === 0) return { synthesis: BUCKET_IDS.map(() => 0), totalVoters: activeVoters, totalWeight: totalWeight.toString() };
+    if (rawTotal === 0) return { synthesis: BUCKET_IDS.map(() => 0), totalVoters: activeVoters, totalWeight: '0' };
 
     const scale = 100 / rawTotal;
     let synthesis = rawPcts.map(v => {
@@ -62,7 +62,7 @@ function computeSynthesis(votes) {
         synthesis[maxIdx] += (100 - adjTotal);
     }
 
-    return { synthesis, totalVoters: activeVoters, totalWeight: totalWeight.toString() };
+    return { synthesis, totalVoters: activeVoters, totalWeight: String(voterCount) };
 }
 
 export default async function handler(req, res) {
