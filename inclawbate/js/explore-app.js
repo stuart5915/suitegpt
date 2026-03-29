@@ -357,7 +357,27 @@
 
         var agentItems = normalizeAgents(agents);
 
-        allItems = [].concat(projectItems, appItems, tokenItems, stakingItems, nftItems, agentItems);
+        // Tool items (hardcoded — platform tools)
+        var toolItems = [
+            { type: 'tool', name: 'Launch Token', description: 'Deploy an ERC-20 on Base with automatic LP via Clanker.', href: '/launch', logo_url: '', badges: ['Base', 'Free'] },
+            { type: 'tool', name: 'App Builder', description: 'Describe what you want — AI builds and publishes a live web app.', href: '/build', logo_url: '', badges: ['AI', 'Free'] },
+            { type: 'tool', name: 'Deploy Staking', description: 'Create a staking pool for any token. Stakers earn CLAWS.', href: '/stake', logo_url: '', badges: ['Base', 'Free'] },
+            { type: 'tool', name: 'Token Disperse', description: 'Send any token to multiple wallets in one transaction.', href: '/inclawbator', logo_url: '', badges: ['Base'] },
+            { type: 'tool', name: 'CLAWS AutoBuy', description: 'DCA into CLAWS — deposit ETH, buys happen automatically.', href: '/tools/autobuy', logo_url: '', badges: ['Base', 'Free'] },
+            { type: 'tool', name: 'X Schedule', description: 'AI agents that auto-post to X on your schedule.', href: '/schedule', logo_url: '', badges: ['AI', 'Free'] },
+            { type: 'tool', name: 'PokerAI', description: 'Play poker against AI agents. Real money. Real strategy.', href: '/pokerai', logo_url: '/inclawbate/assets/pokerai-logo.png', badges: ['Game'] },
+            { type: 'tool', name: 'Market Dashboard', description: 'Live price, volume, and analytics for ecosystem tokens.', href: '/market-dash', logo_url: '', badges: ['Analytics'] },
+            { type: 'tool', name: 'Inclawbator', description: 'AI agent that launches tokens, builds apps, manages DeFi, and more.', href: '/inclawbator', logo_url: '', badges: ['AI', 'Free'] },
+            { type: 'tool', name: 'Swap Tokens', description: 'Swap any token on Base via ParaSwap — best route across DEXes.', href: '/inclawbator', logo_url: '', badges: ['DeFi'] },
+            { type: 'tool', name: 'Perps Trading', description: '50+ leveraged markets via Synthetix v3. Long or short up to 50x.', href: '/inclawbator', logo_url: '', badges: ['DeFi'] },
+        ];
+
+        // Community Builds (grows over time — add new entries as builds happen)
+        var communityItems = [
+            { type: 'community', name: 'Community Build #1', description: 'The first community-prompted build. Reply on X with your prompt — best one ships tomorrow.', href: '/s/community-build-1', logo_url: '', badges: ['Day 1', 'Live'], created_at: new Date().toISOString() },
+        ];
+
+        allItems = [].concat(projectItems, appItems, tokenItems, stakingItems, nftItems, agentItems, toolItems, communityItems);
     }
 
     // ── Filtering & sorting ──
@@ -405,7 +425,7 @@
         var items = getFiltered();
 
         // Update tab counts
-        var counts = { all: 0, project: 0, app: 0, token: 0, nft: 0, staking: 0, agent: 0 };
+        var counts = { all: 0, project: 0, app: 0, token: 0, nft: 0, staking: 0, agent: 0, tool: 0, community: 0 };
         var q = searchQuery.toLowerCase();
         allItems.forEach(function (item) {
             if (q) {
@@ -661,7 +681,7 @@
             activeTab = hash;
         }
         // Also support plural hashes
-        var pluralMap = { projects: 'project', apps: 'app', tokens: 'token', nfts: 'nft', agents: 'agent' };
+        var pluralMap = { projects: 'project', apps: 'app', tokens: 'token', nfts: 'nft', agents: 'agent', tools: 'tool', builds: 'community' };
         if (hash && pluralMap[hash]) activeTab = pluralMap[hash];
 
         tabBtns.forEach(function (t) {
