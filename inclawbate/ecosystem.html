@@ -20,6 +20,15 @@
     <style>
         body { opacity: 1; }
 
+        .inc-tab {
+            flex: 1; padding: 10px 14px; background: none; border: none;
+            color: var(--text-dim); font-weight: 700; font-size: 0.85rem;
+            border-radius: 8px; cursor: pointer; transition: all 0.15s;
+            text-align: center; font-family: var(--font-display);
+        }
+        .inc-tab.active { background: var(--bg-elevated); color: var(--text-primary); }
+        .inc-tab:hover { color: var(--text-primary); }
+
         .inc-page {
             max-width: 720px;
             margin: 0 auto;
@@ -263,12 +272,20 @@
 <div class="inc-page">
 
     <section class="inc-hero">
-        <h1>Drops / Inclawbations</h1>
-        <p>Products, projects, and causes connected to Inclawbate. Each one either generates revenue, distributes value, or extends the ecosystem. Some we built. Some we incubated. All of them are part of the mission.</p>
+        <h1>Inclawbations</h1>
+        <p>Everything that comes out of Inclawbate &mdash; token drops, community builds, and full incubations. Some we built. Some the community built. All part of the mission.</p>
         <div class="inc-count" id="incCount"></div>
     </section>
 
+    <!-- Section tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:var(--space-xl);background:var(--bg-tertiary);border-radius:10px;padding:3px;">
+        <button class="inc-tab active" onclick="switchIncTab(this,'drops')" data-inc-tab="drops">Drops</button>
+        <button class="inc-tab" onclick="switchIncTab(this,'builds')" data-inc-tab="builds">Builds</button>
+        <button class="inc-tab" onclick="switchIncTab(this,'incubations')" data-inc-tab="incubations">Incubations</button>
+    </div>
+
     <!-- ══ DROPS ══ -->
+    <div id="drops" class="inc-section-content">
     <div id="drops" style="margin-bottom:var(--space-3xl)">
         <!-- Drops heading -->
         <div style="margin-bottom:var(--space-lg)">
@@ -307,10 +324,30 @@
         </div>
     </div>
 
-    <!-- ══ DIVIDER ══ -->
-    <div style="height:1px;background:linear-gradient(90deg,transparent,var(--border-default),transparent);margin-bottom:var(--space-2xl)"></div>
+    <!-- ══ BUILDS ══ -->
+    <div id="builds" class="inc-section-content" style="display:none;margin-bottom:var(--space-3xl)">
+        <div style="margin-bottom:var(--space-lg)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;background:var(--title-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0">Community Builds</h2>
+                <span style="font-family:var(--font-mono);font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:hsl(38,80%,60%);background:hsla(38,80%,55%,0.1);padding:3px 10px;border-radius:var(--radius-full);border:1px solid hsla(38,80%,55%,0.2)">New</span>
+            </div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;max-width:520px">Every day we post a blank page. The community replies with prompts. The best one gets built. Watch apps evolve from nothing — one prompt at a time.</p>
+        </div>
+
+        <div style="background:var(--bg-elevated);border:1px solid var(--border-primary);border-radius:var(--radius-xl);padding:var(--space-xl);text-align:center;margin-bottom:var(--space-lg)">
+            <div style="font-size:2.5rem;margin-bottom:var(--space-sm)">&#127959;</div>
+            <div style="font-size:1.1rem;font-weight:900;margin-bottom:6px;">Community Build #1</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.5;">Starting soon. Follow <a href="https://x.com/inclawbate" target="_blank" style="color:var(--lobster-300);">@inclawbate</a> on X to submit your prompts.</div>
+            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-dim);">Reply to the daily post with your prompt. Best one ships tomorrow.</div>
+        </div>
+
+        <div style="font-size:0.78rem;color:var(--text-dim);text-align:center;line-height:1.5;">
+            Each build runs for 1-2 weeks. Completed builds are archived here as a showcase of what the community created together.
+        </div>
+    </div>
 
     <!-- ══ INCLAWBATIONS ══ -->
+    <div id="incubations" class="inc-section-content" style="display:none">
     <div style="margin-bottom:var(--space-lg)">
         <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--text-primary);margin:0 0 4px">Inclawbations</h2>
         <p style="font-size:0.82rem;color:var(--text-dim);line-height:1.5">Products, projects, and causes connected to the ecosystem.</p>
@@ -499,6 +536,8 @@
         </div>
     </section>
 
+    </div><!-- close incubations section -->
+
 </div>
 
 <!-- Footer -->
@@ -515,6 +554,28 @@
     </div>
 </footer>
 
+<script>
+function switchIncTab(btn, tabId) {
+    // Update tab buttons
+    document.querySelectorAll('.inc-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    // Show/hide sections
+    document.querySelectorAll('.inc-section-content').forEach(function(s) { s.style.display = 'none'; });
+    var target = document.getElementById(tabId);
+    if (target) target.style.display = 'block';
+    // Update URL hash
+    window.location.hash = tabId;
+}
+
+// Handle hash on load
+(function() {
+    var hash = window.location.hash.replace('#', '');
+    if (hash && document.getElementById(hash)) {
+        var btn = document.querySelector('[data-inc-tab="' + hash + '"]');
+        if (btn) switchIncTab(btn, hash);
+    }
+})();
+</script>
 <script>
 (function(){
     var count = document.querySelectorAll('.inc-row').length;
