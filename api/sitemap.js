@@ -15,17 +15,41 @@ export default async function handler(req, res) {
         .order('created_at', { ascending: false });
 
     const urls = [
-        // Main pages
+        // Homepage
         { loc: 'https://inclawbate.app/', priority: '1.0', changefreq: 'daily' },
+        // Core product pages
+        { loc: 'https://inclawbate.app/inclawbator', priority: '0.9', changefreq: 'daily' },
         { loc: 'https://inclawbate.app/apps', priority: '0.9', changefreq: 'daily' },
-        { loc: 'https://inclawbate.app/tools', priority: '0.8', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.app/build', priority: '0.8', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.app/stake', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/skills', priority: '0.8', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/tokens', priority: '0.8', changefreq: 'daily' },
+        { loc: 'https://inclawbate.app/stake', priority: '0.8', changefreq: 'daily' },
+        { loc: 'https://inclawbate.app/claws', priority: '0.8', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/explore', priority: '0.8', changefreq: 'daily' },
+        { loc: 'https://inclawbate.app/ecosystem', priority: '0.8', changefreq: 'weekly' },
+        // Products / Incubations
+        { loc: 'https://inclawbate.app/pokerai', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/oddsclaw', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/crash', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/compute', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/nfts', priority: '0.6', changefreq: 'weekly' },
+        // Info pages
+        { loc: 'https://inclawbate.app/about', priority: '0.7', changefreq: 'monthly' },
+        { loc: 'https://inclawbate.app/docs', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/whitepaper', priority: '0.6', changefreq: 'monthly' },
         { loc: 'https://inclawbate.app/blog', priority: '0.7', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.app/dashboard', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/how-it-works', priority: '0.6', changefreq: 'monthly' },
+        // Builder pages
+        { loc: 'https://inclawbate.app/build', priority: '0.7', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/tools', priority: '0.6', changefreq: 'weekly' },
         { loc: 'https://inclawbate.app/agents', priority: '0.6', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.app/schedule', priority: '0.6', changefreq: 'weekly' },
-        { loc: 'https://inclawbate.app/explore', priority: '0.6', changefreq: 'weekly' },
+        { loc: 'https://inclawbate.app/leaderboard', priority: '0.5', changefreq: 'daily' },
+        // Community
+        { loc: 'https://inclawbate.app/team', priority: '0.5', changefreq: 'monthly' },
+        { loc: 'https://inclawbate.app/partners', priority: '0.5', changefreq: 'monthly' },
+        { loc: 'https://inclawbate.app/philanthropy', priority: '0.5', changefreq: 'monthly' },
+        // Legal
+        { loc: 'https://inclawbate.app/terms', priority: '0.3', changefreq: 'monthly' },
+        { loc: 'https://inclawbate.app/privacy-policy', priority: '0.3', changefreq: 'monthly' },
     ];
 
     // Add all app landing pages
