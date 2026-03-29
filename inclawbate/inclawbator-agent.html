@@ -232,6 +232,26 @@ input,select,textarea{font-family:inherit;}
 .build-preview iframe{flex:1;border:none;border-radius:var(--r-sm);background:var(--surface);min-height:300px;}
 .build-actions{display:flex;gap:8px;padding:12px 0 0;}
 
+/* ═══ AGENT PANEL ═══ */
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.agent-tpl-card{padding:20px;background:var(--card);border:1px solid var(--border-s);border-radius:var(--r);cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;gap:4px;}
+.agent-tpl-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2);}
+.agent-tpl-card:last-child{grid-column:1 / -1;}
+.agent-tpl-icon{font-size:28px;margin-bottom:4px;}
+.agent-tpl-title{font-size:13px;font-weight:800;}
+.agent-tpl-desc{font-size:10px;color:var(--text3);font-weight:600;line-height:1.5;}
+.agent-card{padding:16px;background:var(--card);border:1px solid var(--border-s);border-radius:var(--r);margin-bottom:10px;transition:all 0.2s;}
+.agent-card:hover{border-color:var(--border);}
+.agent-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.agent-card-name{font-size:14px;font-weight:800;}
+.agent-card-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:var(--r-full);}
+.agent-card-status.active{background:var(--green-soft);color:var(--green);}
+.agent-card-status.paused{background:hsla(30,30%,54%,0.1);color:var(--sand);}
+.agent-card-handle{font-size:11px;color:var(--text2);margin-bottom:8px;}
+.agent-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;}
+.agent-card-tag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:var(--r-full);background:var(--accent-soft);color:var(--accent);}
+.agent-card-actions{display:flex;gap:8px;}
+
 /* ═══ DEFI PANEL ═══ */
 .defi-connect{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;}
 .defi-connect-icon{font-size:48px;margin-bottom:16px;opacity:0.6;}
@@ -513,6 +533,7 @@ input,select,textarea{font-family:inherit;}
 @media(min-width:769px) and (max-width:1024px){
     .split-left{width:25%;min-width:120px;}
     .launch-grid{grid-template-columns:1fr 1fr;}
+    .agent-grid{grid-template-columns:1fr 1fr;}
 }
 
 /* Desktop */
@@ -523,6 +544,8 @@ input,select,textarea{font-family:inherit;}
     .ctx-panel{padding:20px 28px;}
     .launch-grid{grid-template-columns:1fr 1fr 1fr;gap:10px;}
     .launch-card{padding:16px;}
+    .agent-grid{grid-template-columns:1fr 1fr 1fr;gap:10px;}
+    .agent-tpl-card{padding:16px;}
     .atab{padding:10px 18px;font-size:13px;}
     .subcat-btn{padding:7px 14px;font-size:11px;}
     .pill{padding:6px 14px;font-size:11px;}
@@ -746,25 +769,45 @@ body { padding-top: var(--nav-height, 56px); }
                 <iframe id="dashFrame" src="/dashboard?embed=1" style="width:100%;flex:1;min-height:0;border:none;"></iframe>
             </div>
 
-            <!-- Council Panel -->
-            <div class="ctx-panel" id="panelCouncil">
-                <div class="ctx-title">Talk to the Council</div>
-                <div class="ctx-sub">Your message goes straight to our Telegram. A real human will reach out.</div>
-                <div id="councilFormAdv">
-                    <div class="field"><label>What do you need help with?</label><textarea id="councilDescAdv" placeholder="Describe your project, idea, or question..."></textarea></div>
-                    <div class="field"><label>Your contact</label><input id="councilContactAdv" placeholder="@telegram or @x handle"></div>
-                    <button class="btn btn-primary btn-block" onclick="sendCouncil('adv')">Send to Council</button>
+            <!-- Agent Panel -->
+            <div class="ctx-panel" id="panelAgent">
+                <div id="agentEmpty">
+                    <div class="ctx-title">Your Agents</div>
+                    <div class="ctx-sub">Create your first agent</div>
+                    <div class="agent-grid" id="agentGrid">
+                        <div class="agent-tpl-card" onclick="sendMessage('I want to set up an X Growth Agent')" data-tip="Auto-post to X, grow your audience on autopilot">
+                            <div class="agent-tpl-icon">📈</div>
+                            <div class="agent-tpl-title">X Growth Agent</div>
+                            <div class="agent-tpl-desc">Auto-post to X, grow your audience on autopilot</div>
+                        </div>
+                        <div class="agent-tpl-card" onclick="sendMessage('I want to set up a DCA Auto-Buyer agent')" data-tip="Dollar-cost average into any token automatically">
+                            <div class="agent-tpl-icon">💰</div>
+                            <div class="agent-tpl-title">DCA Auto-Buyer</div>
+                            <div class="agent-tpl-desc">Dollar-cost average into any token automatically</div>
+                        </div>
+                        <div class="agent-tpl-card" onclick="sendMessage('I want to set up an Analytics Reporter agent')" data-tip="Daily/weekly token stats posted to X or Telegram">
+                            <div class="agent-tpl-icon">📊</div>
+                            <div class="agent-tpl-title">Analytics Reporter</div>
+                            <div class="agent-tpl-desc">Daily/weekly token stats posted to X or Telegram</div>
+                        </div>
+                        <div class="agent-tpl-card" onclick="sendMessage('I want to set up a Whale Watcher agent')" data-tip="Monitor wallets and get alerts on big moves">
+                            <div class="agent-tpl-icon">🐋</div>
+                            <div class="agent-tpl-title">Whale Watcher</div>
+                            <div class="agent-tpl-desc">Monitor wallets and get alerts on big moves</div>
+                        </div>
+                        <div class="agent-tpl-card" onclick="sendMessage('I want to build a custom AI agent')" data-tip="Build your own — pick capabilities, connect accounts">
+                            <div class="agent-tpl-icon">⚡</div>
+                            <div class="agent-tpl-title">Custom Agent</div>
+                            <div class="agent-tpl-desc">Build your own — pick capabilities, connect accounts</div>
+                        </div>
+                    </div>
                 </div>
-                <div id="councilSuccessAdv" class="council-success hidden">
-                    <div class="council-check">✓</div>
-                    <h3>Sent!</h3>
-                    <p style="color:var(--text2);margin-top:8px;font-size:13px;">We'll reach out on the handle you provided.</p>
-                    <button class="btn btn-outline" style="margin-top:20px;" onclick="resetCouncilForm('adv')">Send another</button>
-                </div>
-                <div class="council-info" style="margin-top:24px;">
-                    <div class="ci-info-text"><span class="ci-icon">🚀</span><strong>Get incubated</strong> — Token launch, staking, landing page, marketing</div>
-                    <div class="ci-info-text"><span class="ci-icon">🤝</span><strong>Join the Council</strong> — Contribute, earn CLAWS, help govern treasury</div>
-                    <a href="https://t.me/inclawbate" target="_blank" class="ci-card" style="text-decoration:none;"><span class="ci-icon">💬</span><div class="ci-text"><strong>Join the community</strong>Meet the builders on Telegram</div></a>
+                <div id="agentList" class="hidden">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <div class="ctx-title" style="margin-bottom:0;">Your Agents</div>
+                        <button class="btn btn-outline btn-sm" onclick="showAgentTemplates()">+ New</button>
+                    </div>
+                    <div id="agentCards"></div>
                 </div>
             </div>
 
@@ -1127,6 +1170,7 @@ function switchTab(tab){
     $('pillRow').classList.add('hidden');
     $('buildBar').classList.toggle('hidden',tab!=='build'||!S.building);
     if(tab==='defi')renderDefiPanel();
+    if(tab==='agent')loadAgentPanel();
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
@@ -2168,6 +2212,58 @@ function councilJump(target){
         const ta=$('councilDescAdv');
         if(ta){ta.scrollIntoView({behavior:'smooth',block:'center'});ta.focus();}
     }
+}
+
+// ═══ AGENT PANEL ═══
+function showAgentTemplates(){
+    $('agentList').classList.add('hidden');
+    $('agentEmpty').classList.remove('hidden');
+}
+function showAgentList(){
+    $('agentEmpty').classList.add('hidden');
+    $('agentList').classList.remove('hidden');
+}
+async function loadAgentPanel(){
+    if(!S.wallet){
+        // No wallet — show templates
+        showAgentTemplates();
+        return;
+    }
+    try{
+        const res=await fetch('/api/inclawbate/inclawbator?wallet='+S.wallet);
+        const data=await res.json();
+        const agents=(data.projects||[]).filter(p=>p.agent_enabled);
+        if(!agents.length){
+            showAgentTemplates();
+            return;
+        }
+        renderAgentCards(agents);
+        showAgentList();
+    }catch{
+        showAgentTemplates();
+    }
+}
+function renderAgentCards(agents){
+    $('agentCards').innerHTML=agents.map(a=>{
+        const status=a.agent_status||'active';
+        const statusLabel=status==='active'?'Active':'Paused';
+        const statusClass=status==='active'?'active':'paused';
+        const handle=a.x_handle?'@'+a.x_handle:'';
+        const caps=(a.agent_capabilities||[]).map(c=>`<span class="agent-card-tag">${esc(c)}</span>`).join('');
+        const toggleLabel=status==='active'?'Pause':'Activate';
+        return `<div class="agent-card">
+            <div class="agent-card-header">
+                <span class="agent-card-name">${esc(a.name||a.slug||'Agent')}</span>
+                <span class="agent-card-status ${statusClass}">${statusLabel}</span>
+            </div>
+            ${handle?`<div class="agent-card-handle">${esc(handle)}</div>`:''}
+            ${caps?`<div class="agent-card-tags">${caps}</div>`:''}
+            <div class="agent-card-actions">
+                <button class="btn btn-outline btn-sm" onclick="sendMessage('Configure my agent ${esc(a.name||a.slug||'')}')">Configure</button>
+                <button class="btn btn-outline btn-sm" onclick="sendMessage('${toggleLabel} my agent ${esc(a.name||a.slug||'')}')">${toggleLabel}</button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 // ═══ IDEAS TICKER ═══
