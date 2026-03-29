@@ -2468,6 +2468,7 @@
                         }
                         if (_activeAccount === 'inclawbator') {
                             html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openDailyDrop(\'' + booked.id + '\')" title="Inclawbate Drop template" style="border-color:rgba(232,121,85,0.4);color:#e87955">drop</button>';
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openBuildOverlay(\'' + booked.id + '\')" title="Community Build template" style="border-color:rgba(38,180,155,0.4);color:#2dd4bf">build</button>';
                         }
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
@@ -2478,6 +2479,7 @@
                         }
                         if (_activeAccount === 'inclawbator') {
                             html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openDailyDrop(\'' + booked.id + '\')" title="Inclawbate Drop template" style="border-color:rgba(232,121,85,0.4);color:#e87955">drop</button>';
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openBuildOverlay(\'' + booked.id + '\')" title="Community Build template" style="border-color:rgba(38,180,155,0.4);color:#2dd4bf">build</button>';
                     }
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
@@ -2560,6 +2562,7 @@
                         }
                         if (_activeAccount === 'inclawbator') {
                             html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openDailyDrop(\'' + booked.id + '\')" title="Inclawbate Drop template" style="border-color:rgba(232,121,85,0.4);color:#e87955">drop</button>';
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openBuildOverlay(\'' + booked.id + '\')" title="Community Build template" style="border-color:rgba(38,180,155,0.4);color:#2dd4bf">build</button>';
                         }
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Replace image">replace</button>';
                         html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._removeSlotImage(\'' + booked.id + '\')" title="Remove image" style="border-color:rgba(239,68,68,0.3);color:#ef4444">remove</button>';
@@ -2570,6 +2573,7 @@
                         }
                         if (_activeAccount === 'inclawbator') {
                             html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openDailyDrop(\'' + booked.id + '\')" title="Inclawbate Drop template" style="border-color:rgba(232,121,85,0.4);color:#e87955">drop</button>';
+                            html += '<button class="sched-overlay-btn" onclick="event.stopPropagation();window._openBuildOverlay(\'' + booked.id + '\')" title="Community Build template" style="border-color:rgba(38,180,155,0.4);color:#2dd4bf">build</button>';
                     }
                     html += '<button class="sched-tag sched-tag--needs-image sched-tag--clickable" onclick="event.stopPropagation();window._uploadSlotImage(\'' + booked.id + '\')" title="Click to upload image">+ image</button>';
                 }
@@ -3847,6 +3851,201 @@
             document.querySelector('.overlay-modal-bg')?.remove();
             initSchedule();
         } catch(e) { alert('Upload failed: ' + e.message); }
+    }
+
+    // ── Build Overlay System ──
+    var _buildImage = null;
+    var _buildDay = 1;
+
+    window._openBuildOverlay = function(slotId) {
+        _buildImage = null;
+        _buildDay = 1;
+        var modal = document.createElement('div');
+        modal.className = 'overlay-modal-bg';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        modal.innerHTML = '<div class="overlay-modal" style="max-width:520px">' +
+            '<h3 style="color:#2dd4bf">&#127959; Community Build</h3>' +
+            '<div class="overlay-preview-wrap"><canvas id="buildCanvas" style="max-width:100%;border-radius:12px"></canvas></div>' +
+            '<div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">' +
+                '<div style="display:flex;gap:8px"><label style="width:80px;font-size:0.75rem;color:var(--text-dim);padding-top:6px">Build #</label><input type="number" id="buildNum" value="1" min="1" style="width:60px;padding:6px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none"></div>' +
+                '<div style="display:flex;gap:8px;align-items:center"><label style="width:80px;font-size:0.75rem;color:var(--text-dim)">Day</label><div id="buildDayBtns" style="display:flex;gap:4px"></div></div>' +
+                '<div style="display:flex;gap:8px"><label style="width:80px;font-size:0.75rem;color:var(--text-dim);padding-top:6px">Prompt</label><input type="text" id="buildPrompt" placeholder="Winning prompt from community" style="flex:1;padding:6px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none"></div>' +
+                '<div style="display:flex;gap:8px"><label style="width:80px;font-size:0.75rem;color:var(--text-dim);padding-top:6px">Status</label><input type="text" id="buildStatus" value="Reply with your prompt. Best one ships tomorrow." style="flex:1;padding:6px 10px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-size:0.82rem;outline:none"></div>' +
+                '<div style="display:flex;gap:8px;align-items:center"><label style="width:80px;font-size:0.75rem;color:var(--text-dim)">Screenshot</label><button onclick="document.getElementById(\'buildImageInput\').click()" style="padding:5px 12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-secondary);font-size:0.75rem;cursor:pointer">Upload</button><span id="buildImageName" style="font-size:0.7rem;color:var(--text-dim)"></span><input type="file" id="buildImageInput" accept="image/*" style="display:none" onchange="_handleBuildImage(this)"></div>' +
+            '</div>' +
+            '<div class="overlay-actions">' +
+                '<button class="overlay-btn-cancel" onclick="this.closest(\'.overlay-modal-bg\').remove()">Cancel</button>' +
+                '<button class="overlay-btn-download" onclick="_downloadBuild()">Download</button>' +
+                '<button class="overlay-btn-apply" onclick="_copyBuildToClipboard()" style="background:#2dd4bf;color:#000">Copy to Clipboard</button>' +
+            '</div>' +
+        '</div>';
+        document.body.appendChild(modal);
+
+        // Build day buttons
+        var dayBtns = document.getElementById('buildDayBtns');
+        for (var i = 1; i <= 7; i++) {
+            var b = document.createElement('button');
+            b.textContent = i;
+            b.dataset.day = i;
+            b.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);background:none;color:#606070;font-weight:700;font-size:0.75rem;cursor:pointer';
+            if (i === 1) { b.style.background = '#c0534d'; b.style.borderColor = '#c0534d'; b.style.color = '#fff'; }
+            b.onclick = function() {
+                _buildDay = parseInt(this.dataset.day);
+                dayBtns.querySelectorAll('button').forEach(function(btn) {
+                    var d = parseInt(btn.dataset.day);
+                    btn.style.background = d === _buildDay ? '#c0534d' : (d < _buildDay ? 'rgba(74,222,128,0.15)' : 'none');
+                    btn.style.borderColor = d === _buildDay ? '#c0534d' : (d < _buildDay ? '#4ade80' : 'rgba(255,255,255,0.1)');
+                    btn.style.color = d === _buildDay ? '#fff' : (d < _buildDay ? '#4ade80' : '#606070');
+                });
+                _renderBuild();
+            };
+            dayBtns.appendChild(b);
+        }
+
+        ['buildNum','buildPrompt','buildStatus'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', _renderBuild);
+        });
+        _renderBuild();
+    };
+
+    window._handleBuildImage = function(input) {
+        if (!input.files || !input.files[0]) return;
+        document.getElementById('buildImageName').textContent = input.files[0].name;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() { _buildImage = img; _renderBuild(); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    };
+
+    window._copyBuildToClipboard = function() {
+        var canvas = document.getElementById('buildCanvas');
+        if (!canvas) return;
+        canvas.toBlob(function(blob) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                alert('Copied to clipboard!');
+            }).catch(function() { _downloadBuild(); });
+        }, 'image/png');
+    };
+
+    function _renderBuild() {
+        var canvas = document.getElementById('buildCanvas');
+        if (!canvas) return;
+        var S = 1080;
+        canvas.width = S; canvas.height = S;
+        var ctx = canvas.getContext('2d');
+        var pad = S * 0.06;
+
+        var buildNum = (document.getElementById('buildNum') || {}).value || '1';
+        var prompt = (document.getElementById('buildPrompt') || {}).value || '';
+        var statusText = (document.getElementById('buildStatus') || {}).value || '';
+
+        // Background
+        ctx.fillStyle = '#0a0a0f';
+        ctx.fillRect(0, 0, S, S);
+        var glow = ctx.createRadialGradient(S/2, S*0.35, 0, S/2, S*0.35, S*0.5);
+        glow.addColorStop(0, 'rgba(192,83,77,0.06)');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, S, S);
+
+        // Header
+        ctx.font = '700 ' + (S*0.028) + 'px "Nunito"';
+        ctx.fillStyle = '#c0534d';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('INCLAWBATE BUILDS', S/2, pad);
+
+        ctx.font = '900 ' + (S*0.055) + 'px "Nunito"';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('Community Build #' + buildNum, S/2, pad + S*0.05);
+
+        ctx.font = '700 ' + (S*0.022) + 'px "Nunito"';
+        ctx.fillStyle = '#606070';
+        ctx.fillText('DAY ' + _buildDay + ' OF 7', S/2, pad + S*0.12);
+
+        // 7 day dots
+        var dotY = pad + S*0.18;
+        var dotSpacing = S * 0.08;
+        var dotR = S * 0.022;
+        var startX = S/2 - (3 * dotSpacing);
+
+        for (var i = 1; i <= 7; i++) {
+            var cx = startX + (i-1) * dotSpacing;
+            if (i < _buildDay) {
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI*2); ctx.fillStyle = '#4ade80'; ctx.fill();
+                ctx.strokeStyle = '#0a0a0f'; ctx.lineWidth = 3; ctx.beginPath();
+                ctx.moveTo(cx-dotR*0.4, dotY); ctx.lineTo(cx-dotR*0.1, dotY+dotR*0.3); ctx.lineTo(cx+dotR*0.4, dotY-dotR*0.3); ctx.stroke();
+            } else if (i === _buildDay) {
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR*1.15, 0, Math.PI*2); ctx.fillStyle = 'rgba(192,83,77,0.2)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI*2); ctx.fillStyle = '#c0534d'; ctx.fill();
+                ctx.font = '800 '+(dotR*1.2)+'px "Nunito"'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(i, cx, dotY);
+            } else {
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI*2); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.font = '700 '+(dotR)+'px "Nunito"'; ctx.fillStyle = '#404050'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(i, cx, dotY);
+            }
+            if (i < 7) {
+                ctx.strokeStyle = i < _buildDay ? '#4ade80' : 'rgba(255,255,255,0.06)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(cx+dotR+4, dotY); ctx.lineTo(cx+dotSpacing-dotR-4, dotY); ctx.stroke();
+            }
+        }
+
+        // Middle — screenshot or blank page
+        var midY = dotY + S*0.08;
+        var midH = S * 0.38;
+        if (_buildImage) {
+            var imgW = S - pad*4, imgH = midH, imgX = pad*2;
+            ctx.save(); ctx.beginPath(); ctx.roundRect(imgX, midY, imgW, imgH, 16); ctx.clip();
+            var sc = Math.max(imgW/_buildImage.width, imgH/_buildImage.height);
+            ctx.drawImage(_buildImage, imgX+(imgW-_buildImage.width*sc)/2, midY+(imgH-_buildImage.height*sc)/2, _buildImage.width*sc, _buildImage.height*sc);
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(imgX, midY, imgW, imgH, 16); ctx.stroke();
+        } else {
+            var pw = S*0.55, ph = midH*0.85, px = (S-pw)/2, py = midY+(midH-ph)/2;
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 12); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = 'rgba(192,83,77,0.6)'; ctx.fillRect(px+pw*0.08, py+ph*0.15, 2, S*0.035);
+            ctx.font = '600 '+(S*0.018)+'px "Nunito"'; ctx.fillStyle = '#404050'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText('Your prompt goes here', S/2, py+ph*0.5);
+        }
+
+        // Prompt
+        var promptY = midY + midH + S*0.03;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        if (prompt) {
+            ctx.font = '900 '+(S*0.06)+'px "Nunito"'; ctx.fillStyle = 'rgba(192,83,77,0.3)';
+            ctx.fillText('\u201C', S/2 - (S-pad*4)/2 + S*0.02, promptY - S*0.01);
+            ctx.font = '600 italic '+(S*0.026)+'px "Nunito"'; ctx.fillStyle = '#a0a0b0';
+            var words = prompt.split(' '), line = '', maxW = S - pad*4, lh = S*0.038, py2 = promptY;
+            for (var w = 0; w < words.length; w++) {
+                var test = line + words[w] + ' ';
+                if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line.trim(), S/2, py2); line = words[w]+' '; py2 += lh; } else { line = test; }
+            }
+            if (line) ctx.fillText(line.trim(), S/2, py2);
+            promptY = py2 + lh * 1.5;
+        }
+
+        // Status
+        if (statusText) {
+            ctx.font = '700 '+(S*0.024)+'px "Nunito"'; ctx.fillStyle = '#c0534d';
+            ctx.fillText(statusText, S/2, Math.max(promptY, S*0.82));
+        }
+
+        // Branding
+        ctx.font = '800 '+(S*0.022)+'px "Nunito"'; ctx.fillStyle = '#606070';
+        ctx.fillText('inclawbate.app', S/2, S - pad - S*0.02);
+        ctx.font = (S*0.04)+'px sans-serif'; ctx.fillText('\u{1F99E}', S/2, S - pad - S*0.06);
+    }
+
+    function _downloadBuild() {
+        var canvas = document.getElementById('buildCanvas');
+        if (!canvas) return;
+        var link = document.createElement('a');
+        link.download = 'community-build.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
     }
 
     // ── PGT Template System ──
