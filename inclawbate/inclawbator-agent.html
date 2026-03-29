@@ -913,10 +913,17 @@ const SUBCATS={
             {t:'Open my settings',tip:'Account and wallet settings'},
         ]},
     ],
-    council:[
-        {id:'actions',label:'Quick Actions',tip:'Jump to council features',pills:[
-            {t:'Send a Message',tip:'Open the form to send a message to the council',action:'councilForm'},
-            {t:'Join Telegram',tip:'Join the Inclawbate community on Telegram',action:'telegram'},
+    agent:[
+        {id:'templates',label:'Templates',tip:'Pre-built agent templates to get started fast',pills:[
+            {t:'X Growth Agent',tip:'Auto-post to X, grow your audience on autopilot'},
+            {t:'DCA Auto-Buyer',tip:'Dollar-cost average into any token automatically'},
+            {t:'Analytics Reporter',tip:'Daily/weekly token stats posted to X or Telegram'},
+            {t:'Whale Watcher',tip:'Monitor wallets and get alerts on big moves'},
+            {t:'Custom Agent',tip:'Build your own — pick capabilities, connect accounts'},
+        ]},
+        {id:'manage',label:'Manage',tip:'Manage your running agents',pills:[
+            {t:'Show my agents',tip:'View all your active and paused agents'},
+            {t:'Agent logs',tip:'View recent activity from your agents'},
         ]},
     ],
 };
@@ -1357,7 +1364,7 @@ async function sendMessage(text){
 
     // Check for pending app delete confirmation
     if(S.pendingDelete){
-        if(/^(yes|delete|do it|go ahead|ok|yep|yeah|sure|yes.* delete)$/i.test(text.trim())){
+        if(/\b(yes|delete|do it|go ahead|ok|yep|yeah|sure|confirm)\b/i.test(text.trim())&&!/\b(no|cancel|don't|never|stop)\b/i.test(text.trim())){
             S.sending=false;syncChat();
             await executeDeleteApp();
             return;
@@ -1671,6 +1678,13 @@ async function executeDeleteApp(){
         });
         const data=await res.json();
         if(data.error){addBotMsg('Failed to delete: '+data.error);return;}
+        // Remove card from the panel
+        const card=document.getElementById('app-card-'+slug);
+        if(card)card.remove();
+        // Update the count in the panel title
+        const remaining=document.querySelectorAll('.action-app-card').length;
+        const titleEl=document.querySelector('.action-panel-title');
+        if(titleEl)titleEl.textContent='Your Apps ('+remaining+')';
         addBotMsg('**'+name+'** has been deleted.',['Show me my apps','Build an app']);
     }catch(e){
         addBotMsg('Something went wrong deleting that app. Try again.');
