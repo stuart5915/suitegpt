@@ -32,7 +32,12 @@ function computeSynthesis(votes) {
     const weightedSums = BUCKET_IDS.map(() => BigInt(0));
 
     for (const vote of votes) {
-        const bal = BigInt(vote.claws_balance || '0');
+        let bal;
+        try {
+            const raw = vote.claws_balance || '0';
+            // Handle scientific notation floats (e.g. 5.03e+26) — convert to integer string first
+            bal = typeof raw === 'number' ? BigInt(Math.floor(raw)) : (raw.includes('e') || raw.includes('.')) ? BigInt(Math.floor(Number(raw))) : BigInt(raw);
+        } catch (e) { bal = BigInt(0); }
         if (bal === BigInt(0)) continue;
         totalWeight += bal;
 
