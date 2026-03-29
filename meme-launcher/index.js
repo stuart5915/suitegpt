@@ -356,7 +356,8 @@ async function publishTemplateSite(meme, symbol, tokenAddress, stakingAddress) {
 // ── Inclawbator Integration ──
 
 async function launchMemeToken(meme) {
-    const symbol = meme._customSymbol ? '$' + meme._customSymbol : generateSymbol(meme.title);
+    const rawSymbol = meme._customSymbol ? meme._customSymbol.replace(/^\$+/, '') : '';
+    const symbol = rawSymbol ? '$' + rawSymbol : generateSymbol(meme.title);
     const sessionId = `memeclaw-${meme.guid}-${Date.now().toString(36)}`;
 
     console.log(`[MemeClaw] Launching: ${meme.title} (${symbol})`);
@@ -764,11 +765,11 @@ http.createServer(async (req, res) => {
 
                 // Build meme-compatible object and launch
                 const memeData = {
-                    title: name,
+                    title: name.trim(),
                     link: '',
-                    guid: 'factory-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                    description: description || '',
-                    _customSymbol: symbol,
+                    guid: 'factory-' + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    description: (description || '').trim(),
+                    _customSymbol: symbol.replace(/^\$+/, '').toUpperCase(),
                     _customImage: imageUrl || null,
                     _customWallet: wallet || CREATOR_WALLET,
                     _airdropPct: parseInt(airdropPct) || 30,
