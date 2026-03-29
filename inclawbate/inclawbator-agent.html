@@ -1315,13 +1315,11 @@ function handleBuildPill(text){
         return true;
     }
     if(t==='portfolio tracker'){
-        addBotMsg("I'll build you a **portfolio tracker** that connects to your wallet and shows:\n\n• Token balances and USD values\n• Price changes (24h)\n• Total portfolio value\n• Transaction history\n\nWant me to start building? Just say **go** or customize what you want.",['Build me an app']);
-        sendMessage('Build me a portfolio tracker app that connects to a wallet and shows token balances, USD values, and price changes on Base');
+        addBotMsg("I'll build you a **portfolio tracker** that connects to your wallet and shows:\n\n• Token balances and USD values\n• Price changes (24h)\n• Total portfolio value\n• Transaction history\n\nWant me to start building? Just say **go** or tell me what to customize.",['Go','Build me an app']);
         return true;
     }
     if(t==='staking dashboard'){
-        addBotMsg("I'll build a **staking dashboard** showing:\n\n• Staked amounts and rewards\n• APY rates\n• Claim buttons\n• Staking history\n\nStarting the build now...");
-        sendMessage('Build me a staking dashboard app that shows staked tokens, earned rewards, APY, and has claim functionality on Base');
+        addBotMsg("I'll build a **staking dashboard** showing:\n\n• Staked amounts and rewards\n• APY rates\n• Claim buttons\n• Staking history\n\nWant me to start building? Just say **go** or tell me what to customize.",['Go','Build me an app']);
         return true;
     }
     if(t==='landing page'){
@@ -1385,13 +1383,16 @@ function handleBuildPill(text){
 
     // === Manage pills ===
     if(t==='my apps'){
-        addBotMsg("Fetching your published apps...");
-        sendMessage('Show me my published apps');
+        if(!S.wallet){addBotMsg("Connect your wallet to view your apps.",['Connect Wallet']);return true;}
+        addBotMsg("Opening your apps...\n\nCheck the **Dashboard** panel on the right to view and manage your published apps.",['Update my app','Build me an app']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelDashboard').classList.add('on');
+        }
         return true;
     }
     if(t==='health check'){
-        addBotMsg("I'll check the status of your apps and contracts:\n\n• Are your sites live and responding?\n• Are your contracts deployed and functional?\n• Any errors or downtime?\n\nRunning health check...");
-        sendMessage('Run a health check on my apps and contracts');
+        addBotMsg("**Health Check**\n\nTo check your apps and contracts:\n• Open the **Dashboard** to see your published apps\n• Each app's URL is live on Vercel — if it loads, it's healthy\n• For smart contracts, check [Basescan](https://basescan.org) with the contract address\n\nWhich app or contract do you want to check?",['My apps','Token analytics']);
         return true;
     }
     if(t==='marketing agent'){
@@ -1433,8 +1434,12 @@ function handleDashboardPill(text){
         return true;
     }
     if(t==='show me my apps'){
-        addBotMsg("Fetching your published apps...");
-        sendMessage('Show me my published apps');
+        if(!S.wallet){addBotMsg("Connect your wallet to view your apps.",['Connect Wallet']);return true;}
+        addBotMsg("Opening your apps in the **Dashboard** panel.",['Show me my portfolio','Show recent activity']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelDashboard').classList.add('on');
+        }
         return true;
     }
     if(t==='what tokens do i hold?'){
@@ -1453,13 +1458,20 @@ function handleDashboardPill(text){
         return true;
     }
     if(t==='show recent activity'){
-        addBotMsg("Fetching your recent transactions...");
-        sendMessage('Show my recent transaction activity');
+        if(!S.wallet){addBotMsg("Connect your wallet to view activity.",['Connect Wallet']);return true;}
+        addBotMsg("**Recent Activity**\n\nView your transaction history on [Basescan](https://basescan.org/address/"+S.wallet+").\n\nYour dashboard also shows recent app deployments and token launches.",['Show me my portfolio','Show me my apps']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelDashboard').classList.add('on');
+        }
         return true;
     }
     if(t==='open my settings'){
-        addBotMsg("Opening your settings...");
-        sendMessage('Open my account and wallet settings');
+        addBotMsg("Opening your **Dashboard** — settings are available there.",['Show me my portfolio','Show me my apps']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelDashboard').classList.add('on');
+        }
         return true;
     }
 
@@ -1468,66 +1480,63 @@ function handleDashboardPill(text){
 
 function handleAgentPill(text){
     const t=text.toLowerCase().trim();
-
-    // === Template pills ===
-    if(t==='x growth agent'){
-        addBotMsg("**X Growth Agent** — Auto-post to X and grow your audience on autopilot.\n\nThis agent can:\n• Auto-post tweets on a schedule\n• Reply to mentions and DMs\n• Engage with relevant accounts\n• Track follower growth\n\nTo set one up, I need your **X handle** and what kind of content you want to post.\n\nTell me your handle and content style to get started.",['Custom Agent','Analytics Reporter']);
-        // Switch to agent panel and show templates
+    function showAgentPanel(){
         if(S.mode==='advanced'){
             document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
             $('panelAgent').classList.add('on');
         }
+    }
+
+    // === Template pills — create agent directly ===
+    if(t==='x growth agent'){
+        if(!S.wallet){addBotMsg("Connect your wallet first to create an agent.",['Connect Wallet']);return true;}
+        addBotMsg("Creating your **X Growth Agent**...\n\nThis agent auto-posts to X and grows your audience on autopilot.");
+        createAgentFromTemplate('X Growth Agent','Auto-post to X, grow your audience on autopilot');
+        showAgentPanel();
         return true;
     }
     if(t==='dca auto-buyer'){
-        addBotMsg("**DCA Auto-Buyer** — Dollar-cost average into any token automatically.\n\nThis agent:\n• Buys a set amount of a token at regular intervals\n• Supports daily, weekly, or custom schedules\n• Works with any token on Base\n• Tracks your average entry price\n\nTo set up, I need:\n• **Token** to buy (e.g. CLAWS, ETH)\n• **Amount** per buy (in USDC)\n• **Frequency** (daily, weekly, etc.)\n\nWhat token do you want to DCA into?",['Custom Agent','X Growth Agent']);
-        if(S.mode==='advanced'){
-            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
-            $('panelAgent').classList.add('on');
-        }
+        if(!S.wallet){addBotMsg("Connect your wallet first to create an agent.",['Connect Wallet']);return true;}
+        addBotMsg("Creating your **DCA Auto-Buyer**...\n\nThis agent dollar-cost averages into any token on a schedule.");
+        createAgentFromTemplate('DCA Auto-Buyer','Dollar-cost average into any token automatically');
+        showAgentPanel();
         return true;
     }
     if(t==='analytics reporter'){
-        addBotMsg("**Analytics Reporter** — Daily/weekly token stats posted to X or Telegram.\n\nThis agent:\n• Pulls on-chain data (price, volume, holders)\n• Generates formatted reports\n• Posts to X or sends to Telegram\n• Runs on a daily or weekly schedule\n\nTo set up, I need:\n• **Token** to track\n• **Where to post** (X handle or Telegram group)\n• **Frequency** (daily/weekly)\n\nWhich token do you want to report on?",['Custom Agent','Whale Watcher']);
-        if(S.mode==='advanced'){
-            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
-            $('panelAgent').classList.add('on');
-        }
+        if(!S.wallet){addBotMsg("Connect your wallet first to create an agent.",['Connect Wallet']);return true;}
+        addBotMsg("Creating your **Analytics Reporter**...\n\nThis agent posts daily/weekly token stats to X or Telegram.");
+        createAgentFromTemplate('Analytics Reporter','Daily/weekly token stats posted to X or Telegram');
+        showAgentPanel();
         return true;
     }
     if(t==='whale watcher'){
-        addBotMsg("**Whale Watcher** — Monitor wallets and get alerts on big moves.\n\nThis agent:\n• Watches specified wallet addresses\n• Alerts on large buys, sells, or transfers\n• Posts to X or sends Telegram notifications\n• Configurable thresholds (e.g. >$10K moves)\n\nTo set up, I need:\n• **Wallet addresses** to watch (or token to monitor)\n• **Alert threshold** (minimum USD value)\n• **Where to alert** (X, Telegram, or both)\n\nWhich wallets or token do you want to monitor?",['Custom Agent','Analytics Reporter']);
-        if(S.mode==='advanced'){
-            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
-            $('panelAgent').classList.add('on');
-        }
+        if(!S.wallet){addBotMsg("Connect your wallet first to create an agent.",['Connect Wallet']);return true;}
+        addBotMsg("Creating your **Whale Watcher**...\n\nThis agent monitors wallets and alerts on big moves.");
+        createAgentFromTemplate('Whale Watcher','Monitor a wallet and get alerts when it moves');
+        showAgentPanel();
         return true;
     }
     if(t==='custom agent'){
-        addBotMsg("**Custom Agent** — Build your own from scratch.\n\nAvailable capabilities:\n• **X Posting** — auto-tweet, reply, engage\n• **Telegram** — post to groups/channels\n• **DCA** — scheduled token purchases\n• **Analytics** — on-chain data reporting\n• **Whale Watching** — wallet monitoring & alerts\n• **Portfolio Tracking** — balance updates\n\nDescribe what you want your agent to do and I'll set it up.",['X Growth Agent','DCA Auto-Buyer','Analytics Reporter','Whale Watcher']);
-        if(S.mode==='advanced'){
-            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
-            $('panelAgent').classList.add('on');
-        }
+        if(!S.wallet){addBotMsg("Connect your wallet first to create an agent.",['Connect Wallet']);return true;}
+        addBotMsg("Opening the **Custom Agent** builder...\n\nFill in a name and persona in the panel on the right.",['Show my agents']);
+        showAgentPanel();
+        showAgentCreateForm();
         return true;
     }
 
     // === Manage pills ===
     if(t==='show my agents'){
         if(!S.wallet){addBotMsg("Connect your wallet to view your agents.",['Connect Wallet']);return true;}
-        addBotMsg("Loading your agents...");
+        addBotMsg("Loading your agents — check the panel on the right.",['Agent logs','Custom Agent']);
         loadAgentPanel();
-        if(S.mode==='advanced'){
-            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
-            $('panelAgent').classList.add('on');
-            showAgentList();
-        }
+        showAgentPanel();
         return true;
     }
     if(t==='agent logs'){
         if(!S.wallet){addBotMsg("Connect your wallet to view agent logs.",['Connect Wallet']);return true;}
-        addBotMsg("Fetching your agent activity logs...");
-        sendMessage('Show me my agent logs and recent activity');
+        addBotMsg("Your agent activity is shown in the **Agent** panel.\n\nEach agent card shows its status, connections, and capabilities. Click **Configure** on an agent to see its full activity and settings.",['Show my agents','Custom Agent']);
+        loadAgentPanel();
+        showAgentPanel();
         return true;
     }
 
