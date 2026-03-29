@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Overlay Generator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#06060b;color:#f0f0f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.wrap{max-width:560px;width:100%}
+h2{font-size:1.1rem;font-weight:800;margin-bottom:16px;color:#d4716b}
+.controls{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+label{font-size:0.75rem;font-weight:700;color:#606070;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;display:block}
+input,select,textarea{width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#f0f0f5;font-family:inherit;font-size:0.88rem;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#c0534d}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+canvas{width:100%;border-radius:12px;margin-bottom:16px}
+.btn{padding:12px 24px;background:linear-gradient(135deg,#c0534d,#d4716b);color:#fff;border:none;border-radius:999px;font-weight:800;font-size:0.88rem;cursor:pointer;transition:opacity 0.15s}
+.btn:hover{opacity:0.85}
+.day-select{display:flex;gap:6px}
+.day-btn{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);background:none;color:#606070;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.15s}
+.day-btn.active{background:#c0534d;border-color:#c0534d;color:#fff}
+.day-btn.done{background:rgba(74,222,128,0.15);border-color:#4ade80;color:#4ade80}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+    <h2>Build Overlay Generator</h2>
+
+    <div class="controls">
+        <div>
+            <label>Build Number</label>
+            <input type="number" id="buildNum" value="1" min="1" oninput="draw()">
+        </div>
+        <div>
+            <label>Current Day (click to set)</label>
+            <div class="day-select" id="daySelect"></div>
+        </div>
+        <div>
+            <label>Today's Prompt (winning prompt from community)</label>
+            <textarea id="prompt" rows="2" placeholder="e.g. Make it a fitness tracker with daily goals" oninput="draw()"></textarea>
+        </div>
+        <div>
+            <label>Status Text</label>
+            <input type="text" id="statusText" value="Reply with your prompt. Best one ships tomorrow." oninput="draw()">
+        </div>
+        <div class="row">
+            <div>
+                <label>Background</label>
+                <select id="bgStyle" onchange="draw()">
+                    <option value="dark">Dark</option>
+                    <option value="gradient">Gradient</option>
+                    <option value="coral">Coral</option>
+                </select>
+            </div>
+            <div>
+                <label>App Screenshot (optional)</label>
+                <input type="file" id="screenshot" accept="image/*" onchange="loadScreenshot()">
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas" width="1080" height="1080"></canvas>
+
+    <button class="btn" onclick="download()">Download Image</button>
+</div>
+
+<script>
+var currentDay = 1;
+var screenshotImg = null;
+
+// Build day buttons
+var daySelect = document.getElementById('daySelect');
+for (var i = 1; i <= 7; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'day-btn' + (i === 1 ? ' active' : '');
+    btn.textContent = i;
+    btn.dataset.day = i;
+    btn.onclick = function() {
+        currentDay = parseInt(this.dataset.day);
+        daySelect.querySelectorAll('.day-btn').forEach(function(b) {
+            var d = parseInt(b.dataset.day);
+            b.className = 'day-btn' + (d === currentDay ? ' active' : (d < currentDay ? ' done' : ''));
+        });
+        draw();
+    };
+    daySelect.appendChild(btn);
+}
+
+function loadScreenshot() {
+    var file = document.getElementById('screenshot').files[0];
+    if (!file) { screenshotImg = null; draw(); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() { screenshotImg = img; draw(); };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function draw() {
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+    var S = 1080;
+    var pad = S * 0.06;
+
+    // Background
+    var bg = document.getElementById('bgStyle').value;
+    if (bg === 'gradient') {
+        var grad = ctx.createLinearGradient(0, 0, S, S);
+        grad.addColorStop(0, '#0a0a0f');
+        grad.addColorStop(1, '#1a0a10');
+        ctx.fillStyle = grad;
+    } else if (bg === 'coral') {
+        var grad2 = ctx.createLinearGradient(0, 0, S, S);
+        grad2.addColorStop(0, '#1a0808');
+        grad2.addColorStop(1, '#0a0a0f');
+        ctx.fillStyle = grad2;
+    } else {
+        ctx.fillStyle = '#0a0a0f';
+    }
+    ctx.fillRect(0, 0, S, S);
+
+    // Subtle radial glow
+    var glow = ctx.createRadialGradient(S/2, S*0.35, 0, S/2, S*0.35, S*0.5);
+    glow.addColorStop(0, 'rgba(192,83,77,0.06)');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, S, S);
+
+    var buildNum = document.getElementById('buildNum').value || '1';
+    var prompt = document.getElementById('prompt').value.trim();
+    var statusText = document.getElementById('statusText').value.trim();
+
+    // Top label
+    ctx.font = '700 ' + (S*0.028) + 'px "Nunito"';
+    ctx.fillStyle = '#c0534d';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('INCLAWBATE BUILDS', S/2, pad);
+
+    // Build title
+    ctx.font = '900 ' + (S*0.055) + 'px "Nunito"';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Community Build #' + buildNum, S/2, pad + S*0.05);
+
+    // Day indicator
+    ctx.font = '700 ' + (S*0.022) + 'px "Nunito"';
+    ctx.fillStyle = '#606070';
+    ctx.fillText('DAY ' + currentDay + ' OF 7', S/2, pad + S*0.12);
+
+    // 7 day dots
+    var dotY = pad + S*0.18;
+    var dotSpacing = S * 0.08;
+    var dotRadius = S * 0.022;
+    var startX = S/2 - (3 * dotSpacing);
+
+    for (var i = 1; i <= 7; i++) {
+        var cx = startX + (i-1) * dotSpacing;
+
+        if (i < currentDay) {
+            // Completed — green filled
+            ctx.beginPath();
+            ctx.arc(cx, dotY, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#4ade80';
+            ctx.fill();
+            // Checkmark
+            ctx.strokeStyle = '#0a0a0f';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(cx - dotRadius*0.4, dotY);
+            ctx.lineTo(cx - dotRadius*0.1, dotY + dotRadius*0.3);
+            ctx.lineTo(cx + dotRadius*0.4, dotY - dotRadius*0.3);
+            ctx.stroke();
+        } else if (i === currentDay) {
+            // Current — coral filled, pulsing
+            ctx.beginPath();
+            ctx.arc(cx, dotY, dotRadius * 1.15, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(192,83,77,0.2)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx, dotY, dotRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#c0534d';
+            ctx.fill();
+            // Day number
+            ctx.font = '800 ' + (dotRadius*1.2) + 'px "Nunito"';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i, cx, dotY);
+        } else {
+            // Future — outline only
+            ctx.beginPath();
+            ctx.arc(cx, dotY, dotRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Day number
+            ctx.font = '700 ' + (dotRadius*1) + 'px "Nunito"';
+            ctx.fillStyle = '#404050';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i, cx, dotY);
+        }
+
+        // Connecting line
+        if (i < 7) {
+            ctx.strokeStyle = i < currentDay ? '#4ade80' : 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + dotRadius + 4, dotY);
+            ctx.lineTo(cx + dotSpacing - dotRadius - 4, dotY);
+            ctx.stroke();
+        }
+    }
+
+    // Middle area — screenshot or prompt
+    var midY = dotY + S*0.08;
+    var midH = S * 0.38;
+
+    if (screenshotImg) {
+        // Draw screenshot with rounded corners
+        var imgW = S - pad*4;
+        var imgH = midH;
+        var imgX = pad*2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(imgX, midY, imgW, imgH, 16);
+        ctx.clip();
+        var imgScale = Math.max(imgW / screenshotImg.width, imgH / screenshotImg.height);
+        var sw = screenshotImg.width * imgScale;
+        var sh = screenshotImg.height * imgScale;
+        ctx.drawImage(screenshotImg, imgX + (imgW-sw)/2, midY + (imgH-sh)/2, sw, sh);
+        ctx.restore();
+        // Border
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(imgX, midY, imgW, imgH, 16);
+        ctx.stroke();
+    } else {
+        // Blank page representation
+        var pageW = S * 0.55;
+        var pageH = midH * 0.85;
+        var pageX = (S - pageW) / 2;
+        var pageY = midY + (midH - pageH) / 2;
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.beginPath();
+        ctx.roundRect(pageX, pageY, pageW, pageH, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Cursor blink
+        ctx.fillStyle = 'rgba(192,83,77,0.6)';
+        ctx.fillRect(pageX + pageW*0.08, pageY + pageH*0.15, 2, S*0.035);
+
+        // "Blank page" text
+        ctx.font = '600 ' + (S*0.018) + 'px "Nunito"';
+        ctx.fillStyle = '#404050';
+        ctx.textAlign = 'center';
+        ctx.fillText('Your prompt goes here', S/2, pageY + pageH*0.55);
+    }
+
+    // Prompt text (if provided)
+    var promptY = midY + midH + S*0.03;
+    if (prompt) {
+        ctx.font = '700 ' + (S*0.03) + 'px "Nunito"';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        // Word wrap
+        var words = prompt.split(' ');
+        var line = '';
+        var lineH = S * 0.038;
+        var maxW = S - pad * 4;
+        var py = promptY;
+        ctx.fillStyle = 'rgba(192,83,77,0.15)';
+        // Quote marks
+        ctx.font = '900 ' + (S*0.06) + 'px "Nunito"';
+        ctx.fillStyle = 'rgba(192,83,77,0.3)';
+        ctx.fillText('"', S/2 - maxW/2 + S*0.02, py - S*0.01);
+
+        ctx.font = '600 italic ' + (S*0.026) + 'px "Nunito"';
+        ctx.fillStyle = '#a0a0b0';
+        for (var w = 0; w < words.length; w++) {
+            var test = line + words[w] + ' ';
+            if (ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line.trim(), S/2, py);
+                line = words[w] + ' ';
+                py += lineH;
+            } else {
+                line = test;
+            }
+        }
+        if (line) ctx.fillText(line.trim(), S/2, py);
+        promptY = py + lineH * 1.5;
+    }
+
+    // Status text
+    if (statusText) {
+        ctx.font = '700 ' + (S*0.024) + 'px "Nunito"';
+        ctx.fillStyle = '#c0534d';
+        ctx.textAlign = 'center';
+        ctx.fillText(statusText, S/2, Math.max(promptY, S*0.82));
+    }
+
+    // Bottom — branding
+    ctx.font = '800 ' + (S*0.022) + 'px "Nunito"';
+    ctx.fillStyle = '#606070';
+    ctx.textAlign = 'center';
+    ctx.fillText('inclawbate.app/inclawbations#builds', S/2, S - pad - S*0.02);
+
+    // Lobster emoji
+    ctx.font = (S*0.04) + 'px sans-serif';
+    ctx.fillText('\u{1F99E}', S/2, S - pad - S*0.06);
+}
+
+function download() {
+    var canvas = document.getElementById('canvas');
+    var link = document.createElement('a');
+    link.download = 'community-build-' + document.getElementById('buildNum').value + '-day-' + currentDay + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// Initial draw
+draw();
+</script>
+</body>
+</html>
