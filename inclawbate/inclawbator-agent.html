@@ -1640,6 +1640,25 @@ async function publishApp(){
     }
 }
 
+async function deleteApp(slug,name){
+    if(!confirm('Delete "'+name+'"? This cannot be undone.'))return;
+    try{
+        const res=await fetch(API.publish,{
+            method:'DELETE',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({slug:slug,email:'inclawbator@inclawbate.app'})
+        });
+        const data=await res.json();
+        if(data.error){toast(data.error);return;}
+        toast(name+' deleted');
+        const card=document.getElementById('app-card-'+slug);
+        if(card)card.remove();
+    }catch(e){
+        toast('Failed to delete');
+        console.error(e);
+    }
+}
+
 // ═══ ELEMENT PICKER ═══
 function togglePicker(){
     S.picking=!S.picking;
@@ -2217,7 +2236,8 @@ function renderAppsAction(body,title,d){
     body.innerHTML='<div class="action-apps">'+d.apps.map(a=>{
         const url=esc(a.url||'https://inclawbate.app/s/'+a.slug);
         const slug=esc(a.slug);
-        return '<div class="action-app-card">'+
+        return '<div class="action-app-card" id="app-card-'+slug+'" style="position:relative">'+
+        '<button onclick="deleteApp(\''+slug+'\',\''+esc(a.name||a.slug)+'\')" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--red);font-size:1.1rem;cursor:pointer;opacity:0.5;transition:opacity 0.15s;padding:4px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" title="Delete app">&times;</button>'+
         '<div class="action-app-name">'+esc(a.name||a.slug)+'</div>'+
         (a.description?'<div class="action-app-desc">'+esc(a.description)+'</div>':'')+
         '<div class="action-app-url">'+url+'</div>'+
