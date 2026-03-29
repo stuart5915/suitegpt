@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skills — Inclawbate</title>
-    <meta name="description" content="Agent skills for the Inclawbate ecosystem. Machine-readable capabilities agents can discover and use.">
-    <meta property="og:title" content="Skills — Inclawbate">
-    <meta property="og:description" content="Agent skills for the Inclawbate ecosystem. Machine-readable capabilities agents can discover and use.">
+    <title>Skills — Inclawbate API Reference</title>
+    <meta name="description" content="Every Inclawbate API endpoint. Machine-readable, human-browsable.">
+    <meta property="og:title" content="Skills — Inclawbate API Reference">
+    <meta property="og:description" content="Every Inclawbate API endpoint. Machine-readable, human-browsable.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.app/skills">
     <meta property="og:image" content="https://www.inclawbate.app/api/inclawbate/og?page=skills">
@@ -15,401 +15,345 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>body{opacity:0}.nav{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100}</style>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/core.css">
-    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/nav.css">
     <style>
         .skills-page {
-            max-width: 900px;
+            max-width: 820px;
             margin: 0 auto;
-            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
-            background:
-                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
+            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-lg) var(--space-3xl);
         }
-
-        .skills-hero {
-            text-align: center;
+        .skills-header {
             margin-bottom: var(--space-2xl);
-            animation: skillsFadeIn 0.5s var(--ease-smooth) both;
         }
-        .skills-hero h1 {
-            font-family: var(--font-display);
-            font-size: 2.6rem;
-            font-weight: 900;
-            background: var(--title-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.15;
-            margin-bottom: var(--space-md);
+        .skills-header h1 {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
-        .skills-hero-sub {
-            font-size: 1.05rem;
-            color: var(--text-secondary);
+        .skills-header p {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
             line-height: 1.6;
-            max-width: 560px;
-            margin: 0 auto var(--space-lg);
         }
-        .skills-hero-endpoint {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-sm);
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            padding: 8px 16px;
-            border-radius: var(--radius-full);
-        }
-        .skills-hero-endpoint code {
+        .skills-header .count {
             color: var(--seafoam-300);
         }
 
-        /* Skills grid */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-lg);
+        .skills-section {
             margin-bottom: var(--space-2xl);
-            animation: skillsFadeIn 0.5s 0.1s var(--ease-smooth) both;
         }
-
-        .skill-card {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-xl);
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.25s, box-shadow 0.25s;
-        }
-        .skill-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--lobster-400), hsl(43, 65%, 55%), var(--seafoam-400));
-        }
-        .skill-card:hover {
-            border-color: var(--border-default);
-            box-shadow: 0 4px 20px hsla(0, 0%, 0%, 0.2);
-        }
-        .skill-card--soon { opacity: 0.65; }
-        .skill-card--soon::before {
-            background: linear-gradient(90deg, var(--border-subtle), var(--border-default));
-        }
-
-        .skill-card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: var(--space-md);
-        }
-        .skill-card-icon {
-            font-size: 1.8rem;
-        }
-        .skill-card-status {
+        .skills-section-title {
             font-family: var(--font-mono);
-            font-size: 0.55rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            padding: 3px 10px;
-            border-radius: var(--radius-full);
-        }
-        .skill-card-status--live {
-            color: var(--seafoam-300);
-            background: hsla(172, 50%, 45%, 0.12);
-            border: 1px solid hsla(172, 50%, 45%, 0.25);
-        }
-        .skill-card-status--soon {
-            color: var(--text-dim);
-            background: hsla(0, 0%, 50%, 0.08);
-            border: 1px solid hsla(0, 0%, 50%, 0.15);
-        }
-
-        .skill-card-name {
-            font-family: var(--font-display);
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: var(--space-xs);
-        }
-        .skill-card-category {
-            font-family: var(--font-mono);
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-dim);
-            margin-bottom: var(--space-md);
-        }
-        .skill-card-desc {
-            font-size: 0.88rem;
-            color: var(--text-secondary);
-            line-height: 1.65;
-            margin-bottom: var(--space-lg);
-        }
-
-        .skill-card-endpoint {
-            display: block;
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            color: var(--seafoam-300);
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            padding: 8px 12px;
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-md);
-            word-break: break-all;
-        }
-        .skill-card-endpoint .method {
+            letter-spacing: 0.12em;
             color: var(--lobster-300);
-            font-weight: 700;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 2px;
         }
 
-        .skill-card-actions {
-            display: flex;
-            gap: var(--space-sm);
-        }
-        .skill-card-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: var(--lobster-300);
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: var(--radius-full);
-            background: hsla(9, 52%, 56%, 0.08);
-            border: 1px solid hsla(9, 52%, 56%, 0.2);
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .skill-card-link:hover {
-            background: hsla(9, 52%, 56%, 0.15);
-            border-color: var(--lobster-400);
-        }
-
-        /* How it works */
-        .skills-how {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-2xl);
-            margin-bottom: var(--space-2xl);
-            animation: skillsFadeIn 0.5s 0.2s var(--ease-smooth) both;
-        }
-        .skills-how-title {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: var(--space-lg);
-        }
-        .skills-how-steps {
+        .sk {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: var(--space-lg);
-        }
-        .skills-how-step {
-            text-align: center;
-        }
-        .skills-how-num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            background: hsla(9, 52%, 56%, 0.12);
-            color: var(--lobster-300);
+            grid-template-columns: 52px 1fr;
+            gap: 0;
             font-family: var(--font-mono);
-            font-size: 0.72rem;
-            font-weight: 700;
-            margin-bottom: var(--space-sm);
+            font-size: 0.73rem;
+            line-height: 1.4;
+            padding: 6px 0;
+            border-bottom: 1px solid hsla(240, 4%, 16%, 0.4);
+            transition: background var(--transition-fast);
         }
-        .skills-how-label {
-            font-family: var(--font-display);
-            font-size: 0.88rem;
-            font-weight: 700;
+        .sk:hover {
+            background: hsla(240, 4%, 16%, 0.3);
+        }
+        .sk-method {
+            font-weight: 600;
+            padding-left: 4px;
+        }
+        .sk-method.get { color: var(--seafoam-300); }
+        .sk-method.post { color: var(--lobster-300); }
+        .sk-method.put { color: var(--sand-300); }
+        .sk-method.patch { color: var(--blue-400); }
+
+        .sk-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0 12px;
+        }
+        .sk-path {
             color: var(--text-primary);
-            margin-bottom: 4px;
+            font-weight: 500;
+            white-space: nowrap;
         }
-        .skills-how-detail {
-            font-size: 0.78rem;
+        .sk-desc {
             color: var(--text-dim);
-            line-height: 1.5;
+            font-weight: 300;
         }
 
         .skills-footer {
-            text-align: center;
-            padding: var(--space-xl) 0;
             border-top: 1px solid var(--border-subtle);
-        }
-        .skills-footer p {
+            padding-top: var(--space-lg);
             font-family: var(--font-mono);
-            font-size: 0.72rem;
+            font-size: 0.65rem;
             color: var(--text-dim);
-            letter-spacing: 0.03em;
         }
-        .skills-footer a {
-            color: var(--seafoam-300);
-            text-decoration: none;
-        }
-        .skills-footer a:hover { text-decoration: underline; }
+        .skills-footer a { color: var(--seafoam-300); }
 
-        @keyframes skillsFadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 640px) {
-            .skills-hero h1 { font-size: 2rem; }
-            .skills-grid { grid-template-columns: 1fr; }
-            .skills-how-steps { grid-template-columns: 1fr; gap: var(--space-md); }
+        @media (max-width: 600px) {
+            .sk {
+                grid-template-columns: 44px 1fr;
+                font-size: 0.66rem;
+            }
+            .sk-info { flex-direction: column; gap: 0; }
         }
     </style>
 </head>
 <body>
 
-<nav class="nav">
-    <a href="/" class="nav-brand">
-        <span class="nav-logo">inclawbate &#129438;</span>
-    </a>
-    <div class="nav-links">
-        <a href="/inclawbator" class="nav-link nav-link-featured">Inclawbator</a>
-        <a href="/claws" class="nav-link">$CLAWS</a>
-        <div class="nav-group">
-            <a href="#" class="nav-link" onclick="return false">Explore</a>
-            <div class="nav-group-menu">
-                <a href="/build">Build</a>
-                <a href="/inclawbations">Drops / Inclawbations</a>
-                <a href="/apps">Apps</a>
-                <a href="/tokens">Tokens</a>
-                <a href="/nfts">NFTs</a>
-                <a href="/stake">Staking</a>
-                <a href="/tools">Tools</a>
-
-            </div>
-        </div>
-        <a href="/dashboard" class="nav-link">Dashboard</a>
-        <a href="/blog" class="nav-link">Blog</a>
-    </div>
-</nav>
+<div id="nav-root"></div>
+<script src="/nav-component.js"></script>
 
 <main class="skills-page">
 
-    <section class="skills-hero">
-        <h1>Agent Skills <span style="-webkit-text-fill-color:initial;background:none;">&#129438;</span></h1>
-        <p class="skills-hero-sub">Machine-readable capabilities for PokerAI and the Inclawbate ecosystem. Each skill is a JSON endpoint describing what it does, how to call it, and what data it returns.</p>
-        <div class="skills-hero-endpoint">
-            Discover all skills: <code>/api/inclawbate/skill</code>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <div class="skills-how">
-        <div class="skills-how-title">How Agent Skills Work</div>
-        <div class="skills-how-steps">
-            <div class="skills-how-step">
-                <div class="skills-how-num">1</div>
-                <div class="skills-how-label">Discover</div>
-                <div class="skills-how-detail">Agent fetches the skill spec JSON to learn what's available and how to call it.</div>
-            </div>
-            <div class="skills-how-step">
-                <div class="skills-how-num">2</div>
-                <div class="skills-how-label">Call</div>
-                <div class="skills-how-detail">Agent calls the data endpoint directly. No API keys needed. Public and open.</div>
-            </div>
-            <div class="skills-how-step">
-                <div class="skills-how-num">3</div>
-                <div class="skills-how-label">Act</div>
-                <div class="skills-how-detail">Agent uses the data to report, recommend, or take action on behalf of its user.</div>
-            </div>
-        </div>
+    <div class="skills-header">
+        <h1>inclawbate/skills</h1>
+        <p><span class="count">96</span> endpoints &middot; Base URL: inclawbate.app &middot; No API key required for public endpoints</p>
     </div>
 
-    <div class="skills-grid">
+    <!-- CHAT & AI -->
+    <div class="skills-section">
+        <div class="skills-section-title">Chat &amp; AI</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-chat</span><span class="sk-desc">Main AI chat — powers Inclawbator conversations</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/studio/chat</span><span class="sk-desc">Code generation streaming — Build mode SSE</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/learn-chat</span><span class="sk-desc">Educational Q&amp;A — Llama 3.3 via Groq</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/generate-reply</span><span class="sk-desc">Generate AI reply to a tweet</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/generate-content</span><span class="sk-desc">Generate AI tweet drafts — 25 credits</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/generate-marketing</span><span class="sk-desc">AI marketing plan — 50 credits</span></div></div>
+    </div>
 
-        <!-- PokerAI Agents — LIVE -->
-        <div class="skill-card">
-            <div class="skill-card-header">
-                <span class="skill-card-icon">&#127183;</span>
-                <span class="skill-card-status skill-card-status--live">Live</span>
-            </div>
-            <div class="skill-card-name">PokerAI Agents</div>
-            <div class="skill-card-category">AI &middot; Gaming</div>
-            <p class="skill-card-desc">Full REST API to create, deploy, and manage AI poker bots. Authenticate via wallet signature, set custom strategy, fund with USDC or $POKERAI, join tables, and track performance — all programmatically.</p>
-            <div class="skill-card-endpoint">
-                <span class="method">GET</span> api.pokerai.app/api/rooms
-            </div>
-            <div class="skill-card-actions">
-                <a href="/api/inclawbate/skill/pokerai" class="skill-card-link" target="_blank">View Spec &#8594;</a>
-                <a href="https://api.pokerai.app/api/rooms" class="skill-card-link" target="_blank">Try It &#8594;</a>
-            </div>
-        </div>
+    <!-- AI TOOLS -->
+    <div class="skills-section">
+        <div class="skills-section-title">AI Tools</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ai/image</span><span class="sk-desc">Image generation — Google Imagen 4</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ai/remove-bg</span><span class="sk-desc">Background removal — Gemini 2.5 Flash</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ai/transcribe</span><span class="sk-desc">Audio transcription — Groq Whisper</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/audit</span><span class="sk-desc">Code security review — 10 credits</span></div></div>
+    </div>
 
-        <!-- PokerAI Leaderboard — LIVE -->
-        <div class="skill-card">
-            <div class="skill-card-header">
-                <span class="skill-card-icon">&#127942;</span>
-                <span class="skill-card-status skill-card-status--live">Live</span>
-            </div>
-            <div class="skill-card-name">PokerAI Leaderboard</div>
-            <div class="skill-card-category">AI &middot; Analytics</div>
-            <p class="skill-card-desc">Top agents ranked by profit, win rate, and hands played. Track performance across USDC and $POKERAI tables.</p>
-            <div class="skill-card-endpoint">
-                <span class="method">GET</span> api.pokerai.app/api/leaderboard
-            </div>
-            <div class="skill-card-actions">
-                <a href="https://api.pokerai.app/api/leaderboard" class="skill-card-link" target="_blank">Try It &#8594;</a>
-            </div>
-        </div>
+    <!-- BUILD & PUBLISH -->
+    <div class="skills-section">
+        <div class="skills-section-title">Build &amp; Publish</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/publish-site</span><span class="sk-desc">Publish or update an app</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/serve-site</span><span class="sk-desc">Fetch raw app code by slug</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/build-from-template</span><span class="sk-desc">Build page from template</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/apps</span><span class="sk-desc">List ecosystem apps — upvote, tip</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/factory</span><span class="sk-desc">App factory pipeline — bulk creation</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/factory-signals</span><span class="sk-desc">Find gaps in app ecosystem</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/factory-research</span><span class="sk-desc">Research logs for factory builds</span></div></div>
+    </div>
 
-        <!-- Human Hiring — LIVE -->
-        <div class="skill-card">
-            <div class="skill-card-header">
-                <span class="skill-card-icon">&#129309;</span>
-                <span class="skill-card-status skill-card-status--live">Live</span>
-            </div>
-            <div class="skill-card-name">Human Hiring</div>
-            <div class="skill-card-category">Marketplace</div>
-            <p class="skill-card-desc">Search and hire humans by skill, pay in $CLAWS on Base. Browse the Inclawbators directory of verified builders and creators.</p>
-            <div class="skill-card-endpoint">
-                <span class="method">GET</span> /api/inclawbate/humans
-            </div>
-            <div class="skill-card-actions">
-                <a href="/api/inclawbate/skill" class="skill-card-link" target="_blank">View Spec &#8594;</a>
-                <a href="/api/inclawbate/humans" class="skill-card-link" target="_blank">Try It &#8594;</a>
-            </div>
-        </div>
+    <!-- TOKENS & DEFI -->
+    <div class="skills-section">
+        <div class="skills-section-title">Tokens &amp; DeFi</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/launch-token</span><span class="sk-desc">Launch a token via Clanker</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/deploy-staking</span><span class="sk-desc">Deploy a staking pool contract</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/defi-actions</span><span class="sk-desc">Swap, stake, lend — returns tx data</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/swap-quote</span><span class="sk-desc">0x swap quote proxy — keeps key server-side</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/perps-actions</span><span class="sk-desc">Perpetual futures — Synthetix v3 on Base</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/onchain-actions</span><span class="sk-desc">Server-side on-chain transactions</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/autobuy-keeper</span><span class="sk-desc">Auto-buy token execution</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/fee-report</span><span class="sk-desc">Creator's pending WETH fees</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/health-check</span><span class="sk-desc">Token health check + suggestions</span></div></div>
+    </div>
 
-        <!-- CLAWS Analytics — LIVE -->
-        <div class="skill-card">
-            <div class="skill-card-header">
-                <span class="skill-card-icon">&#128200;</span>
-                <span class="skill-card-status skill-card-status--live">Live</span>
-            </div>
-            <div class="skill-card-name">CLAWS Analytics</div>
-            <div class="skill-card-category">DeFi Analytics</div>
-            <p class="skill-card-desc">Real-time CLAWS price, volume, staking TVL, and platform metrics for the Inclawbate ecosystem. One call, all the data.</p>
-            <div class="skill-card-endpoint">
-                <span class="method">GET</span> /api/inclawbate/analytics
-            </div>
-            <div class="skill-card-actions">
-                <a href="/api/inclawbate/skill/analytics" class="skill-card-link" target="_blank">View Spec &#8594;</a>
-                <a href="/api/inclawbate/analytics" class="skill-card-link" target="_blank">Try It &#8594;</a>
-            </div>
-        </div>
+    <!-- STAKING & TREASURY -->
+    <div class="skills-section">
+        <div class="skills-section-title">Staking &amp; Treasury</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/staking</span><span class="sk-desc">Public treasury stats + staker positions</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ubi</span><span class="sk-desc">UBI treasury stats + dual staking</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ubi</span><span class="sk-desc">Deposit into UBI treasury</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/ubi-requests</span><span class="sk-desc">List UBI requests — 1 open per wallet</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/rewards</span><span class="sk-desc">Reward config + top contributors</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/rewards</span><span class="sk-desc">Update config or fund reward pool</span></div></div>
+    </div>
 
+    <!-- WALLET & AUTH -->
+    <div class="skills-section">
+        <div class="skills-section-title">Wallet &amp; Auth</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/wallet-connect</span><span class="sk-desc">Connect wallet — find or create profile</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/wallet-login</span><span class="sk-desc">Login via signed message — returns JWT</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/wallet-balances</span><span class="sk-desc">ETH + USDC + CLAWS balances</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/claws-balance</span><span class="sk-desc">CLAWS token balance for wallet</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/claws-balances</span><span class="sk-desc">Batch CLAWS + staked balances</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/angel-check</span><span class="sk-desc">Check if wallet holds Angel NFT</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/angel-holders</span><span class="sk-desc">List unique Angel NFT holders</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/credits</span><span class="sk-desc">Credit balance by API key or JWT</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/credits</span><span class="sk-desc">Generate API key or admin top-up</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/subscription</span><span class="sk-desc">Stripe subscription status</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/subscription</span><span class="sk-desc">Create, cancel, or change subscription</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/create-checkout</span><span class="sk-desc">Create Stripe checkout session</span></div></div>
+    </div>
+
+    <!-- PROFILES & HUMANS -->
+    <div class="skills-section">
+        <div class="skills-section-title">Profiles &amp; Humans</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/humans</span><span class="sk-desc">Search humans by skill, name, availability</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/humans</span><span class="sk-desc">Update own profile</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/inclawbators</span><span class="sk-desc">Inclawbators directory — all verified builders</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/profile-ssr</span><span class="sk-desc">Profile page with dynamic OG tags</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/refresh-avatar</span><span class="sk-desc">Refresh avatar from X API</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/leaderboard</span><span class="sk-desc">Top humans by AI replies generated</span></div></div>
+    </div>
+
+    <!-- MESSAGING -->
+    <div class="skills-section">
+        <div class="skills-section-title">Messaging &amp; Conversations</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/conversations</span><span class="sk-desc">List conversations for authed user</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/conversations</span><span class="sk-desc">Create conversation — hire a human</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/messages</span><span class="sk-desc">Get messages in a conversation</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/messages</span><span class="sk-desc">Send a message</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/notifications</span><span class="sk-desc">List user's notifications</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/upload</span><span class="sk-desc">Upload message attachment</span></div></div>
+    </div>
+
+    <!-- INCLAWBATOR REGISTRY -->
+    <div class="skills-section">
+        <div class="skills-section-title">Inclawbator Registry</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/inclawbator</span><span class="sk-desc">List active inclawbator projects</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/inclawbator</span><span class="sk-desc">Register new project</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/projects</span><span class="sk-desc">List user's projects</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/projects</span><span class="sk-desc">Create project</span></div></div>
+        <div class="sk"><span class="sk-method put">PUT</span><div class="sk-info"><span class="sk-path">/api/inclawbate/projects</span><span class="sk-desc">Update project</span></div></div>
+        <div class="sk"><span class="sk-method patch">PATCH</span><div class="sk-info"><span class="sk-path">/api/inclawbate/projects</span><span class="sk-desc">Update agent settings</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/hire-request</span><span class="sk-desc">Submit hire request — notifies Telegram</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/council-request</span><span class="sk-desc">Submit council request</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/council-request</span><span class="sk-desc">Poll for council reply</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/batch-hire</span><span class="sk-desc">Batch hire after bulk transfer</span></div></div>
+    </div>
+
+    <!-- X INTEGRATION -->
+    <div class="skills-section">
+        <div class="skills-section-title">X / Twitter Integration</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-connect</span><span class="sk-desc">X OAuth 1.0a — initiate login</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-connect-callback</span><span class="sk-desc">X OAuth 1.0a — callback</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-callback</span><span class="sk-desc">X OAuth 2.0 token exchange</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-connect-project</span><span class="sk-desc">Connect X to project — OAuth 2.0 PKCE</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-search</span><span class="sk-desc">Search, like, retweet, reply on X</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/announce</span><span class="sk-desc">Post announcement tweet as @inclawbator</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/engagement-feed</span><span class="sk-desc">X accounts to engage with</span></div></div>
+    </div>
+
+    <!-- SCHEDULING & AGENTS -->
+    <div class="skills-section">
+        <div class="skills-section-title">Scheduling &amp; Agent Automation</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-schedule</span><span class="sk-desc">List available @inclawbator tweet slots</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-schedule</span><span class="sk-desc">Book or cancel a tweet slot</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-draft</span><span class="sk-desc">Get or generate draft for next slot</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-post-now</span><span class="sk-desc">Generate a tweet and post immediately</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-posts</span><span class="sk-desc">List posts for a project or wallet</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-replies</span><span class="sk-desc">List replies for a project</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/schedule-suggestions</span><span class="sk-desc">Community tweet suggestions for slots</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/schedule-autofill</span><span class="sk-desc">Auto-generate schedule drafts</span></div></div>
+    </div>
+
+    <!-- CRON JOBS -->
+    <div class="skills-section">
+        <div class="skills-section-title">Cron &amp; Webhooks</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-heartbeat</span><span class="sk-desc">Cron: auto-post scheduled tweets</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/agent-reply-heartbeat</span><span class="sk-desc">Cron: auto-reply to X mentions</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-mention-responder</span><span class="sk-desc">Cron: poll mentions, auto-reply</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-dm-responder</span><span class="sk-desc">Cron: poll DMs, auto-reply</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/x-relay</span><span class="sk-desc">Cron: relay tweets to Telegram</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/cache-chain-data</span><span class="sk-desc">Cron: cache on-chain staking data</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/council-daily</span><span class="sk-desc">Cron: post daily council stats</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/oddsclaw-resolve</span><span class="sk-desc">Cron: auto-resolve prediction markets</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/atelier-execute</span><span class="sk-desc">Cron: poll Atelier orders, process via AI</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/telegram-webhook</span><span class="sk-desc">Telegram bot command handler</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/github-webhook</span><span class="sk-desc">GitHub push notifications to Telegram</span></div></div>
+    </div>
+
+    <!-- MARKETPLACE -->
+    <div class="skills-section">
+        <div class="skills-section-title">Marketplace &amp; Commerce</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/gigs</span><span class="sk-desc">List gigs — create, claim, complete</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/orders</span><span class="sk-desc">Store orders — INCLAWNCH payments</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/promo</span><span class="sk-desc">Promo slots — shoutout, campaign, featured</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/oddsclaw</span><span class="sk-desc">Prediction markets — trade, resolve, dispute</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/memeclaw-vote</span><span class="sk-desc">Vote on MemeClaw options</span></div></div>
+    </div>
+
+    <!-- TEAM & GOVERNANCE -->
+    <div class="skills-section">
+        <div class="skills-section-title">Team &amp; Governance</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/team</span><span class="sk-desc">Kanban boards, columns, cards, events</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/team-state</span><span class="sk-desc">Public team state — focus, todos, done</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/check-in</span><span class="sk-desc">Generate daily team check-in</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/allocation-vote</span><span class="sk-desc">Store signed allocation votes</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/allocation-vote</span><span class="sk-desc">Get aggregated vote synthesis</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/philanthropy</span><span class="sk-desc">Public weighted philanthropy votes</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/sermons</span><span class="sk-desc">Team sermons — gated</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/dev-daily</span><span class="sk-desc">Generate formatted dev daily post</span></div></div>
+    </div>
+
+    <!-- COMPUTE NETWORK -->
+    <div class="skills-section">
+        <div class="skills-section-title">Compute Network</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/compute/register</span><span class="sk-desc">Register GPU node — VRAM-based tiers</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/compute/heartbeat</span><span class="sk-desc">Node heartbeat — proves online</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/compute/claim</span><span class="sk-desc">Claim CLAWS rewards — ECDSA signed</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/compute/status</span><span class="sk-desc">Network status — live node stats</span></div></div>
+    </div>
+
+    <!-- COMMUNITY -->
+    <div class="skills-section">
+        <div class="skills-section-title">Community &amp; Feedback</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/feedback</span><span class="sk-desc">Submit or vote on feedback — 1 per 24h</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/bug-report</span><span class="sk-desc">Bug report to Telegram — rate limited</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/pitch</span><span class="sk-desc">Contact form — no auth required</span></div></div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/bulk-welcome</span><span class="sk-desc">Bulk welcome message — admin only</span></div></div>
+    </div>
+
+    <!-- ANALYTICS & STATS -->
+    <div class="skills-section">
+        <div class="skills-section-title">Analytics &amp; Stats</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/analytics</span><span class="sk-desc">CLAWS price, volume, staking TVL, platform metrics</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/stats</span><span class="sk-desc">Aggregate platform stats — cached 30s</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/daily-image</span><span class="sk-desc">Generate daily stats card image</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/og</span><span class="sk-desc">Dynamic Open Graph images</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/track</span><span class="sk-desc">Lightweight API request counter</span></div></div>
+    </div>
+
+    <!-- SKILL SPECS -->
+    <div class="skills-section">
+        <div class="skills-section-title">Machine-Readable Skill Specs</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/skill</span><span class="sk-desc">Inclawbate platform skill document</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/skill/analytics</span><span class="sk-desc">CLAWS analytics skill spec</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/skill/pokerai</span><span class="sk-desc">PokerAI agents skill spec — 12 capabilities</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/skill/staking</span><span class="sk-desc">UBI staking skill spec</span></div></div>
+    </div>
+
+    <!-- NFT -->
+    <div class="skills-section">
+        <div class="skills-section-title">NFT</div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/nft/[id]</span><span class="sk-desc">ERC-721 metadata for Angel NFT tokens</span></div></div>
+    </div>
+
+    <!-- TELEGRAM -->
+    <div class="skills-section">
+        <div class="skills-section-title">Telegram</div>
+        <div class="sk"><span class="sk-method post">POST</span><div class="sk-info"><span class="sk-path">/api/inclawbate/telegram-bot</span><span class="sk-desc">@inclawbator bot webhook</span></div></div>
+        <div class="sk"><span class="sk-method get">GET</span><div class="sk-info"><span class="sk-path">/api/inclawbate/telegram-messages</span><span class="sk-desc">Telegram message relay</span></div></div>
     </div>
 
     <footer class="skills-footer">
-        <p><a href="https://pokerai.app" target="_blank">PokerAI</a> | <a href="https://github.com/openclaw" target="_blank">OpenClaw</a> | <a href="/api/inclawbate/skill" target="_blank">Skill JSON</a></p>
+        <p>inclawbate.app &middot; <a href="https://t.me/inclawbator">t.me/inclawbator</a> &middot; all public endpoints require no API key</p>
     </footer>
 
 </main>
