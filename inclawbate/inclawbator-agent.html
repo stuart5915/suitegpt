@@ -1289,6 +1289,8 @@ function clickPill(el){
         // handled client-side
     } else if(S.tab==='dashboard' && handleDashboardPill(el.textContent)){
         // handled client-side
+    } else if(S.tab==='agent' && handleAgentPill(el.textContent)){
+        // handled client-side
     } else {
         sendMessage(el.textContent);
     }
@@ -1458,6 +1460,74 @@ function handleDashboardPill(text){
     if(t==='open my settings'){
         addBotMsg("Opening your settings...");
         sendMessage('Open my account and wallet settings');
+        return true;
+    }
+
+    return false;
+}
+
+function handleAgentPill(text){
+    const t=text.toLowerCase().trim();
+
+    // === Template pills ===
+    if(t==='x growth agent'){
+        addBotMsg("**X Growth Agent** — Auto-post to X and grow your audience on autopilot.\n\nThis agent can:\n• Auto-post tweets on a schedule\n• Reply to mentions and DMs\n• Engage with relevant accounts\n• Track follower growth\n\nTo set one up, I need your **X handle** and what kind of content you want to post.\n\nTell me your handle and content style to get started.",['Custom Agent','Analytics Reporter']);
+        // Switch to agent panel and show templates
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+        }
+        return true;
+    }
+    if(t==='dca auto-buyer'){
+        addBotMsg("**DCA Auto-Buyer** — Dollar-cost average into any token automatically.\n\nThis agent:\n• Buys a set amount of a token at regular intervals\n• Supports daily, weekly, or custom schedules\n• Works with any token on Base\n• Tracks your average entry price\n\nTo set up, I need:\n• **Token** to buy (e.g. CLAWS, ETH)\n• **Amount** per buy (in USDC)\n• **Frequency** (daily, weekly, etc.)\n\nWhat token do you want to DCA into?",['Custom Agent','X Growth Agent']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+        }
+        return true;
+    }
+    if(t==='analytics reporter'){
+        addBotMsg("**Analytics Reporter** — Daily/weekly token stats posted to X or Telegram.\n\nThis agent:\n• Pulls on-chain data (price, volume, holders)\n• Generates formatted reports\n• Posts to X or sends to Telegram\n• Runs on a daily or weekly schedule\n\nTo set up, I need:\n• **Token** to track\n• **Where to post** (X handle or Telegram group)\n• **Frequency** (daily/weekly)\n\nWhich token do you want to report on?",['Custom Agent','Whale Watcher']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+        }
+        return true;
+    }
+    if(t==='whale watcher'){
+        addBotMsg("**Whale Watcher** — Monitor wallets and get alerts on big moves.\n\nThis agent:\n• Watches specified wallet addresses\n• Alerts on large buys, sells, or transfers\n• Posts to X or sends Telegram notifications\n• Configurable thresholds (e.g. >$10K moves)\n\nTo set up, I need:\n• **Wallet addresses** to watch (or token to monitor)\n• **Alert threshold** (minimum USD value)\n• **Where to alert** (X, Telegram, or both)\n\nWhich wallets or token do you want to monitor?",['Custom Agent','Analytics Reporter']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+        }
+        return true;
+    }
+    if(t==='custom agent'){
+        addBotMsg("**Custom Agent** — Build your own from scratch.\n\nAvailable capabilities:\n• **X Posting** — auto-tweet, reply, engage\n• **Telegram** — post to groups/channels\n• **DCA** — scheduled token purchases\n• **Analytics** — on-chain data reporting\n• **Whale Watching** — wallet monitoring & alerts\n• **Portfolio Tracking** — balance updates\n\nDescribe what you want your agent to do and I'll set it up.",['X Growth Agent','DCA Auto-Buyer','Analytics Reporter','Whale Watcher']);
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+        }
+        return true;
+    }
+
+    // === Manage pills ===
+    if(t==='show my agents'){
+        if(!S.wallet){addBotMsg("Connect your wallet to view your agents.",['Connect Wallet']);return true;}
+        addBotMsg("Loading your agents...");
+        loadAgentPanel();
+        if(S.mode==='advanced'){
+            document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.remove('on'));
+            $('panelAgent').classList.add('on');
+            showAgentList();
+        }
+        return true;
+    }
+    if(t==='agent logs'){
+        if(!S.wallet){addBotMsg("Connect your wallet to view agent logs.",['Connect Wallet']);return true;}
+        addBotMsg("Fetching your agent activity logs...");
+        sendMessage('Show me my agent logs and recent activity');
         return true;
     }
 
