@@ -193,9 +193,15 @@ async function fetchMarketCaps() {
             (data.pairs || []).forEach(function(pair) {
                 var addr = pair.baseToken && pair.baseToken.address ? pair.baseToken.address.toLowerCase() : null;
                 var val = pair.marketCap || pair.fdv || 0;
+                var liq = pair.liquidity && pair.liquidity.usd ? pair.liquidity.usd : 0;
                 if (addr && val > 0) {
-                    if (!lpState.mcaps[addr] || val > lpState.mcaps[addr]) {
+                    // Prefer pairs with real liquidity — ignore dead/empty pools
+                    var existing = lpState.mcaps[addr] || 0;
+                    var existingLiq = lpState.mcapLiq && lpState.mcapLiq[addr] || 0;
+                    if (!lpState.mcapLiq) lpState.mcapLiq = {};
+                    if (liq > existingLiq || (liq === existingLiq && val > existing)) {
                         lpState.mcaps[addr] = val;
+                        lpState.mcapLiq[addr] = liq;
                     }
                 }
             });
