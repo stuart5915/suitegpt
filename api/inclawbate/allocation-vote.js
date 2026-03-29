@@ -28,36 +28,20 @@ function computeSynthesis(votes) {
         return { synthesis: BUCKET_IDS.map(() => 0), totalVoters: 0, totalWeight: '0' };
     }
 
-    let totalWeight = BigInt(0);
-    const weightedSums = BUCKET_IDS.map(() => BigInt(0));
+    // Equal weight: 1 person = 1 vote (not token-weighted)
+    const sums = BUCKET_IDS.map(() => 0);
+    let voterCount = 0;
 
     for (const vote of votes) {
-        let bal;
-        try {
-            const raw = vote.claws_balance || '0';
-            // Handle scientific notation floats (e.g. 5.03e+26) — convert to integer string first
-            bal = typeof raw === 'number' ? BigInt(Math.floor(raw)) : (raw.includes('e') || raw.includes('.')) ? BigInt(Math.floor(Number(raw))) : BigInt(raw);
-        } catch (e) { bal = BigInt(0); }
-        if (bal === BigInt(0)) continue;
-        totalWeight += bal;
-
+        if (!vote.weights) continue;
+        voterCount++;
         BUCKET_IDS.forEach((id, i) => {
-            const pct = BigInt(vote.weights[id] || 0);
-            weightedSums[i] += pct * bal;
+            sums[i] += Number(vote.weights[id] || 0);
         });
     }
 
-    // Use 100x multiplier before BigInt division to preserve precision
-    // (BigInt division truncates, so small percentages would become 0)
-    const PRECISION = BigInt(10000);
-    const rawPcts = BUCKET_IDS.map((_, i) => {
-        if (totalWeight === BigInt(0)) return 0;
-        return Number((weightedSums[i] * PRECISION) / totalWeight) / 100;
-    });
-
-    const activeVoters = votes.filter(v => {
-        try { return BigInt(typeof v.claws_balance === 'number' ? Math.floor(v.claws_balance) : (v.claws_balance || '0')) > BigInt(0); } catch(e) { return false; }
-    }).length;
+    const rawPcts = BUCKET_IDS.map((_, i) => voterCount > 0 ? sums[i] / voterCount : 0);
+    const activeVoters = voterCount;
 
     // Round to integers, ensuring total = 100 and non-zero votes show at least 1%
     const rawTotal = rawPcts.reduce((a, b) => a + b, 0);
