@@ -25,8 +25,8 @@ export default async function handler(req, res) {
     const wallet = (req.query.wallet || req.body?.wallet || '').toLowerCase();
     if (!isAdmin(wallet)) return res.status(403).json({ error: 'Admin only' });
 
-    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols', 'apps', 'pending'
-    const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : type === 'protocols' ? 'pgt_protocols' : type === 'apps' ? 'pgt_apps' : 'pgt_agents';
+    const type = req.query.type || req.body?.type; // 'agents', 'goods', 'builders', 'protocols', 'apps', 'platforms', 'pending'
+    const table = type === 'goods' ? 'pgt_public_goods' : type === 'builders' ? 'pgt_builders' : type === 'protocols' ? 'pgt_protocols' : type === 'apps' ? 'pgt_apps' : type === 'platforms' ? 'inclawbator_platforms' : 'pgt_agents';
 
     // GET — list all (including unapproved, for admin)
     if (req.method === 'GET') {
@@ -72,6 +72,7 @@ export default async function handler(req, res) {
             row.website = website;
             row.category = category;
         }
+        if (type === 'platforms') Object.assign(row, { listing_url: req.body.listing_url, status: status || 'discovered', logo_url: autoLogo, submitted_by: wallet });
         if (type === 'agents') Object.assign(row, { telegram, chain: chain || 'multi', status: status || 'live', logo_url: autoLogo, token_address, token_symbol, submitted_by: wallet });
         if (type === 'goods') Object.assign(row, { chain, logo_url: autoLogo, submitted_by: wallet });
         if (type === 'protocols') Object.assign(row, { chain, logo_url: autoLogo, token_symbol, submitted_by: wallet });
@@ -118,7 +119,7 @@ export default async function handler(req, res) {
 
         // General update
         const updates = {};
-        for (const key of ['name', 'description', 'website', 'x_handle', 'github', 'telegram', 'chain', 'category', 'status', 'notes', 'bio', 'skills', 'projects', 'logo_url', 'token_address', 'token_symbol']) {
+        for (const key of ['name', 'description', 'website', 'x_handle', 'github', 'telegram', 'chain', 'category', 'status', 'notes', 'bio', 'skills', 'projects', 'logo_url', 'token_address', 'token_symbol', 'listing_url']) {
             if (req.body[key] !== undefined) updates[key] = req.body[key];
         }
         if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Nothing to update' });

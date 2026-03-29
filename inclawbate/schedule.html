@@ -1647,7 +1647,9 @@
             { type: 'goods', emoji: '🎨', label: 'Content Creators' },
             { type: 'pending', emoji: '📥', label: 'Pending' },
         ],
-        'inclawbator': null, // No research database for inclawbator
+        'inclawbator': [
+            { type: 'platforms', emoji: '🌐', label: 'All Platforms' },
+        ],
     };
 
     function _showResearchPanel() {
@@ -1660,7 +1662,7 @@
 
         // Update title based on account
         var title = document.getElementById('researchTitle');
-        if (title) title.textContent = _activeAccount === 'publicgoodstech' ? 'Research Database' : 'Partnership Database';
+        if (title) title.textContent = _activeAccount === 'publicgoodstech' ? 'Research Database' : _activeAccount === 'inclawbator' ? 'Platform Tracker' : 'Partnership Database';
         var tabContainer = document.getElementById('researchTabs');
         if (tabContainer) {
             tabContainer.innerHTML = tabs.map(function(t, i) {
@@ -1698,9 +1700,16 @@
         var stats = document.getElementById('researchStats');
         if (!grid) return;
 
-        var mentioned = _researchData.filter(function(i) { return i.mentions_count > 0; }).length;
-        var never = _researchData.filter(function(i) { return !i.mentions_count; }).length;
-        if (stats) stats.textContent = _researchData.length + ' entries · ' + mentioned + ' mentioned · ' + never + ' never covered';
+        if (_researchType === 'platforms') {
+            var live = _researchData.filter(function(i) { return i.status === 'live'; }).length;
+            var applied = _researchData.filter(function(i) { return i.status === 'applied'; }).length;
+            var discovered = _researchData.filter(function(i) { return i.status === 'discovered'; }).length;
+            if (stats) stats.textContent = _researchData.length + ' platforms · ' + live + ' live · ' + applied + ' applied · ' + discovered + ' discovered';
+        } else {
+            var mentioned = _researchData.filter(function(i) { return i.mentions_count > 0; }).length;
+            var never = _researchData.filter(function(i) { return !i.mentions_count; }).length;
+            if (stats) stats.textContent = _researchData.length + ' entries · ' + mentioned + ' mentioned · ' + never + ' never covered';
+        }
 
         if (_researchData.length === 0) {
             grid.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;font-size:0.85rem">No entries yet. Click "+ Add New" to start building your research database.</div>';
@@ -1721,6 +1730,33 @@
 
             var itemTable = item._table || '';
             var typeLabel = item._type ? '<span style="font-size:0.58rem;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.15);margin-left:4px">' + item._type + '</span>' : '';
+
+            // Platform tracker: custom rendering with status badges and listing links
+            if (_researchType === 'platforms') {
+                var statusColors = { live: '#4ade80', announced: '#60a5fa', applied: '#facc15', discovered: '#a78bfa', rejected: '#f87171', paused: '#94a3b8' };
+                var statusColor = statusColors[item.status] || '#94a3b8';
+                var statusBadge = '<span style="font-size:0.6rem;padding:2px 8px;border-radius:4px;background:' + statusColor + '15;color:' + statusColor + ';border:1px solid ' + statusColor + '30;font-weight:700;text-transform:uppercase;letter-spacing:0.03em">' + _esc(item.status || 'discovered') + '</span>';
+                var catBadge = item.category ? '<span style="font-size:0.55rem;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.15)">' + _esc(item.category) + '</span>' : '';
+                var listingLink = item.listing_url ? '<a href="' + _esc(item.listing_url) + '" target="_blank" style="font-size:0.65rem;color:var(--teal,#2dd4bf)">View Listing →</a>' : '';
+                var siteLink = item.website ? '<a href="' + _esc(item.website) + '" target="_blank" style="font-size:0.65rem;color:var(--text-dim)">🌐 Website</a>' : '';
+
+                return '<div class="rb-entry">' +
+                    logoHtml +
+                    '<div class="rb-entry-info">' +
+                        '<div class="rb-entry-name">' + featured + _esc(item.name) + ' ' + statusBadge + ' ' + catBadge + '</div>' +
+                        (handle ? '<div class="rb-entry-handle">' + _esc(handle) + '</div>' : '') +
+                        '<div class="rb-entry-desc">' + _esc(item.description || 'No description') + '</div>' +
+                        '<div style="display:flex;gap:10px;margin-top:3px">' + listingLink + siteLink + '</div>' +
+                        (item.notes ? '<div style="font-size:0.65rem;color:#60a5fa;margin-top:2px">📝 ' + _esc(item.notes) + '</div>' : '') +
+                    '</div>' +
+                    '<div class="rb-entry-meta">' +
+                        '<button class="rb-btn" onclick="_editResearchEntry(\'' + item.id + '\')" title="Edit">✏️</button>' +
+                        '<button class="rb-btn" onclick="_cyclePlatformStatus(\'' + item.id + '\')" title="Cycle status">🔄</button>' +
+                        '<button class="rb-btn" onclick="_toggleFeature(\'' + item.id + '\',\'' + itemTable + '\')" title="Toggle featured">⭐</button>' +
+                        '<button class="rb-btn" onclick="_deleteResearchEntry(\'' + item.id + '\',\'' + _esc(item.name).replace(/'/g,'\\\'') + '\',\'' + itemTable + '\')" title="Delete" style="color:#f87171">🗑</button>' +
+                    '</div>' +
+                '</div>';
+            }
 
             return '<div class="rb-entry">' +
                 logoHtml +
@@ -1794,10 +1830,50 @@
         _loadResearch();
     };
 
+    // Cycle platform status: discovered → applied → live → announced → paused
+    window._cyclePlatformStatus = async function(id) {
+        var item = _researchData.find(function(i) { return i.id === id; });
+        if (!item) return;
+        var order = ['discovered', 'applied', 'live', 'announced', 'paused', 'rejected'];
+        var idx = order.indexOf(item.status || 'discovered');
+        var next = order[(idx + 1) % order.length];
+        await fetch('/api/publicgoods/research', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, status: next, type: _researchType, wallet: _userWallet })
+        });
+        _loadResearch();
+    };
+
     window._searchResearch = function() { _loadResearch(); };
 
     window._addResearchEntry = function() {
-        var typeLabel = _researchType === 'agents' ? 'Agent' : _researchType === 'goods' ? 'Public Good' : _researchType === 'protocols' ? 'Protocol / Company' : _researchType === 'apps' ? 'App' : 'Builder';
+        var typeLabel = _researchType === 'agents' ? 'Agent' : _researchType === 'goods' ? 'Public Good' : _researchType === 'protocols' ? 'Protocol / Company' : _researchType === 'apps' ? 'App' : _researchType === 'platforms' ? 'Platform' : 'Builder';
+
+        // Platform tracker has a custom form
+        if (_researchType === 'platforms') {
+            var fields = '<div class="rb-field"><label>Platform Name *</label><input id="rbName" placeholder="e.g. Virtuals Protocol"></div>' +
+                '<div class="rb-field"><label>X Handle</label><input id="rbHandle" placeholder="@virtikitten"></div>' +
+                '<div class="rb-field"><label>What is it?</label><textarea id="rbDesc" placeholder="Short description of the platform..."></textarea></div>' +
+                '<div class="rb-field"><label>Platform Website</label><input id="rbWebsite" placeholder="https://app.virtuals.io"></div>' +
+                '<div class="rb-field"><label>Our Listing URL</label><input id="rbListingUrl" placeholder="https://app.virtuals.io/agent/inclawbator"></div>' +
+                '<div class="rb-field"><label>Category</label><select id="rbCategory"><option value="ai-agent">AI Agent Platform</option><option value="marketplace">Marketplace</option><option value="launchpad">Launchpad</option><option value="defi">DeFi</option><option value="social">Social</option><option value="depin">DePIN</option><option value="other">Other</option></select></div>' +
+                '<div class="rb-field"><label>Status</label><select id="rbStatus"><option value="discovered">Discovered</option><option value="applied">Applied</option><option value="live">Live</option><option value="announced">Announced</option><option value="rejected">Rejected</option><option value="paused">Paused</option></select></div>' +
+                '<div class="rb-field"><label>Notes (internal)</label><input id="rbNotes" placeholder="Any notes..."></div>';
+
+            var modal = document.createElement('div');
+            modal.className = 'rb-modal';
+            modal.innerHTML = '<div class="rb-modal-inner">' +
+                '<div class="rb-modal-title">Add Platform</div>' +
+                fields +
+                '<div style="display:flex;gap:8px;margin-top:14px">' +
+                    '<button class="rb-submit" onclick="_submitResearchEntry()">Add</button>' +
+                    '<button class="rb-btn" onclick="this.closest(\'.rb-modal\').remove()" style="padding:10px 20px">Cancel</button>' +
+                '</div></div>';
+            document.body.appendChild(modal);
+            return;
+        }
+
         var fields = '<div class="rb-field"><label>Name *</label><input id="rbName"></div>' +
             '<div class="rb-field"><label>X Handle</label><input id="rbHandle" placeholder="@handle"></div>' +
             '<div class="rb-field"><label>Description</label><textarea id="rbDesc" placeholder="What does it do?"></textarea></div>' +
@@ -1853,6 +1929,11 @@
         };
         if (!body.name) { alert('Name is required'); return; }
 
+        if (_researchType === 'platforms') {
+            body.listing_url = (document.getElementById('rbListingUrl') || {}).value || '';
+            body.category = (document.getElementById('rbCategory') || {}).value || 'ai-agent';
+            body.status = (document.getElementById('rbStatus') || {}).value || 'discovered';
+        }
         if (_researchType === 'agents') {
             body.chain = (document.getElementById('rbChain') || {}).value || 'multi';
             body.category = (document.getElementById('rbCategory') || {}).value || 'general';
