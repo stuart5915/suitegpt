@@ -2750,13 +2750,14 @@ export default async function handler(req, res) {
     if (agentMatch) {
       const agentType = (agentMatch[1] || '').trim().toLowerCase();
       const templates = {
-        'x growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice. Grows your audience on autopilot.', steps: ['Connect your X account', 'Pick a posting vibe (professional, casual, meme-heavy)', 'Set posting frequency (1-5 posts/day)', 'Activate'] },
-        'growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice.', steps: ['Connect your X account', 'Pick a posting vibe', 'Set posting frequency', 'Activate'] },
-        'dca': { name: 'DCA Auto-Buyer', desc: 'Dollar-cost averages into any token on a schedule. Set it and forget it.', steps: ['Pick a token to buy', 'Set amount per buy (in ETH or USDC)', 'Set frequency (daily, weekly)', 'Connect wallet and activate'] },
-        'auto-buy': { name: 'DCA Auto-Buyer', desc: 'Dollar-cost averages into any token on a schedule.', steps: ['Pick a token', 'Set amount and frequency', 'Connect wallet', 'Activate'] },
-        'analytics': { name: 'Analytics Reporter', desc: 'Posts daily or weekly token stats to X or Telegram. Price, volume, holders, staking — all automated.', steps: ['Pick which token to track', 'Choose where to post (X or Telegram)', 'Set frequency (daily or weekly)', 'Activate'] },
-        'whale': { name: 'Whale Watcher', desc: 'Monitors specific wallets and alerts you when big moves happen. Never miss a whale buy or sell.', steps: ['Add wallet addresses to watch', 'Set alert threshold (e.g. $1000+)', 'Choose where to get alerts (Telegram)', 'Activate'] },
-        'reply': { name: 'Reply Bot', desc: 'Auto-replies to X mentions with your brand voice. Never leave a mention unanswered.', steps: ['Connect your X account', 'Set your brand voice/persona', 'Activate'] },
+        'x growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice. Grows your audience on autopilot.', q: 'First, connect your X account at inclawbate.app/schedule. What project or topic should it post about?' },
+        'growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice.', q: 'What project or topic should it post about?' },
+        'dca': { name: 'DCA Auto-Buyer', desc: 'Dollar-cost averages into any token on a schedule. Set it and forget it.', q: 'What token do you want to auto-buy?' },
+        'auto-buy': { name: 'DCA Auto-Buyer', desc: 'Dollar-cost averages into any token on a schedule.', q: 'What token do you want to auto-buy?' },
+        'analytics': { name: 'Analytics Reporter', desc: 'Posts daily or weekly token stats to X or Telegram. Price, volume, holders — all automated.', q: 'What token do you want it to report on?' },
+        'whale': { name: 'Whale Watcher', desc: 'Monitors a specific wallet and alerts you when it moves.', q: 'What wallet address do you want to watch?' },
+        'token track': { name: 'Token Tracker', desc: 'Monitors a token — price changes, volume spikes, big buys and sells.', q: 'What token do you want to track? Give me the name or contract address.' },
+        'reply': { name: 'Reply Bot', desc: 'Auto-replies to X mentions with your brand voice. Never leave a mention unanswered.', q: 'First, connect your X account. Head to inclawbate.app/schedule to connect, then come back and tell me your project name.' },
       };
 
       // Find best matching template
@@ -2764,11 +2765,11 @@ export default async function handler(req, res) {
       for (const [key, val] of Object.entries(templates)) {
         if (agentType.includes(key)) { tmpl = val; break; }
       }
-      if (!tmpl) tmpl = { name: 'Custom Agent', desc: 'A custom AI agent with capabilities you choose. Tell me what you want it to do and I\'ll set it up.', steps: ['Describe what the agent should do', 'Pick capabilities (X posting, monitoring, alerts, etc.)', 'Connect accounts if needed', 'Activate'] };
+      if (!tmpl) tmpl = { name: 'Custom Agent', desc: 'A custom AI agent with capabilities you choose.', q: 'What do you want this agent to do?' };
 
-      const reply = `**${tmpl.name}**\n\n${tmpl.desc}\n\n**Setup steps:**\n${tmpl.steps.map((s, i) => (i + 1) + '. ' + s).join('\n')}\n\nLet's start — ${tmpl.steps[0].toLowerCase()}. ${tmpl.name === 'X Growth Agent' || tmpl.name === 'Reply Bot' ? 'Head to inclawbate.app/schedule to connect your X account, or tell me your project details and I\'ll help configure it.' : 'What token or project is this for?'}`;
+      const reply = `**${tmpl.name}**\n\n${tmpl.desc}\n\n${tmpl.q}`;
       history.push({ role: 'assistant', content: reply });
-      return sendReply({ reply, session_id: sid, suggestions: ['Connect my X account', 'Tell me more about capabilities', 'Set up a different agent'] });
+      return sendReply({ reply, session_id: sid, suggestions: ['Tell me more about this agent', 'Set up a different agent', 'What agents are available?'] });
     }
 
     // Pre-LLM intercept: "deploy staking for [token address]" — execute directly
