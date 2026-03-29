@@ -32,9 +32,21 @@ function oauthHeader(method, url) {
         .join(', ');
 }
 
+const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+    // Admin-only: require CRON_SECRET or admin wallet in body
+    const cronSecret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+    const wallet = (req.body?.wallet || '').toLowerCase();
+    const isAdmin = (cronSecret && cronSecret === process.env.CRON_SECRET)
+        || wallet === SUPER_ADMIN;
+
+    if (!isAdmin) {
+        return res.status(403).json({ error: 'Admin only' });
+    }
 
     const { text } = req.body || {};
     if (!text) return res.status(400).json({ error: 'text is required' });

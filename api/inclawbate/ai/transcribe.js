@@ -2,13 +2,35 @@
 // Uses Groq Whisper (free, fast)
 // Future: route to community GPU nodes running Whisper locally
 
+const ALLOWED_ORIGINS = [
+    'https://inclawbate.app', 'https://www.inclawbate.app',
+    'https://suitegpt.app', 'https://www.suitegpt.app',
+    'http://localhost:3000', 'http://localhost:5500'
+];
+
+const rateLimits = new Map();
+const RATE_LIMIT = 30; // max 30 per 10 min per IP
+const RATE_WINDOW = 10 * 60 * 1000;
+
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Rate limit by IP
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
+    const now = Date.now();
+    const entry = rateLimits.get(ip) || { count: 0, resetAt: now + RATE_WINDOW };
+    if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + RATE_WINDOW; }
+    entry.count++;
+    rateLimits.set(ip, entry);
+    if (entry.count > RATE_LIMIT) return res.status(429).json({ error: 'Rate limited — try again later' });
 
     const GROQ_KEY = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',')[0]?.trim();
     if (!GROQ_KEY) {

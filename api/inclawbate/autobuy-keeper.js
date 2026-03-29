@@ -14,6 +14,12 @@ const ABI = [
 export default async function handler(req, res) {
     if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
 
+    // Cron/admin only — uses server-side private key
+    const secret = req.headers['x-cron-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+    if (!secret || secret !== process.env.CRON_SECRET) {
+        return res.status(403).json({ ok: false, error: 'Unauthorized' });
+    }
+
     if (!CONTRACT_ADDRESS || !PRIVATE_KEY) {
         return res.status(500).json({ ok: false, error: 'Not configured' });
     }
