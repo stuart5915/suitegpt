@@ -1214,6 +1214,10 @@ function clickPill(el){
         window.open('https://t.me/inclawbate','_blank');
     } else if(S.tab==='defi' && handleDefiPill(el.textContent)){
         // handled client-side
+    } else if(S.tab==='build' && handleBuildPill(el.textContent)){
+        // handled client-side
+    } else if(S.tab==='dashboard' && handleDashboardPill(el.textContent)){
+        // handled client-side
     } else {
         sendMessage(el.textContent);
     }
@@ -1227,6 +1231,166 @@ function clickPill(el){
         const ctx=$('mobileCtx');
         if(ctx&&ctx.classList.contains('on')){toggleMobileCtx();}
     }
+}
+
+function handleBuildPill(text){
+    const t=text.toLowerCase().trim();
+
+    // === Build App pills ===
+    if(t==='build me an app'){
+        addBotMsg("Let's build something! Describe what you want and I'll generate it.\n\nI can create full web apps with HTML, CSS, and JavaScript — deployed instantly on Base.\n\nTry something like:\n• \"A portfolio tracker that shows my token balances\"\n• \"A staking dashboard for my token\"\n• \"A landing page for my NFT project\"",['Portfolio tracker','Staking dashboard','Landing page']);
+        return true;
+    }
+    if(t==='portfolio tracker'){
+        addBotMsg("I'll build you a **portfolio tracker** that connects to your wallet and shows:\n\n• Token balances and USD values\n• Price changes (24h)\n• Total portfolio value\n• Transaction history\n\nWant me to start building? Just say **go** or customize what you want.",['Build me an app']);
+        sendMessage('Build me a portfolio tracker app that connects to a wallet and shows token balances, USD values, and price changes on Base');
+        return true;
+    }
+    if(t==='staking dashboard'){
+        addBotMsg("I'll build a **staking dashboard** showing:\n\n• Staked amounts and rewards\n• APY rates\n• Claim buttons\n• Staking history\n\nStarting the build now...");
+        sendMessage('Build me a staking dashboard app that shows staked tokens, earned rewards, APY, and has claim functionality on Base');
+        return true;
+    }
+    if(t==='landing page'){
+        addBotMsg("I'll create a **landing page** for your project. What's it for?\n\nTell me the project name, tagline, and what features to highlight — or just say **go** and I'll make a sleek crypto project template.",['Build me an app']);
+        return true;
+    }
+    if(t==='nft gallery'){
+        addBotMsg("I'll build an **NFT gallery** that displays:\n\n• NFT images and metadata\n• Collection stats (floor price, volume)\n• Owner info\n• Grid and list views\n\nTell me the collection address or say **go** for a template.",['Build me an app']);
+        return true;
+    }
+    if(t==='token-gated page'){
+        addBotMsg("I'll build a **token-gated page** — content only visible to holders of a specific token.\n\n• Connects wallet and checks balance\n• Shows/hides content based on holdings\n• Customizable threshold\n\nWhich token should gate access? Or say **go** for a CLAWS-gated template.",['Build me an app']);
+        return true;
+    }
+    if(t==='voting tool'){
+        addBotMsg("I'll build a **voting tool** for governance or polls:\n\n• Create proposals with multiple options\n• Token-weighted voting\n• Results display with charts\n• On-chain or off-chain options\n\nWhat's the vote about? Or say **go** for a general template.",['Build me an app']);
+        return true;
+    }
+    if(t==='leaderboard'){
+        addBotMsg("I'll build a **leaderboard** to rank users:\n\n• Sortable columns (score, holdings, activity)\n• Wallet address display\n• Pagination\n• Real-time updates\n\nWhat metric should it rank by? Or say **go** for a general template.",['Build me an app']);
+        return true;
+    }
+    if(t==='analytics dashboard'){
+        addBotMsg("I'll build an **analytics dashboard** with:\n\n• Charts (line, bar, pie)\n• On-chain metrics (volume, holders, txns)\n• Time range filters\n• Key stats cards\n\nWhat data should it track? Or say **go** for a general token analytics template.",['Build me an app']);
+        return true;
+    }
+
+    // === Launch / Deploy pills ===
+    if(t==='launch a token'){
+        addBotMsg("Let's launch a token on Base via **Clanker**!\n\nI need:\n• **Name** — your token's name\n• **Ticker** — e.g. $MYTOKEN\n• **Image** — logo URL (optional)\n\nOr just tell me the concept and I'll handle the rest.",['Meme coin','Deploy ERC-20']);
+        return true;
+    }
+    if(t==='meme coin'){
+        addBotMsg("Let's launch a **meme coin**! 🐸\n\nGive me:\n• A **name** (the funnier the better)\n• A **ticker** (e.g. $DOGE, $PEPE)\n• Optional: image URL for the logo\n\nI'll deploy it on Base via Clanker — instant liquidity, no code needed.",['Launch a token']);
+        return true;
+    }
+    if(t==='deploy staking'){
+        addBotMsg("I'll set up a **staking contract** for your token:\n\n• Users stake tokens and earn rewards\n• Configurable reward rate and duration\n• Withdraw and claim functions\n\nWhich token should be stakeable? Tell me the token address or name.",['Launch a token','Deploy ERC-20']);
+        return true;
+    }
+    if(t==='airdrop tokens'){
+        addBotMsg("I'll help you **airdrop tokens** to multiple wallets:\n\n• Bulk transfer in one transaction (gas efficient)\n• CSV or list of addresses + amounts\n• Works with any ERC-20 on Base\n\nTell me the **token address**, **amounts**, and **wallet list** to get started.",['Launch a token','Disperse tokens']);
+        return true;
+    }
+    if(t==='deploy erc-20'){
+        addBotMsg("Deploy a standard **ERC-20 token** with advanced settings:\n\n• Custom name, symbol, and supply\n• Optional: mint/burn functions\n• Optional: transfer tax\n• Optional: max wallet/tx limits\n\nTell me your token specs and I'll generate the contract.",['Launch a token','Meme coin']);
+        return true;
+    }
+    if(t==='deploy nft'){
+        addBotMsg("Launch an **ERC-721 NFT collection** on Base:\n\n• Custom name and symbol\n• Configurable mint price and supply\n• Metadata and image hosting\n• Optional: allowlist / public mint phases\n\nTell me about your collection — name, supply, mint price, and art style.",['Launch a token','Build me an app']);
+        return true;
+    }
+    if(t==='deploy smart contract'){
+        addBotMsg("Deploy a **custom smart contract** to Base:\n\n• I can write Solidity contracts from a description\n• Compile and deploy via the Inclawbator\n• Supports ERC-20, ERC-721, staking, vesting, multisig, and more\n\nDescribe what your contract should do and I'll build it.",['Deploy ERC-20','Deploy staking','Deploy NFT']);
+        return true;
+    }
+    if(t==='payment splitter'){
+        addBotMsg("Deploy a **payment splitter** contract:\n\n• Automatically splits incoming ETH/tokens between wallets\n• Configurable shares (e.g. 60/30/10)\n• Supports multiple recipients\n• Withdraw function for each party\n\nTell me the wallet addresses and split percentages.",['Deploy smart contract','Launch a token']);
+        return true;
+    }
+
+    // === Manage pills ===
+    if(t==='my apps'){
+        addBotMsg("Fetching your published apps...");
+        sendMessage('Show me my published apps');
+        return true;
+    }
+    if(t==='health check'){
+        addBotMsg("I'll check the status of your apps and contracts:\n\n• Are your sites live and responding?\n• Are your contracts deployed and functional?\n• Any errors or downtime?\n\nRunning health check...");
+        sendMessage('Run a health check on my apps and contracts');
+        return true;
+    }
+    if(t==='marketing agent'){
+        addBotMsg("The **Marketing Agent** can help promote your project:\n\n• Generate social media posts (X/Twitter threads)\n• Write project descriptions and taglines\n• Create launch announcements\n• Suggest growth strategies\n\nWhat project do you want to promote?",['Build me an app','Launch a token']);
+        return true;
+    }
+    if(t==='token analytics'){
+        addBotMsg("I'll pull **analytics** for your token:\n\n• Price and volume data\n• Holder count and distribution\n• Liquidity pool stats\n• Recent transactions\n\nWhich token? Give me the name, ticker, or contract address.",['Launch a token','My apps']);
+        return true;
+    }
+    if(t==='update my app'){
+        addBotMsg("Want to update an existing app? Tell me:\n\n• Which app to update (name or URL)\n• What changes you want\n\nI'll pull the current code, apply your changes, and redeploy.",['My apps','Build me an app']);
+        return true;
+    }
+
+    return false;
+}
+
+function handleDashboardPill(text){
+    const t=text.toLowerCase().trim();
+
+    if(t==='show me my portfolio'){
+        if(!S.wallet){addBotMsg("Connect your wallet to view your portfolio.",['Connect Wallet']);return true;}
+        const b=S.balances;
+        let msg="**Your Portfolio**\n\n";
+        if(b){
+            const total=(b.eth?.usd||0)+(b.usdc?.usd||0)+(b.claws?.usd||0);
+            msg+="**Total Value:** "+fmtUSD(total)+"\n\n";
+            msg+="**ETH:** "+fmtBal(b.eth?.balance)+" ("+fmtUSD(b.eth?.usd)+")\n";
+            msg+="**USDC:** "+fmtBal(b.usdc?.balance,2)+" ("+fmtUSD(b.usdc?.usd)+")\n";
+            msg+="**CLAWS:** "+fmtBal(b.claws?.balance,0)+" ("+fmtUSD(b.claws?.usd)+")";
+            const st=b.staking;
+            if(st&&st.staked>0) msg+="\n\n**Staked:** "+fmtBal(st.staked,0)+" CLAWS ("+fmtBal(st.earned,2)+" earned)";
+        }else{
+            msg+="Loading balances...";
+            fetchBalances();
+        }
+        addBotMsg(msg,['What tokens do I hold?','Show recent activity']);
+        return true;
+    }
+    if(t==='show me my apps'){
+        addBotMsg("Fetching your published apps...");
+        sendMessage('Show me my published apps');
+        return true;
+    }
+    if(t==='what tokens do i hold?'){
+        if(!S.wallet){addBotMsg("Connect your wallet to see your tokens.",['Connect Wallet']);return true;}
+        const b=S.balances;
+        let msg="**Your Token Holdings**\n\n";
+        if(b){
+            msg+="**ETH:** "+fmtBal(b.eth?.balance)+" ("+fmtUSD(b.eth?.usd)+")\n";
+            msg+="**USDC:** "+fmtBal(b.usdc?.balance,2)+" ("+fmtUSD(b.usdc?.usd)+")\n";
+            msg+="**CLAWS:** "+fmtBal(b.claws?.balance,0)+" ("+fmtUSD(b.claws?.usd)+")";
+        }else{
+            msg+="Loading...";
+            fetchBalances();
+        }
+        addBotMsg(msg,['Show me my portfolio','Show recent activity']);
+        return true;
+    }
+    if(t==='show recent activity'){
+        addBotMsg("Fetching your recent transactions...");
+        sendMessage('Show my recent transaction activity');
+        return true;
+    }
+    if(t==='open my settings'){
+        addBotMsg("Opening your settings...");
+        sendMessage('Open my account and wallet settings');
+        return true;
+    }
+
+    return false;
 }
 
 function handleDefiPill(text){
