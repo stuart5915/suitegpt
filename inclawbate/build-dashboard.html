@@ -46,6 +46,17 @@
             transition: all 0.15s; text-decoration: none; color: inherit; display: block;
         }
         .dash-card:hover { border-color: rgba(232,121,85,0.3); background: rgba(255,255,255,0.05); transform: translateY(-1px); }
+        .dash-delete-btn {
+            position: absolute; top: 6px; right: 6px;
+            width: 22px; height: 22px;
+            background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 50%; color: #ef4444;
+            font-size: 0.85rem; line-height: 1;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .dash-card:hover .dash-delete-btn { opacity: 1; }
+        .dash-delete-btn:hover { background: rgba(239,68,68,0.3); }
         .dash-card-icon { font-size: 1.5rem; margin-bottom: 6px; }
         .dash-card-name {
             font-size: 0.78rem; font-weight: 800; color: #fff;
@@ -194,25 +205,74 @@
         html += '<button class="dash-new-btn" onclick="sendToChat(\'I want to build an app\')">+ New App</button>';
         html += '</div>';
 
-        if (apps.length) {
-            html += '<div class="dash-grid">';
-            apps.forEach(function(app) {
-                var url = 'https://inclawbate.app/s/' + app.slug;
-                html += '<div class="dash-card" onclick="openInBuildStudio(\'' + app.slug + '\')">';
-                html += '<div class="dash-card-icon">&#128187;</div>';
-                html += '<div class="dash-card-name">' + escHtml(app.name || app.slug) + '</div>';
-                html += '<div class="dash-card-desc">' + escHtml((app.description || '').slice(0, 80)) + '</div>';
-                html += '<div class="dash-card-actions">';
-                html += '<span class="dash-card-btn dash-card-btn--edit">Edit in Studio</span>';
-                html += '<a class="dash-card-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()">View</a>';
-                html += '</div>';
-                html += '</div>';
-            });
-            html += '</div>';
-        } else {
-            html += '<div class="dash-empty">No apps yet. Build your first one!</div>';
+        var totalApps = appsData.total || apps.length;
+        var currentPage = 1;
+        var appsPerPage = 20;
+
+        function renderApps(appsToShow, page, total) {
+            var grid = '';
+            if (appsToShow.length) {
+                grid += '<div class="dash-grid">';
+                appsToShow.forEach(function(app) {
+                    var url = 'https://inclawbate.app/s/' + app.slug;
+                    grid += '<div class="dash-card" style="position:relative" onclick="openInBuildStudio(\'' + app.slug + '\')">';
+                    grid += '<button class="dash-delete-btn" onclick="event.stopPropagation();deleteApp(\'' + escHtml(app.slug) + '\',\'' + escHtml(app.name || app.slug) + '\')" title="Delete">&times;</button>';
+                    grid += '<div class="dash-card-icon">&#128187;</div>';
+                    grid += '<div class="dash-card-name">' + escHtml(app.name || app.slug) + '</div>';
+                    grid += '<div class="dash-card-desc">' + escHtml((app.description || '').slice(0, 80)) + '</div>';
+                    grid += '<div class="dash-card-actions">';
+                    grid += '<span class="dash-card-btn dash-card-btn--edit">Edit in Studio</span>';
+                    grid += '<a class="dash-card-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()">View</a>';
+                    grid += '</div>';
+                    grid += '</div>';
+                });
+                grid += '</div>';
+                // Pagination
+                if (total > appsPerPage) {
+                    var totalPages = Math.ceil(total / appsPerPage);
+                    grid += '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px">';
+                    grid += '<button class="dash-card-btn" ' + (page <= 1 ? 'disabled style="opacity:0.3;cursor:default"' : 'onclick="loadPage(' + (page - 1) + ')"') + '>&larr; Prev</button>';
+                    grid += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:0.7rem;color:rgba(255,255,255,0.4)">' + page + ' / ' + totalPages + '</span>';
+                    grid += '<button class="dash-card-btn" ' + (page >= totalPages ? 'disabled style="opacity:0.3;cursor:default"' : 'onclick="loadPage(' + (page + 1) + ')"') + '>Next &rarr;</button>';
+                    grid += '</div>';
+                }
+            } else {
+                grid += '<div class="dash-empty">No apps yet. Build your first one!</div>';
+            }
+            return grid;
         }
+
+        var appsContainer = 'appsGrid_' + Date.now();
+        html += '<div id="' + appsContainer + '">';
+        html += renderApps(apps, 1, totalApps);
         html += '</div>';
+        html += '</div>';
+
+        window.loadPage = function(page) {
+            fetch('/api/inclawbate/apps?creator_wallet=' + encodeURIComponent(wallet) + '&limit=' + appsPerPage + '&offset=' + ((page - 1) * appsPerPage))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var pageApps = (data.apps || []).filter(function(a) { return a.is_listed !== false; });
+                    var el = document.getElementById(appsContainer);
+                    if (el) el.innerHTML = renderApps(pageApps, page, data.total || totalApps);
+                });
+        };
+
+        window.deleteApp = function(slug, name) {
+            if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+            fetch('/api/inclawbate/apps/' + encodeURIComponent(slug), {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ creator_wallet: wallet })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.error) { alert('Failed: ' + d.error); return; }
+                // Reload current page
+                window.loadPage ? loadPage(1) : location.reload();
+            })
+            .catch(function() { alert('Failed to delete'); });
+        };
 
         // ── MY TOKENS / PROJECTS ──
         html += '<div class="dash-section">';
