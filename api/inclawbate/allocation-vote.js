@@ -47,20 +47,35 @@ function computeSynthesis(votes) {
         });
     }
 
-    const synthesis = BUCKET_IDS.map((_, i) => {
+    // Use 100x multiplier before BigInt division to preserve precision
+    // (BigInt division truncates, so small percentages would become 0)
+    const PRECISION = BigInt(10000);
+    const rawPcts = BUCKET_IDS.map((_, i) => {
         if (totalWeight === BigInt(0)) return 0;
-        return Number(weightedSums[i] / totalWeight);
+        return Number((weightedSums[i] * PRECISION) / totalWeight) / 100;
     });
 
-    const synthTotal = synthesis.reduce((a, b) => a + b, 0);
-    const activeVoters = votes.filter(v => BigInt(v.claws_balance || '0') > BigInt(0)).length;
+    const activeVoters = votes.filter(v => {
+        try { return BigInt(typeof v.claws_balance === 'number' ? Math.floor(v.claws_balance) : (v.claws_balance || '0')) > BigInt(0); } catch(e) { return false; }
+    }).length;
 
-    if (synthTotal > 0 && synthTotal !== 100) {
-        const scale = 100 / synthTotal;
-        let adjusted = synthesis.map(v => Math.round(v * scale));
-        const adjTotal = adjusted.reduce((a, b) => a + b, 0);
-        if (adjTotal !== 100) adjusted[0] += (100 - adjTotal);
-        return { synthesis: adjusted, totalVoters: activeVoters, totalWeight: totalWeight.toString() };
+    // Round to integers, ensuring total = 100 and non-zero votes show at least 1%
+    const rawTotal = rawPcts.reduce((a, b) => a + b, 0);
+    if (rawTotal === 0) return { synthesis: BUCKET_IDS.map(() => 0), totalVoters: activeVoters, totalWeight: totalWeight.toString() };
+
+    const scale = 100 / rawTotal;
+    let synthesis = rawPcts.map(v => {
+        const scaled = v * scale;
+        // If someone voted for this category, show at least 1%
+        return scaled > 0.1 ? Math.max(1, Math.round(scaled)) : 0;
+    });
+
+    // Adjust to sum to 100
+    let adjTotal = synthesis.reduce((a, b) => a + b, 0);
+    if (adjTotal !== 100) {
+        // Find the largest category to absorb the difference
+        const maxIdx = synthesis.indexOf(Math.max(...synthesis));
+        synthesis[maxIdx] += (100 - adjTotal);
     }
 
     return { synthesis, totalVoters: activeVoters, totalWeight: totalWeight.toString() };
