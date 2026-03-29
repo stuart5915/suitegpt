@@ -94,25 +94,35 @@ STYLE: Deep black background. Coral (#e87955) and teal (#2dd4bf) as the ONLY lig
 KEEP IT SHORT: One sentence. ONE specific scene connected to the tweet.
 NO: faces, lobsters, characters, people, text, logos, bright backgrounds, generic abstractions.`;
 
-// @inclawbate = the company. Warm, abstract, connected to tweet content.
+// @inclawbate = the company. Warm, cinematic, connected to tweet content. NEVER repeat imagery.
 const INCLAWBATE_IMAGE_CONTEXT = `Write a 1-sentence image prompt for an AI image generator.
 
-STEP 1: Read the tweet. What is the CORE SUBJECT? (e.g. "app building made easy", "liquidity matters", "staking rewards", "community growing")
+STEP 1: Read the tweet. What is the ONE CORE IDEA? (e.g. "growth", "building", "earning", "community strength")
 
-STEP 2: Find a REAL-WORLD OBJECT or SCENE that visually represents that subject. NOT an abstract aurora or generic glow — something CONCRETE and SPECIFIC that a viewer would look at and think "oh that's about [the tweet topic]."
+STEP 2: Find a SURPRISING visual metaphor for that idea. Pick something UNEXPECTED — not the first thing that comes to mind. If your first thought is lanterns or fireflies, THROW IT AWAY and think harder.
 
-Examples of good connections:
-- Tweet about "building apps easily" → a clean workbench with simple tools neatly arranged, warm overhead light
-- Tweet about "liquidity" → mercury pooling on a dark surface, reflecting warm light
-- Tweet about "staking/patience" → amber with an insect preserved inside, warm backlight
-- Tweet about "community" → dozens of paper lanterns floating into a dark sky
-- Tweet about "launching something" → a match head the instant it ignites, macro shot
-- Tweet about "earning/value" → a gold nugget sitting in a dark riverbed, caught by light
-- Tweet about "AI building for you" → a pottery wheel spinning with wet clay taking shape by itself
+Good metaphors are SPECIFIC and FRESH:
+- "community growing" → a coral reef teeming with life in dark ocean water, warm light filtering from above
+- "community growing" → thousands of amber droplets suspended mid-air, each one catching warm light differently
+- "community growing" → a dense forest canopy seen from below, golden light breaking through gaps
+- "building tools" → a jeweler's workstation with tiny precision instruments under a warm spotlight
+- "building tools" → molten glass being shaped on a blowpipe, glowing orange against darkness
+- "liquidity/flow" → ink dropped into water, swirling in slow motion, warm amber tones
+- "staking/patience" → tree rings in a cross-section of ancient wood, warm side-light
+- "launching" → a falcon diving from a cliff at golden hour, motion blur
+- "earning/value" → a beehive cross-section showing hexagonal cells filled with golden honey
+- "AI working" → a loom weaving fabric by itself, threads of gold and coral on dark background
+- "strength/resilience" → volcanic obsidian with veins of gold running through cracks (kintsugi style)
 
-STYLE: Warm palette (coral, amber, gold, teal). Dark background. Fine art photography or concept art. 1:1 square.
-KEEP IT SHORT: One sentence, max two. Describe ONE specific scene.
-NO: text, logos, people, faces, lobsters, generic glowing abstractions, auroras unless relevant.`;
+CRITICAL RULES:
+- NEVER use: paper lanterns, fireflies, candles in a circle, generic glowing orbs, aurora borealis
+- NEVER repeat imagery from previous prompts. Each image must be COMPLETELY DIFFERENT.
+- Pick a metaphor that would make someone STOP SCROLLING. Unexpected. Visceral. Beautiful.
+- The scene must connect to the tweet topic — not just look pretty.
+
+STYLE: Warm palette (coral, amber, gold, teal accents). Dark/moody background. Cinematic or fine art photography. 1:1 square.
+ONE sentence. ONE specific scene. Output ONLY the prompt.
+NO: text, logos, people, faces, hands, lobsters, lanterns, fireflies, candles, generic abstractions.`;
 
 // Shared alias for backward compat — defaults to inclawbator (AI mind)
 const BRAND_IMAGE_CONTEXT = INCLAWBATOR_IMAGE_CONTEXT;
@@ -203,13 +213,13 @@ const INCLAWBATE_STYLE_EXAMPLES = [
 ];
 
 const INCLAWBATE_SCENE_HINTS = {
-    'The Engine': 'Self-sustaining system. Vary: water wheel, clockwork gears, flowing river loop, heartbeat, perpetual motion machine.',
-    'Incubations': 'New things being built. Vary: greenhouse with seedlings, workshop with tools, scaffolding, launch pad, assembly.',
-    '$CLAWS & DeFi': 'Value flowing. Vary: golden rivers, treasure vault, roots distributing nutrients, dam with spillways.',
-    'Builder Access': 'Open invitation to create. Vary: open door with light, toolbox, blank canvas, workbench, drafting table.',
-    'Council & Governance': 'Collective decisions. Vary: roundtable, scales of justice, steering wheel, chess board, compass.',
-    'The Network': 'Connected everywhere. Vary: web of lights, bridges between islands, satellite dishes, mycelium network.',
-    'Week in the Engine': 'Progress and momentum. Vary: dashboard with green lights, rising graph, completed puzzle, sunrise.',
+    'The Engine': 'Self-sustaining system. Vary: water wheel, clockwork gears, tokamak reactor, bonsai tree with golden sap, perpetual fountain.',
+    'Incubations': 'New things being born. Vary: glassblowing studio, butterfly emerging from chrysalis, volcanic island forming, crystal growing in solution.',
+    '$CLAWS & DeFi': 'Value in motion. Vary: gold being poured into molds, river delta seen from space, honeycomb cross-section, dam spillway at golden hour.',
+    'Builder Access': 'Invitation to create. Vary: jeweler at workbench, open forge with hot metal, architects scale model, glowing portal in dark wall.',
+    'Council & Governance': 'Collective intelligence. Vary: ant colony cross-section, neural network lighting up, sundial casting shadow, ancient stone circle at dusk.',
+    'The Network': 'Interconnection. Vary: coral reef ecosystem, mycelium network under soil, satellite view of city lights, root system of a banyan tree.',
+    'Week in the Engine': 'Momentum. Vary: timelapse of flower blooming, train tracks converging at golden hour, completed mosaic, mountain ridge at dawn.',
 };
 
 const INCLAWBATE_NARRATIVE_SCENES = {
@@ -234,19 +244,19 @@ const INCLAWBATE_NARRATIVE_SCENES = {
         'Colorful building blocks arranged neatly on a dark surface, some assembled into a small structure, some waiting. Possibility. Warm light. 1:1.',
     ],
     'Council & Governance': [
-        'Empty chairs arranged in a circle around a warm glowing lantern on a dark background. Gathering, shared purpose, council. 1:1.',
-        'A compass on a dark surface, the needle pointing true north, warm brass finish catching the light. Direction, guidance. 1:1.',
-        'A balanced scale in perfect equilibrium, golden weights on each side, warm spotlight from above. Fairness, balance. Dark background. 1:1.',
+        'An ancient stone circle (like Stonehenge) at dusk, warm golden light hitting the monoliths, long shadows stretching across dark ground. Collective wisdom, endurance. 1:1.',
+        'A cross-section of an ant colony showing organized chambers and tunnels, warm amber lighting, dark soil background. Collective intelligence, structure. 1:1.',
+        'A sundial casting a precise golden shadow on a dark marble surface, warm side-light. Time, precision, governance by natural law. 1:1.',
     ],
     'The Network': [
-        'Glowing fiber optic cables branching out in all directions from a central point, warm teal and coral light, dark background. Connection, reach. 1:1.',
-        'Multiple bridges connecting small islands across dark water, each bridge lit with warm golden lanterns. Paths, connection, unity. 1:1.',
-        'A web of warm lights seen from above at night — like a city grid, each intersection glowing. Network, infrastructure, reach. 1:1.',
+        'A vast coral reef seen from above, hundreds of species coexisting in a dark ocean, warm golden light filtering from the surface. Ecosystem, diversity, life. 1:1.',
+        'A banyan tree with hundreds of aerial roots forming a cathedral-like structure, warm amber light filtering through. Interconnection, support. 1:1.',
+        'Cross-section of forest soil showing an intricate mycelium network connecting tree roots, warm bioluminescent glow against dark earth. Hidden connections. 1:1.',
     ],
     'Week in the Engine': [
-        'A warm sunrise breaking over a dark horizon, golden rays reaching across the landscape. New day, fresh start, momentum. 1:1.',
-        'A completed jigsaw puzzle on a dark table, the last piece being placed, warm overhead light. Satisfaction, completion. 1:1.',
-        'A mountain summit marker at golden hour, warm light on the sign, vast dark valleys below. Achievement, perspective. 1:1.',
+        'A mosaic being completed — the last amber tile placed into a dark background pattern, warm spotlight. Pieces coming together. 1:1.',
+        'Train tracks stretching into a golden horizon, perfectly parallel, warm light on the rails. Direction, momentum, progress. 1:1.',
+        'Time-lapse style: a flower at five stages of bloom in a row, from bud to full open, warm light, dark background. Growth captured. 1:1.',
     ],
 };
 
