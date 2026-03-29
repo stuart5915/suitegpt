@@ -411,8 +411,8 @@ async function launchMemeToken(meme) {
         console.error(`[MemeClaw] Launch API call failed:`, err.message);
     }
 
-    // Step 2b: Deploy staking pool from Railway (Vercel can't do background tasks)
-    if (tokenAddress && !stakingAddress) {
+    // Step 2b: Deploy staking pool (meme launches only, not factory drops)
+    if (tokenAddress && !stakingAddress && !meme._customSymbol) {
         try {
             console.log(`[MemeClaw] Deploying staking pool for ${tokenAddress}...`);
             const STAKING_API = (process.env.AGENT_CHAT_URL || 'https://www.inclawbate.app/api/inclawbate/agent-chat').replace('/agent-chat', '/launch-token');
