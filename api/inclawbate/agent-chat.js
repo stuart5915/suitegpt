@@ -61,7 +61,8 @@ BOOK PROMO — Use book_promo when someone wants to promote their project throug
 
 AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
-MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects". Requires wallet. Returns a list of their published apps with names, URLs, and descriptions. Do NOT call this again if you already listed their apps in this conversation.
+MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects". Requires wallet. Returns 20 apps per page — use page parameter for more. If user says "show more" or "next page", call list_my_apps with page=2, etc. Do NOT call this again if you already listed their apps in this conversation (unless they ask for more).
+DELETE APP — Use delete_app when someone says "delete [app name]", "remove [app name]". Requires wallet + app name. Confirms deletion.
 
 EDIT / WORK ON EXISTING APP — When a user says "work on [app name]", "edit [app name]", "update [app name]", or picks a specific app from their list, do NOT call list_my_apps again. Instead, respond with EXACTLY this format:
 "Here's your app: https://inclawbate.app/s/[slug]
@@ -465,11 +466,28 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'list_my_apps',
-      description: 'List apps the user has built/published on Inclawbate. Returns app names, URLs, and descriptions.',
+      description: 'List apps the user has built/published on Inclawbate. Returns app names, URLs, and descriptions. Use page parameter to paginate.',
       parameters: {
         type: 'object',
         properties: {
-          wallet: { type: 'string', description: 'User wallet address' }
+          wallet: { type: 'string', description: 'User wallet address' },
+          page: { type: 'number', description: 'Page number (default 1, 20 apps per page)' }
+        },
+        required: ['wallet']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_app',
+      description: 'Delete/remove an app the user has built. User must own the app (matched by wallet).',
+      parameters: {
+        type: 'object',
+        properties: {
+          wallet: { type: 'string', description: 'User wallet address' },
+          app_name: { type: 'string', description: 'Name of the app to delete' },
+          slug: { type: 'string', description: 'Slug of the app to delete' }
         },
         required: ['wallet']
       }
@@ -848,11 +866,16 @@ SECURITY — YOU MUST FOLLOW THESE:
 
 async function listMyApps(args) {
   if (!args.wallet) return JSON.stringify({ error: 'Connect your wallet so I can look up your apps.' });
+  const page = parseInt(args.page) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
   try {
-    const res = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(args.wallet) + '&limit=20');
+    const res = await fetch(APP_API + '/apps?creator_wallet=' + encodeURIComponent(args.wallet) + '&limit=' + limit + '&offset=' + offset);
     const data = await res.json();
     const apps = (data.apps || []).filter(a => a.is_listed !== false);
-    if (!apps.length) return JSON.stringify({ apps: [], message: 'You haven\'t built any apps yet. Want me to build one for you?' });
+    if (!apps.length && page === 1) return JSON.stringify({ apps: [], message: 'You haven\'t built any apps yet. Want me to build one for you?' });
+    const totalCount = data.total || apps.length;
+    const hasMore = offset + apps.length < totalCount;
     return JSON.stringify({
       apps: apps.map(a => ({
         name: a.name,
@@ -861,12 +884,33 @@ async function listMyApps(args) {
         description: (a.description || '').slice(0, 100),
         created: a.created_at?.split('T')[0] || null
       })),
-      total: apps.length,
-      message: 'You have ' + apps.length + ' app' + (apps.length === 1 ? '' : 's') + '. You can update any of them or build something new.'
+      total: totalCount,
+      page,
+      hasMore,
+      message: `You have ${totalCount} app${totalCount === 1 ? '' : 's'}${hasMore ? '. Say "show more" to see the next page.' : '.'} You can update any of them, delete one by saying "delete [name]", or build something new.`
     });
   } catch (e) {
     console.error('listMyApps error:', e);
     return JSON.stringify({ error: 'Could not fetch your apps. Try again in a moment.' });
+  }
+}
+
+async function deleteMyApp(args) {
+  if (!args.wallet) return JSON.stringify({ error: 'Connect your wallet to delete an app.' });
+  if (!args.slug && !args.app_name) return JSON.stringify({ error: 'Which app do you want to delete? Give me the name.' });
+  try {
+    const slug = args.slug || args.app_name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const res = await fetch(APP_API + '/apps/' + encodeURIComponent(slug), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creator_wallet: args.wallet })
+    });
+    const data = await res.json();
+    if (data.error) return JSON.stringify({ error: data.error });
+    return JSON.stringify({ success: true, message: `Deleted "${args.app_name || slug}". It's gone.` });
+  } catch (e) {
+    console.error('deleteMyApp error:', e);
+    return JSON.stringify({ error: 'Could not delete. Try again.' });
   }
 }
 
@@ -1424,6 +1468,7 @@ async function executeTool(name, args) {
     case 'open_perp': return JSON.stringify(await openPerpPosition({ market: args.market, direction: args.direction, margin: args.margin, leverage: args.leverage, wallet: args.wallet }));
     case 'get_perps_markets': return JSON.stringify(await getPerpsMarkets());
     case 'list_my_apps': return await listMyApps(args);
+    case 'delete_app': return await deleteMyApp(args);
     case 'get_my_balances': return await getMyBalances(args);
     case 'claim_lp_fees': return await claimLpFees(args);
     case 'fund_staking_pool': return await fundStakingPool(args);
