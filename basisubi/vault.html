@@ -191,6 +191,14 @@
         .vault-stat-value.green { color: var(--green); }
         .vault-stat-value.cyan { color: var(--cyan); }
 
+        .chart-period-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+            font-family: var(--mono, monospace); font-size: 0.68rem; padding: 3px 8px;
+            border-radius: 6px; cursor: pointer; transition: all 0.15s;
+        }
+        .chart-period-btn:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
+        .chart-period-btn.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+
         .deposit-section { margin-bottom: 24px; }
         .deposit-label { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
         .deposit-row { display: flex; gap: 12px; }
@@ -653,7 +661,13 @@
                 <!-- ETH Price Chart with Range -->
                 <div style="margin: 16px 0; background: var(--surface, #081018); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono, monospace);">ETH/USDC — 7d</div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="chart-period-btn active" onclick="setChartPeriod(7, this)">7d</button>
+                            <button class="chart-period-btn" onclick="setChartPeriod(30, this)">30d</button>
+                            <button class="chart-period-btn" onclick="setChartPeriod(90, this)">90d</button>
+                            <button class="chart-period-btn" onclick="setChartPeriod(365, this)">1y</button>
+                            <button class="chart-period-btn" onclick="setChartPeriod(1825, this)">All</button>
+                        </div>
                         <div style="display: flex; gap: 8px;">
                             <div style="font-size: 0.68rem; color: var(--text-dim);" id="chart-fees-eth">Fees: -- ETH</div>
                             <div style="font-size: 0.68rem; color: var(--text-dim);" id="chart-fees-usdc">-- USDC</div>
@@ -1213,12 +1227,21 @@
 
     let chartPrices = [];
     let chartRangeLow = 0, chartRangeHigh = 0;
+    let chartDays = 7;
+
+    function setChartPeriod(days, btn) {
+        chartDays = days;
+        document.querySelectorAll('.chart-period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadChartData();
+    }
 
     async function loadChartData() {
         try {
-            const resp = await fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7');
+            const interval = chartDays <= 30 ? '' : '&interval=daily';
+            const resp = await fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=' + chartDays + interval);
             const data = await resp.json();
-            chartPrices = data.prices || []; // [[timestamp, price], ...]
+            chartPrices = data.prices || [];
             drawRangeChart();
         } catch(e) { console.error('Chart data error:', e); }
     }
