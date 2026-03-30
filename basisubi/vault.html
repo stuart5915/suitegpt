@@ -1099,81 +1099,74 @@
             const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/WzTo2oQBj9C6WWyyu4csv');
             const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
 
-            const [totalValue, ethHeld, usdcHeld, reserve, rangeLow, rangeHigh, inRange, tid] = await vault.getVaultInfo();
-            const supply = await vault.totalSupply();
+            // Read values individually (getVaultInfo reverts due to _tickToPrice issues)
+            const [totalValue, supply, tid, reserve] = await Promise.all([
+                vault.totalAssets(), vault.totalSupply(), vault.tokenId(), vault.ethReserve()
+            ]);
 
-            // Fetch ETH price from pool
             const poolAbi = ['function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)'];
             const pool = new ethers.Contract('0xb2cc224c1c9feE385f8ad6a55b4d94E92359DC59', poolAbi, provider);
-            const [sqrtPriceX96] = await pool.slot0();
+            const [sqrtPriceX96, currentTick] = await pool.slot0();
             const sqrtPrice = Number(sqrtPriceX96) / (2 ** 96);
-            const ethPrice = sqrtPrice * sqrtPrice * 1e12; // adjust for WETH(18) vs USDC(6) decimals
+            const ethPrice = sqrtPrice * sqrtPrice * 1e12;
 
-            // ETH price
             document.getElementById('stat-eth-price').textContent = '$' + ethPrice.toLocaleString(undefined, {maximumFractionDigits: 2});
 
-            // Range
-            document.getElementById('stat-range').textContent = '$' + Number(rangeLow).toLocaleString() + ' - $' + Number(rangeHigh).toLocaleString();
+            const tvlNum = Number(ethers.formatUnits(totalValue, 6));
+            document.getElementById('stat-tvl').textContent = '$' + tvlNum.toLocaleString(undefined, {maximumFractionDigits: 2});
 
-            // Status
-            document.getElementById('stat-regime').textContent = inRange ? 'In Range' : 'Out of Range';
-            document.getElementById('stat-regime').style.color = inRange ? 'var(--green)' : 'var(--red, #e55)';
-
-            // TVL
-            document.getElementById('stat-tvl').textContent = '$' + (Number(ethers.formatUnits(totalValue, 6))).toLocaleString(undefined, {maximumFractionDigits: 2});
-
-            // Holdings breakdown
-            const ethHeldNum = Number(ethers.formatEther(ethHeld));
-            const usdcHeldNum = Number(ethers.formatUnits(usdcHeld, 6));
             const reserveNum = Number(ethers.formatEther(reserve));
-
-            document.getElementById('stat-eth-held').textContent = ethHeldNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
-            document.getElementById('stat-usdc-held').textContent = '$' + usdcHeldNum.toLocaleString(undefined, {maximumFractionDigits: 2});
             document.getElementById('stat-eth-reserve').textContent = reserveNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
 
-            // LP position amounts — estimate from TVL and price position in range
-            const tvlNum = Number(ethers.formatUnits(totalValue, 6));
-            const priceLow = Number(rangeLow);
-            const priceHigh = Number(rangeHigh);
-            const idleValue = (ethHeldNum * ethPrice) + usdcHeldNum + (reserveNum * ethPrice);
+            // Read range from NPM positions (works even when staked in gauge)
+            let rangeLow = 0, rangeHigh = 0, inRange = false;
+            if (Number(tid) > 0) {
+                try {
+                    const npmAbi = ['function positions(uint256) view returns (uint96, address, address, address, int24, int24, int24, uint128, uint256, uint256, uint128, uint128)'];
+                    const npm = new ethers.Contract('0x827922686190790b37229fd06084350E74485b72', npmAbi, provider);
+                    const pos = await npm.positions(tid);
+                    const tl = Number(pos[5]);
+                    const tu = Number(pos[6]);
+                    rangeLow = Math.round(Math.pow(1.0001, tl) * 1e12);
+                    rangeHigh = Math.round(Math.pow(1.0001, tu) * 1e12);
+                    inRange = Number(currentTick) >= tl && Number(currentTick) < tu;
+                } catch(e) { console.error('NPM read:', e); }
+            }
+
+            document.getElementById('stat-range').textContent = rangeLow > 0
+                ? '$' + rangeLow.toLocaleString() + ' - $' + rangeHigh.toLocaleString()
+                : 'No position';
+            document.getElementById('stat-regime').textContent = Number(tid) === 0 ? 'No Position' : (inRange ? 'In Range' : 'Out of Range');
+            document.getElementById('stat-regime').style.color = inRange ? 'var(--green)' : 'var(--red, #e55)';
+
+            // LP amounts
+            const idleValue = reserveNum * ethPrice;
             const lpValue = Math.max(0, tvlNum - idleValue);
-
-            if (lpValue > 0 && priceLow > 0 && priceHigh > 0 && ethPrice > 0) {
-                // Fraction through range: at priceLow = 100% ETH, at priceHigh = 100% USDC
-                const frac = Math.max(0, Math.min(1, (ethPrice - priceLow) / (priceHigh - priceLow)));
-                const lpUsdcVal = lpValue * frac;
-                const lpEthVal = lpValue * (1 - frac);
-                const lpEthAmount = lpEthVal / ethPrice;
-
-                document.getElementById('stat-lp-eth').textContent = lpEthAmount.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' ETH';
-                document.getElementById('stat-lp-usdc').textContent = '$' + lpUsdcVal.toLocaleString(undefined, {maximumFractionDigits: 2});
+            if (lpValue > 0 && rangeLow > 0 && rangeHigh > 0 && ethPrice > 0) {
+                const frac = Math.max(0, Math.min(1, (ethPrice - rangeLow) / (rangeHigh - rangeLow)));
+                document.getElementById('stat-lp-eth').textContent = ((lpValue * (1 - frac)) / ethPrice).toLocaleString(undefined, {maximumFractionDigits: 6}) + ' ETH';
+                document.getElementById('stat-lp-usdc').textContent = '$' + (lpValue * frac).toLocaleString(undefined, {maximumFractionDigits: 2});
             } else {
                 document.getElementById('stat-lp-eth').textContent = '0 ETH';
                 document.getElementById('stat-lp-usdc').textContent = '$0';
             }
 
-            // Pending AERO rewards
+            // Pending AERO
             try {
                 const pendingAero = await vault.pendingAero();
                 const aeroNum = Number(ethers.formatEther(pendingAero));
                 document.getElementById('stat-pending-aero').textContent = aeroNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' AERO';
-                // Fetch AERO price from DexScreener
                 try {
                     const aeroResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x940181a94A35A4569E4529A3CDfB74e38FD98631');
                     const aeroData = await aeroResp.json();
                     const aeroPrice = parseFloat(aeroData.pairs?.[0]?.priceUsd || '0');
-                    const aeroUsd = aeroNum * aeroPrice;
-                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + aeroUsd.toLocaleString(undefined, {maximumFractionDigits: 2});
+                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + (aeroNum * aeroPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
                 } catch(e) {}
-            } catch(e) {
-                console.error('Failed to read pendingAero:', e);
-            }
+            } catch(e) { console.error('pendingAero:', e); }
 
-            // Show rebalance button if out of range
+            // Rebalance button
             const rebalanceSection = document.getElementById('rebalanceSection');
-            if (rebalanceSection) {
-                rebalanceSection.style.display = inRange ? 'none' : 'block';
-            }
+            if (rebalanceSection) rebalanceSection.style.display = (Number(tid) > 0 && !inRange) ? 'block' : 'none';
 
             // User position
             if (userAddress) {
