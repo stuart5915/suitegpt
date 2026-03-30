@@ -884,33 +884,183 @@
     }
 
     // ═══════════════════════════════════════
-    // DEPOSIT / WITHDRAW (stubs)
+    // CONTRACT INTERACTION
     // ═══════════════════════════════════════
 
-    function deposit() {
+    const VAULT_ADDRESS = '0xB4613D625359c19ac40aff8268560bdd8a0Bbc58';
+    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
+    const BASE_CHAIN_ID = 8453;
+
+    const VAULT_ABI = [
+        'function deposit(uint256 usdcAmount, uint256 ethAmount) external returns (uint256 shares)',
+        'function withdraw(uint256 shares) external',
+        'function rebalance() external',
+        'function compound() external',
+        'function getVaultInfo() view returns (uint256 totalValue, uint256 ethHeld, uint256 usdcHeld, uint256 _ethReserve, uint256 rangeLowPrice, uint256 rangeHighPrice, bool inRange, uint256 _tokenId)',
+        'function isInRange() view returns (bool)',
+        'function balanceOf(address) view returns (uint256)',
+        'function totalSupply() view returns (uint256)',
+        'function tokenId() view returns (uint256)',
+        'function ethReserve() view returns (uint256)',
+        'function tickLower() view returns (int24)',
+        'function tickUpper() view returns (int24)',
+    ];
+    const ERC20_ABI = [
+        'function approve(address spender, uint256 amount) returns (bool)',
+        'function allowance(address owner, address spender) view returns (uint256)',
+        'function balanceOf(address) view returns (uint256)',
+    ];
+
+    async function ensureBaseNetwork() {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (parseInt(chainId, 16) !== BASE_CHAIN_ID) {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            } catch (e) {
+                alert('Please switch to Base network in your wallet.');
+                throw e;
+            }
+        }
+    }
+
+    async function deposit() {
         const amount = parseFloat(document.getElementById('depositAmount').value);
-        if (!amount || amount <= 0) {
-            alert('Enter a valid amount.');
-            return;
+        if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
+        if (!userAddress) { alert('Connect your wallet first.'); return; }
+
+        try {
+            await ensureBaseNetwork();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+            const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+
+            const usdcAmount = ethers.parseUnits(amount.toString(), 6);
+
+            // Check USDC balance
+            const bal = await usdc.balanceOf(userAddress);
+            if (bal < usdcAmount) {
+                alert('Insufficient USDC balance. You have ' + ethers.formatUnits(bal, 6) + ' USDC.');
+                return;
+            }
+
+            // Check allowance, approve if needed
+            const allowance = await usdc.allowance(userAddress, VAULT_ADDRESS);
+            if (allowance < usdcAmount) {
+                document.querySelector('.deposit-btn').textContent = 'Approving USDC...';
+                const approveTx = await usdc.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                await approveTx.wait();
+            }
+
+            // Deposit
+            document.querySelector('.deposit-btn').textContent = 'Depositing...';
+            const tx = await vault.deposit(usdcAmount, 0);
+            await tx.wait();
+
+            document.querySelector('.deposit-btn').textContent = 'Deposit';
+            alert('Deposit successful!');
+            loadVaultInfo();
+        } catch (err) {
+            console.error('Deposit error:', err);
+            document.querySelector('.deposit-btn').textContent = 'Deposit';
+            alert('Deposit failed: ' + (err.reason || err.message));
         }
-        if (!userAddress) {
-            alert('Connect your wallet first.');
-            return;
-        }
-        alert('Contract not deployed yet. Deposit of $' + amount.toFixed(2) + ' USDC will be available when the vault is live.');
     }
 
-    function withdraw() {
-        if (!userAddress) {
-            alert('Connect your wallet first.');
-            return;
+    async function withdraw() {
+        if (!userAddress) { alert('Connect your wallet first.'); return; }
+
+        try {
+            await ensureBaseNetwork();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+
+            const shares = await vault.balanceOf(userAddress);
+            if (shares == 0n) { alert('No shares to withdraw.'); return; }
+
+            document.querySelector('.withdraw-btn').textContent = 'Withdrawing...';
+            const tx = await vault.withdraw(shares);
+            await tx.wait();
+
+            document.querySelector('.withdraw-btn').textContent = 'Withdraw';
+            alert('Withdrawal successful!');
+            loadVaultInfo();
+        } catch (err) {
+            console.error('Withdraw error:', err);
+            document.querySelector('.withdraw-btn').textContent = 'Withdraw';
+            alert('Withdraw failed: ' + (err.reason || err.message));
         }
-        alert('Contract not deployed yet. Withdrawals will be available when the vault is live.');
     }
 
-    // Backtest removed — can't accurately simulate CL fees without
-    // historical volume, liquidity depth, and AERO emission data.
-    // Strategy will be tested with real capital on-chain.
+    async function callRebalance() {
+        if (!userAddress) { alert('Connect your wallet first.'); return; }
+        try {
+            await ensureBaseNetwork();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+            const tx = await vault.rebalance();
+            await tx.wait();
+            alert('Rebalance successful!');
+            loadVaultInfo();
+        } catch (err) {
+            alert('Rebalance: ' + (err.reason || err.message));
+        }
+    }
+
+    async function callCompound() {
+        if (!userAddress) { alert('Connect your wallet first.'); return; }
+        try {
+            await ensureBaseNetwork();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+            const tx = await vault.compound();
+            await tx.wait();
+            alert('Compound successful!');
+            loadVaultInfo();
+        } catch (err) {
+            alert('Compound: ' + (err.reason || err.message));
+        }
+    }
+
+    async function loadVaultInfo() {
+        try {
+            const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+            const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
+
+            const [totalValue, ethHeld, usdcHeld, reserve, rangeLow, rangeHigh, inRange, tid] = await vault.getVaultInfo();
+            const supply = await vault.totalSupply();
+
+            // Update stats
+            document.getElementById('stat-tvl').textContent = '$' + (Number(ethers.formatUnits(totalValue, 6))).toLocaleString(undefined, {maximumFractionDigits: 2});
+            document.getElementById('stat-range').textContent = '$' + Number(rangeLow).toLocaleString() + ' - $' + Number(rangeHigh).toLocaleString();
+            document.getElementById('stat-regime').textContent = inRange ? 'In Range' : 'Out of Range';
+            document.getElementById('stat-regime').style.color = inRange ? 'var(--green)' : 'var(--red, #e55)';
+
+            if (Number(tid) > 0) {
+                document.getElementById('stat-apy').textContent = 'Live';
+            }
+
+            // User position
+            if (userAddress) {
+                const userShares = await vault.balanceOf(userAddress);
+                if (userShares > 0n) {
+                    const userValue = supply > 0n ? (totalValue * userShares / supply) : 0n;
+                    document.getElementById('pos-shares').textContent = Number(ethers.formatUnits(userShares, 6)).toLocaleString(undefined, {maximumFractionDigits: 4});
+                    document.getElementById('pos-value').textContent = '$' + Number(ethers.formatUnits(userValue, 6)).toLocaleString(undefined, {maximumFractionDigits: 2});
+                    document.getElementById('positionSection').style.display = 'block';
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load vault info:', err);
+        }
+    }
+
+    // Load vault info on page load
+    setTimeout(loadVaultInfo, 1000);
 
     // ═══════════════════════════════════════
     // INIT
