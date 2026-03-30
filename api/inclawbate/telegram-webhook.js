@@ -3,6 +3,7 @@
 // POST /api/inclawbate/telegram-webhook
 
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -11,6 +12,44 @@ const supabase = createClient(
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAMES = ['StuartDeFi', 'FreefoRaLLey'];
+
+// ── OAuth1 helpers for posting to @inclawbate X account ──
+function buildOAuth1Header(method, url) {
+    const prefix = 'INCLAWBATE';
+    const apiKey = process.env[prefix + '_X_API_KEY'];
+    const apiSecret = process.env[prefix + '_X_API_SECRET'];
+    const accessToken = process.env[prefix + '_X_ACCESS_TOKEN'];
+    const accessSecret = process.env[prefix + '_X_ACCESS_SECRET'];
+    if (!apiKey || !apiSecret || !accessToken || !accessSecret) return null;
+
+    const oauth = {
+        oauth_consumer_key: apiKey,
+        oauth_nonce: crypto.randomBytes(16).toString('hex'),
+        oauth_signature_method: 'HMAC-SHA1',
+        oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+        oauth_token: accessToken,
+        oauth_version: '1.0',
+    };
+    const paramString = Object.keys(oauth).sort().map(k => `${encodeURIComponent(k)}=${encodeURIComponent(oauth[k])}`).join('&');
+    const signatureBase = [method, encodeURIComponent(url), encodeURIComponent(paramString)].join('&');
+    const signingKey = `${encodeURIComponent(apiSecret)}&${encodeURIComponent(accessSecret)}`;
+    oauth.oauth_signature = crypto.createHmac('sha1', signingKey).update(signatureBase).digest('base64');
+    return 'OAuth ' + Object.keys(oauth).filter(k => k.startsWith('oauth_')).sort().map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauth[k])}"`).join(', ');
+}
+
+async function postToInclawbateX(text) {
+    const url = 'https://api.twitter.com/2/tweets';
+    const authHeader = buildOAuth1Header('POST', url);
+    if (!authHeader) throw new Error('INCLAWBATE X credentials not configured');
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || data.title || JSON.stringify(data));
+    return data.data?.id || null;
+}
 
 function esc(str) {
     if (!str) return '';
@@ -795,7 +834,13 @@ export default async function handler(req, res) {
                     if (r.ok && result.post) {
                         await sendMsg(chatId, result.post);
                         if (result.tweet) {
-                            await sendMsg(chatId, '📋 <b>Copy for X:</b>\n\n' + esc(result.tweet));
+                            // Auto-post to @inclawbate X account
+                            try {
+                                const tweetId = await postToInclawbateX(result.tweet);
+                                await sendMsg(chatId, '✅ <b>Posted to @inclawbate!</b>\nhttps://x.com/inclawbate/status/' + tweetId);
+                            } catch (xErr) {
+                                await sendMsg(chatId, '⚠️ X post failed: ' + esc(xErr.message) + '\n\n📋 <b>Copy for X:</b>\n\n' + esc(result.tweet));
+                            }
                         }
                     } else {
                         await sendMsg(chatId, '❌ ' + (result.error || 'Failed'));
