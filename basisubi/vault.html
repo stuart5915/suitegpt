@@ -199,6 +199,22 @@
         .chart-period-btn:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
         .chart-period-btn.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
 
+        .activity-card {
+            background: var(--surface, #081018); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 12px;
+        }
+        .activity-type {
+            font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: 700; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+        }
+        .activity-type.deposit { background: rgba(0,200,100,0.1); color: #0c6; }
+        .activity-type.withdraw { background: rgba(255,80,80,0.1); color: #e55; }
+        .activity-type.rebalance { background: rgba(0,180,255,0.1); color: #0bf; }
+        .activity-type.compound { background: rgba(200,150,255,0.1); color: #c9f; }
+        .activity-detail { font-size: 0.72rem; color: var(--text-secondary, #7a8da0); font-family: var(--mono, monospace); }
+        .activity-time { font-size: 0.62rem; color: var(--text-dim, #3a4a5e); white-space: nowrap; text-align: right; }
+
         .deposit-section { margin-bottom: 24px; }
         .deposit-label { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
         .deposit-row { display: flex; gap: 12px; }
@@ -749,6 +765,15 @@
                     The vault manages ETH/USDC concentrated LP on Aerodrome. It auto-rebalances the price range based on market conditions to maximize fee capture while minimizing impermanent loss.
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- ═══ VAULT ACTIVITY ═══ -->
+    <section style="max-width: 680px; margin: 0 auto; padding: 0 24px 40px;">
+        <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--cyan, #0ff); margin-bottom: 8px;">Activity</div>
+        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text, #f0f4f8); margin-bottom: 16px;">Vault History</div>
+        <div id="vault-activity" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="color: var(--text-dim); font-size: 0.78rem; font-family: var(--mono, monospace);">Loading events...</div>
         </div>
     </section>
 
@@ -1394,9 +1419,130 @@
     setTimeout(loadChartData, 500);
     setInterval(loadChartData, 300000);
 
+    // ═══════════════════════════════════════
+    // VAULT ACTIVITY FEED
+    // ═══════════════════════════════════════
+
+    async function loadActivity() {
+        try {
+            const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/WzTo2oQBj9C6WWyyu4csv');
+            const vault = new ethers.Contract(VAULT_ADDRESS, [
+                'event Deposited(address indexed user, uint256 usdcAmount, uint256 ethAmount, uint256 shares)',
+                'event Withdrawn(address indexed user, uint256 shares, uint256 wethOut, uint256 usdcOut)',
+                'event Rebalanced(int24 oldTickLower, int24 oldTickUpper, int24 newTickLower, int24 newTickUpper)',
+                'event Compounded(uint256 aeroSwapped, uint256 wethReceived)',
+            ], provider);
+
+            // Query all events from deployment block
+            const deployBlock = 44020000; // approximate deploy block
+            const [deposits, withdrawals, rebalances, compounds] = await Promise.all([
+                vault.queryFilter('Deposited', deployBlock),
+                vault.queryFilter('Withdrawn', deployBlock),
+                vault.queryFilter('Rebalanced', deployBlock),
+                vault.queryFilter('Compounded', deployBlock),
+            ]);
+
+            // Combine and sort by block number
+            const events = [];
+
+            for (const e of deposits) {
+                const block = await e.getBlock();
+                events.push({
+                    type: 'deposit',
+                    time: new Date(block.timestamp * 1000),
+                    user: e.args[0],
+                    detail: (Number(e.args[1]) / 1e6).toFixed(2) + ' USDC + ' + (Number(e.args[2]) / 1e18).toFixed(4) + ' ETH',
+                    shares: (Number(e.args[3]) / 1e6).toFixed(2),
+                    block: e.blockNumber,
+                    tx: e.transactionHash,
+                });
+            }
+
+            for (const e of withdrawals) {
+                const block = await e.getBlock();
+                events.push({
+                    type: 'withdraw',
+                    time: new Date(block.timestamp * 1000),
+                    user: e.args[0],
+                    detail: (Number(e.args[2]) / 1e18).toFixed(4) + ' ETH + ' + (Number(e.args[3]) / 1e6).toFixed(2) + ' USDC',
+                    shares: (Number(e.args[1]) / 1e6).toFixed(2),
+                    block: e.blockNumber,
+                    tx: e.transactionHash,
+                });
+            }
+
+            for (const e of rebalances) {
+                const block = await e.getBlock();
+                const newLow = Math.round(Math.pow(1.0001, Number(e.args[2])) * 1e12);
+                const newHigh = Math.round(Math.pow(1.0001, Number(e.args[3])) * 1e12);
+                events.push({
+                    type: 'rebalance',
+                    time: new Date(block.timestamp * 1000),
+                    detail: 'New range: $' + newLow.toLocaleString() + ' - $' + newHigh.toLocaleString(),
+                    block: e.blockNumber,
+                    tx: e.transactionHash,
+                });
+            }
+
+            for (const e of compounds) {
+                const block = await e.getBlock();
+                events.push({
+                    type: 'compound',
+                    time: new Date(block.timestamp * 1000),
+                    detail: (Number(e.args[0]) / 1e18).toFixed(4) + ' AERO → ' + (Number(e.args[1]) / 1e18).toFixed(6) + ' ETH',
+                    block: e.blockNumber,
+                    tx: e.transactionHash,
+                });
+            }
+
+            // Sort newest first
+            events.sort((a, b) => b.block - a.block);
+
+            // Render
+            const container = document.getElementById('vault-activity');
+            if (events.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.78rem; font-family: var(--mono, monospace);">No activity yet</div>';
+                return;
+            }
+
+            container.innerHTML = events.map(e => {
+                const timeAgo = getTimeAgo(e.time);
+                const addr = e.user ? e.user.slice(0, 6) + '...' + e.user.slice(-4) : '';
+                const txLink = 'https://basescan.org/tx/' + e.tx;
+                return '<div class="activity-card">' +
+                    '<div style="flex: 1;">' +
+                        '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+                            '<span class="activity-type ' + e.type + '">' + e.type + '</span>' +
+                            (addr ? '<span style="font-size: 0.65rem; color: var(--text-dim); font-family: var(--mono, monospace);">' + addr + '</span>' : '') +
+                        '</div>' +
+                        '<div class="activity-detail">' + e.detail + '</div>' +
+                        (e.shares ? '<div style="font-size: 0.62rem; color: var(--text-dim); margin-top: 2px;">' + e.shares + ' shares</div>' : '') +
+                    '</div>' +
+                    '<div class="activity-time">' +
+                        '<div>' + timeAgo + '</div>' +
+                        '<a href="' + txLink + '" target="_blank" rel="noopener" style="font-size: 0.58rem; color: var(--cyan, #0ff); text-decoration: none;">tx ↗</a>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+        } catch(e) {
+            console.error('Activity load error:', e);
+            document.getElementById('vault-activity').innerHTML = '<div style="color: var(--text-dim); font-size: 0.72rem;">Failed to load activity</div>';
+        }
+    }
+
+    function getTimeAgo(date) {
+        const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (secs < 60) return secs + 's ago';
+        if (secs < 3600) return Math.floor(secs / 60) + 'm ago';
+        if (secs < 86400) return Math.floor(secs / 3600) + 'h ago';
+        return Math.floor(secs / 86400) + 'd ago';
+    }
+
     // Load vault info on page load, refresh every 30s
     setTimeout(loadVaultInfo, 1000);
     setInterval(loadVaultInfo, 30000);
+    setTimeout(loadActivity, 2000);
 
     // ═══════════════════════════════════════
     // INIT
