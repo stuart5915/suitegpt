@@ -994,9 +994,15 @@ const LENDING_PROTOS=[
 ];
 
 // ═══ STATE ═══
+// Handle hash-based tab routing (e.g. /inclawbator#agent)
+const _hashTab = window.location.hash.replace('#','').toLowerCase();
+const _validTabs = ['build','defi','dashboard','agent'];
+const _initialTab = _validTabs.includes(_hashTab) ? _hashTab : 'build';
+const _initialMode = _hashTab === 'agent' ? 'advanced' : (localStorage.getItem('inclaw_mode')||'simple');
+
 const S={
-    mode:localStorage.getItem('inclaw_mode')||'simple',
-    tab:'build',
+    mode:_initialMode,
+    tab:_initialTab,
     tabOpen:false,
     subcat:null,
     msgs:[],
