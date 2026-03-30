@@ -1379,17 +1379,22 @@ async function generatePgtDrafts(req, res, targetDate, style) {
         const timeStr = `${h12} ${ampm} ET`;
 
         if (slotType.mode === 'spotlight') {
-            // Pick one least-mentioned project
+            // Pick one least-mentioned project — with randomization among equals
             const { data: candidates } = await supabase
                 .from(slotType.table)
                 .select('*')
                 .eq('approved', true)
                 .order('mentions_count', { ascending: true, nullsFirst: true })
                 .order('last_mentioned', { ascending: true, nullsFirst: true })
-                .limit(10);
+                .limit(50);
 
-            const pick = (candidates || []).find(c => !usedIds.has(c.id));
-            if (pick) {
+            // Filter out already-used, then find the lowest mention count among remaining
+            const available = (candidates || []).filter(c => !usedIds.has(c.id));
+            if (available.length > 0) {
+                const lowestCount = available[0].mentions_count || 0;
+                // Get all projects with the same lowest count — then pick randomly
+                const sameCount = available.filter(c => (c.mentions_count || 0) === lowestCount);
+                const pick = sameCount[Math.floor(Math.random() * sameCount.length)];
                 usedIds.add(pick.id);
                 picks.push({ ...slotType, project: pick, hour, timeStr, overviewData: null });
             }
