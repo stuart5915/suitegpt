@@ -1203,7 +1203,8 @@
                     const aeroResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x940181a94A35A4569E4529A3CDfB74e38FD98631');
                     const aeroData = await aeroResp.json();
                     const aeroPrice = parseFloat(aeroData.pairs?.[0]?.priceUsd || '0');
-                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + (totalAero * aeroPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
+                    const aeroUsd = totalAero * aeroPrice;
+                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + (aeroUsd < 0.01 ? aeroUsd.toFixed(6) : aeroUsd.toLocaleString(undefined, {maximumFractionDigits: 2}));
                 } catch(e) {}
             } catch(e) { console.error('aero read:', e); }
 
