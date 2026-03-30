@@ -2567,15 +2567,19 @@ function agentFieldSave(agentId,field,value){
     },600);
 }
 
-async function toggleAgentStatus(agentId){
-    try{
-        const res=await fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({action:'toggle_status',agent_id:agentId,wallet:S.wallet})});
-        const data=await res.json();
-        if(data.error){toast('Error: '+data.error);return;}
-        toast('Status updated');
-        loadAgentPanel();
-    }catch{toast('Failed to update status');}
+function toggleAgentStatus(agentId,btn){
+    // Instant UI update
+    var card=btn?btn.closest('.agent-card'):null;
+    var dot=card?card.querySelector('.agent-status-dot'):null;
+    var isActive=dot&&dot.classList.contains('active');
+    var newStatus=isActive?'paused':'active';
+    if(dot){dot.className='agent-status-dot '+newStatus;}
+    if(btn){btn.textContent=newStatus==='active'?'Pause':'Activate';}
+    // Save in background
+    fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'toggle_status',agent_id:agentId,wallet:S.wallet})})
+    .then(r=>r.json()).then(d=>{if(d.error)toast('Error: '+d.error);})
+    .catch(()=>toast('Failed to update status'));
 }
 
 async function addAgentConnection(agentId,type){
@@ -2606,23 +2610,34 @@ async function removeAgentConnection(connId){
     }catch{toast('Failed to remove connection');}
 }
 
-async function toggleAgentCapability(agentId,type,capId,enabled){
+function toggleAgentCapability(agentId,type,capId,enabled,el){
+    // Instant UI update
+    var row=el?el.closest('.agent-cap-row'):null;
+    var check=row?row.querySelector('.agent-cap-check'):null;
+    var newState=!enabled;
+    if(check){check.classList.toggle('on',newState);check.textContent=newState?'✓':'';}
+    // Update onclick for next click
+    if(row){
+        var newCapId=capId||'null';
+        row.setAttribute('onclick',"event.stopPropagation();toggleAgentCapability('"+agentId+"','"+type+"',"+newCapId+","+newState+",this)");
+    }
+    // Save in background — no reload
     if(capId){
-        try{
-            const res=await fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({action:'toggle_capability',capability_id:capId,wallet:S.wallet,enabled:!enabled})});
-            const data=await res.json();
-            if(data.error){toast('Error: '+data.error);return;}
-            loadAgentPanel();
-        }catch{toast('Failed to toggle capability');}
+        fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'toggle_capability',capability_id:capId,wallet:S.wallet,enabled:newState})})
+        .then(r=>r.json()).then(d=>{if(d.error)toast('Error: '+d.error);})
+        .catch(()=>toast('Failed to save'));
     } else {
-        try{
-            const res=await fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({action:'add_capability',agent_id:agentId,wallet:S.wallet,type,config:{}})});
-            const data=await res.json();
-            if(data.error){toast('Error: '+data.error);return;}
-            loadAgentPanel();
-        }catch{toast('Failed to add capability');}
+        fetch(AGENT_API,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'add_capability',agent_id:agentId,wallet:S.wallet,type,config:{}})})
+        .then(r=>r.json()).then(d=>{
+            if(d.error){toast('Error: '+d.error);return;}
+            // Update onclick with new capability ID for future toggles
+            if(d.capability&&d.capability.id&&row){
+                row.setAttribute('onclick',"event.stopPropagation();toggleAgentCapability('"+agentId+"','"+type+"','"+d.capability.id+"',true,this)");
+            }
+        })
+        .catch(()=>toast('Failed to save'));
     }
 }
 
@@ -2683,7 +2698,7 @@ function renderAgentCard(a,expanded){
         const existing=caps.find(c=>c.type===ct.type);
         const isOn=existing&&existing.enabled;
         const capId=existing?existing.id:null;
-        return `<div class="agent-cap-row" onclick="event.stopPropagation();toggleAgentCapability('${a.id}','${ct.type}',${capId?`'${capId}'`:null},${!!isOn})">
+        return `<div class="agent-cap-row" onclick="event.stopPropagation();toggleAgentCapability('${a.id}','${ct.type}',${capId?`'${capId}'`:null},${!!isOn},this)">
             <div class="agent-cap-check${isOn?' on':''}">${isOn?'✓':''}</div>
             <span class="agent-cap-icon">${ct.icon}</span>
             <span class="agent-cap-label">${ct.label}</span>
@@ -2719,7 +2734,7 @@ function renderAgentCard(a,expanded){
             <div class="agent-section">Capabilities</div>
             ${capChecks}
             <div class="agent-status-actions">
-                <button class="${toggleBtnClass}" onclick="event.stopPropagation();toggleAgentStatus('${a.id}')">${toggleLabel}</button>
+                <button class="${toggleBtnClass}" onclick="event.stopPropagation();toggleAgentStatus('${a.id}',this)">${toggleLabel}</button>
             </div>
         </div>
     </div>`;
