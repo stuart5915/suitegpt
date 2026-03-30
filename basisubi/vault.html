@@ -629,7 +629,7 @@
                         <div class="vault-stat-value cyan" id="stat-range">$-- - $--</div>
                     </div>
                     <div class="vault-stat">
-                        <div class="vault-stat-label">Regime</div>
+                        <div class="vault-stat-label">Status</div>
                         <div class="vault-stat-value" id="stat-regime">--</div>
                     </div>
                     <div class="vault-stat">
@@ -640,11 +640,15 @@
 
                 <!-- Deposit -->
                 <div class="deposit-section">
-                    <div class="deposit-label">Deposit Amount</div>
+                    <div class="deposit-label">Deposit Any Ratio</div>
                     <div class="deposit-row">
                         <div class="deposit-input-wrap">
-                            <input type="number" class="deposit-input" id="depositAmount" placeholder="0.00" min="0" step="0.01">
+                            <input type="number" class="deposit-input" id="depositUsdc" placeholder="0.00" min="0" step="0.01">
                             <span class="input-suffix">USDC</span>
+                        </div>
+                        <div class="deposit-input-wrap">
+                            <input type="number" class="deposit-input" id="depositEth" placeholder="0.00" min="0" step="0.001">
+                            <span class="input-suffix">WETH</span>
                         </div>
                         <button class="deposit-btn" onclick="deposit()">Deposit</button>
                     </div>
@@ -925,8 +929,9 @@
     }
 
     async function deposit() {
-        const amount = parseFloat(document.getElementById('depositAmount').value);
-        if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
+        const usdcInput = parseFloat(document.getElementById('depositUsdc').value) || 0;
+        const ethInput = parseFloat(document.getElementById('depositEth').value) || 0;
+        if (usdcInput <= 0 && ethInput <= 0) { alert('Enter an amount of USDC and/or WETH.'); return; }
         if (!userAddress) { alert('Connect your wallet first.'); return; }
 
         try {
@@ -934,32 +939,58 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+            const weth = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, signer);
             const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
 
-            const usdcAmount = ethers.parseUnits(amount.toString(), 6);
+            const usdcAmount = ethers.parseUnits(usdcInput.toString(), 6);
+            const ethAmount = ethers.parseEther(ethInput.toString());
+            const btn = document.querySelector('.deposit-btn');
 
-            // Check USDC balance
-            const bal = await usdc.balanceOf(userAddress);
-            if (bal < usdcAmount) {
-                alert('Insufficient USDC balance. You have ' + ethers.formatUnits(bal, 6) + ' USDC.');
-                return;
+            // Check balances
+            if (usdcInput > 0) {
+                const usdcBal = await usdc.balanceOf(userAddress);
+                if (usdcBal < usdcAmount) {
+                    alert('Insufficient USDC. You have ' + ethers.formatUnits(usdcBal, 6));
+                    return;
+                }
+            }
+            if (ethInput > 0) {
+                const wethBal = await weth.balanceOf(userAddress);
+                if (wethBal < ethAmount) {
+                    alert('Insufficient WETH. You have ' + ethers.formatEther(wethBal) + '. Wrap ETH to WETH first.');
+                    return;
+                }
             }
 
-            // Check allowance, approve if needed
-            const allowance = await usdc.allowance(userAddress, VAULT_ADDRESS);
-            if (allowance < usdcAmount) {
-                document.querySelector('.deposit-btn').textContent = 'Approving USDC...';
-                const approveTx = await usdc.approve(VAULT_ADDRESS, ethers.MaxUint256);
-                await approveTx.wait();
+            // Approve USDC if needed
+            if (usdcInput > 0) {
+                const usdcAllowance = await usdc.allowance(userAddress, VAULT_ADDRESS);
+                if (usdcAllowance < usdcAmount) {
+                    btn.textContent = 'Approving USDC...';
+                    const tx = await usdc.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                    await tx.wait();
+                }
+            }
+
+            // Approve WETH if needed
+            if (ethInput > 0) {
+                const wethAllowance = await weth.allowance(userAddress, VAULT_ADDRESS);
+                if (wethAllowance < ethAmount) {
+                    btn.textContent = 'Approving WETH...';
+                    const tx = await weth.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                    await tx.wait();
+                }
             }
 
             // Deposit
-            document.querySelector('.deposit-btn').textContent = 'Depositing...';
-            const tx = await vault.deposit(usdcAmount, 0);
+            btn.textContent = 'Depositing...';
+            const tx = await vault.deposit(usdcAmount, ethAmount);
             await tx.wait();
 
-            document.querySelector('.deposit-btn').textContent = 'Deposit';
+            btn.textContent = 'Deposit';
             alert('Deposit successful!');
+            document.getElementById('depositUsdc').value = '';
+            document.getElementById('depositEth').value = '';
             loadVaultInfo();
         } catch (err) {
             console.error('Deposit error:', err);
