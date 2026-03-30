@@ -637,16 +637,16 @@
                         <div class="vault-stat-value" id="stat-tvl">$--</div>
                     </div>
                     <div class="vault-stat">
-                        <div class="vault-stat-label">ETH Held</div>
-                        <div class="vault-stat-value" id="stat-eth-held">-- ETH</div>
+                        <div class="vault-stat-label">In LP (ETH)</div>
+                        <div class="vault-stat-value" id="stat-lp-eth">-- ETH</div>
                     </div>
                     <div class="vault-stat">
-                        <div class="vault-stat-label">USDC Held</div>
-                        <div class="vault-stat-value" id="stat-usdc-held">-- USDC</div>
+                        <div class="vault-stat-label">In LP (USDC)</div>
+                        <div class="vault-stat-value" id="stat-lp-usdc">$--</div>
                     </div>
                     <div class="vault-stat">
                         <div class="vault-stat-label">ETH Reserve</div>
-                        <div class="vault-stat-value" id="stat-eth-reserve">-- ETH</div>
+                        <div class="vault-stat-value cyan" id="stat-eth-reserve">-- ETH</div>
                     </div>
                 </div>
 
@@ -1130,6 +1130,56 @@
             document.getElementById('stat-eth-held').textContent = ethHeldNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
             document.getElementById('stat-usdc-held').textContent = '$' + usdcHeldNum.toLocaleString(undefined, {maximumFractionDigits: 2});
             document.getElementById('stat-eth-reserve').textContent = reserveNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
+
+            // LP position amounts — read from NPM + LiquidityAmounts
+            try {
+                const npmAbi = [
+                    'function positions(uint256 tokenId) view returns (uint96, address, address, address, int24, int24, int24, uint128, uint256, uint256, uint128, uint128)'
+                ];
+                const npm = new ethers.Contract('0x827922686190790b37229fd06084350E74485b72', npmAbi, provider);
+
+                if (Number(tid) > 0) {
+                    const pos = await npm.positions(tid);
+                    const liquidity = pos[7];
+                    const tl = pos[5]; // tickLower from position (int24 stored at index 5 for Aerodrome)
+                    const tu = pos[6]; // tickUpper
+
+                    if (Number(liquidity) > 0) {
+                        // Approximate amounts from price and range
+                        const currentPrice = ethPrice;
+                        const priceLow = Number(rangeLow);
+                        const priceHigh = Number(rangeHigh);
+
+                        if (currentPrice > 0 && priceLow > 0 && priceHigh > 0) {
+                            // Position value breakdown: fraction through range determines ETH/USDC split
+                            const tvlNum = Number(ethers.formatUnits(totalValue, 6));
+                            const idleEth = ethHeldNum;
+                            const idleUsdc = usdcHeldNum;
+                            const reserveVal = reserveNum * ethPrice;
+                            const lpValue = tvlNum - (idleEth * ethPrice) - idleUsdc - reserveVal;
+
+                            if (lpValue > 0) {
+                                // Fraction of range consumed: 0 at low = all ETH, 1 at high = all USDC
+                                const frac = Math.max(0, Math.min(1, (currentPrice - priceLow) / (priceHigh - priceLow)));
+                                const lpUsdcVal = lpValue * frac;
+                                const lpEthVal = lpValue * (1 - frac);
+                                const lpEthAmount = lpEthVal / ethPrice;
+
+                                document.getElementById('stat-lp-eth').textContent = lpEthAmount.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' ETH';
+                                document.getElementById('stat-lp-usdc').textContent = '$' + lpUsdcVal.toLocaleString(undefined, {maximumFractionDigits: 2});
+                            }
+                        }
+                    } else {
+                        document.getElementById('stat-lp-eth').textContent = '0 ETH';
+                        document.getElementById('stat-lp-usdc').textContent = '$0';
+                    }
+                } else {
+                    document.getElementById('stat-lp-eth').textContent = '0 ETH';
+                    document.getElementById('stat-lp-usdc').textContent = '$0';
+                }
+            } catch(e) {
+                console.error('Failed to read LP amounts:', e);
+            }
 
             // Pending AERO rewards
             try {
