@@ -1124,36 +1124,49 @@ function renderTabs(){
     const tabs=['build','defi','dashboard','agent'];
     const labels={build:'Build',defi:'DeFi',dashboard:'Dash',agent:'Agent'};
     const tabTips={build:'Build apps and deploy contracts with AI',defi:'Swap, stake, lend, and earn yield',dashboard:'View your apps, tokens, and settings',agent:'Set up AI agents for marketing, X posting, and automation'};
-    $('tabRow').innerHTML=tabs.map(t=>`<button class="atab${t===S.tab?' on':''}" data-tab="${t}" data-tip="${tabTips[t]}" onclick="switchTab('${t}')">${labels[t]}<span class="tab-arrow">▼</span></button>`).join('');
+    const noDropdown=['dashboard','agent'];
+    $('tabRow').innerHTML=tabs.map(t=>`<button class="atab${t===S.tab?' on':''}" data-tab="${t}" data-tip="${tabTips[t]}" onclick="switchTab('${t}')">${labels[t]}${noDropdown.includes(t)?'':'<span class="tab-arrow">▼</span>'}</button>`).join('');
     // Start with subcats/pills hidden
     $('subcatRow').classList.add('hidden');
     $('pillRow').classList.add('hidden');
 }
 
 function switchTab(tab){
+    const noDropdown=tab==='dashboard'||tab==='agent';
     const toggling=S.tab===tab;
-    if(toggling){
+    if(noDropdown){
+        // Dashboard and Agent are simple tabs — no dropdown subcats
+        S.tab=tab;
+        S.tabOpen=false;
+        S.subcat=null;
+        $('subcatRow').classList.add('hidden');
+        $('pillRow').innerHTML='';
+        $('pillRow').classList.add('hidden');
+    } else if(toggling){
         // Toggle dropdown open/closed
         S.tabOpen=!S.tabOpen;
+        S.subcat=null;
     } else {
         S.tab=tab;
         S.tabOpen=true;
+        S.subcat=null;
     }
-    S.subcat=null;
     document.querySelectorAll('.atab').forEach(b=>{
         b.classList.toggle('on',b.dataset.tab===tab);
-        b.classList.toggle('open',b.dataset.tab===tab&&S.tabOpen);
+        b.classList.toggle('open',b.dataset.tab===tab&&S.tabOpen&&!noDropdown);
     });
     document.querySelectorAll('.ctx-panel').forEach(p=>p.classList.toggle('on',p.id==='panel'+cap(tab)));
     S.activeAction=false;
-    if(S.tabOpen&&SUBCATS[tab]){
+    if(!noDropdown&&S.tabOpen&&SUBCATS[tab]){
         renderSubcats();
         $('subcatRow').classList.remove('hidden');
-    } else {
+    } else if(!noDropdown) {
         $('subcatRow').classList.add('hidden');
     }
-    $('pillRow').innerHTML='';
-    $('pillRow').classList.add('hidden');
+    if(!noDropdown){
+        $('pillRow').innerHTML='';
+        $('pillRow').classList.add('hidden');
+    }
     $('buildBar').classList.toggle('hidden',tab!=='build'||!S.building);
     if(tab==='defi')renderDefiPanel();
     if(tab==='agent')loadAgentPanel();
