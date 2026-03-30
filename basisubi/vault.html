@@ -732,11 +732,8 @@
 
                 <div class="backtest-chart-area">
                     <canvas id="backtest-chart"></canvas>
-                    <div class="backtest-chart-legend">
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(210, 100%, 55%);"></span> Standard 50/50</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(155, 80%, 50%);"></span> Single-Sided</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(280, 80%, 60%);"></span> Wide Upside</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(35, 100%, 55%);"></span> Multi-Bucket</div>
+                <div class="backtest-chart-legend">
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(185, 100%, 50%);"></span> AutoVault Strategy</div>
                         <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(122,141,160,0.5);"></span> Hold ETH</div>
                         <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(34,200,120,0.3);"></span> Hold USDC</div>
                     </div>
@@ -1232,249 +1229,133 @@
     }
 
     // ═══════════════════════════════════════
-    // STRATEGY SIMULATORS
+    // AUTOVAULT STRATEGY SIMULATOR
     // ═══════════════════════════════════════
+    //
+    // Strategy: 50/50 start, single-sided reposition
+    //   1. Start 50/50 ETH/USDC, range = current price ±10%
+    //   2. Pushed out above (100% USDC) → provide USDC single-sided, range = price -20% to price
+    //   3. Pushed out below (100% ETH)  → provide ETH single-sided, range = price to price +20%
+    //   4. No swapping ever after initial 50/50. Just reposition what you hold.
 
     const SIM = {
         startCapital: 100000,
-        baseDailyFeeRate: 80, // $80/day on $100K full range (Aerodrome ETH/USDC ~30% base APY)
-        rebalanceCost: 0.002, // 0.2% per rebalance (swap fees + slippage on Base)
-        aeroRewardsPerDay: 40, // ~$40/day in AERO rewards per $100K (gauge staking)
+        baseDailyFeeRate: 80,  // $80/day per $100K at full range (Aerodrome ETH/USDC)
+        aeroRewardsPerDay: 40, // $40/day AERO gauge rewards per $100K
     };
 
-    function calcDailyFees(portfolioValue, rangeLow, rangeHigh, price) {
+    function calcDailyIncome(portfolioValue, rangeLow, rangeHigh, price) {
         const rangeW = (rangeHigh - rangeLow) / price;
-        const mult = Math.min(1.0 / rangeW, 8);
-        const tradingFees = SIM.baseDailyFeeRate * mult * (portfolioValue / SIM.startCapital);
-        const aeroRewards = SIM.aeroRewardsPerDay * (portfolioValue / SIM.startCapital);
-        return tradingFees + aeroRewards;
+        const concentration = Math.min(1.0 / rangeW, 8); // tighter = more fees, cap 8x
+        const fees = SIM.baseDailyFeeRate * concentration * (portfolioValue / SIM.startCapital);
+        const aero = SIM.aeroRewardsPerDay * (portfolioValue / SIM.startCapital);
+        return fees + aero;
     }
 
-    function calcIL(portfolioValue, rangeLow, rangeHigh, pricePrev, priceNow) {
-        const change = Math.abs(priceNow - pricePrev) / pricePrev;
-        const rangeW = (rangeHigh - rangeLow) / priceNow;
-        return portfolioValue * (change * change) / (8 * rangeW);
-    }
+    function simAutoVault(prices) {
+        const startPrice = prices[0];
 
-    // Strategy 1: Standard 50/50 rebalance (centered, rebalance when out of range)
-    function simStandard(prices) {
-        let val = SIM.startCapital, rangeLow = 0, rangeHigh = 0, rebalances = 0, inRange = 0;
+        // Initial: swap 50% to ETH, LP at ±10%
+        let ethHeld = (SIM.startCapital * 0.5) / startPrice; // bought ETH with half
+        let usdcHeld = SIM.startCapital * 0.5;
+        let rangeLow = startPrice * 0.9;
+        let rangeHigh = startPrice * 1.1;
+        let holding = 'both'; // 'both' for initial 50/50, then 'eth' or 'usdc'
+        let rebalances = 0;
+        let daysInRange = 0;
+        let totalFees = 0;
+        let totalETHAccumulated = ethHeld;
+
         const values = [];
+        const ethTrack = []; // track ETH holdings over time
+
         for (let i = 0; i < prices.length; i++) {
             const p = prices[i];
-            if (i < 30) { values.push(SIM.startCapital); continue; }
-            const { regime } = detectRegime(prices.slice(0, i + 1));
-            const rw = getRangeWidth(regime);
-            if (rangeLow === 0 || p < rangeLow || p > rangeHigh) {
-                if (rangeLow !== 0) { val -= val * SIM.rebalanceCost; rebalances++; }
-                rangeLow = p * (1 - rw); rangeHigh = p * (1 + rw);
-            }
-            if (p >= rangeLow && p <= rangeHigh) {
-                inRange++;
-                val += calcDailyFees(val, rangeLow, rangeHigh, p);
-                if (i > 0) val -= calcIL(val, rangeLow, rangeHigh, prices[i-1], p);
-            }
-            values.push(val);
-        }
-        return { values, rebalances, inRange, final: val };
-    }
+            const inRange = p >= rangeLow && p <= rangeHigh;
 
-    // Strategy 2: Single-sided (never swap, provide in direction of mean reversion)
-    function simSingleSided(prices) {
-        let val = SIM.startCapital, rangeLow = 0, rangeHigh = 0, rebalances = 0, inRange = 0;
-        let holding = 'usdc'; // start with USDC
-        let ethHeld = 0, usdcHeld = SIM.startCapital;
-        const values = [];
-        for (let i = 0; i < prices.length; i++) {
-            const p = prices[i];
-            if (i < 30) { values.push(SIM.startCapital); continue; }
-            const { regime } = detectRegime(prices.slice(0, i + 1));
-            const rw = getRangeWidth(regime);
-            if (rangeLow === 0) {
-                // First position: provide USDC below current price
-                rangeLow = p * (1 - rw * 2); rangeHigh = p;
-                holding = 'usdc'; usdcHeld = val; ethHeld = 0;
-            } else if (p < rangeLow || p > rangeHigh) {
-                rebalances++;
-                if (p < rangeLow) {
-                    // Pushed below — now holding 100% ETH
-                    // Provide ETH above current price (sell on recovery)
-                    ethHeld = val / p;
-                    usdcHeld = 0;
-                    holding = 'eth';
-                    rangeLow = p; rangeHigh = p * (1 + rw * 2);
-                } else {
-                    // Pushed above — now holding 100% USDC
-                    // Provide USDC below current price (buy on dip)
-                    usdcHeld = val;
+            if (inRange) {
+                daysInRange++;
+                // Calculate position value based on where price is in range
+                const rangeFraction = (p - rangeLow) / (rangeHigh - rangeLow);
+
+                if (holding === 'both' || holding === 'eth') {
+                    // As price rises through range, ETH sells for USDC
+                    // At rangeLow: 100% ETH. At rangeHigh: 100% USDC.
+                    const totalVal = ethHeld * p + usdcHeld;
+                    const dailyIncome = calcDailyIncome(totalVal, rangeLow, rangeHigh, p);
+                    totalFees += dailyIncome;
+                    // Fees accrue to the position — split proportionally
+                    usdcHeld += dailyIncome * rangeFraction;
+                    ethHeld += (dailyIncome * (1 - rangeFraction)) / p;
+
+                    // LP mechanics: as price moves through range, composition shifts
+                    const posValue = ethHeld * p + usdcHeld;
+                    ethHeld = (posValue * (1 - rangeFraction)) / p;
+                    usdcHeld = posValue * rangeFraction;
+                } else if (holding === 'usdc') {
+                    // Single-sided USDC below current price
+                    // As price drops through range, USDC buys ETH
+                    // At rangeHigh: 100% USDC. At rangeLow: 100% ETH.
+                    const totalVal = usdcHeld + ethHeld * p;
+                    const dailyIncome = calcDailyIncome(totalVal, rangeLow, rangeHigh, p);
+                    totalFees += dailyIncome;
+                    usdcHeld += dailyIncome * (1 - rangeFraction);
+                    ethHeld += (dailyIncome * rangeFraction) / p;
+
+                    // Reverse fraction for USDC-side: high price = all USDC, low = all ETH
+                    const reverseFrac = 1 - rangeFraction;
+                    const posValue = usdcHeld + ethHeld * p;
+                    ethHeld = (posValue * reverseFrac) / p;
+                    usdcHeld = posValue * (1 - reverseFrac);
+                }
+            }
+
+            // Check if pushed out of range
+            if (p > rangeHigh) {
+                // Pushed out above — holding 100% USDC
+                if (holding !== 'usdc' || rangeLow === 0 || p > rangeHigh) {
+                    usdcHeld = ethHeld * rangeHigh + usdcHeld; // sold all ETH at top of range
                     ethHeld = 0;
                     holding = 'usdc';
-                    rangeLow = p * (1 - rw * 2); rangeHigh = p;
+                    // Reposition: USDC single-sided, -20% below current price
+                    rangeHigh = p;
+                    rangeLow = p * 0.80;
+                    rebalances++;
                 }
-            }
-            if (p >= rangeLow && p <= rangeHigh) {
-                inRange++;
-                const fees = calcDailyFees(val, rangeLow, rangeHigh, p);
-                val += fees;
-                if (i > 0) val -= calcIL(val, rangeLow, rangeHigh, prices[i-1], p);
-                // Update holdings based on position in range
-                if (holding === 'usdc') {
-                    // As price drops through range, we buy ETH
-                    const pctThrough = (rangeHigh - p) / (rangeHigh - rangeLow);
-                    ethHeld = (val * pctThrough) / p;
-                    usdcHeld = val * (1 - pctThrough);
-                } else {
-                    // As price rises through range, we sell ETH
-                    const pctThrough = (p - rangeLow) / (rangeHigh - rangeLow);
-                    usdcHeld = val * pctThrough;
-                    ethHeld = (val * (1 - pctThrough)) / p;
-                }
-            } else {
-                // Out of range — track value based on what we hold
-                if (holding === 'eth') val = ethHeld * p;
-                else val = usdcHeld;
-            }
-            values.push(val);
-        }
-        return { values, rebalances, inRange, final: val };
-    }
-
-    // Strategy 3: Single-sided with wide upside (when holding ETH, set range above cost basis)
-    function simWideUpside(prices) {
-        let val = SIM.startCapital, rangeLow = 0, rangeHigh = 0, rebalances = 0, inRange = 0;
-        let holding = 'usdc';
-        let ethHeld = 0, usdcHeld = SIM.startCapital;
-        let costBasis = 0;
-        const values = [];
-        for (let i = 0; i < prices.length; i++) {
-            const p = prices[i];
-            if (i < 30) { values.push(SIM.startCapital); continue; }
-            const { regime } = detectRegime(prices.slice(0, i + 1));
-            const rw = getRangeWidth(regime);
-            if (rangeLow === 0) {
-                rangeLow = p * (1 - rw * 2); rangeHigh = p;
-                holding = 'usdc'; usdcHeld = val; ethHeld = 0;
-                costBasis = (rangeLow + rangeHigh) / 2;
-            } else if (p < rangeLow || p > rangeHigh) {
-                rebalances++;
-                if (p < rangeLow) {
-                    // Holding 100% ETH — provide with wide upside above cost basis
-                    ethHeld = val / p;
+            } else if (p < rangeLow) {
+                // Pushed out below — holding 100% ETH
+                if (holding !== 'eth' || p < rangeLow) {
+                    ethHeld = ethHeld + usdcHeld / rangeLow; // bought all ETH at bottom of range
                     usdcHeld = 0;
                     holding = 'eth';
-                    costBasis = (rangeLow + rangeHigh) / 2;
-                    // Range from current price all the way up past cost basis
+                    // Reposition: ETH single-sided, +20% above current price
                     rangeLow = p;
-                    rangeHigh = Math.max(p * (1 + rw * 3), costBasis * 1.1);
-                } else {
-                    // Holding 100% USDC — provide below current price
-                    usdcHeld = val;
-                    ethHeld = 0;
-                    holding = 'usdc';
-                    rangeLow = p * (1 - rw * 2); rangeHigh = p;
-                    costBasis = (rangeLow + rangeHigh) / 2;
+                    rangeHigh = p * 1.20;
+                    rebalances++;
                 }
             }
-            if (p >= rangeLow && p <= rangeHigh) {
-                inRange++;
-                val += calcDailyFees(val, rangeLow, rangeHigh, p);
-                if (i > 0) val -= calcIL(val, rangeLow, rangeHigh, prices[i-1], p);
-                if (holding === 'usdc') {
-                    const pct = (rangeHigh - p) / (rangeHigh - rangeLow);
-                    ethHeld = (val * pct) / p; usdcHeld = val * (1 - pct);
-                } else {
-                    const pct = (p - rangeLow) / (rangeHigh - rangeLow);
-                    usdcHeld = val * pct; ethHeld = (val * (1 - pct)) / p;
-                }
-            } else {
-                if (holding === 'eth') val = ethHeld * p;
-                else val = usdcHeld;
-            }
-            values.push(val);
+
+            const totalVal = ethHeld * p + usdcHeld;
+            values.push(totalVal);
+            ethTrack.push(ethHeld);
+            totalETHAccumulated = ethHeld;
         }
-        return { values, rebalances, inRange, final: val };
-    }
 
-    // Strategy 4: Multi-bucket (30% tight immediate + 70% above cost basis)
-    function simMultiBucket(prices) {
-        let valA = SIM.startCapital * 0.3, valB = SIM.startCapital * 0.7;
-        let aLow = 0, aHigh = 0, bLow = 0, bHigh = 0;
-        let rebalances = 0, inRange = 0;
-        let holdingA = 'usdc', holdingB = 'usdc';
-        let ethA = 0, usdcA = valA, ethB = 0, usdcB = valB;
-        let costBasis = 0;
-        const values = [];
-        for (let i = 0; i < prices.length; i++) {
-            const p = prices[i];
-            if (i < 30) { values.push(SIM.startCapital); continue; }
-            const { regime } = detectRegime(prices.slice(0, i + 1));
-            const rw = getRangeWidth(regime);
-
-            // Bucket A: tight, immediate fees (30%)
-            if (aLow === 0) {
-                aLow = p * (1 - rw); aHigh = p * (1 + rw);
-                holdingA = 'usdc'; usdcA = valA;
-                costBasis = p;
-            } else if (p < aLow || p > aHigh) {
-                rebalances++;
-                if (p < aLow) {
-                    ethA = valA / p; usdcA = 0; holdingA = 'eth';
-                    aLow = p; aHigh = p * (1 + rw * 2);
-                } else {
-                    usdcA = valA; ethA = 0; holdingA = 'usdc';
-                    aLow = p * (1 - rw * 2); aHigh = p;
-                }
-            }
-            if (p >= aLow && p <= aHigh) {
-                valA += calcDailyFees(valA, aLow, aHigh, p);
-                if (i > 0) valA -= calcIL(valA, aLow, aHigh, prices[i-1], p);
-                if (holdingA === 'eth') {
-                    const pct = (p - aLow) / (aHigh - aLow);
-                    usdcA = valA * pct; ethA = (valA * (1 - pct)) / p;
-                } else {
-                    const pct = (aHigh - p) / (aHigh - aLow);
-                    ethA = (valA * pct) / p; usdcA = valA * (1 - pct);
-                }
-            } else {
-                if (holdingA === 'eth') valA = ethA * p; else valA = usdcA;
-            }
-
-            // Bucket B: wide, above cost basis (70%)
-            if (bLow === 0) {
-                bLow = p * (1 - rw * 2); bHigh = p;
-                holdingB = 'usdc'; usdcB = valB;
-            } else if (p < bLow || p > bHigh) {
-                if (p < bLow) {
-                    ethB = valB / p; usdcB = 0; holdingB = 'eth';
-                    bLow = p; bHigh = Math.max(p * (1 + rw * 3), costBasis * 1.1);
-                } else {
-                    usdcB = valB; ethB = 0; holdingB = 'usdc';
-                    bLow = p * (1 - rw * 2); bHigh = p;
-                    costBasis = p;
-                }
-            }
-            if (p >= bLow && p <= bHigh) {
-                inRange++;
-                valB += calcDailyFees(valB, bLow, bHigh, p);
-                if (i > 0) valB -= calcIL(valB, bLow, bHigh, prices[i-1], p);
-                if (holdingB === 'eth') {
-                    const pct = (p - bLow) / (bHigh - bLow);
-                    usdcB = valB * pct; ethB = (valB * (1 - pct)) / p;
-                } else {
-                    const pct = (bHigh - p) / (bHigh - bLow);
-                    ethB = (valB * pct) / p; usdcB = valB * (1 - pct);
-                }
-            } else {
-                if (holdingB === 'eth') valB = ethB * p; else valB = usdcB;
-            }
-
-            values.push(valA + valB);
-        }
-        return { values, rebalances, inRange, final: valA + valB };
+        return {
+            values,
+            ethTrack,
+            rebalances,
+            daysInRange,
+            totalFees,
+            finalETH: ethHeld,
+            finalUSDC: usdcHeld,
+            final: ethHeld * prices[prices.length - 1] + usdcHeld,
+            holding
+        };
     }
 
     // ═══════════════════════════════════════
-    // RUN ALL STRATEGIES
+    // RUN BACKTEST
     // ═══════════════════════════════════════
 
     async function runBacktest() {
@@ -1484,7 +1365,7 @@
 
         try {
             const priceData = await fetchPrices(selectedDays);
-            btn.textContent = 'Simulating 4 strategies...';
+            btn.textContent = 'Simulating...';
 
             const prices = priceData.map(p => p.price);
             const dates = priceData.map(p => p.date);
@@ -1492,33 +1373,19 @@
             const endPrice = prices[prices.length - 1];
             const daysElapsed = prices.length;
 
-            // Run all 4 strategies
-            const s1 = simStandard(prices);
-            const s2 = simSingleSided(prices);
-            const s3 = simWideUpside(prices);
-            const s4 = simMultiBucket(prices);
+            const result = simAutoVault(prices);
 
-            // Hold benchmarks
+            // Benchmarks
             const holdEth = prices.map(p => SIM.startCapital * (p / startPrice));
             const holdUsdc = prices.map(() => SIM.startCapital);
 
-            // Find the winner
-            const strategies = [
-                { name: 'Standard 50/50', ...s1 },
-                { name: 'Single-Sided', ...s2 },
-                { name: 'Wide Upside', ...s3 },
-                { name: 'Multi-Bucket', ...s4 }
-            ];
-            const best = strategies.reduce((a, b) => a.final > b.final ? a : b);
+            const totalReturn = ((result.final - SIM.startCapital) / SIM.startCapital) * 100;
+            const apy = (Math.pow(result.final / SIM.startCapital, 365 / daysElapsed) - 1) * 100;
             const ethReturn = ((endPrice / startPrice) - 1) * 100;
-
-            // Update stats with best strategy
-            const totalReturn = ((best.final - SIM.startCapital) / SIM.startCapital) * 100;
-            const apy = (Math.pow(best.final / SIM.startCapital, 365 / daysElapsed) - 1) * 100;
-            const tir = (best.inRange / Math.max(daysElapsed - 30, 1)) * 100;
+            const tir = (result.daysInRange / daysElapsed) * 100;
 
             document.getElementById('bt-start').textContent = '$100,000';
-            document.getElementById('bt-final').textContent = '$' + Math.round(best.final).toLocaleString() + ' (' + best.name + ')';
+            document.getElementById('bt-final').textContent = '$' + Math.round(result.final).toLocaleString();
             document.getElementById('bt-final').className = 'backtest-stat-value ' + (totalReturn >= 0 ? 'green' : 'red');
             document.getElementById('bt-return').textContent = totalReturn.toFixed(1) + '%';
             document.getElementById('bt-return').className = 'backtest-stat-value ' + (totalReturn >= 0 ? 'green' : 'red');
@@ -1528,13 +1395,13 @@
             document.getElementById('bt-vs-eth').className = 'backtest-stat-value ' + (totalReturn - ethReturn >= 0 ? 'green' : 'red');
             document.getElementById('bt-vs-usdc').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%';
             document.getElementById('bt-vs-usdc').className = 'backtest-stat-value ' + (totalReturn >= 0 ? 'green' : 'red');
-            document.getElementById('bt-rebalances').textContent = best.rebalances;
+            document.getElementById('bt-rebalances').textContent = result.rebalances;
             document.getElementById('bt-inrange').textContent = tir.toFixed(0) + '%';
 
             document.getElementById('backtestResults').classList.add('visible');
             document.getElementById('backtestPlaceholder').style.display = 'none';
 
-            drawChart(dates, s1.values, s2.values, s3.values, s4.values, holdEth, holdUsdc);
+            drawChart(dates, result.values, holdEth, holdUsdc);
 
         } catch (err) {
             console.error('Backtest error:', err);
@@ -1546,10 +1413,10 @@
     }
 
     // ═══════════════════════════════════════
-    // CHART DRAWING (pure canvas, no library)
+    // CHART DRAWING
     // ═══════════════════════════════════════
 
-    function drawChart(dates, standardVals, singleVals, wideVals, multiVals, ethVals, usdcVals) {
+    function drawChart(dates, vaultVals, ethVals, usdcVals) {
         const canvas = document.getElementById('backtest-chart');
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
@@ -1570,11 +1437,11 @@
         ctx.fillStyle = '#081018';
         ctx.fillRect(0, 0, W, H);
 
-        const allVals = [...standardVals, ...singleVals, ...wideVals, ...multiVals, ...ethVals, ...usdcVals].filter(v => v > 0);
+        const allVals = [...vaultVals, ...ethVals, ...usdcVals].filter(v => v > 0);
         const yMin = Math.min(...allVals) * 0.95;
         const yMax = Math.max(...allVals) * 1.05;
 
-        const xScale = (i) => pad.left + (i / (standardVals.length - 1)) * chartW;
+        const xScale = (i) => pad.left + (i / (vaultVals.length - 1)) * chartW;
         const yScale = (v) => pad.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
 
         // Grid
@@ -1610,23 +1477,13 @@
         drawLine(usdcVals, 'rgba(34, 200, 120, 0.3)', 1.5, true);
         drawLine(ethVals, 'rgba(122, 141, 160, 0.5)', 1.5, false);
 
-        // 4 strategies
-        drawLine(standardVals, 'hsl(210, 100%, 55%)', 2, false);
-        drawLine(singleVals, 'hsl(155, 80%, 50%)', 2, false);
-        drawLine(wideVals, 'hsl(280, 80%, 60%)', 2, false);
-        drawLine(multiVals, 'hsl(35, 100%, 55%)', 2, false);
+        // Vault line
+        drawLine(vaultVals, 'hsl(185, 100%, 50%)', 2.5, false);
 
-        // Glow for the best performing line
-        const finals = [
-            { vals: standardVals, color: 'hsla(210, 100%, 55%, 0.3)', final: standardVals[standardVals.length-1] },
-            { vals: singleVals, color: 'hsla(155, 80%, 50%, 0.3)', final: singleVals[singleVals.length-1] },
-            { vals: wideVals, color: 'hsla(280, 80%, 60%, 0.3)', final: wideVals[wideVals.length-1] },
-            { vals: multiVals, color: 'hsla(35, 100%, 55%, 0.3)', final: multiVals[multiVals.length-1] },
-        ];
-        const winner = finals.reduce((a, b) => a.final > b.final ? a : b);
+        // Glow
         ctx.globalCompositeOperation = 'lighter';
         ctx.filter = 'blur(4px)';
-        drawLine(winner.vals, winner.color, 4, false);
+        drawLine(vaultVals, 'hsla(185, 100%, 50%, 0.3)', 4, false);
         ctx.filter = 'none';
         ctx.globalCompositeOperation = 'source-over';
     }
