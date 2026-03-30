@@ -834,13 +834,7 @@ export default async function handler(req, res) {
                     if (r.ok && result.post) {
                         await sendMsg(chatId, result.post);
                         if (result.tweet) {
-                            // Auto-post to @inclawbate X account
-                            try {
-                                const tweetId = await postToInclawbateX(result.tweet);
-                                await sendMsg(chatId, '✅ <b>Posted to @inclawbate!</b>\nhttps://x.com/inclawbate/status/' + tweetId);
-                            } catch (xErr) {
-                                await sendMsg(chatId, '⚠️ X post failed: ' + esc(xErr.message) + '\n\n📋 <b>Copy for X:</b>\n\n' + esc(result.tweet));
-                            }
+                            await sendMsg(chatId, '📋 <b>Copy for X:</b>\n\n' + esc(result.tweet));
                         }
                     } else {
                         await sendMsg(chatId, '❌ ' + (result.error || 'Failed'));
