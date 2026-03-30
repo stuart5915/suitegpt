@@ -614,15 +614,11 @@
             <p class="hero-subtitle">Automated concentrated liquidity on Aerodrome. Dynamic range management. No lock-up. Fully on-chain.</p>
 
             <div class="vault-card">
-                <!-- Stats Row -->
-                <div class="vault-stats-row">
+                <!-- ETH Price Bar -->
+                <div class="vault-stats-row" style="margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
                     <div class="vault-stat">
-                        <div class="vault-stat-label">Vault TVL</div>
-                        <div class="vault-stat-value" id="stat-tvl">$--</div>
-                    </div>
-                    <div class="vault-stat">
-                        <div class="vault-stat-label">Current APY</div>
-                        <div class="vault-stat-value green" id="stat-apy">--%</div>
+                        <div class="vault-stat-label">ETH Price</div>
+                        <div class="vault-stat-value" id="stat-eth-price">$--</div>
                     </div>
                     <div class="vault-stat">
                         <div class="vault-stat-label">Current Range</div>
@@ -632,9 +628,25 @@
                         <div class="vault-stat-label">Status</div>
                         <div class="vault-stat-value" id="stat-regime">--</div>
                     </div>
+                </div>
+
+                <!-- Vault Stats Row -->
+                <div class="vault-stats-row">
                     <div class="vault-stat">
-                        <div class="vault-stat-label">Depositors</div>
-                        <div class="vault-stat-value" id="stat-depositors">--</div>
+                        <div class="vault-stat-label">Vault TVL</div>
+                        <div class="vault-stat-value" id="stat-tvl">$--</div>
+                    </div>
+                    <div class="vault-stat">
+                        <div class="vault-stat-label">ETH Held</div>
+                        <div class="vault-stat-value" id="stat-eth-held">-- ETH</div>
+                    </div>
+                    <div class="vault-stat">
+                        <div class="vault-stat-label">USDC Held</div>
+                        <div class="vault-stat-value" id="stat-usdc-held">-- USDC</div>
+                    </div>
+                    <div class="vault-stat">
+                        <div class="vault-stat-label">ETH Reserve</div>
+                        <div class="vault-stat-value" id="stat-eth-reserve">-- ETH</div>
                     </div>
                 </div>
 
@@ -1065,15 +1077,34 @@
             const [totalValue, ethHeld, usdcHeld, reserve, rangeLow, rangeHigh, inRange, tid] = await vault.getVaultInfo();
             const supply = await vault.totalSupply();
 
-            // Update stats
-            document.getElementById('stat-tvl').textContent = '$' + (Number(ethers.formatUnits(totalValue, 6))).toLocaleString(undefined, {maximumFractionDigits: 2});
+            // Fetch ETH price from pool
+            const poolAbi = ['function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)'];
+            const pool = new ethers.Contract('0xb2cc224c1c9feE385f8ad6a55b4d94E92359DC59', poolAbi, provider);
+            const [sqrtPriceX96] = await pool.slot0();
+            const sqrtPrice = Number(sqrtPriceX96) / (2 ** 96);
+            const ethPrice = sqrtPrice * sqrtPrice * 1e12; // adjust for WETH(18) vs USDC(6) decimals
+
+            // ETH price
+            document.getElementById('stat-eth-price').textContent = '$' + ethPrice.toLocaleString(undefined, {maximumFractionDigits: 2});
+
+            // Range
             document.getElementById('stat-range').textContent = '$' + Number(rangeLow).toLocaleString() + ' - $' + Number(rangeHigh).toLocaleString();
+
+            // Status
             document.getElementById('stat-regime').textContent = inRange ? 'In Range' : 'Out of Range';
             document.getElementById('stat-regime').style.color = inRange ? 'var(--green)' : 'var(--red, #e55)';
 
-            if (Number(tid) > 0) {
-                document.getElementById('stat-apy').textContent = 'Live';
-            }
+            // TVL
+            document.getElementById('stat-tvl').textContent = '$' + (Number(ethers.formatUnits(totalValue, 6))).toLocaleString(undefined, {maximumFractionDigits: 2});
+
+            // Holdings breakdown
+            const ethHeldNum = Number(ethers.formatEther(ethHeld));
+            const usdcHeldNum = Number(ethers.formatUnits(usdcHeld, 6));
+            const reserveNum = Number(ethers.formatEther(reserve));
+
+            document.getElementById('stat-eth-held').textContent = ethHeldNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
+            document.getElementById('stat-usdc-held').textContent = '$' + usdcHeldNum.toLocaleString(undefined, {maximumFractionDigits: 2});
+            document.getElementById('stat-eth-reserve').textContent = reserveNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
 
             // User position
             if (userAddress) {
@@ -1090,8 +1121,9 @@
         }
     }
 
-    // Load vault info on page load
+    // Load vault info on page load, refresh every 30s
     setTimeout(loadVaultInfo, 1000);
+    setInterval(loadVaultInfo, 30000);
 
     // ═══════════════════════════════════════
     // INIT
