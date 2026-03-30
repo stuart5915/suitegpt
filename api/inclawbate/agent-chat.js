@@ -2750,11 +2750,11 @@ export default async function handler(req, res) {
     if (agentQuestionMatch) {
         const reply = `**AI Agents on Inclawbate**\n\nAgents are AI workers that run on autopilot. You create one, connect your accounts, and pick what it does.\n\n**What you can connect:**\n🐦 Your X account — agent posts and replies as you\n💬 Telegram bot — agent responds in your group\n👛 Wallet — agent can execute on-chain actions\n📡 Token — agent monitors and reports on it\n🐋 Wallet to watch — agent tracks whale activity\n🔗 Webhook — agent sends alerts to your systems\n\n**Agent types:**\n📈 **X Growth** — auto-posts to X on schedule, grows your audience\n💬 **Reply Bot** — auto-replies to X mentions in your voice\n💰 **DCA Auto-Buy** — buys a token on a schedule (daily, weekly)\n📊 **Analytics Reporter** — posts token stats to X or Telegram\n🐋 **Whale Watcher** — alerts when a wallet makes big moves\n📡 **Token Tracker** — alerts on price/volume changes\n\n**Creative combos:**\n• X Growth + Reply Bot = fully automated X presence\n• Token Tracker + Webhook = real-time trading signals\n• DCA + Analytics = auto-invest with performance reports\n• Whale Watcher + Telegram = insider move alerts in your group\n\n**[Create an Agent →](https://inclawbate.app/inclawbator#agent)** or ask me to set one up right here!`;
         history.push({ role: 'assistant', content: reply });
-        return sendReply({ reply, session_id: sid, suggestions: ['Set up an X Growth Agent', 'Set up a Token Tracker', 'Show me creative combos', 'What else can you do?'] });
+        return sendReply({ reply, session_id: sid, suggestions: ['Set up X Growth Agent', 'Set up Reply Bot', 'Set up DCA Auto-Buyer', 'Set up Analytics Reporter', 'Set up Whale Watcher', 'Set up Token Tracker'] });
     }
 
     // Intercept agent setup requests
-    const agentMatch = message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?(.+?\s+)?(?:agent|bot)/i);
+    const agentMatch = message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?(.+?)(?:\s+agent|\s+bot)?$/i);
     if (agentMatch) {
       const agentType = (agentMatch[1] || '').trim().toLowerCase();
       const templates = {
