@@ -650,6 +650,18 @@
                     </div>
                 </div>
 
+                <!-- ETH Price Chart with Range -->
+                <div style="margin: 16px 0; background: var(--surface, #081018); border: 1px solid var(--border); border-radius: 12px; padding: 12px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono, monospace);">ETH/USDC — 7d</div>
+                        <div style="display: flex; gap: 8px;">
+                            <div style="font-size: 0.68rem; color: var(--text-dim);" id="chart-fees-eth">Fees: -- ETH</div>
+                            <div style="font-size: 0.68rem; color: var(--text-dim);" id="chart-fees-usdc">-- USDC</div>
+                        </div>
+                    </div>
+                    <canvas id="eth-range-chart" style="width: 100%; height: 200px; display: block;"></canvas>
+                </div>
+
                 <!-- Deposit -->
                 <div class="deposit-section">
                     <div class="deposit-label">Deposit Any Ratio</div>
@@ -1131,6 +1143,17 @@
                     rangeLow = Math.round(Math.pow(1.0001, tl) * 1e12);
                     rangeHigh = Math.round(Math.pow(1.0001, tu) * 1e12);
                     inRange = Number(currentTick) >= tl && Number(currentTick) < tu;
+
+                    // Read uncollected fees (tokensOwed0 = ETH fees, tokensOwed1 = USDC fees)
+                    const feesEth = Number(pos[10]) / 1e18;
+                    const feesUsdc = Number(pos[11]) / 1e6;
+                    document.getElementById('chart-fees-eth').textContent = 'Fees: ' + feesEth.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' ETH';
+                    document.getElementById('chart-fees-usdc').textContent = feesUsdc.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' USDC';
+
+                    // Update chart range
+                    chartRangeLow = rangeLow;
+                    chartRangeHigh = rangeHigh;
+                    drawRangeChart();
                 } catch(e) { console.error('NPM read:', e); }
             }
 
@@ -1183,6 +1206,116 @@
             console.error('Failed to load vault info:', err);
         }
     }
+
+    // ═══════════════════════════════════════
+    // ETH PRICE CHART WITH RANGE OVERLAY
+    // ═══════════════════════════════════════
+
+    let chartPrices = [];
+    let chartRangeLow = 0, chartRangeHigh = 0;
+
+    async function loadChartData() {
+        try {
+            const resp = await fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7');
+            const data = await resp.json();
+            chartPrices = data.prices || []; // [[timestamp, price], ...]
+            drawRangeChart();
+        } catch(e) { console.error('Chart data error:', e); }
+    }
+
+    function drawRangeChart() {
+        const canvas = document.getElementById('eth-range-chart');
+        if (!canvas || chartPrices.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const W = rect.width - 24;
+        const H = 200;
+
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.scale(dpr, dpr);
+
+        const pad = { top: 10, right: 50, bottom: 20, left: 10 };
+        const cW = W - pad.left - pad.right;
+        const cH = H - pad.top - pad.bottom;
+
+        ctx.fillStyle = 'transparent';
+        ctx.clearRect(0, 0, W, H);
+
+        const prices = chartPrices.map(p => p[1]);
+        let yMin = Math.min(...prices);
+        let yMax = Math.max(...prices);
+
+        // Include range in y-axis if it exists
+        if (chartRangeLow > 0) yMin = Math.min(yMin, chartRangeLow * 0.99);
+        if (chartRangeHigh > 0) yMax = Math.max(yMax, chartRangeHigh * 1.01);
+
+        const margin = (yMax - yMin) * 0.05;
+        yMin -= margin; yMax += margin;
+
+        const xScale = (i) => pad.left + (i / (prices.length - 1)) * cW;
+        const yScale = (v) => pad.top + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+        // Draw range band
+        if (chartRangeLow > 0 && chartRangeHigh > 0) {
+            const y1 = yScale(chartRangeHigh);
+            const y2 = yScale(chartRangeLow);
+            ctx.fillStyle = 'rgba(0, 220, 255, 0.06)';
+            ctx.fillRect(pad.left, y1, cW, y2 - y1);
+
+            // Range lines
+            ctx.strokeStyle = 'rgba(0, 220, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(pad.left, y1); ctx.lineTo(pad.left + cW, y1); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pad.left, y2); ctx.lineTo(pad.left + cW, y2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Range labels
+            ctx.fillStyle = 'rgba(0, 220, 255, 0.5)';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('$' + chartRangeHigh.toLocaleString(), pad.left + cW + 4, y1 + 4);
+            ctx.fillText('$' + chartRangeLow.toLocaleString(), pad.left + cW + 4, y2 + 4);
+        }
+
+        // Y-axis labels
+        ctx.fillStyle = '#3a4a5e';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 4; i++) {
+            const val = yMax - (i / 4) * (yMax - yMin);
+            const y = pad.top + (i / 4) * cH;
+            ctx.fillText('$' + Math.round(val).toLocaleString(), W - 2, y + 3);
+        }
+
+        // Price line
+        ctx.beginPath();
+        ctx.strokeStyle = '#f0f4f8';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        for (let i = 0; i < prices.length; i++) {
+            const x = xScale(i), y = yScale(prices[i]);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Current price dot
+        const lastPrice = prices[prices.length - 1];
+        const lastX = xScale(prices.length - 1);
+        const lastY = yScale(lastPrice);
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0f4f8';
+        ctx.fill();
+    }
+
+    // Load chart data on init, refresh every 5 min
+    setTimeout(loadChartData, 500);
+    setInterval(loadChartData, 300000);
 
     // Load vault info on page load, refresh every 30s
     setTimeout(loadVaultInfo, 1000);
