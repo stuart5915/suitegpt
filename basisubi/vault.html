@@ -686,6 +686,30 @@
                     <button class="withdraw-btn" onclick="withdraw()">Withdraw</button>
                 </div>
 
+                <!-- AERO Rewards -->
+                <div class="deposit-section" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div>
+                            <div class="deposit-label" style="margin-bottom: 2px;">Pending AERO Rewards</div>
+                            <div style="font-family: var(--mono, monospace); font-size: 1.2rem; font-weight: 700; color: var(--cyan, #0ff);" id="stat-pending-aero">0.00 AERO</div>
+                            <div style="font-size: 0.72rem; color: var(--text-dim, #3a4a5e); margin-top: 2px;" id="stat-pending-aero-usd">~$0.00</div>
+                        </div>
+                        <button class="deposit-btn" onclick="callCompound()" style="background: var(--cyan-dim, rgba(0,255,255,0.1)); border-color: var(--cyan, #0ff); color: var(--cyan, #0ff);" id="compoundBtn">Compound to ETH</button>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim, #3a4a5e);">Claims AERO gauge rewards, swaps to ETH, adds to vault reserve. Anyone can call this.</div>
+                </div>
+
+                <!-- Rebalance Button (shown when out of range) -->
+                <div class="deposit-section" id="rebalanceSection" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px; display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <div class="deposit-label" style="margin-bottom: 2px; color: var(--red, #e55);">Out of Range</div>
+                            <div style="font-size: 0.72rem; color: var(--text-dim, #3a4a5e);">Position is not earning fees. Rebalance to reposition single-sided.</div>
+                        </div>
+                        <button class="deposit-btn" onclick="callRebalance()" style="background: var(--red-dim, rgba(255,50,50,0.1)); border-color: var(--red, #e55); color: var(--red, #e55);">Rebalance</button>
+                    </div>
+                </div>
+
                 <div class="vault-note">
                     The vault manages ETH/USDC concentrated LP on Aerodrome. It auto-rebalances the price range based on market conditions to maximize fee capture while minimizing impermanent loss.
                 </div>
@@ -921,6 +945,7 @@
         'function ethReserve() view returns (uint256)',
         'function tickLower() view returns (int24)',
         'function tickUpper() view returns (int24)',
+        'function pendingAero() view returns (uint256)',
     ];
     const ERC20_ABI = [
         'function approve(address spender, uint256 amount) returns (bool)',
@@ -1105,6 +1130,29 @@
             document.getElementById('stat-eth-held').textContent = ethHeldNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
             document.getElementById('stat-usdc-held').textContent = '$' + usdcHeldNum.toLocaleString(undefined, {maximumFractionDigits: 2});
             document.getElementById('stat-eth-reserve').textContent = reserveNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' ETH';
+
+            // Pending AERO rewards
+            try {
+                const pendingAero = await vault.pendingAero();
+                const aeroNum = Number(ethers.formatEther(pendingAero));
+                document.getElementById('stat-pending-aero').textContent = aeroNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' AERO';
+                // Fetch AERO price from DexScreener
+                try {
+                    const aeroResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x940181a94A35A4569E4529A3CDfB74e38FD98631');
+                    const aeroData = await aeroResp.json();
+                    const aeroPrice = parseFloat(aeroData.pairs?.[0]?.priceUsd || '0');
+                    const aeroUsd = aeroNum * aeroPrice;
+                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + aeroUsd.toLocaleString(undefined, {maximumFractionDigits: 2});
+                } catch(e) {}
+            } catch(e) {
+                console.error('Failed to read pendingAero:', e);
+            }
+
+            // Show rebalance button if out of range
+            const rebalanceSection = document.getElementById('rebalanceSection');
+            if (rebalanceSection) {
+                rebalanceSection.style.display = inRange ? 'none' : 'block';
+            }
 
             // User position
             if (userAddress) {

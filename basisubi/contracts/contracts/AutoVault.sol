@@ -75,6 +75,12 @@ contract AutoVault is ERC4626, ReentrancyGuard, IERC721Receiver {
         ERC20("Basis AutoVault", "bvUSDC")
         ERC4626(IERC20(USDC))
     {
+        // Explicit state initialization
+        tokenId = 0;
+        tickLower = 0;
+        tickUpper = 0;
+        ethReserve = 0;
+
         // Max-approve tokens to router and position manager
         IERC20(USDC).forceApprove(address(ROUTER), type(uint256).max);
         IERC20(USDC).forceApprove(address(NPM), type(uint256).max);
@@ -576,6 +582,12 @@ contract AutoVault is ERC4626, ReentrancyGuard, IERC721Receiver {
         return currentTick >= tickLower && currentTick < tickUpper;
     }
 
+    /// @notice Pending AERO rewards claimable from the gauge.
+    function pendingAero() public view returns (uint256) {
+        if (tokenId == 0) return 0;
+        return GAUGE.earned(address(this), tokenId);
+    }
+
     /// @notice All key vault data in a single RPC call.
     function getVaultInfo() external view returns (
         uint256 totalValue,
@@ -650,6 +662,8 @@ contract AutoVault is ERC4626, ReentrancyGuard, IERC721Receiver {
     }
 
     /// @dev Swap exact input via Aerodrome router. Returns amount received.
+    ///      Uses 2% slippage tolerance — calculates expected output from pool price
+    ///      and sets minimum to 98% of that.
     function _swapExact(address tokenIn, address tokenOut, uint256 amountIn)
         internal
         returns (uint256 amountOut)
@@ -661,6 +675,19 @@ contract AutoVault is ERC4626, ReentrancyGuard, IERC721Receiver {
         // ETH/USDC swaps go through our pool (tick spacing 100)
         int24 ts = (tokenIn == AERO || tokenOut == AERO) ? int24(200) : TICK_SPACING;
 
+        // Calculate minimum output (2% slippage tolerance)
+        uint256 minOut = 0;
+        if (tokenIn == WETH && tokenOut == USDC) {
+            (uint160 sqrtPriceX96,,,,,) = POOL.slot0();
+            uint256 expected = _wethToUsdc(amountIn, sqrtPriceX96);
+            minOut = (expected * 98) / 100;
+        } else if (tokenIn == USDC && tokenOut == WETH) {
+            (uint160 sqrtPriceX96,,,,,) = POOL.slot0();
+            uint256 expected = _usdcToWeth(amountIn, sqrtPriceX96);
+            minOut = (expected * 98) / 100;
+        }
+        // AERO swaps: no slippage calc (no price oracle for AERO/WETH in this contract)
+
         amountOut = ROUTER.exactInputSingle(
             ICLSwapRouter.ExactInputSingleParams({
                 tokenIn: tokenIn,
@@ -669,7 +696,7 @@ contract AutoVault is ERC4626, ReentrancyGuard, IERC721Receiver {
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: 0, // v1: no slippage protection for simplicity
+                amountOutMinimum: minOut,
                 sqrtPriceLimitX96: 0
             })
         );
