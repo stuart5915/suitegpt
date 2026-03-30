@@ -1240,34 +1240,38 @@
 
     const SIM = {
         startCapital: 100000,
-        baseDailyFeeRate: 80,  // $80/day per $100K at full range (Aerodrome ETH/USDC)
-        aeroRewardsPerDay: 40, // $40/day AERO gauge rewards per $100K
+        // Based on real observed yields: ~$250/day per $100K at ±10-20% range on Aerodrome ETH/USDC
+        // Broken down: ~$150/day trading fees + ~$100/day AERO rewards
+        tradingFeesPerDay: 150, // per $100K, at typical concentration
+        aeroRewardsPerDay: 100, // per $100K, AERO gauge staking
     };
 
-    function calcDailyIncome(portfolioValue, rangeLow, rangeHigh, price) {
-        const rangeW = (rangeHigh - rangeLow) / price;
-        const concentration = Math.min(1.0 / rangeW, 8); // tighter = more fees, cap 8x
-        const fees = SIM.baseDailyFeeRate * concentration * (portfolioValue / SIM.startCapital);
-        const aero = SIM.aeroRewardsPerDay * (portfolioValue / SIM.startCapital);
-        return fees + aero;
+    function calcDailyTradingFees(portfolioValue) {
+        // Flat realistic rate — no fake concentration multiplier
+        return SIM.tradingFeesPerDay * (portfolioValue / SIM.startCapital);
+    }
+
+    function calcDailyAero(portfolioValue) {
+        return SIM.aeroRewardsPerDay * (portfolioValue / SIM.startCapital);
     }
 
     function simAutoVault(prices) {
         const startPrice = prices[0];
 
         // Initial: swap 50% to ETH, LP at ±10%
-        let ethHeld = (SIM.startCapital * 0.5) / startPrice; // bought ETH with half
+        let ethHeld = (SIM.startCapital * 0.5) / startPrice;
         let usdcHeld = SIM.startCapital * 0.5;
         let rangeLow = startPrice * 0.9;
         let rangeHigh = startPrice * 1.1;
-        let holding = 'both'; // 'both' for initial 50/50, then 'eth' or 'usdc'
+        let holding = 'both'; // 'both', 'eth', or 'usdc'
         let rebalances = 0;
         let daysInRange = 0;
         let totalFees = 0;
-        let totalETHAccumulated = ethHeld;
+        let aeroETHReserve = 0; // ETH accumulated from AERO rewards (always converted to ETH)
+        let wasInRange = true; // track if we were in range yesterday
 
         const values = [];
-        const ethTrack = []; // track ETH holdings over time
+        const ethTrack = [];
 
         for (let i = 0; i < prices.length; i++) {
             const p = prices[i];
@@ -1275,81 +1279,94 @@
 
             if (inRange) {
                 daysInRange++;
-                // Calculate position value based on where price is in range
+                const totalVal = ethHeld * p + usdcHeld + aeroETHReserve * p;
                 const rangeFraction = (p - rangeLow) / (rangeHigh - rangeLow);
 
-                if (holding === 'both' || holding === 'eth') {
-                    // As price rises through range, ETH sells for USDC
-                    // At rangeLow: 100% ETH. At rangeHigh: 100% USDC.
-                    const totalVal = ethHeld * p + usdcHeld;
-                    const dailyIncome = calcDailyIncome(totalVal, rangeLow, rangeHigh, p);
-                    totalFees += dailyIncome;
-                    // Fees accrue to the position — split proportionally
-                    usdcHeld += dailyIncome * rangeFraction;
-                    ethHeld += (dailyIncome * (1 - rangeFraction)) / p;
+                // Trading fees — accrue to LP position
+                const dailyTradingFees = calcDailyTradingFees(totalVal);
+                totalFees += dailyTradingFees;
 
-                    // LP mechanics: as price moves through range, composition shifts
+                // AERO rewards — always converted to ETH reserve
+                const dailyAero = calcDailyAero(totalVal);
+                aeroETHReserve += dailyAero / p; // buy ETH with AERO
+                totalFees += dailyAero;
+
+                // Add trading fees to LP position proportionally
+                if (holding === 'both' || holding === 'eth') {
+                    // ETH-side or 50/50: at rangeLow = 100% ETH, at rangeHigh = 100% USDC
+                    usdcHeld += dailyTradingFees * rangeFraction;
+                    ethHeld += (dailyTradingFees * (1 - rangeFraction)) / p;
+                    // LP composition shifts with price
                     const posValue = ethHeld * p + usdcHeld;
                     ethHeld = (posValue * (1 - rangeFraction)) / p;
                     usdcHeld = posValue * rangeFraction;
                 } else if (holding === 'usdc') {
-                    // Single-sided USDC below current price
-                    // As price drops through range, USDC buys ETH
-                    // At rangeHigh: 100% USDC. At rangeLow: 100% ETH.
-                    const totalVal = usdcHeld + ethHeld * p;
-                    const dailyIncome = calcDailyIncome(totalVal, rangeLow, rangeHigh, p);
-                    totalFees += dailyIncome;
-                    usdcHeld += dailyIncome * (1 - rangeFraction);
-                    ethHeld += (dailyIncome * rangeFraction) / p;
-
-                    // Reverse fraction for USDC-side: high price = all USDC, low = all ETH
+                    // USDC-side: at rangeHigh = 100% USDC, at rangeLow = 100% ETH
                     const reverseFrac = 1 - rangeFraction;
+                    usdcHeld += dailyTradingFees * (1 - reverseFrac);
+                    ethHeld += (dailyTradingFees * reverseFrac) / p;
                     const posValue = usdcHeld + ethHeld * p;
                     ethHeld = (posValue * reverseFrac) / p;
                     usdcHeld = posValue * (1 - reverseFrac);
                 }
+                wasInRange = true;
+            } else {
+                wasInRange = false;
+                // Out of range — no fees earned, but check for repositioning
             }
 
             // Check if pushed out of range
-            if (p > rangeHigh) {
-                // Pushed out above — holding 100% USDC
-                if (holding !== 'usdc' || rangeLow === 0 || p > rangeHigh) {
-                    usdcHeld = ethHeld * rangeHigh + usdcHeld; // sold all ETH at top of range
+            if (p > rangeHigh && wasInRange === false) {
+                if (holding !== 'usdc_positioned') {
+                    // Sold all ETH at top of range
+                    usdcHeld = ethHeld * rangeHigh + usdcHeld;
                     ethHeld = 0;
+                    // AERO ETH reserve stays as ETH (don't sell it)
                     holding = 'usdc';
                     // Reposition: USDC single-sided, -20% below current price
                     rangeHigh = p;
                     rangeLow = p * 0.80;
+                    holding = 'usdc_positioned';
                     rebalances++;
                 }
-            } else if (p < rangeLow) {
-                // Pushed out below — holding 100% ETH
-                if (holding !== 'eth' || p < rangeLow) {
-                    ethHeld = ethHeld + usdcHeld / rangeLow; // bought all ETH at bottom of range
+            } else if (p < rangeLow && wasInRange === false) {
+                if (holding !== 'eth_positioned') {
+                    // Bought all ETH at bottom of range
+                    ethHeld = ethHeld + usdcHeld / rangeLow;
                     usdcHeld = 0;
+                    // Add AERO ETH reserve into the LP position
+                    ethHeld += aeroETHReserve;
+                    aeroETHReserve = 0;
                     holding = 'eth';
                     // Reposition: ETH single-sided, +20% above current price
                     rangeLow = p;
                     rangeHigh = p * 1.20;
+                    holding = 'eth_positioned';
                     rebalances++;
                 }
             }
 
-            const totalVal = ethHeld * p + usdcHeld;
+            // Reset holding state when back in range
+            if (inRange) {
+                if (holding === 'eth_positioned') holding = 'eth';
+                if (holding === 'usdc_positioned') holding = 'usdc';
+            }
+
+            const totalVal = ethHeld * p + usdcHeld + aeroETHReserve * p;
             values.push(totalVal);
-            ethTrack.push(ethHeld);
-            totalETHAccumulated = ethHeld;
+            ethTrack.push(ethHeld + aeroETHReserve);
         }
 
+        const finalPrice = prices[prices.length - 1];
         return {
             values,
             ethTrack,
             rebalances,
             daysInRange,
             totalFees,
-            finalETH: ethHeld,
+            finalETH: ethHeld + aeroETHReserve,
             finalUSDC: usdcHeld,
-            final: ethHeld * prices[prices.length - 1] + usdcHeld,
+            final: ethHeld * finalPrice + usdcHeld + aeroETHReserve * finalPrice,
             holding
         };
     }
