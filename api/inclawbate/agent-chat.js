@@ -2745,6 +2745,14 @@ export default async function handler(req, res) {
       }
     }
 
+    // Intercept agent questions — explain capabilities when asked
+    const agentQuestionMatch = /(?:what\s+(?:kind|type)s?\s+of\s+agents?|what\s+agents?\s+can|agent\s+(?:examples?|ideas?|options?|types?)|show\s+me\s+agents?|what\s+can\s+(?:agents?|my\s+agent)\s+do|how\s+(?:do|does)\s+agents?\s+work|tell\s+me\s+about\s+agents?)/i.test(message);
+    if (agentQuestionMatch) {
+        const reply = `**AI Agents on Inclawbate**\n\nAgents are AI workers that run on autopilot. You create one, connect your accounts, and pick what it does.\n\n**What you can connect:**\n🐦 Your X account — agent posts and replies as you\n💬 Telegram bot — agent responds in your group\n👛 Wallet — agent can execute on-chain actions\n📡 Token — agent monitors and reports on it\n🐋 Wallet to watch — agent tracks whale activity\n🔗 Webhook — agent sends alerts to your systems\n\n**Agent types:**\n📈 **X Growth** — auto-posts to X on schedule, grows your audience\n💬 **Reply Bot** — auto-replies to X mentions in your voice\n💰 **DCA Auto-Buy** — buys a token on a schedule (daily, weekly)\n📊 **Analytics Reporter** — posts token stats to X or Telegram\n🐋 **Whale Watcher** — alerts when a wallet makes big moves\n📡 **Token Tracker** — alerts on price/volume changes\n\n**Creative combos:**\n• X Growth + Reply Bot = fully automated X presence\n• Token Tracker + Webhook = real-time trading signals\n• DCA + Analytics = auto-invest with performance reports\n• Whale Watcher + Telegram = insider move alerts in your group\n\nHead to the **Agent tab** to create one, or ask me to set one up!`;
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, session_id: sid, suggestions: ['Set up an X Growth Agent', 'Set up a Token Tracker', 'Show me creative combos', 'What else can you do?'] });
+    }
+
     // Intercept agent setup requests
     const agentMatch = message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?(.+?\s+)?(?:agent|bot)/i);
     if (agentMatch) {

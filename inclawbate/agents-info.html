@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agents — Inclawbate</title>
+    <meta name="description" content="AI agents that work on autopilot. Auto-post to X, track tokens, DCA on schedule, monitor wallets, and more.">
+    <meta property="og:title" content="AI Agents — Inclawbate">
+    <meta property="og:description" content="Workers that run on autopilot. Connect your accounts, pick capabilities, let them work.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.app/agents">
+    <meta property="og:image" content="https://www.inclawbate.app/api/inclawbate/og?page=agents">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}.nav{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .agents-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height, 60px) + 60px) 20px 60px;
+            min-height: 100vh;
+        }
+
+        .agents-page::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 40% at 20% 0%, hsla(250, 50%, 45%, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, hsla(9, 30%, 40%, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Hero */
+        .agents-hero {
+            text-align: center;
+            margin-bottom: 56px;
+            animation: fadeUp 0.6s ease-out;
+        }
+        .agents-hero h1 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: var(--text-primary, #f0f0f5);
+            margin: 0 0 12px;
+        }
+        .agents-hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary, #a0a0b8);
+            line-height: 1.6;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* Sections */
+        .agents-section {
+            margin-bottom: 56px;
+            animation: fadeUp 0.6s ease-out;
+        }
+        .agents-section h2 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary, #f0f0f5);
+            margin: 0 0 8px;
+        }
+        .agents-section .section-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary, #a0a0b8);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* Card grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .agent-card {
+            background: var(--bg-card, #12121c);
+            border: 1px solid var(--border-subtle, hsla(240,4%,18%,0.5));
+            border-radius: 14px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .agent-card:hover {
+            border-color: var(--lobster-400, #e87955);
+            transform: translateY(-2px);
+        }
+        .agent-card .card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        .agent-card h3 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary, #f0f0f5);
+            margin: 0 0 6px;
+        }
+        .agent-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary, #a0a0b8);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Connections list */
+        .conn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+        }
+        .conn-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card, #12121c);
+            border: 1px solid var(--border-subtle, hsla(240,4%,18%,0.5));
+            border-radius: 10px;
+            padding: 14px 18px;
+        }
+        .conn-item .conn-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .conn-item .conn-label {
+            font-size: 0.88rem;
+            color: var(--text-primary, #f0f0f5);
+            font-weight: 600;
+        }
+        .conn-item .conn-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary, #a0a0b8);
+        }
+
+        /* Combos */
+        .combo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .combo-card {
+            background: var(--bg-card, #12121c);
+            border: 1px solid var(--border-subtle, hsla(240,4%,18%,0.5));
+            border-radius: 14px;
+            padding: 24px;
+        }
+        .combo-card .combo-formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--lobster-400, #e87955);
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+        }
+        .combo-card h3 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary, #f0f0f5);
+            margin: 0 0 6px;
+        }
+        .combo-card p {
+            font-size: 0.83rem;
+            color: var(--text-secondary, #a0a0b8);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* CTA */
+        .agents-cta {
+            text-align: center;
+            margin-top: 64px;
+            margin-bottom: 40px;
+            animation: fadeUp 0.6s ease-out;
+        }
+        .agents-cta a {
+            display: inline-block;
+            padding: 14px 40px;
+            background: var(--lobster-400, #e87955);
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .agents-cta a:hover {
+            background: var(--lobster-500, #d06840);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .agents-hero h1 { font-size: 2rem; }
+            .card-grid, .conn-grid, .combo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/inclawbator" class="nav-link nav-link-featured">Inclawbator</a>
+        <a href="/claws" class="nav-link">$CLAWS</a>
+        <div class="nav-group">
+            <a href="#" class="nav-link" onclick="return false">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/build">Build</a>
+                <a href="/inclawbations#drops">Drops</a>
+                <a href="/inclawbations#builds">Community Builds</a>
+                <a href="/inclawbations#incubations">Incubations</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/tools">Tools</a>
+            </div>
+        </div>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/council" class="nav-link">Council</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<main class="agents-page">
+
+    <!-- Hero -->
+    <div class="agents-hero">
+        <h1>AI Agents</h1>
+        <p class="subtitle">Workers that run on autopilot. Connect your accounts, pick capabilities, let them work.</p>
+    </div>
+
+    <!-- What are Agents? -->
+    <section class="agents-section">
+        <h2>What are Agents?</h2>
+        <p class="section-desc">
+            Agents are AI workers you create and configure. You connect your accounts &mdash; X, Telegram, wallets &mdash; pick what the agent should do, and it runs on autopilot. No code required. Each agent operates independently, executing tasks on a schedule or reacting to events in real time.
+        </p>
+    </section>
+
+    <!-- Agent Types -->
+    <section class="agents-section">
+        <h2>Agent Types</h2>
+        <p class="section-desc">Six ready-to-use agent templates. Pick one and customize, or build something entirely custom.</p>
+        <div class="card-grid">
+            <div class="agent-card">
+                <div class="card-icon">📈</div>
+                <h3>X Growth</h3>
+                <p>Auto-posts to X on a schedule with your brand voice. Grows your audience on autopilot.</p>
+            </div>
+            <div class="agent-card">
+                <div class="card-icon">💬</div>
+                <h3>Reply Bot</h3>
+                <p>Auto-replies to X mentions in your voice. Never leave a mention unanswered.</p>
+            </div>
+            <div class="agent-card">
+                <div class="card-icon">💰</div>
+                <h3>DCA Auto-Buy</h3>
+                <p>Dollar-cost averages into any token on a schedule. Set it and forget it.</p>
+            </div>
+            <div class="agent-card">
+                <div class="card-icon">📊</div>
+                <h3>Analytics Reporter</h3>
+                <p>Posts daily or weekly token stats to X or Telegram. Price, volume, holders &mdash; automated.</p>
+            </div>
+            <div class="agent-card">
+                <div class="card-icon">🐋</div>
+                <h3>Whale Watcher</h3>
+                <p>Monitors a wallet and alerts you when it makes big moves. Never miss a whale play.</p>
+            </div>
+            <div class="agent-card">
+                <div class="card-icon">📡</div>
+                <h3>Token Tracker</h3>
+                <p>Monitors a token for price changes, volume spikes, and unusual activity.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Connections -->
+    <section class="agents-section">
+        <h2>Connections</h2>
+        <p class="section-desc">Plug in the accounts and services your agent needs. Each connection unlocks new capabilities.</p>
+        <div class="conn-grid">
+            <div class="conn-item">
+                <span class="conn-icon">🐦</span>
+                <div>
+                    <div class="conn-label">X Account</div>
+                    <div class="conn-desc">Agent posts and replies as you</div>
+                </div>
+            </div>
+            <div class="conn-item">
+                <span class="conn-icon">💬</span>
+                <div>
+                    <div class="conn-label">Telegram Bot</div>
+                    <div class="conn-desc">Agent responds in your group</div>
+                </div>
+            </div>
+            <div class="conn-item">
+                <span class="conn-icon">👛</span>
+                <div>
+                    <div class="conn-label">Wallet</div>
+                    <div class="conn-desc">Execute on-chain actions</div>
+                </div>
+            </div>
+            <div class="conn-item">
+                <span class="conn-icon">📡</span>
+                <div>
+                    <div class="conn-label">Token</div>
+                    <div class="conn-desc">Monitor and report on any token</div>
+                </div>
+            </div>
+            <div class="conn-item">
+                <span class="conn-icon">🐋</span>
+                <div>
+                    <div class="conn-label">Wallet to Watch</div>
+                    <div class="conn-desc">Track whale activity</div>
+                </div>
+            </div>
+            <div class="conn-item">
+                <span class="conn-icon">🔗</span>
+                <div>
+                    <div class="conn-label">Webhook</div>
+                    <div class="conn-desc">Send alerts to your systems</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Creative Combos -->
+    <section class="agents-section">
+        <h2>Creative Combos</h2>
+        <p class="section-desc">Mix capabilities to create unique agents. Here are some ideas to get started.</p>
+        <div class="combo-grid">
+            <div class="combo-card">
+                <div class="combo-formula">X Growth + Reply Bot</div>
+                <h3>Fully Automated X Presence</h3>
+                <p>Your agent posts original content on schedule and replies to every mention in your voice. You show up without showing up.</p>
+            </div>
+            <div class="combo-card">
+                <div class="combo-formula">Token Tracker + Webhook</div>
+                <h3>Real-Time Trading Signals</h3>
+                <p>Monitor any token for price or volume changes and pipe alerts directly into your trading systems or Discord.</p>
+            </div>
+            <div class="combo-card">
+                <div class="combo-formula">DCA Auto-Buy + Analytics</div>
+                <h3>Auto-Invest with Reports</h3>
+                <p>Automatically buy a token on a schedule while posting performance reports to X or Telegram. Transparent, hands-off investing.</p>
+            </div>
+            <div class="combo-card">
+                <div class="combo-formula">Whale Watcher + Telegram</div>
+                <h3>Insider Move Alerts</h3>
+                <p>Track a whale wallet and get instant alerts in your Telegram group when it moves. Your group always knows first.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="agents-cta">
+        <a href="/inclawbator">Create Your Agent</a>
+    </div>
+
+</main>
+
+<footer class="footer">
+    <div>
+        <p class="footer-text">inclawbate &mdash; we incubate anything for anyone.</p>
+        <div class="footer-links">
+            <a href="/state" class="footer-link">State</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="/whitepaper" class="footer-link">Whitepaper</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
