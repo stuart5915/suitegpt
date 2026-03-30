@@ -675,6 +675,80 @@
         </div>
     </section>
 
+    <!-- ═══ BACKTEST ═══ -->
+    <section class="backtest-section" id="backtest-section">
+        <div class="container">
+            <div class="section-label">Historical Analysis</div>
+            <div class="section-title">Backtest the Brain</div>
+            <div class="section-desc">4 strategies tested against real ETH prices. Which one wins?</div>
+
+            <div class="backtest-controls">
+                <div class="period-btns">
+                    <button class="period-btn" data-days="90" onclick="selectPeriod(this, 90)">90d</button>
+                    <button class="period-btn active" data-days="180" onclick="selectPeriod(this, 180)">180d</button>
+                    <button class="period-btn" data-days="365" onclick="selectPeriod(this, 365)">365d</button>
+                </div>
+                <button class="run-backtest-btn" id="runBacktestBtn" onclick="runBacktest()">Run Backtest</button>
+            </div>
+
+            <div class="backtest-results" id="backtestResults">
+                <div class="backtest-stats">
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">Starting Capital</div>
+                        <div class="backtest-stat-value" id="bt-start">$100,000</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">Final Value</div>
+                        <div class="backtest-stat-value green" id="bt-final">$---,---</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">Total Return</div>
+                        <div class="backtest-stat-value green" id="bt-return">--%</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">APY</div>
+                        <div class="backtest-stat-value green" id="bt-apy">--%</div>
+                    </div>
+                </div>
+
+                <div class="backtest-stats-row2">
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">vs. Hold ETH</div>
+                        <div class="backtest-stat-value" id="bt-vs-eth">--%</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">vs. Hold USDC</div>
+                        <div class="backtest-stat-value" id="bt-vs-usdc">--%</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">Rebalances</div>
+                        <div class="backtest-stat-value" id="bt-rebalances">--</div>
+                    </div>
+                    <div class="backtest-stat">
+                        <div class="backtest-stat-label">Time in Range</div>
+                        <div class="backtest-stat-value" id="bt-inrange">--%</div>
+                    </div>
+                </div>
+
+                <div class="backtest-chart-area">
+                    <canvas id="backtest-chart"></canvas>
+                    <div class="backtest-chart-legend">
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(210, 100%, 55%);"></span> Standard 50/50</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(155, 80%, 50%);"></span> Single-Sided</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(280, 80%, 60%);"></span> Wide Upside</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(35, 100%, 55%);"></span> Multi-Bucket</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(122,141,160,0.5);"></span> Hold ETH</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(34,200,120,0.3);"></span> Hold USDC</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="backtest-chart-area" id="backtestPlaceholder">
+                <div class="backtest-chart-placeholder">Run backtest to see results</div>
+            </div>
+        </div>
+    </section>
+
     <!-- ═══ THE BRAIN ═══ -->
     <section class="brain-section">
         <div class="container">
@@ -1002,126 +1076,6 @@
         </div>
     </section>
 
-    <!-- ═══ HOW REBALANCING WORKS ═══ -->
-    <section class="rebalance-section">
-        <div class="container">
-            <div class="section-label">Mechanics</div>
-            <div class="section-title">How Rebalancing Works</div>
-            <div class="section-desc">When ETH price approaches the edge of the current range (80% mark), the vault executes four steps.</div>
-
-            <div class="rebalance-steps">
-                <div class="rebalance-step">
-                    <div class="rebalance-step-num">STEP 01</div>
-                    <div class="rebalance-step-icon">&#128275;</div>
-                    <h4>Pull Liquidity</h4>
-                    <p>Remove all liquidity from the current Aerodrome position. Collect earned fees.</p>
-                </div>
-                <div class="rebalance-step">
-                    <div class="rebalance-step-num">STEP 02</div>
-                    <div class="rebalance-step-icon">&#128260;</div>
-                    <h4>Swap Assets</h4>
-                    <p>Swap ETH and USDC to the correct ratio needed for the new range center.</p>
-                </div>
-                <div class="rebalance-step">
-                    <div class="rebalance-step-num">STEP 03</div>
-                    <div class="rebalance-step-icon">&#127919;</div>
-                    <h4>New Position</h4>
-                    <p>Open a new concentrated LP position centered on the current ETH price.</p>
-                </div>
-                <div class="rebalance-step">
-                    <div class="rebalance-step-num">STEP 04</div>
-                    <div class="rebalance-step-icon">&#9889;</div>
-                    <h4>Stake in Gauge</h4>
-                    <p>Stake the LP position in the Aerodrome gauge to earn AERO rewards on top of fees.</p>
-                </div>
-            </div>
-
-            <div class="rebalance-notes">
-                <div class="rebalance-note">
-                    <span class="rebalance-note-icon">&#128101;</span>
-                    <span><strong>Anyone can trigger a rebalance</strong> by calling the contract. No rewards needed &mdash; every depositor benefits from a correctly positioned range. When the vault is out of range, your capital earns zero fees. A single call fixes it for everyone.</span>
-                </div>
-                <div class="rebalance-note">
-                    <span class="rebalance-note-icon">&#9854;</span>
-                    <span><strong>No server. No centralized keeper. Fully autonomous and eternal.</strong> The vault runs forever as long as the chain is live.</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ BACKTEST ═══ -->
-    <section class="backtest-section" id="backtest-section">
-        <div class="container">
-            <div class="section-label">Historical Analysis</div>
-            <div class="section-title">Backtest the Brain</div>
-            <div class="section-desc">Run the vault logic against real historical ETH prices from CoinGecko.</div>
-
-            <div class="backtest-controls">
-                <div class="period-btns">
-                    <button class="period-btn" data-days="90" onclick="selectPeriod(this, 90)">90d</button>
-                    <button class="period-btn active" data-days="180" onclick="selectPeriod(this, 180)">180d</button>
-                    <button class="period-btn" data-days="365" onclick="selectPeriod(this, 365)">365d</button>
-                </div>
-                <button class="run-backtest-btn" id="runBacktestBtn" onclick="runBacktest()">Run Backtest</button>
-            </div>
-
-            <div class="backtest-results" id="backtestResults">
-                <div class="backtest-stats">
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">Starting Capital</div>
-                        <div class="backtest-stat-value" id="bt-start">$100,000</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">Final Value</div>
-                        <div class="backtest-stat-value green" id="bt-final">$---,---</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">Total Return</div>
-                        <div class="backtest-stat-value green" id="bt-return">--%</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">APY</div>
-                        <div class="backtest-stat-value green" id="bt-apy">--%</div>
-                    </div>
-                </div>
-
-                <div class="backtest-stats-row2">
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">vs. Hold ETH</div>
-                        <div class="backtest-stat-value" id="bt-vs-eth">--%</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">vs. Hold USDC</div>
-                        <div class="backtest-stat-value" id="bt-vs-usdc">--%</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">Rebalances</div>
-                        <div class="backtest-stat-value" id="bt-rebalances">--</div>
-                    </div>
-                    <div class="backtest-stat">
-                        <div class="backtest-stat-label">Time in Range</div>
-                        <div class="backtest-stat-value" id="bt-inrange">--%</div>
-                    </div>
-                </div>
-
-                <div class="backtest-chart-area">
-                    <canvas id="backtest-chart"></canvas>
-                    <div class="backtest-chart-legend">
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(210, 100%, 55%);"></span> Standard 50/50</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(155, 80%, 50%);"></span> Single-Sided</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(280, 80%, 60%);"></span> Wide Upside</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: hsl(35, 100%, 55%);"></span> Multi-Bucket</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(122,141,160,0.5);"></span> Hold ETH</div>
-                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgba(34,200,120,0.3);"></span> Hold USDC</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="backtest-chart-area" id="backtestPlaceholder">
-                <div class="backtest-chart-placeholder">Run backtest to see results</div>
-            </div>
-        </div>
-    </section>
 
     <!-- ═══ FOOTER ═══ -->
     <footer>
@@ -1283,14 +1237,17 @@
 
     const SIM = {
         startCapital: 100000,
-        baseDailyFeeRate: 30, // $30/day on $100K full range
-        rebalanceCost: 0.001, // 0.1% per rebalance (swap fees)
+        baseDailyFeeRate: 80, // $80/day on $100K full range (Aerodrome ETH/USDC ~30% base APY)
+        rebalanceCost: 0.002, // 0.2% per rebalance (swap fees + slippage on Base)
+        aeroRewardsPerDay: 40, // ~$40/day in AERO rewards per $100K (gauge staking)
     };
 
     function calcDailyFees(portfolioValue, rangeLow, rangeHigh, price) {
         const rangeW = (rangeHigh - rangeLow) / price;
         const mult = Math.min(1.0 / rangeW, 8);
-        return SIM.baseDailyFeeRate * mult * (portfolioValue / SIM.startCapital);
+        const tradingFees = SIM.baseDailyFeeRate * mult * (portfolioValue / SIM.startCapital);
+        const aeroRewards = SIM.aeroRewardsPerDay * (portfolioValue / SIM.startCapital);
+        return tradingFees + aeroRewards;
     }
 
     function calcIL(portfolioValue, rangeLow, rangeHigh, pricePrev, priceNow) {
