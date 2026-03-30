@@ -648,9 +648,10 @@
                         <div class="vault-stat-label">Share Price</div>
                         <div class="vault-stat-value green" id="stat-share-price">$--</div>
                     </div>
-                    <div class="vault-stat">
-                        <div class="vault-stat-label">APY</div>
+                    <div class="vault-stat" style="position: relative; cursor: help;" title="APY is extrapolated from share price growth since vault inception. Includes fees, AERO rewards, AND ETH price movement. Not purely yield — heavily influenced by ETH price.">
+                        <div class="vault-stat-label">APY <span style="font-size: 0.6rem; opacity: 0.5;">(?)</span></div>
                         <div class="vault-stat-value green" id="stat-apy">--%</div>
+                        <div style="font-size: 0.58rem; color: var(--text-dim); margin-top: 2px;" id="stat-apy-note"></div>
                     </div>
                     <div class="vault-stat">
                         <div class="vault-stat-label">In LP (ETH)</div>
@@ -1232,8 +1233,10 @@
                 const hoursElapsed = (Date.now() - VAULT_INCEPTION) / (1000 * 3600);
                 if (hoursElapsed > 1 && sharePrice > 0) {
                     const daysElapsed = hoursElapsed / 24;
+                    const growthPct = (sharePrice - 1) * 100;
                     const apy = (Math.pow(sharePrice, 365 / daysElapsed) - 1) * 100;
                     const apyEl = document.getElementById('stat-apy');
+                    const noteEl = document.getElementById('stat-apy-note');
                     if (apy > 0 && apy < 10000) {
                         apyEl.textContent = apy.toFixed(1) + '%';
                         apyEl.style.color = 'var(--green)';
@@ -1243,6 +1246,7 @@
                     } else {
                         apyEl.textContent = '>9999%';
                     }
+                    noteEl.textContent = (growthPct >= 0 ? '+' : '') + growthPct.toFixed(3) + '% in ' + (daysElapsed < 1 ? (hoursElapsed).toFixed(1) + 'h' : daysElapsed.toFixed(1) + 'd');
                 }
             }
 
