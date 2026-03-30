@@ -645,8 +645,12 @@
                         <div class="vault-stat-value" id="stat-tvl">$--</div>
                     </div>
                     <div class="vault-stat">
-                        <div class="vault-stat-label">Yield Earned</div>
-                        <div class="vault-stat-value green" id="stat-yield">$--</div>
+                        <div class="vault-stat-label">Share Price</div>
+                        <div class="vault-stat-value green" id="stat-share-price">$--</div>
+                    </div>
+                    <div class="vault-stat">
+                        <div class="vault-stat-label">APY</div>
+                        <div class="vault-stat-value green" id="stat-apy">--%</div>
                     </div>
                     <div class="vault-stat">
                         <div class="vault-stat-label">In LP (ETH)</div>
@@ -1218,18 +1222,28 @@
                 } catch(e) {}
             } catch(e) { console.error('aero read:', e); }
 
-            // Total yield earned = LP fees (ETH + USDC) + AERO value
-            // feesEth and feesUsdc were read from NPM positions above
-            const feesEthEl = document.getElementById('chart-fees-eth');
-            const feesUsdcEl = document.getElementById('chart-fees-usdc');
-            if (feesEthEl && feesEthEl.dataset.raw) feesEthUsd = parseFloat(feesEthEl.dataset.raw) * ethPrice;
-            if (feesUsdcEl && feesUsdcEl.dataset.raw) feesUsdcVal = parseFloat(feesUsdcEl.dataset.raw);
-            const totalYield = feesEthUsd + feesUsdcVal + aeroUsd;
-            const yieldEl = document.getElementById('stat-yield');
-            if (yieldEl) {
-                yieldEl.textContent = totalYield < 0.01
-                    ? '$' + totalYield.toFixed(6)
-                    : '$' + totalYield.toLocaleString(undefined, {maximumFractionDigits: 2});
+            // Share price + APY
+            const VAULT_INCEPTION = new Date('2026-03-30T20:35:57Z').getTime();
+            if (supply > 0n) {
+                const sharePrice = Number(totalValue) / Number(supply); // USDC per share
+                document.getElementById('stat-share-price').textContent = '$' + sharePrice.toFixed(4);
+
+                // APY = (sharePrice ^ (365/daysElapsed) - 1) * 100
+                const hoursElapsed = (Date.now() - VAULT_INCEPTION) / (1000 * 3600);
+                if (hoursElapsed > 1 && sharePrice > 0) {
+                    const daysElapsed = hoursElapsed / 24;
+                    const apy = (Math.pow(sharePrice, 365 / daysElapsed) - 1) * 100;
+                    const apyEl = document.getElementById('stat-apy');
+                    if (apy > 0 && apy < 10000) {
+                        apyEl.textContent = apy.toFixed(1) + '%';
+                        apyEl.style.color = 'var(--green)';
+                    } else if (apy <= 0) {
+                        apyEl.textContent = apy.toFixed(1) + '%';
+                        apyEl.style.color = 'var(--red, #e55)';
+                    } else {
+                        apyEl.textContent = '>9999%';
+                    }
+                }
             }
 
             // Rebalance button
