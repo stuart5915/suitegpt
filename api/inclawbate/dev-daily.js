@@ -61,25 +61,27 @@ async function groupCommitsWithAI(commits) {
         body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             temperature: 0.4,
-            max_tokens: 800,
+            max_tokens: 1200,
             messages: [
                 {
                     role: 'system',
-                    content: `You summarize git commits into 4-7 plain-English bullet points for a Telegram dev update. Each bullet is 1-2 sentences max — what was built/fixed and why it matters to users. Write for a general audience, not developers.
+                    content: `You summarize git commits into 4-7 narrative bullet points for a dev update. Each bullet is 2-4 sentences — a mini story about what was built, how it works, and why it matters. Write for a general audience who is interested in tech but not necessarily developers.
 
-Output ONLY a JSON array of objects: [{"emoji":"📈","text":"Built a more reliable token deployment system"},...]
+Output ONLY a JSON array of objects: [{"emoji":"🏦","text":"Built an AutoVault for Basis — a fully autonomous LP manager on Aerodrome. Deposit WETH, it manages your concentrated liquidity position automatically. Deployed v2 with slippage protection, AERO rewards display, and ETH price charts with range overlays."},...]
 
 Rules:
-- NO jargon (no "refactored", "migrated", "endpoint", "component", "CSS", "API")
-- NO commit-style language — translate into what the USER experiences
-- Each bullet should feel like telling a friend what you worked on today
-- Start each text with a verb: Built, Updated, Fixed, Added, Improved, Launched
-- If many small commits are related, merge them into one bullet
+- Each bullet should tell a STORY — what was built, what it does, why someone should care
+- Group related commits into one rich narrative bullet (e.g. 15 vault-related commits become one vault bullet)
+- 2-4 sentences per bullet, not 1. Give context and detail.
+- NO jargon without explanation. If you mention "staking", explain what it means in plain words
+- NO feelings, NO motivation ("feeling good", "momentum", "let's go")
+- Start each text with a verb: Built, Launched, Shipped, Fixed, Added, Upgraded
 - Pick a relevant emoji for each bullet
-- Good: "Fixed several issues with the launch process"
-- Good: "Updated templates to make it easier for users to create their own content — it includes new layouts and design options"
-- Bad: "Refactored nav component CSS media queries for mobile breakpoints"
-- Bad: "Fixed edge case in token vault contract interaction"`
+- Merge aggressively — 37 commits should become 4-7 rich bullets, not 7 one-liners
+- Good: "Built an AutoVault for Basis — a fully autonomous LP manager on Aerodrome. Deposit WETH, it manages your concentrated liquidity position automatically. Deployed v2 with slippage protection, AERO rewards display, ETH price charts with range overlays, and a period selector."
+- Good: "Launched TrueForm (Drop #3) — an AI-powered posture and movement analysis tool using MediaPipe Pose. Real-time body tracking right in your browser. Another app born from the Inclawbate ecosystem."
+- Bad: "Fixed several issues with the launch process"
+- Bad: "Updated templates to make it easier for users to create content"`
                 },
                 {
                     role: 'user',
@@ -164,25 +166,38 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     model: 'llama-3.3-70b-versatile',
                     temperature: 0.7,
-                    max_tokens: 600,
+                    max_tokens: 1500,
                     messages: [
                         {
                             role: 'system',
-                            content: `You write X/Twitter posts for a solo dev documenting daily work on Inclawbate (AI platform for building apps, launching tokens, earning) and SpawnMemes (meme tokens that become living AI agents). Write for a general audience — anyone should understand what was built and why it matters.
+                            content: `You write X/Twitter dev update posts for Inclawbate — a Web3 AI platform on Base where anyone can build apps, launch tokens, stake, earn, and use AI agents. Write for a general audience who follows crypto/tech Twitter.
+
+The post should read like a builder flexing what they shipped today — confident, detailed, impressive. Each bullet is a mini story, not a one-liner.
 
 Rules:
+- Start with: 🦞 Dev Daily — [date] and "[N] commits shipped today." on the next line
+- 4-6 bullet points with emoji
+- Each bullet: 2-4 sentences. Tell the story — what was built, how it works, why it's cool
+- Group related work into one rich bullet (don't list 5 separate small fixes)
 - NO feelings, NO motivation, NO "momentum", NO "let's go", NO "feeling good about"
-- NO jargon without explanation. If you say "staking pool" explain what it does in plain English
-- Start with 🦞 Dev Daily — [date]
-- 3-6 bullet points with emoji, each 2-3 sentences
-- Each bullet: what was built, what it means for users, why it matters. Write like you're explaining to a friend who's curious but not technical
-- End with commit count, inclawbate.app, and t.me/inclawbator
+- NO jargon without explanation. If you say "LP" explain it's liquidity providing
+- End with: [commit count] commits · inclawbate.app · t.me/inclawbator
 - No hashtags, no @mentions
-- Tone: a builder sharing what they made today in plain language. Conversational but factual
-- Example bullet: "📱 Rebuilt the mobile menu — it was ugly and hard to use. Now it's a clean dark overlay with everything organized in a grid. Way easier to navigate on your phone."
-- Example bullet: "🤔 SpawnMemes now creates a chat persona for every meme token. You can literally talk to the Chuck Norris meme and ask it about its origin story."
-- NOT: "Refactored nav component CSS media queries for mobile breakpoints"
-- NOT: "Feeling great about today's progress"`
+- Tone: a confident builder showing receipts. Factual, detailed, slightly impressive
+
+Example post:
+🦞 Dev Daily — Mar 30, 2026
+37 commits shipped today.
+
+🏦 Built an AutoVault for Basis — a fully autonomous LP manager on Aerodrome. Deposit WETH, it manages your concentrated liquidity position automatically. Deployed v2 with slippage protection, AERO rewards display, ETH price charts with range overlays, and a period selector (7d/30d/90d/1y/All). Real DeFi, live on Base.
+
+🤖 The Inclawbator got smarter — agent types are now clickable suggestion pills in chat, capability toggles update instantly (no reload), and the agent explainer page gives you a full breakdown of what each agent type does before you set one up.
+
+🖼️ Launched TrueForm (Drop #3) — an AI-powered posture and movement analysis tool using MediaPipe Pose. Real-time body tracking right in your browser. Another app born from the Inclawbate ecosystem.
+
+📊 Daily CLAWS stats now auto-post to @inclawbate every morning at 7am EST — with the stats image attached. No more manual copy-pasting. The engine runs itself.
+
+37 commits · inclawbate.app · t.me/inclawbator`
                         },
                         {
                             role: 'user',
