@@ -973,6 +973,7 @@
         'function tickUpper() view returns (int24)',
         'function pendingAero() view returns (uint256)',
         'function totalAssets() view returns (uint256)',
+        'function AERO() view returns (address)',
     ];
     const ERC20_ABI = [
         'function approve(address spender, uint256 amount) returns (bool)',
@@ -1189,18 +1190,22 @@
                 document.getElementById('stat-lp-usdc').textContent = '$0';
             }
 
-            // Pending AERO
+            // AERO rewards: pending in gauge + already claimed sitting in contract
             try {
-                const pendingAero = await vault.pendingAero();
-                const aeroNum = Number(ethers.formatEther(pendingAero));
-                document.getElementById('stat-pending-aero').textContent = aeroNum.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' AERO';
+                const aeroToken = new ethers.Contract('0x940181a94A35A4569E4529A3CDfB74e38FD98631', ERC20_ABI, provider);
+                const [pendingAero, aeroBalance] = await Promise.all([
+                    vault.pendingAero().catch(() => 0n),
+                    aeroToken.balanceOf(VAULT_ADDRESS)
+                ]);
+                const totalAero = Number(ethers.formatEther(pendingAero)) + Number(ethers.formatEther(aeroBalance));
+                document.getElementById('stat-pending-aero').textContent = totalAero.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' AERO';
                 try {
                     const aeroResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x940181a94A35A4569E4529A3CDfB74e38FD98631');
                     const aeroData = await aeroResp.json();
                     const aeroPrice = parseFloat(aeroData.pairs?.[0]?.priceUsd || '0');
-                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + (aeroNum * aeroPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
+                    document.getElementById('stat-pending-aero-usd').textContent = '~$' + (totalAero * aeroPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
                 } catch(e) {}
-            } catch(e) { console.error('pendingAero:', e); }
+            } catch(e) { console.error('aero read:', e); }
 
             // Rebalance button
             const rebalanceSection = document.getElementById('rebalanceSection');
