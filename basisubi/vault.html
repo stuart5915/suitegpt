@@ -1231,22 +1231,28 @@
 
                 // APY = (sharePrice ^ (365/daysElapsed) - 1) * 100
                 const hoursElapsed = (Date.now() - VAULT_INCEPTION) / (1000 * 3600);
-                if (hoursElapsed > 1 && sharePrice > 0) {
+                if (hoursElapsed > 0 && sharePrice > 0) {
                     const daysElapsed = hoursElapsed / 24;
                     const growthPct = (sharePrice - 1) * 100;
-                    const apy = (Math.pow(sharePrice, 365 / daysElapsed) - 1) * 100;
                     const apyEl = document.getElementById('stat-apy');
                     const noteEl = document.getElementById('stat-apy-note');
-                    if (apy > 0 && apy < 10000) {
-                        apyEl.textContent = apy.toFixed(1) + '%';
-                        apyEl.style.color = 'var(--green)';
-                    } else if (apy <= 0) {
-                        apyEl.textContent = apy.toFixed(1) + '%';
-                        apyEl.style.color = 'var(--red, #e55)';
+
+                    const timeStr = daysElapsed < 1 ? hoursElapsed.toFixed(1) + 'h' : daysElapsed.toFixed(1) + 'd';
+                    noteEl.textContent = (growthPct >= 0 ? '+' : '') + growthPct.toFixed(3) + '% in ' + timeStr;
+
+                    if (daysElapsed < 3) {
+                        apyEl.textContent = 'Too early';
+                        apyEl.style.color = 'var(--text-dim)';
                     } else {
-                        apyEl.textContent = '>9999%';
+                        const apy = (Math.pow(sharePrice, 365 / daysElapsed) - 1) * 100;
+                        if (apy > 0) {
+                            apyEl.textContent = apy.toFixed(1) + '%';
+                            apyEl.style.color = 'var(--green)';
+                        } else {
+                            apyEl.textContent = apy.toFixed(1) + '%';
+                            apyEl.style.color = 'var(--red, #e55)';
+                        }
                     }
-                    noteEl.textContent = (growthPct >= 0 ? '+' : '') + growthPct.toFixed(3) + '% in ' + (daysElapsed < 1 ? (hoursElapsed).toFixed(1) + 'h' : daysElapsed.toFixed(1) + 'd');
                 }
             }
 
