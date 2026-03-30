@@ -277,7 +277,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'fee_split_bps must be between 2000 (20%) and 10000 (100%)' });
             }
 
-            const validTiers = ['incubated', 'permissionless', 'byt', 'ecosystem', 'partner'];
+            const validTiers = ['incubated', 'permissionless', 'byt', 'ecosystem', 'partner', 'drops'];
             const projectTier = validTiers.includes(tier) ? tier : 'permissionless';
             const status = (projectTier === 'incubated') ? 'pending' : 'active';
 
