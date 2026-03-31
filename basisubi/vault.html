@@ -1449,8 +1449,12 @@
             for (const log of logs) {
                 const topics = log.topics || [];
                 const logData = log.data || '0x';
-                const tx = log.tx_hash || '';
-                const time = log.timestamp ? new Date(log.timestamp) : new Date();
+                const tx = log.transaction_hash || '';
+                const blockNum = log.block_number || 0;
+                // Estimate time from block number (Base ~2s blocks, current block ~44087000)
+                const currentBlock = 44087000;
+                const secsAgo = (currentBlock - blockNum) * 2;
+                const time = new Date(Date.now() - secsAgo * 1000);
 
                 try {
                     const parsed = iface.parseLog({ topics, data: logData });
