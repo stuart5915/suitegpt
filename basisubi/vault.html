@@ -1423,82 +1423,80 @@
     // VAULT ACTIVITY FEED
     // ═══════════════════════════════════════
 
+    // Event topic hashes
+    const EVENT_TOPICS = {
+        Deposited:  '0x91ede45f04a37a7c170f5c1207df3b6bc748dc1e04ad5e917a241d0f52feada3',
+        Withdrawn:  '0x0000000000000000000000000000000000000000000000000000000000000000', // will compute
+        Rebalanced: '0x0000000000000000000000000000000000000000000000000000000000000000',
+        Compounded: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    };
+
     async function loadActivity() {
         try {
-            const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/WzTo2oQBj9C6WWyyu4csv');
-            const vault = new ethers.Contract(VAULT_ADDRESS, [
+            // Use Blockscout API — no block range limits
+            const resp = await fetch('https://base.blockscout.com/api/v2/addresses/' + VAULT_ADDRESS + '/logs');
+            const data = await resp.json();
+            const logs = data.items || [];
+
+            const events = [];
+            const iface = new ethers.Interface([
                 'event Deposited(address indexed user, uint256 usdcAmount, uint256 ethAmount, uint256 shares)',
                 'event Withdrawn(address indexed user, uint256 shares, uint256 wethOut, uint256 usdcOut)',
                 'event Rebalanced(int24 oldTickLower, int24 oldTickUpper, int24 newTickLower, int24 newTickUpper)',
                 'event Compounded(uint256 aeroSwapped, uint256 wethReceived)',
-            ], provider);
-
-            // Query all events from deployment block
-            const deployBlock = 44020000; // approximate deploy block
-            const [deposits, withdrawals, rebalances, compounds] = await Promise.all([
-                vault.queryFilter('Deposited', deployBlock),
-                vault.queryFilter('Withdrawn', deployBlock),
-                vault.queryFilter('Rebalanced', deployBlock),
-                vault.queryFilter('Compounded', deployBlock),
             ]);
 
-            // Combine and sort by block number
-            const events = [];
+            for (const log of logs) {
+                const topics = log.topics || [];
+                const logData = log.data || '0x';
+                const tx = log.tx_hash || '';
+                const time = log.timestamp ? new Date(log.timestamp) : new Date();
 
-            for (const e of deposits) {
-                const block = await e.getBlock();
-                events.push({
-                    type: 'deposit',
-                    time: new Date(block.timestamp * 1000),
-                    user: e.args[0],
-                    detail: (Number(e.args[1]) / 1e6).toFixed(2) + ' USDC + ' + (Number(e.args[2]) / 1e18).toFixed(4) + ' ETH',
-                    shares: (Number(e.args[3]) / 1e6).toFixed(2),
-                    block: e.blockNumber,
-                    tx: e.transactionHash,
-                });
-            }
+                try {
+                    const parsed = iface.parseLog({ topics, data: logData });
+                    if (!parsed) continue;
 
-            for (const e of withdrawals) {
-                const block = await e.getBlock();
-                events.push({
-                    type: 'withdraw',
-                    time: new Date(block.timestamp * 1000),
-                    user: e.args[0],
-                    detail: (Number(e.args[2]) / 1e18).toFixed(4) + ' ETH + ' + (Number(e.args[3]) / 1e6).toFixed(2) + ' USDC',
-                    shares: (Number(e.args[1]) / 1e6).toFixed(2),
-                    block: e.blockNumber,
-                    tx: e.transactionHash,
-                });
-            }
-
-            for (const e of rebalances) {
-                const block = await e.getBlock();
-                const newLow = Math.round(Math.pow(1.0001, Number(e.args[2])) * 1e12);
-                const newHigh = Math.round(Math.pow(1.0001, Number(e.args[3])) * 1e12);
-                events.push({
-                    type: 'rebalance',
-                    time: new Date(block.timestamp * 1000),
-                    detail: 'New range: $' + newLow.toLocaleString() + ' - $' + newHigh.toLocaleString(),
-                    block: e.blockNumber,
-                    tx: e.transactionHash,
-                });
-            }
-
-            for (const e of compounds) {
-                const block = await e.getBlock();
-                events.push({
-                    type: 'compound',
-                    time: new Date(block.timestamp * 1000),
-                    detail: (Number(e.args[0]) / 1e18).toFixed(4) + ' AERO → ' + (Number(e.args[1]) / 1e18).toFixed(6) + ' ETH',
-                    block: e.blockNumber,
-                    tx: e.transactionHash,
-                });
+                    if (parsed.name === 'Deposited') {
+                        events.push({
+                            type: 'deposit',
+                            time,
+                            user: parsed.args[0],
+                            detail: (Number(parsed.args[1]) / 1e6).toFixed(2) + ' USDC + ' + (Number(parsed.args[2]) / 1e18).toFixed(4) + ' ETH',
+                            shares: (Number(parsed.args[3]) / 1e6).toFixed(2),
+                            tx,
+                        });
+                    } else if (parsed.name === 'Withdrawn') {
+                        events.push({
+                            type: 'withdraw',
+                            time,
+                            user: parsed.args[0],
+                            detail: (Number(parsed.args[2]) / 1e18).toFixed(4) + ' ETH + ' + (Number(parsed.args[3]) / 1e6).toFixed(2) + ' USDC',
+                            shares: (Number(parsed.args[1]) / 1e6).toFixed(2),
+                            tx,
+                        });
+                    } else if (parsed.name === 'Rebalanced') {
+                        const newLow = Math.round(Math.pow(1.0001, Number(parsed.args[2])) * 1e12);
+                        const newHigh = Math.round(Math.pow(1.0001, Number(parsed.args[3])) * 1e12);
+                        events.push({
+                            type: 'rebalance',
+                            time,
+                            detail: 'New range: $' + newLow.toLocaleString() + ' - $' + newHigh.toLocaleString(),
+                            tx,
+                        });
+                    } else if (parsed.name === 'Compounded') {
+                        events.push({
+                            type: 'compound',
+                            time,
+                            detail: (Number(parsed.args[0]) / 1e18).toFixed(4) + ' AERO → ' + (Number(parsed.args[1]) / 1e18).toFixed(6) + ' ETH',
+                            tx,
+                        });
+                    }
+                } catch(pe) { /* skip unparseable logs */ }
             }
 
             // Sort newest first
-            events.sort((a, b) => b.block - a.block);
+            events.sort((a, b) => b.time - a.time);
 
-            // Render
             const container = document.getElementById('vault-activity');
             if (events.length === 0) {
                 container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.78rem; font-family: var(--mono, monospace);">No activity yet</div>';
