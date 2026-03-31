@@ -1447,9 +1447,10 @@
             ]);
 
             for (const log of logs) {
-                const topics = log.topics || [];
+                const topics = (log.topics || []).filter(t => t !== null && t !== undefined);
                 const logData = log.data || '0x';
                 const tx = log.transaction_hash || '';
+                if (topics.length === 0) continue;
                 const blockNum = log.block_number || 0;
                 // Estimate time from block number (Base ~2s blocks, current block ~44087000)
                 const currentBlock = 44087000;
