@@ -777,12 +777,127 @@
         </div>
     </section>
 
-    <!-- ═══ THE BRAIN ═══ -->
+    <!-- ═══ 3-MODE STRATEGY ═══ -->
+    <section style="max-width: 780px; margin: 0 auto; padding: 40px 24px 60px;">
+        <div style="display: inline-block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.5px; color: #0f0; background: rgba(0,255,0,0.08); border: 1px solid rgba(0,255,0,0.15); padding: 3px 10px; border-radius: 4px; margin-bottom: 12px;">Coming Soon</div>
+        <div style="font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">3-Mode Vault</div>
+        <div style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6;">Instead of only providing LP, this vault switches between three modes based on market conditions. LP when ranging, 2x long when trending up, 2x short when trending down. Same permissionless design.</div>
+
+        <!-- Performance comparison -->
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px;">Backtested Performance (438 days, ETH -41%)</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">3-Mode Vault</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #0f0;">+734%</div>
+                    <div style="font-size: 0.62rem; color: var(--text-dim);">$50K to $417K</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">LP-Only Vault</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #e55;">-52%</div>
+                    <div style="font-size: 0.62rem; color: var(--text-dim);">$50K to $24K</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">Hold ETH</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #e55;">-41%</div>
+                    <div style="font-size: 0.62rem; color: var(--text-dim);">$50K to $30K</div>
+                </div>
+            </div>
+            <div style="font-size: 0.62rem; color: var(--text-dim); font-style: italic;">Backtest does not include LP fees or AERO rewards. 0.3% switch cost + 4% annual borrow included. Past performance is not indicative of future results.</div>
+        </div>
+
+        <!-- The 3 modes -->
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">The Three Modes</div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px;">
+            <div style="background: var(--surface); border: 1px solid rgba(0,200,120,0.15); border-radius: 10px; padding: 14px;">
+                <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #0c8; margin-bottom: 6px;">LP Mode</div>
+                <div style="font-size: 0.78rem; color: var(--text); font-weight: 600; margin-bottom: 4px;">Ranging Market</div>
+                <div style="font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5;">ETH bouncing sideways. Provide concentrated liquidity on Aerodrome. Earn trading fees + AERO gauge rewards.</div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid rgba(50,200,255,0.15); border-radius: 10px; padding: 14px;">
+                <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #0bf; margin-bottom: 6px;">2x Long</div>
+                <div style="font-size: 0.78rem; color: var(--text); font-weight: 600; margin-bottom: 4px;">Uptrend</div>
+                <div style="font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5;">ETH trending up cleanly. Deposit ETH on Aave, borrow USDC, buy more ETH. 2x leveraged long exposure.</div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid rgba(255,80,80,0.15); border-radius: 10px; padding: 14px;">
+                <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #e55; margin-bottom: 6px;">2x Short</div>
+                <div style="font-size: 0.78rem; color: var(--text); font-weight: 600; margin-bottom: 4px;">Downtrend</div>
+                <div style="font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5;">ETH trending down. Deposit USDC on Aave, borrow ETH, sell ETH. 2x leveraged short. Profit from the drop.</div>
+            </div>
+        </div>
+
+        <!-- Brain Logic -->
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">How the Brain Decides</div>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px; font-family: var(--mono, monospace); font-size: 0.72rem; line-height: 1.8; color: var(--text-secondary);">
+            <div style="color: var(--text-dim); margin-bottom: 8px;">// Every check (permissionless, anyone can call):</div>
+            <div>SMA4 = average ETH price over last 4 days</div>
+            <div>SMA14 = average ETH price over last 14 days</div>
+            <div>Volatility = annualized std dev of daily returns (14d window)</div>
+            <div>Momentum = weighted recent price change direction</div>
+            <div style="margin-top: 10px; color: var(--text-dim);">// Decision rules:</div>
+            <div style="color: #e55;">if Volatility > 80%: <span style="color: #0c8;">LP MODE</span> <span style="color: var(--text-dim);">// too chaotic, earn fees</span></div>
+            <div style="color: #0bf;">if Price > SMA4 > SMA14 AND Momentum > +0.3%: <span style="color: #0bf;">2x LONG</span></div>
+            <div style="color: #e55;">if Price < SMA4 < SMA14 AND Momentum < -0.3%: <span style="color: #e55;">2x SHORT</span></div>
+            <div style="color: #0c8;">else: <span style="color: #0c8;">LP MODE</span> <span style="color: var(--text-dim);">// no clear signal, default to earning fees</span></div>
+        </div>
+
+        <!-- Real Example -->
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">Real Example</div>
+        <div style="display: grid; gap: 10px; margin-bottom: 24px;">
+            <div style="background: var(--surface); border: 1px solid rgba(255,80,80,0.12); border-radius: 10px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #e55; font-weight: 700;">Switch to Short</span>
+                    <span style="font-size: 0.62rem; color: var(--text-dim);">ETH dropping for 4 days</span>
+                </div>
+                <div style="font-family: var(--mono, monospace); font-size: 0.68rem; color: var(--text-secondary); line-height: 1.7;">
+                    <div>ETH: $3,600 -> $3,500 -> $3,400 -> <span style="color: var(--text);">$3,300</span></div>
+                    <div>SMA4: $3,450 | SMA14: $3,518 | Mom: -5.98%</div>
+                    <div>Price $3,300 < SMA4 $3,450 < SMA14 $3,518 = <span style="color: #e55;">all aligned down</span></div>
+                    <div style="color: #e55;">Brain: go 2x short. ETH then dropped to $2,500. Vault gained +60%.</div>
+                </div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid rgba(50,200,255,0.12); border-radius: 10px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #0bf; font-weight: 700;">Switch to Long</span>
+                    <span style="font-size: 0.62rem; color: var(--text-dim);">ETH pumping after recovery</span>
+                </div>
+                <div style="font-family: var(--mono, monospace); font-size: 0.68rem; color: var(--text-secondary); line-height: 1.7;">
+                    <div>ETH: $3,000 -> $3,200 -> $3,400 -> <span style="color: var(--text);">$3,500</span></div>
+                    <div>SMA4: $3,275 | SMA14: $2,743 | Mom: +10.2%</div>
+                    <div>Price $3,500 > SMA4 $3,275 > SMA14 $2,743 = <span style="color: #0bf;">all aligned up</span></div>
+                    <div style="color: #0bf;">Brain: go 2x long. Vault rode the recovery with leverage.</div>
+                </div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid rgba(0,200,120,0.12); border-radius: 10px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #0c8; font-weight: 700;">Switch to LP</span>
+                    <span style="font-size: 0.62rem; color: var(--text-dim);">Market too volatile</span>
+                </div>
+                <div style="font-family: var(--mono, monospace); font-size: 0.68rem; color: var(--text-secondary); line-height: 1.7;">
+                    <div>ETH: $2,300 -> $2,400 -> $2,500 (bouncing)</div>
+                    <div>Volatility: 81% > 80% threshold</div>
+                    <div style="color: #0c8;">Brain: too chaotic to pick direction. Sit in LP, earn fees from the swings.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How it stays eternal -->
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">Fully On-Chain &amp; Eternal</div>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.7;">
+            <div style="margin-bottom: 8px;">The brain logic lives entirely on-chain. No server. No keeper. No admin.</div>
+            <div><span style="color: var(--text);">Price history:</span> Contract stores last 14 daily ETH prices from Chainlink oracle. Anyone calls <span style="font-family: var(--mono, monospace); color: var(--cyan, #0ff);">updatePrice()</span> daily.</div>
+            <div><span style="color: var(--text);">Mode switching:</span> Contract calculates SMA4, SMA14, volatility, and momentum internally. Anyone calls <span style="font-family: var(--mono, monospace); color: var(--cyan, #0ff);">checkAndSwitch()</span> to trigger a mode change if conditions are met.</div>
+            <div><span style="color: var(--text);">Leverage:</span> Uses Aave V3 on Base for long/short positions. All on-chain, composable, no counterparty.</div>
+            <div style="margin-top: 8px; color: var(--text-dim); font-style: italic;">The vault runs forever as long as Base and Aave exist. Depositors are incentivized to call these functions because their capital earns more in the correct mode.</div>
+        </div>
+    </section>
+
+    <!-- ═══ LP-ONLY STRATEGY (current vault above) ═══ -->
     <section class="brain-section">
         <div class="container">
-            <div class="section-label">Strategy Engine</div>
-            <div class="section-title">The Strategy</div>
-            <div class="section-desc">Simple rules. No predictions. Fully autonomous.</div>
+            <div class="section-label">Current Vault Strategy</div>
+            <div class="section-title">LP-Only Mode</div>
+            <div class="section-desc">The vault above uses this simpler strategy. LP only, no leverage, no shorting.</div>
 
             <!-- How It Works -->
             <div class="flow-steps" style="margin-top: 48px; max-width: 100%;">
