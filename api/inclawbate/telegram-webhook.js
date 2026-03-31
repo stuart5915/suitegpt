@@ -541,9 +541,9 @@ const TREASURY_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 const TOTAL_SUPPLY = 100e9;
 const DAILY_FUNDING = 100;
 const BUCKET_LABELS = {
-    'reinvest': 'Reinvest', 'buy-claws': 'Buy CLAWS', 'claws-lp': 'LP',
-    'staking': 'Staking', 'ecosystem': 'Ecosystem', 'grants': 'Grants',
-    'philanthropy': 'Giving', 'council-comp': 'Council'
+    'reinvest': 'Reinvest Vault',
+    'staking': 'CLAWS Stakers',
+    'philanthropy': 'Philanthropy'
 };
 
 const tDelay = (ms) => new Promise(r => setTimeout(r, ms));

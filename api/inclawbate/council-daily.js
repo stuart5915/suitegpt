@@ -63,9 +63,9 @@ const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const VOTE_STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
 const BASE_RPC = 'https://mainnet.base.org'; // used by voter balance refresh
 const BUCKET_LABELS = {
-    'reinvest': 'Reinvest', 'buy-claws': 'Buy', 'claws-lp': 'LP',
-    'staking': 'Staking', 'ecosystem': 'Ecosystem', 'grants': 'Grants',
-    'philanthropy': 'Giving', 'council-comp': 'Council'
+    'reinvest': 'Reinvest Vault',
+    'staking': 'CLAWS Stakers',
+    'philanthropy': 'Philanthropy'
 };
 const BUCKET_IDS = Object.keys(BUCKET_LABELS);
 

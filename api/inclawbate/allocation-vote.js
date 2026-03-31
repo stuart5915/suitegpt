@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
 const COUNCIL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const COUNCIL_ROW_KEY = 'council';
 
-const BUCKET_IDS = ['reinvest', 'buy-claws', 'claws-lp', 'staking', 'ecosystem', 'grants', 'philanthropy'];
+const BUCKET_IDS = ['reinvest', 'staking', 'philanthropy'];
 
 function computeSynthesis(votes) {
     if (!votes || votes.length === 0) {
