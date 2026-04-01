@@ -1906,8 +1906,9 @@ async function callLLM(messages, { skipTools = false, maxTokens = 512 } = {}) {
         const errMsg = data.error.message || data.error.type || '';
         const isRateLimit = res.status === 429 || errMsg.includes('rate_limit') || errMsg.includes('limit') || errMsg.includes('capacity') || errMsg.includes('overloaded');
         console.error('Groq error (' + model + ', key ' + (groqKeyIndex % GROQ_KEYS.length) + '):', errMsg);
-        if (isRateLimit) continue;
-        return data;
+        // Always continue to next attempt — non-rate-limit errors should still try other models/keys
+        // and ultimately fall through to Bankr/Cerebras if all Groq attempts fail
+        continue;
       }
       return data;
     } catch (e) {
@@ -2334,6 +2335,10 @@ function matchIntent(msg) {
   // Claim staking rewards
   if (/\bclaim\b.*\b(reward|staking)\b/i.test(m) || /\bstaking\s*reward/i.test(m))
     return { tool: 'claim_staking_rewards', reply: "I can claim your pending CLAWS staking rewards. Connect your wallet and type **confirm** to claim." };
+
+  // Catch-all: "I want to set up / build / create [anything]" — engage conversationally
+  if (/(?:i\s+)?want\s+to\s+(?:set\s*up|setup|build|make|create)\s+/i.test(m) || /(?:set\s*up|setup|build|make|create)\s+(?:a\s+|an\s+|my\s+)?\w/i.test(m))
+    return { tool: 'build_app', reply: "I can build that for you! Tell me more:\n\n• What should it do?\n• Who is it for?\n• Any specific features?\n\nThe more detail you give me, the better I'll build it!" };
 
   return null;
 }
