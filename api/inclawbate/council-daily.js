@@ -116,21 +116,58 @@ async function sendMsg(chatId, text) {
 
 async function fetchClawsPrice() {
     try {
-        const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
-        if (!res.ok) return null;
-        const data = await res.json();
-        const pair = data?.pairs?.[0];
-        if (!pair) return null;
+        // Use GeckoTerminal — DexScreener misses the main V2 CLAWS/WETH pool
+        const res = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/' + CLAWS_ADDRESS + '/pools?page=1');
+        if (!res.ok) throw new Error('GeckoTerminal failed');
+        const json = await res.json();
+        const pools = json?.data || [];
+        if (pools.length === 0) throw new Error('No pools found');
+
+        // Find the pool with the highest liquidity (the real one)
+        let bestPool = null;
+        let bestLiq = 0;
+        let totalLiquidity = 0;
+        let totalVolume = 0;
+        for (const pool of pools) {
+            const attrs = pool.attributes || {};
+            const liq = parseFloat(attrs.reserve_in_usd) || 0;
+            const vol = parseFloat(attrs.volume_usd?.h24) || 0;
+            totalLiquidity += liq;
+            totalVolume += vol;
+            if (liq > bestLiq) { bestLiq = liq; bestPool = attrs; }
+        }
+
+        const price = parseFloat(bestPool?.base_token_price_usd) || 0;
+        const change24h = parseFloat(bestPool?.price_change_percentage?.h24) || 0;
+        const fdv = price * TOTAL_SUPPLY;
+
         return {
-            price: parseFloat(pair.priceUsd) || 0,
-            change24h: pair.priceChange?.h24 ?? 0,
-            volume24h: pair.volume?.h24 ?? 0,
-            liquidity: pair.liquidity?.usd ?? 0,
-            mcap: pair.marketCap ?? 0,
-            fdv: pair.fdv ?? 0
+            price,
+            change24h,
+            volume24h: totalVolume,
+            liquidity: totalLiquidity,
+            mcap: fdv,
+            fdv
         };
     } catch (e) {
-        return null;
+        // Fallback to DexScreener
+        try {
+            const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+            if (!res.ok) return null;
+            const data = await res.json();
+            const pair = data?.pairs?.[0];
+            if (!pair) return null;
+            return {
+                price: parseFloat(pair.priceUsd) || 0,
+                change24h: pair.priceChange?.h24 ?? 0,
+                volume24h: pair.volume?.h24 ?? 0,
+                liquidity: pair.liquidity?.usd ?? 0,
+                mcap: pair.marketCap ?? 0,
+                fdv: pair.fdv ?? 0
+            };
+        } catch (e2) {
+            return null;
+        }
     }
 }
 
