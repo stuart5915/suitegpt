@@ -2829,6 +2829,7 @@ function handleAction(action){
         case 'get_my_tokens': ok=renderMyTokensAction(body,title,action.data);break;
         case 'token_form': ok=renderTokenForm(body,title);break;
         case 'staking_form': ok=renderStakingForm(body,title);break;
+        case 'disperse_form': ok=renderDisperseForm(body,title);break;
     }
     if(ok)showActionPanel();
 }
@@ -3122,6 +3123,90 @@ function submitStakingForm(){
         addBotMsg("Couldn't reach the server. Please try again.");
         if(btn){btn.disabled=false;btn.textContent='🔒 Deploy Staking Pool';}
         console.error('Staking deploy error:',e);
+    });
+}
+
+// ═══ DISPERSE / PAYMENT SPLITTER FORM ═══
+function renderDisperseForm(body,title){
+    title.textContent='Split Payments / Distribute Tokens';
+    const commonTokens=[
+        {name:'CLAWS',addr:'0x7ca47B141639B893C6782823C0b219f872056379'},
+        {name:'USDC',addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'},
+        {name:'ETH',addr:'native'}
+    ];
+    const pills=commonTokens.map(t=>'<button class="sugg-pill" style="margin:2px;font-size:11px" onclick="document.getElementById(\'af_disperseToken\').value=\''+t.addr+'\';document.getElementById(\'af_disperseTokenLabel\').textContent=\''+t.name+'\'">'+t.name+'</button>').join('');
+    body.innerHTML='<div class="action-form">'+
+        '<div class="action-hint">Send tokens to multiple wallets in one transaction. You approve once and all recipients get paid.</div>'+
+        '<div class="action-field"><label>Token Address *</label>'+
+        '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">'+pills+'<span id="af_disperseTokenLabel" style="font-size:11px;color:var(--seafoam);margin-left:4px"></span></div>'+
+        '<input id="af_disperseToken" placeholder="0x... or pick a token above"></div>'+
+        '<div class="action-field"><label>Recipients * <span style="font-size:11px;color:#888">(one per line: address, amount)</span></label>'+
+        '<textarea id="af_disperseRecipients" placeholder="0xAbC123..., 100\n0xDeF456..., 250\n0x789Abc..., 50" rows="6" style="font-family:monospace;font-size:12px;line-height:1.6"></textarea></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+        '<span id="af_disperseCount" style="font-size:11px;color:#888">0 recipients</span>'+
+        '<button style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline" onclick="addDisperseExample()">+ Add example</button></div>'+
+        '<button class="action-deploy-btn" id="af_disperseBtn" onclick="submitDisperseForm()">💸 Distribute Tokens</button>'+
+        '<div class="action-hint">You\'ll approve token spending then send one transaction to pay everyone.</div></div>';
+    // Update recipient count on input
+    const ta=document.getElementById('af_disperseRecipients');
+    if(ta)ta.addEventListener('input',function(){
+        const lines=this.value.trim().split('\n').filter(l=>l.trim());
+        const el=document.getElementById('af_disperseCount');
+        if(el)el.textContent=lines.length+' recipient'+(lines.length!==1?'s':'');
+    });
+    return true;
+}
+function addDisperseExample(){
+    const ta=document.getElementById('af_disperseRecipients');
+    if(!ta)return;
+    const ex='0x0000000000000000000000000000000000000001, 100';
+    ta.value=ta.value?(ta.value.trim()+'\n'+ex):ex;
+    ta.dispatchEvent(new Event('input'));
+}
+function submitDisperseForm(){
+    const token=(document.getElementById('af_disperseToken')?.value||'').trim();
+    const raw=(document.getElementById('af_disperseRecipients')?.value||'').trim();
+    if(!token){addBotMsg('Please enter or select a token address.');return;}
+    if(!raw){addBotMsg('Please add at least one recipient (address, amount per line).');return;}
+    if(!S.wallet){addBotMsg('Connect your wallet first — you send the tokens from your wallet.');return;}
+    // Parse CSV lines
+    const lines=raw.split('\n').filter(l=>l.trim());
+    const recipients=[], amounts=[];
+    for(const line of lines){
+        const parts=line.split(/[,\t]+/).map(s=>s.trim());
+        if(parts.length<2||!parts[0].startsWith('0x')){
+            addBotMsg('Invalid line: "'+esc(line)+'"\n\nFormat: address, amount (one per line)');
+            return;
+        }
+        const amt=parseFloat(parts[1]);
+        if(isNaN(amt)||amt<=0){
+            addBotMsg('Invalid amount on line: "'+esc(line)+'"');
+            return;
+        }
+        recipients.push(parts[0]);
+        amounts.push(amt);
+    }
+    const total=amounts.reduce((a,b)=>a+b,0);
+    const btn=document.getElementById('af_disperseBtn');
+    if(btn){btn.disabled=true;btn.textContent='Processing...';}
+    addUserMsg('Distribute '+total.toLocaleString()+' tokens to '+recipients.length+' recipients');
+    S.sending=true;syncChat();
+    fetch(API.chat,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:'[DISPERSE] '+JSON.stringify({token_address:token,recipients,amounts}),session_id:S.sessionId,wallet:S.wallet,client_history:S.msgs.slice(-10).map(m=>({role:m.role,content:m.content}))})
+    }).then(r=>r.json()).then(data=>{
+        S.sending=false;
+        if(data.session_id)S.sessionId=data.session_id;
+        addBotMsg(data.reply||'Something went wrong.',data.suggestions||[]);
+        if(data.action)handleAction(data.action);
+        if(data.tx_data)S.pendingTx=data.tx_data;
+        closeActionPanel();
+    }).catch(e=>{
+        S.sending=false;
+        addBotMsg("Couldn't reach the server. Please try again.");
+        if(btn){btn.disabled=false;btn.textContent='💸 Distribute Tokens';}
+        console.error('Disperse error:',e);
     });
 }
 

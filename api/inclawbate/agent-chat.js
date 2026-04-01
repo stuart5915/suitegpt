@@ -2502,6 +2502,28 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── Server-side intercept: structured disperse from form [DISPERSE] ──
+  const disperseMatch = sanitizedMessage.match(/^\[DISPERSE\]\s*(.+)/);
+  if (disperseMatch && sanitizedWallet) {
+    try {
+      const params = JSON.parse(disperseMatch[1]);
+      const resultJson = disperseTokensAction(params);
+      const d = JSON.parse(resultJson);
+      const total = (params.amounts || []).reduce((a, b) => a + b, 0);
+      const reply = '**Payment split ready!** 💸\n\n' +
+        '• Token: `' + (params.token_address || '') + '`\n' +
+        '• Recipients: ' + (params.recipients || []).length + '\n' +
+        '• Total: ' + total.toLocaleString() + ' tokens\n\n' +
+        '**Next steps:**\n' +
+        d.steps.map((s, i) => (i + 1) + '. ' + s).join('\n') +
+        '\n\n**[Open Airdrop Tool →](' + d.url + ')**';
+      return res.status(200).json({ reply, session_id: sid, function_called: 'disperse_tokens', suggestions: ['Do something else', 'Check my balances'] });
+    } catch (e) {
+      console.error('Disperse intercept error:', e.message);
+      return res.status(200).json({ reply: 'Something went wrong: ' + e.message, session_id: sid, suggestions: ['Try again'] });
+    }
+  }
+
   // ── Server-side intercept: "staking stats" / "staking info" ──
   if (/^(?:staking\s+(?:stats|info|data|status)|(?:show|check|get)\s+staking|how\s+(?:is|are)\s+staking|claws\s+staking)$/i.test(sanitizedMessage.trim())) {
     try {
@@ -3026,11 +3048,11 @@ export default async function handler(req, res) {
 
     // (launch intercept moved to top of try block)
 
-    // Intercept payment splitting / distributing / airdrop requests → disperse_tokens
+    // Intercept payment splitting / distributing / airdrop requests → show disperse form panel
     if (/\b(payment\s*split|split\s*payment|disperse|distribute|airdrop|send\s+tokens?\s+to\s+multiple|split.*(?:wallet|address|recipient))/i.test(message)) {
-      const reply = "I can help you split payments / distribute tokens to multiple wallets!\n\nI need:\n\n1. **Token address** (which token to send)\n2. **Recipient wallets** (the addresses to pay)\n3. **Amounts** for each recipient\n\nWhat token are you distributing?";
+      const reply = "Here's the payment splitter — fill in the token and recipients and I'll handle the rest!";
       history.push({ role: 'assistant', content: reply });
-      return sendReply({ reply, session_id: sid, suggestions: ['Use CLAWS', 'Use USDC on Base', 'Use ETH', 'What tokens can I use?'] });
+      return sendReply({ reply, session_id: sid, action: { type: 'disperse_form' }, suggestions: ['How does this work?', 'What tokens can I use?'] });
     }
 
     // Intercept "Stake my CLAWS" without amount
