@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title FounderAuction — 24h USDC auction for 30% founder token supply
+/// @title FounderAuction - 24h USDC auction for 30% founder token supply
 /// @notice One contract handles unlimited concurrent auctions (keyed by token address).
 ///         Clanker pre-allocates 30% to this contract. Users bid USDC. After auction ends,
 ///         winner claims tokens, USDC goes to treasury. Losers withdraw their own USDC.
@@ -96,7 +96,7 @@ contract FounderAuction is ReentrancyGuard {
         require(a.endTime > 0, "No auction");
         require(!a.cancelled, "Auction cancelled");
         require(block.timestamp < a.endTime, "Auction ended");
-        require(bids[token][msg.sender] == 0, "Already bidding — use increaseBid");
+        require(bids[token][msg.sender] == 0, "Already bidding - use increaseBid");
         require(amount >= a.minBid, "Below minimum bid");
         require(amount > a.highestBid, "Must beat current highest bid");
 
@@ -126,7 +126,7 @@ contract FounderAuction is ReentrancyGuard {
         require(a.endTime > 0, "No auction");
         require(!a.cancelled, "Auction cancelled");
         require(block.timestamp < a.endTime, "Auction ended");
-        require(bids[token][msg.sender] > 0, "No existing bid — use bid");
+        require(bids[token][msg.sender] > 0, "No existing bid - use bid");
         require(additionalAmount >= MIN_BID_INCREMENT, "Increase too small");
 
         // Pull additional USDC
@@ -199,7 +199,7 @@ contract FounderAuction is ReentrancyGuard {
 
             emit AuctionSettled(token, a.highestBidder, a.highestBid);
         } else {
-            // No bids — return tokens to treasury
+            // No bids - return tokens to treasury
             uint256 tokenBalance = IERC20(token).balanceOf(address(this));
             if (tokenBalance > 0) {
                 IERC20(token).safeTransfer(treasury, tokenBalance);

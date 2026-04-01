@@ -80,6 +80,14 @@ CRITICAL: If the user just described changes to an app they're editing, EXECUTE 
 IMPORTANT: "build a website", "make me an app", "I want to build an app" — these are CONVERSATION STARTERS, not tool calls. Chat first. Do NOT call build_app or list_my_apps.
 EXCEPTION: If the message says "launch [NAME]" or "launch [NAME] and build a landing page" — this is a TOKEN LAUNCH, not a conversation starter. Call deploy_token with the name as token_name. If they didn't provide a ticker, generate one from the name. If they also want a landing page, deploy the token FIRST — the landing page will be built automatically after.
 
+CRITICAL — DO NOT DEFAULT TO BUILD_APP: If a user's message is a question, a request for help, a general conversation, or anything that is NOT explicitly asking to build/create/make an app or website, do NOT call build_app. Most messages are conversational — answer them naturally. Only use build_app when the user CLEARLY wants to build/create/make a web app, site, or page. Examples of what is NOT a build request:
+- "Can you correct this?" → answer the question
+- "What is [X]?" → explain it
+- "Help me with [task]" → help conversationally
+- "I want to unstake/stake/swap/claim" → use the appropriate DeFi tool
+- Random questions or requests → respond helpfully, no tools needed
+When in doubt, respond conversationally WITHOUT calling any tool.
+
 HIRE THE COUNCIL — Use hire_inclawbator ONLY when someone explicitly needs HUMAN help from the team (design consulting, strategy sessions, marketing campaigns, content creation). Do NOT use this when someone asks you to build/create/generate something — that's build_app. You MUST collect BOTH (1) what they need done and (2) how the council can reach them (X handle, Telegram, email, or wallet) BEFORE calling this tool. Do NOT call it without both fields. Ask for missing info first.
 
 ECOSYSTEM INFO — Use get_ecosystem_info when someone asks what Inclawbate is, how it works, or about CLAWS.
@@ -2753,10 +2761,16 @@ export default async function handler(req, res) {
         return sendReply({ reply, session_id: sid, suggestions: ['Set up X Growth Agent', 'Set up Reply Bot', 'Set up DCA Auto-Buyer', 'Set up Analytics Reporter', 'Set up Whale Watcher', 'Set up Token Tracker'] });
     }
 
-    // Intercept agent setup requests
-    const agentMatch = message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?(.+?)(?:\s+agent|\s+bot)?$/i);
+    // Intercept agent setup requests — ONLY when user explicitly mentions "agent" or "bot"
+    const agentMatch = message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?(.+?\s+(?:agent|bot))\s*$/i)
+      || message.match(/(?:set\s*up|create|make|build|I\s+want)\s+(?:a\s+|an\s+)?((?:x\s+growth|reply|dca|auto[\s-]?buy|analytics|whale|token\s+track)\s*.*)$/i);
     if (agentMatch) {
       const agentType = (agentMatch[1] || '').trim().toLowerCase();
+      // If captured text contains app-related words, this is an app request, not agent setup
+      // e.g. "I want to build an analytics dashboard" → don't route to Analytics Reporter agent
+      if (/\b(dashboard|website|site|page|game|splitter|contract|calculator|tool|shop|store|portfolio|landing|form|timer|counter)\b/i.test(agentType)) {
+        // Fall through to app-building or LLM logic below
+      } else {
       const templates = {
         'x growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice. Grows your audience on autopilot.', q: 'First, connect your X account at inclawbate.app/schedule. What project or topic should it post about?' },
         'growth': { name: 'X Growth Agent', desc: 'Auto-posts to X on a schedule with your brand voice.', q: 'What project or topic should it post about?' },
@@ -2778,6 +2792,7 @@ export default async function handler(req, res) {
       const reply = `**${tmpl.name}**\n\n${tmpl.desc}\n\n${tmpl.q}`;
       history.push({ role: 'assistant', content: reply });
       return sendReply({ reply, session_id: sid, suggestions: ['Tell me more about this agent', 'Set up a different agent', 'What agents are available?'] });
+      } // end else (not app-related)
     }
 
     // Pre-LLM intercept: "deploy staking for [token address]" — execute directly
@@ -2846,7 +2861,8 @@ export default async function handler(req, res) {
     }
 
     // Intercept detailed app requests — has name + type, just build it directly
-    const appNameMatch = message.match(/^(?:(?:build|make|create)\s+(?:me\s+)?(?:a\s+)?)?(.+?)(?:\s+called\s+|\s+named\s+|\s+and\s+call\s+it\s+|\s+and\s+name\s+it\s+|\s+for\s+)(.+)$/i);
+    // MUST start with build/make/create to avoid catching conversational "for" usage
+    const appNameMatch = message.match(/^(?:build|make|create)\s+(?:me\s+)?(?:a\s+)?(.+?)(?:\s+called\s+|\s+named\s+|\s+and\s+call\s+it\s+|\s+and\s+name\s+it\s+|\s+for\s+)(.+)$/i);
     if (appNameMatch && appNameMatch[1].length >= 3 && appNameMatch[2].length >= 2) {
       const description = appNameMatch[1].trim();
       const appName = appNameMatch[2].trim().replace(/[^a-zA-Z0-9\s-]/g, '');
@@ -3012,10 +3028,47 @@ export default async function handler(req, res) {
       return sendReply({ reply, session_id: sid, suggestions: ['Stake 1000 CLAWS', 'Stake 10000 CLAWS', 'Stake all my CLAWS'] });
     }
 
-    // Educational/explanatory prompts — skip tools, just answer the question
-    const isEducational = /^(explain|walk me through|what (is|are|does|do|can|should|would)|how (does|do|is|are|can|should|would)|give me a (glossary|overview|summary|breakdown|guide|list|full list)|teach me|tell me (about|how|what|why)|describe|compare|why (is|are|does|do|would|should|can))\b/i.test(message)
-      && message.length > 20
-      && !/\b(0x[a-f0-9]{10,}|my wallet|my token|my app|deploy|launch|build me|create me|stake \d|swap \d|buy \d|sell \d|airdrop|send \d)\b/i.test(message);
+    // Intercept unstake/withdraw CLAWS (unstaking only applies to CLAWS on this platform)
+    if (/\bunstake\b/i.test(message) || /\bwithdraw\b.*\bstak/i.test(message)) {
+      const amtMatch = message.match(/([\d,]+)\s*claws/i);
+      if (amtMatch) {
+        const amt = parseFloat(amtMatch[1].replace(/,/g, ''));
+        if (wallet) {
+          const result = await executeTool('unstake_claws', { amount: amt, wallet });
+          const directResult = generateDirectReply('unstake_claws', result, { amount: amt, wallet });
+          const reply = typeof directResult === 'object' ? directResult.reply : directResult;
+          const txData = typeof directResult === 'object' ? directResult.tx_data : undefined;
+          history.push({ role: 'assistant', content: reply });
+          return sendReply({ reply, function_called: 'unstake_claws', session_id: sid, ...(txData && { tx_data: txData }) });
+        }
+      }
+      const reply = 'How much CLAWS do you want to unstake?';
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Unstake 1000 CLAWS', 'Unstake all my CLAWS'] });
+    }
+
+    // Intercept claim staking rewards
+    if (/\bclaim\b/i.test(message) && /\b(reward|staking)\b/i.test(message)) {
+      if (wallet) {
+        const result = await executeTool('claim_staking_rewards', { wallet });
+        const directResult = generateDirectReply('claim_staking_rewards', result, { wallet });
+        const reply = typeof directResult === 'object' ? directResult.reply : directResult;
+        const txData = typeof directResult === 'object' ? directResult.tx_data : undefined;
+        history.push({ role: 'assistant', content: reply });
+        return sendReply({ reply, function_called: 'claim_staking_rewards', session_id: sid, ...(txData && { tx_data: txData }) });
+      }
+      const reply = 'Connect your wallet first and I\'ll claim your staking rewards!';
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Connect Wallet'] });
+    }
+
+    // Educational/explanatory/conversational prompts — skip tools, just answer the question
+    const isEducational = (
+      /^(explain|walk me through|what (is|are|does|do|can|should|would)|how (does|do|is|are|can|should|would)|give me a (glossary|overview|summary|breakdown|guide|list|full list)|teach me|tell me (about|how|what|why)|describe|compare|why (is|are|does|do|would|should|can)|can you (help|correct|fix|explain|tell)|please (correct|fix|help|explain)|translate)\b/i.test(message)
+      || /\b(correct this|fix this|reply with|answer only|nothing else|translate this|decode this|convert this)\b/i.test(message)
+    )
+      && message.length > 10
+      && !/\b(0x[a-f0-9]{10,}|my wallet|my token|my app|deploy|launch|build me|create me|build an app|make me a|stake \d|swap \d|buy \d|sell \d|airdrop|send \d)\b/i.test(message);
 
     let functionCalled = null;
     let toolArgs = null;

@@ -64,6 +64,195 @@ Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides
 
 ---
 
+### `/ceo refresh` — The Deep Analysis Engine
+
+This is the most important command in the system. It regenerates the entire task queue by analyzing everything — code, state, history, team, gaps — and produces a prioritized stream of specific, ready-to-execute tasks. Run this whenever the task list feels stale, when you finish a batch of work, or when you need direction.
+
+**Philosophy:** The hard part isn't doing the work — it's knowing what to do next. This command solves that. It thinks like a CEO who can read every line of code.
+
+#### Phase 1: GATHER — Read the Full State
+
+Run all of these in parallel:
+
+**Context files:**
+- Read `CEO.md` — vision, decision framework, revenue streams, current state
+- Read `CEO_TASKS.md` — full backlog with priorities and completion history
+- Read `COUNCIL.md` — governance framework, treasury, allocation targets
+- Read `COUNCIL_MEMBERS.md` — who's doing what, weekly cadence
+- Read any `initiative_*.md` and `project_*.md` files in root — active initiatives
+
+**Live state:**
+- `WebFetch GET https://www.inclawbate.app/api/inclawbate/team-state` — actual Present/Future from Telegram bot
+- `git log --oneline -40` — what shipped recently (look for patterns, velocity, what areas got attention)
+- `git log --oneline --since="2 weeks ago"` — focus window for recent activity
+
+**Codebase scan (use Explore agents in parallel):**
+- Scan `api/inclawbate/` for: TODO/FIXME/HACK comments, endpoints with missing error handling, half-implemented features, disabled code blocks
+- Scan `inclawbate/` HTML files for: broken links, missing mobile responsiveness, placeholder content, features that reference APIs that don't exist
+- Scan `pokerai/server/` for: TODOs, error handling gaps, features referenced in MEMORY but not yet live
+- Check `supabase/migrations/` — any migrations created but potentially not applied to production?
+- Check for new untracked files (`git status`) that might indicate work-in-progress
+
+#### Phase 2: DISCOVER — Find What the Task List Is Missing
+
+Cross-reference everything gathered to find gaps. Look for:
+
+1. **Done but not marked done** — Tasks in CEO_TASKS.md that are clearly complete based on git history or code state. Mark them done and move to Recently Completed.
+
+2. **Broken and not tracked** — Bugs, errors, or regressions visible in the code that have no corresponding task. Especially:
+   - API endpoints that return generic errors instead of helpful messages
+   - Features that work on desktop but not mobile
+   - Flows that are partially built (UI exists but API doesn't, or vice versa)
+   - Stale data (hardcoded values, outdated dates, wrong URLs)
+
+3. **Almost done — needs a push** — Features that are 80%+ complete. These are the highest-ROI tasks because small effort yields a complete feature. Look for:
+   - APIs that exist but have no UI calling them
+   - UI that exists but points to placeholder data
+   - Migrations created but not applied
+   - Config/env vars defined but services not updated
+
+4. **Quick wins** — Changes that take < 30 minutes but meaningfully improve the product:
+   - Missing error messages that leave users confused
+   - UI copy that's unclear or placeholder
+   - Pages missing meta/OG tags (hurts sharing)
+   - Dead links or references to removed features
+
+5. **Strategic gaps** — Things NOT in the code or task list that should be, based on the vision and decision framework:
+   - Revenue streams that are "Planned" but have zero code started
+   - User-facing pages with no analytics or tracking
+   - Features the council needs but doesn't have
+   - Competitive threats or opportunities visible from the codebase structure
+
+6. **Deadline risks** — Tasks with dates approaching. Calculate days remaining and flag anything within 14 days.
+
+7. **Stale state** — Files that reference dates, numbers, or states that are outdated. CEO.md "Current State" section, COUNCIL_MEMBERS.md weekly cadence, any hardcoded dates.
+
+#### Phase 3: PRIORITIZE — Apply the Decision Framework
+
+Score every discovered task against the 7-tier framework. For each task, determine:
+
+- **Framework tier** (1-7): Which priority level does this serve?
+  1. Revenue generators
+  2. Active user issues
+  3. Growth levers
+  4. Platform stickiness
+  5. Marketing
+  6. Partnerships
+  7. Nice-to-haves
+
+- **Scope**: S (< 30 min), M (1-2 hours), L (half day+)
+
+- **Impact/effort ratio**: Prefer high-impact, low-effort. A 30-minute fix that unblocks revenue beats a half-day feature that's nice-to-have.
+
+- **Dependencies**: Does this block other tasks? Is it blocked by anything?
+
+- **Urgency multiplier**: Deadlines, user-reported issues, and broken production features get priority boost regardless of tier.
+
+**Sorting rules:**
+1. Any production bug or broken feature → top of list regardless of tier
+2. Deadline within 7 days → P0 automatically
+3. Deadline within 14 days → P1 minimum
+4. Within same tier, prefer smaller scope (ship faster, build momentum)
+5. Tasks that unblock other tasks get priority boost
+6. "Almost done" features get priority boost (finish what you started)
+
+#### Phase 4: GENERATE — Create the Executable Task Queue
+
+For each task, generate this format in CEO_TASKS.md:
+
+```
+| # | Task | Status | Scope | Why it matters |
+```
+
+Additionally, for the **top 5 tasks**, generate a **ready-to-paste prompt** — the exact words Stuart should type into a new Claude Code session to execute that task. Each prompt should:
+
+- Be self-contained (Claude Code can execute it with no prior context)
+- Reference specific files, endpoints, or features by name
+- Define clear success criteria (what "done" looks like)
+- Be scoped to finish in a single session
+- NOT require any external services, paid APIs, or manual steps that Claude can't do
+
+**Prompt format:**
+```
+## Task [#]: [Title]
+**Scope:** S/M/L | **Framework tier:** [1-7] [tier name]
+**Why now:** [1 sentence — why this specific task, right now, over everything else]
+
+### Prompt:
+> [The exact instruction to paste into Claude Code]
+
+### Done when:
+- [Specific, verifiable completion criteria]
+```
+
+#### Phase 5: UPDATE — Write Everything Back
+
+After analysis, update these files:
+
+1. **CEO_TASKS.md:**
+   - Move confirmed-complete tasks to "Recently Completed" with today's date
+   - Add newly discovered tasks with appropriate priority
+   - Re-sort tasks within each tier by impact/effort ratio
+   - Remove or archive tasks that are no longer relevant
+   - Add `Scope` column to tables (S/M/L)
+
+2. **CEO.md** — "Current State" section:
+   - Update "Last updated" to today's date
+   - Update active users, apps published, staking status, biggest friction, next milestone
+   - Update revenue streams table if any status changed
+
+3. **COUNCIL_MEMBERS.md** — If more than 5 days stale:
+   - Roll over weekly cadence (archive old week, start new)
+   - Move In Progress items that are done based on git log
+   - Note any members who haven't had activity logged
+
+#### Phase 6: OUTPUT — Present to Stuart
+
+Output to the terminal (this is what Stuart sees):
+
+```
+# Inclawbate Refresh — [today's date]
+
+## State of things
+- [3-5 bullet summary: what's live, what shipped recently, what's broken, what's approaching]
+
+## What changed since last refresh
+- [Tasks marked done]
+- [New tasks discovered]
+- [Priority shifts]
+
+## Your top 3 right now:
+
+### 1. [Task title] (Scope: S/M/L)
+[1-2 sentences: why this, why now]
+> Prompt: [the exact words to paste]
+
+### 2. [Task title] (Scope: S/M/L)
+[1-2 sentences]
+> Prompt: [exact words]
+
+### 3. [Task title] (Scope: S/M/L)
+[1-2 sentences]
+> Prompt: [exact words]
+
+---
+Full backlog updated in CEO_TASKS.md ([X] tasks total, [Y] new, [Z] completed)
+Pick a number or tell me what's on your mind.
+```
+
+#### Why This Gets Better Over Time
+
+Each refresh cycle feeds the next:
+- **Recently Completed grows** → patterns emerge (what areas get attention, what gets neglected, what ships fast vs slow)
+- **Git history deepens** → better understanding of real velocity and common fix patterns
+- **Discovered tasks accumulate** → fewer blind spots each cycle
+- **State files stay current** → each refresh starts from accurate baseline, not stale assumptions
+- **Scope estimates calibrate** → comparing estimated vs actual scope improves future estimates
+
+The system never needs external services, paid APIs, or running processes. It's just Stuart + Claude Code + the codebase + these files. The "engine" is the quality of the analysis, and the analysis gets better because the data gets richer.
+
+---
+
 ## /council Command
 
 Manage the CLAWS Council — members, activity, decisions, and weekly cadence. Data stored in `COUNCIL.md` (governance framework) and `COUNCIL_MEMBERS.md` (dynamic member/activity data).

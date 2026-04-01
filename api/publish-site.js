@@ -47,20 +47,25 @@ export default async function handler(req, res) {
     // DELETE — remove published app
     if (req.method === 'DELETE') {
         try {
-            const { slug, email } = req.body || {};
-            if (!slug || !email) {
-                return res.status(400).json({ error: 'Missing required fields: slug, email' });
+            const { slug, email, wallet } = req.body || {};
+            if (!slug) {
+                return res.status(400).json({ error: 'Missing required field: slug' });
             }
             const cleanSlug = slug.toLowerCase().trim();
+            const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
             const { data: existing } = await supabase
                 .from('user_apps')
-                .select('id, publisher_email')
+                .select('id, publisher_email, creator_wallet')
                 .eq('slug', cleanSlug)
                 .maybeSingle();
             if (!existing) {
                 return res.status(404).json({ error: 'App not found.' });
             }
-            if (existing.publisher_email !== email) {
+            const walletLower = (wallet || '').toLowerCase();
+            const isAdmin = walletLower === SUPER_ADMIN;
+            const emailMatch = email && existing.publisher_email === email;
+            const walletMatch = walletLower && existing.creator_wallet && existing.creator_wallet.toLowerCase() === walletLower;
+            if (!isAdmin && !emailMatch && !walletMatch) {
                 return res.status(403).json({ error: 'You can only delete your own app.' });
             }
             const { error: delErr } = await supabase
