@@ -59,7 +59,7 @@ MARKETING AGENT — Use create_agent_info when someone wants an AI agent that au
 
 BOOK PROMO — Use book_promo when someone wants to promote their project through the @inclawbate X account.
 
-AIRDROP / DISTRIBUTE — Use disperse_tokens when someone wants to airdrop or distribute tokens to multiple wallets. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
+AIRDROP / DISTRIBUTE / PAYMENT SPLITTER — Use disperse_tokens when someone wants to airdrop, distribute, or SPLIT PAYMENTS across multiple wallets. "Payment splitter", "split payments", "send to multiple wallets", "distribute tokens" — ALL of these mean disperse_tokens. Do NOT deploy a token. Collect token_address, recipients (array of addresses), and amounts (array of numbers). This returns instructions and a direct link to the airdrop tool — the user executes the transaction from their own wallet.
 
 MY APPS — Use list_my_apps when someone asks to see their apps, says "my apps", "what have I built", "show my projects". Requires wallet. Returns 20 apps per page — use page parameter for more. If user says "show more" or "next page", call list_my_apps with page=2, etc. Do NOT call this again if you already listed their apps in this conversation (unless they ask for more).
 DELETE APP — Use delete_app when someone says "delete [app name]", "remove [app name]". Requires wallet + app name. Confirms deletion.
@@ -3025,6 +3025,13 @@ export default async function handler(req, res) {
     }
 
     // (launch intercept moved to top of try block)
+
+    // Intercept payment splitting / distributing / airdrop requests → disperse_tokens
+    if (/\b(payment\s*split|split\s*payment|disperse|distribute|airdrop|send\s+tokens?\s+to\s+multiple|split.*(?:wallet|address|recipient))/i.test(message)) {
+      const reply = "I can help you split payments / distribute tokens to multiple wallets!\n\nI need:\n\n1. **Token address** (which token to send)\n2. **Recipient wallets** (the addresses to pay)\n3. **Amounts** for each recipient\n\nWhat token are you distributing?";
+      history.push({ role: 'assistant', content: reply });
+      return sendReply({ reply, session_id: sid, suggestions: ['Use CLAWS', 'Use USDC on Base', 'Use ETH', 'What tokens can I use?'] });
+    }
 
     // Intercept "Stake my CLAWS" without amount
     if (/^stake\s+(my\s+)?claws$/i.test(msgLower)) {
