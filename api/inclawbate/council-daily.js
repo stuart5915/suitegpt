@@ -368,6 +368,9 @@ function calcChange(current, previous) {
     if (!previous || !current) return null;
     const diff = current - previous;
     const pct = previous !== 0 ? ((diff / previous) * 100).toFixed(1) : null;
+    // Suppress misleading deltas — swings over 30% are almost always data glitches
+    // (stale cache, failed API call returning 0, etc.), not real treasury moves
+    if (pct !== null && Math.abs(parseFloat(pct)) > 30) return null;
     return { diff, pct };
 }
 
