@@ -1,9 +1,8 @@
 // Inclawbate — Daily Council Post
 // Cron: runs daily at 9 AM UTC (7 AM EST)
-// Posts CLAWS stats to council Telegram group AND auto-posts tweet to @inclawbate
+// Posts CLAWS stats to council Telegram group
 
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,52 +11,6 @@ const supabase = createClient(
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 
-// ── Post to @inclawbate X account via OAuth1 ──
-function buildOAuth1Header(method, url) {
-    const apiKey = process.env.INCLAWBATE_X_API_KEY;
-    const apiSecret = process.env.INCLAWBATE_X_API_SECRET;
-    const accessToken = process.env.INCLAWBATE_X_ACCESS_TOKEN;
-    const accessSecret = process.env.INCLAWBATE_X_ACCESS_SECRET;
-    if (!apiKey || !apiSecret || !accessToken || !accessSecret) return null;
-    const oauth = {
-        oauth_consumer_key: apiKey, oauth_nonce: crypto.randomBytes(16).toString('hex'),
-        oauth_signature_method: 'HMAC-SHA1', oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-        oauth_token: accessToken, oauth_version: '1.0',
-    };
-    const paramString = Object.keys(oauth).sort().map(k => `${encodeURIComponent(k)}=${encodeURIComponent(oauth[k])}`).join('&');
-    const sigBase = [method, encodeURIComponent(url), encodeURIComponent(paramString)].join('&');
-    oauth.oauth_signature = crypto.createHmac('sha1', `${encodeURIComponent(apiSecret)}&${encodeURIComponent(accessSecret)}`).update(sigBase).digest('base64');
-    return 'OAuth ' + Object.keys(oauth).filter(k => k.startsWith('oauth_')).sort().map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauth[k])}"`).join(', ');
-}
-
-async function uploadImageToX(imageUrl) {
-    const imgResp = await fetch(imageUrl);
-    if (!imgResp.ok) throw new Error('Failed to download daily image');
-    const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
-    if (imgBuffer.length > 5 * 1024 * 1024) throw new Error('Image too large');
-    const base64Data = imgBuffer.toString('base64');
-    const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json';
-    const auth = buildOAuth1Header('POST', uploadUrl);
-    if (!auth) return null;
-    const boundary = '----XMediaUpload' + Date.now();
-    const bodyStr = ['--' + boundary, 'Content-Disposition: form-data; name="media_data"', '', base64Data, '--' + boundary + '--'].join('\r\n');
-    const resp = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': auth, 'Content-Type': 'multipart/form-data; boundary=' + boundary }, body: bodyStr });
-    const data = await resp.json();
-    if (!resp.ok) { console.error('[daily] Media upload failed:', JSON.stringify(data).slice(0, 200)); return null; }
-    return data.media_id_string;
-}
-
-async function postTweetToInclawbate(text, mediaId) {
-    const url = 'https://api.twitter.com/2/tweets';
-    const auth = buildOAuth1Header('POST', url);
-    if (!auth) { console.log('[daily] INCLAWBATE X credentials not set, skipping tweet'); return null; }
-    const payload = { text };
-    if (mediaId) payload.media = { media_ids: [mediaId] };
-    const resp = await fetch(url, { method: 'POST', headers: { 'Authorization': auth, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const data = await resp.json();
-    if (!resp.ok) { console.error('[daily] X post failed:', JSON.stringify(data)); return null; }
-    return data.data?.id || null;
-}
 const COUNCIL_CHAT_ID = process.env.INCLAWBATE_COUNCIL_CHAT_ID;
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const VOTE_STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
@@ -848,28 +801,13 @@ export default async function handler(req, res) {
         // Post text to council group
         await sendMsg(COUNCIL_CHAT_ID, telegramPost);
 
-        // Auto-post tweet + image to @inclawbate X account
-        let tweetId = null;
-        try {
-            // Upload the daily stats image first
-            let mediaId = null;
-            try { mediaId = await uploadImageToX(imageUrl); } catch (imgErr) { console.error('[daily] Image upload failed:', imgErr.message); }
-            tweetId = await postTweetToInclawbate(tweet, mediaId);
-            if (tweetId) {
-                await sendMsg(COUNCIL_CHAT_ID, `✅ <b>Auto-posted to @inclawbate</b>\nhttps://x.com/inclawbate/status/${tweetId}`);
-            } else {
-                await sendMsg(COUNCIL_CHAT_ID, `📋 <b>Copy-paste for X:</b>\n\n<code>${esc(tweet)}</code>`);
-            }
-        } catch (xErr) {
-            console.error('[daily] X auto-post error:', xErr.message);
-            await sendMsg(COUNCIL_CHAT_ID, `📋 <b>Copy-paste for X:</b>\n\n<code>${esc(tweet)}</code>`);
-        }
+        // Provide copy-paste tweet for manual X posting
+        await sendMsg(COUNCIL_CHAT_ID, `📋 <b>Copy-paste for X:</b>\n\n<code>${esc(tweet)}</code>`);
 
         return res.status(200).json({
             ok: true,
             telegram: telegramPost,
             tweet,
-            tweetId,
             data: {
                 claws,
                 supply,
