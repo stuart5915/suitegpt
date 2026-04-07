@@ -12,13 +12,12 @@ const supabase = createClient(
 );
 
 const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
-const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655'];
 const CRON_SECRET = process.env.CRON_SECRET;
 
 function isAuthorized(req) {
     const wallet = (req.query.wallet || '').toLowerCase();
     const secret = req.headers['x-cron-secret'] || req.query.secret;
-    return ADMIN_WALLETS.includes(wallet) || EDITOR_WALLETS.includes(wallet) || secret === CRON_SECRET;
+    return ADMIN_WALLETS.includes(wallet) || secret === CRON_SECRET;
 }
 
 function daysSince(dateStr) {

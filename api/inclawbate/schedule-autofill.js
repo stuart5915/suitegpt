@@ -15,8 +15,6 @@ let _groqIdx = 0;
 function getGroqKey() { const k = _groqKeys[_groqIdx % _groqKeys.length]; _groqIdx++; return k; }
 const GROQ_API_KEY = _groqKeys[0] || '';
 const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
-// Editors can generate, edit, delete drafts — but NOT approve/reject
-const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655']; // @FreefoRaLLey
 const VALID_HOURS = [13, 18, 23]; // Default: 3 posts/day: 9 AM ET, 2 PM ET, 7 PM ET
 // Account-specific slot counts
 const ACCOUNT_HOURS = {
@@ -495,7 +493,6 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         const authHeader = req.headers.authorization;
         const cronSecret = process.env.CRON_SECRET;
         let isAdmin = false;
-        let isEditor = false;
 
         // Allow cron auth (admin level)
         if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
@@ -506,11 +503,10 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         const directWallet = (req.headers['x-wallet'] || req.query.wallet || '').toLowerCase();
         if (!isAdmin && directWallet) {
             if (ADMIN_WALLETS.includes(directWallet)) isAdmin = true;
-            else if (EDITOR_WALLETS.includes(directWallet)) isEditor = true;
         }
 
         // Check wallet role via JWT
-        if (!isAdmin && !isEditor && authHeader?.startsWith('Bearer ')) {
+        if (!isAdmin && authHeader?.startsWith('Bearer ')) {
             try {
                 const { authenticateRequest } = await import('./x-callback.js');
                 const user = authenticateRequest(req);
@@ -522,12 +518,11 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
                         .single();
                     const w = profile?.wallet_address?.toLowerCase();
                     if (w && ADMIN_WALLETS.includes(w)) isAdmin = true;
-                    else if (w && EDITOR_WALLETS.includes(w)) isEditor = true;
                 }
             } catch(e) {}
         }
 
-        if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required' });
+        if (!isAdmin) return res.status(403).json({ error: 'Admin access required' });
 
         // One-time migration: move 5-slot schedule to 3-slot schedule
         // Keeps top 3 posts per day (prioritizing: posted > scheduled > needs_review > needs_image)
@@ -628,7 +623,7 @@ Write ONE image prompt (2-3 sentences) that matches the style guide. Output ONLY
         }
 
         if (action === 'approve') {
-            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to approve tweets' });
+            if (!isAdmin) return res.status(403).json({ error: 'Admin access required to approve tweets' });
             const { slot_id } = req.body;
             const { error } = await supabase
                 .from('agent_schedule')
@@ -898,7 +893,7 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
         }
 
         if (action === 'approve_all') {
-            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to approve tweets' });
+            if (!isAdmin) return res.status(403).json({ error: 'Admin access required to approve tweets' });
             const { date: approveDate, account: approveAccount } = req.body;
             if (!approveDate) return res.status(400).json({ error: 'date required' });
             const dayStart = approveDate + 'T00:00:00Z';
@@ -917,7 +912,7 @@ Write ONE image prompt (2-3 sentences) that follows the style guide above precis
 
         // ── Post Now — immediately post a scheduled slot ──
         if (action === 'post_now') {
-            if (!isAdmin && !isEditor) return res.status(403).json({ error: 'Admin or editor access required to post' });
+            if (!isAdmin) return res.status(403).json({ error: 'Admin access required to post' });
             const { slot_id } = req.body;
             if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
 

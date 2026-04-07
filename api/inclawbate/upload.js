@@ -42,7 +42,6 @@ export default async function handler(req, res) {
 
     const ALLOWED_WALLETS = [
         '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-        '0x47fbb4e2527492ab56b7fba5fde3e7b35719e655', // FreefoRaLLey
     ];
     const directWallet = (req.headers['x-wallet'] || '').toLowerCase();
     const user = authenticateRequest(req);

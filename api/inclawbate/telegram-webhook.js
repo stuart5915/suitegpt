@@ -11,7 +11,7 @@ const supabase = createClient(
 );
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
-const ADMIN_USERNAMES = ['StuartDeFi', 'FreefoRaLLey'];
+const ADMIN_USERNAMES = ['StuartDeFi'];
 
 // ── OAuth1 helpers for posting to @inclawbate X account ──
 function buildOAuth1Header(method, url) {

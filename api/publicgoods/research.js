@@ -9,7 +9,6 @@ const supabase = createClient(
 
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd', // Stuart
-    '0x47fbb4e2527492ab56b7fba5fde3e7b35719e655', // FreefoRaLLey
 ];
 
 function isAdmin(wallet) {

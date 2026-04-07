@@ -30,8 +30,6 @@ const ACCOUNT_HOURS = {
 };
 
 const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
-// Editors can edit/cancel slots but NOT approve/reject
-const EDITOR_WALLETS = ['0x47fbb4e2527492ab56b7fba5fde3e7b35719e655']; // @FreefoRaLLey
 
 // ── Slot sanitizer ──
 
@@ -224,11 +222,10 @@ export default async function handler(req, res) {
 
             if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
             const isAdmin = FREE_WALLETS.includes(wallet);
-            const isEditorOrAdmin = isAdmin || EDITOR_WALLETS.includes(wallet);
-            if (slot.booked_by_wallet !== wallet && !isEditorOrAdmin) {
+            if (slot.booked_by_wallet !== wallet && !isAdmin) {
                 return res.status(403).json({ error: 'Not your slot' });
             }
-            if (!isEditorOrAdmin && slot.status === 'scheduled') {
+            if (!isAdmin && slot.status === 'scheduled') {
                 return res.status(403).json({ error: 'Cannot edit an approved slot' });
             }
             if (new Date(slot.scheduled_at).getTime() <= Date.now()) {
@@ -271,7 +268,7 @@ export default async function handler(req, res) {
                 .single();
 
             if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
-            if (slot.booked_by_wallet !== wallet && !FREE_WALLETS.includes(wallet) && !EDITOR_WALLETS.includes(wallet)) {
+            if (slot.booked_by_wallet !== wallet && !FREE_WALLETS.includes(wallet)) {
                 return res.status(403).json({ error: 'Not your slot' });
             }
             if (new Date(slot.scheduled_at).getTime() <= Date.now()) {

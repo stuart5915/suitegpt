@@ -8,14 +8,7 @@
     var PUBLISH_API = '/api/publish-site';
 
     var FREE_CREDIT_WALLETS = [
-        '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-        '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
-        '0x9fe6e70079d9cbab7693b70a11764d70cf26ce0e',
-        '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
-        '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
-        '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
-        '0xc2599f1009669f4cda7ac2493de06d450fc79ef9',
-        '0xff6d0522bd027d1c86c3ad8c55c5ca4711e1e79a'
+        '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'
     ];
     var FREE_HANDLES = ['artstu'];
 
